@@ -2,7 +2,7 @@
   "expo": {
     "name": "MarketingTool",
     "slug": "marketingtool",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -19,7 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "12",
+      "buildNumber": "13",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Allow MarketingTool to access your camera for profile photos and content creation.",
@@ -48,7 +48,7 @@
         "backgroundColor": "#0D0F1C"
       },
       "package": "pro.marketingtool.app",
-      "versionCode": 12,
+      "versionCode": 13,
       "edgeToEdgeEnabled": true,
       "permissions": [
         "CAMERA",

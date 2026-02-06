@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Models } from 'react-native-appwrite';
 import { authService, dbService, COLLECTIONS } from '../services/appwrite';
+import { sendPhoneOTP, verifyPhoneOTP } from '../services/firebaseAuth';
 
 interface UserProfile {
   $id: string;
@@ -31,6 +32,8 @@ interface AuthState {
   loginWithGoogle: () => Promise<void>;
   loginWithApple: () => Promise<void>;
   loginWithFacebook: () => Promise<void>;
+  sendOTP: (phoneNumber: string) => Promise<void>;
+  verifyOTP: (code: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -151,6 +154,47 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: false, error: 'Facebook login was cancelled or failed' });
     } catch (error: any) {
       set({ error: error.message || 'Facebook login failed', isLoading: false });
+      throw error;
+    }
+  },
+
+  sendOTP: async (phoneNumber: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const result = await sendPhoneOTP(phoneNumber);
+      if (!result.success) {
+        set({ error: result.error || 'Failed to send OTP', isLoading: false });
+        throw new Error(result.error || 'Failed to send OTP');
+      }
+      set({ isLoading: false });
+    } catch (error: any) {
+      set({ error: error.message || 'Failed to send OTP', isLoading: false });
+      throw error;
+    }
+  },
+
+  verifyOTP: async (code: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const result = await verifyPhoneOTP(code);
+      if (!result.success) {
+        set({ error: result.error || 'Invalid OTP', isLoading: false });
+        throw new Error(result.error || 'Invalid OTP');
+      }
+      if (result.user) {
+        // Create a user-like object for profile creation
+        const firebaseUser = result.user;
+        const mockUser = {
+          $id: firebaseUser.uid,
+          name: firebaseUser.displayName || firebaseUser.phoneNumber || '',
+          email: firebaseUser.email || `${firebaseUser.phoneNumber}@phone.marketingtool.pro`,
+          phone: firebaseUser.phoneNumber,
+        } as any;
+        const profile = await get().fetchOrCreateProfile(mockUser);
+        set({ user: mockUser, profile, isAuthenticated: true, isLoading: false });
+      }
+    } catch (error: any) {
+      set({ error: error.message || 'Invalid OTP', isLoading: false });
       throw error;
     }
   },

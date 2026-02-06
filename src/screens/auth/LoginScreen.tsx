@@ -41,6 +41,14 @@ interface LoginMethod {
 
 const loginMethods: LoginMethod[] = [
   {
+    id: 'phone',
+    name: 'Phone',
+    icon: 'phone',
+    color: '#10B981',
+    gradient: ['#10B981', '#059669'],
+    description: 'Sign in with OTP',
+  },
+  {
     id: 'google',
     name: 'Google',
     icon: 'chrome',
@@ -86,7 +94,7 @@ type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { login, loginWithGoogle, loginWithApple, loginWithFacebook, isLoading, error, clearError } = useAuthStore();
+  const { login, loginWithGoogle, loginWithApple, loginWithFacebook, sendOTP, verifyOTP, isLoading, error, clearError } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -94,6 +102,11 @@ const LoginScreen = () => {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otp, setOtp] = useState('');
+  const [phoneStep, setPhoneStep] = useState<'phone' | 'otp'>('phone');
+  const [phoneError, setPhoneError] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
 
   // Animations
@@ -233,9 +246,46 @@ const LoginScreen = () => {
     }
   };
 
+  const handleSendOTP = async () => {
+    if (!phoneNumber || phoneNumber.length < 10) {
+      setPhoneError('Please enter a valid phone number');
+      return;
+    }
+    clearError();
+    setPhoneError('');
+    try {
+      await sendOTP(phoneNumber);
+      setPhoneStep('otp');
+    } catch (err: any) {
+      setPhoneError(err.message || 'Failed to send OTP');
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!otp || otp.length !== 6) {
+      setPhoneError('Please enter 6-digit OTP');
+      return;
+    }
+    clearError();
+    setPhoneError('');
+    try {
+      await verifyOTP(otp);
+      setShowPhoneModal(false);
+    } catch (err: any) {
+      setPhoneError(err.message || 'Invalid OTP');
+    }
+  };
+
   const handleLoginMethod = (methodId: string) => {
     setSelectedMethod(methodId);
     switch (methodId) {
+      case 'phone':
+        setShowPhoneModal(true);
+        setPhoneStep('phone');
+        setPhoneNumber('');
+        setOtp('');
+        setPhoneError('');
+        break;
       case 'google':
         handleGoogleLogin();
         break;
@@ -440,6 +490,104 @@ const LoginScreen = () => {
                   )}
                 </LinearGradient>
               </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Phone OTP Modal */}
+      <Modal
+        visible={showPhoneModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPhoneModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {phoneStep === 'phone' ? 'Sign in with Phone' : 'Verify OTP'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowPhoneModal(false)} style={styles.modalClose}>
+                <Feather name="x" size={24} color={Colors.white} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              {phoneStep === 'phone' ? (
+                <>
+                  <Text style={styles.phoneLabel}>Enter your phone number</Text>
+                  <View style={styles.phoneInputRow}>
+                    <View style={styles.countryCode}>
+                      <Text style={styles.countryCodeText}>+91</Text>
+                    </View>
+                    <View style={[styles.inputContainer, { flex: 1, marginBottom: 0 }]}>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="9999999999"
+                        placeholderTextColor={Colors.textTertiary}
+                        value={phoneNumber}
+                        onChangeText={setPhoneNumber}
+                        keyboardType="phone-pad"
+                        maxLength={10}
+                      />
+                    </View>
+                  </View>
+                  {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
+
+                  <TouchableOpacity onPress={handleSendOTP} disabled={isLoading} style={styles.modalLoginBtn}>
+                    <LinearGradient
+                      colors={['#10B981', '#059669']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.loginButtonGradient}
+                    >
+                      {isLoading ? (
+                        <ActivityIndicator color={Colors.white} />
+                      ) : (
+                        <Text style={styles.loginButtonText}>Send OTP</Text>
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+
+                  <Text style={styles.testNote}>Test: +91 99999 99999 / Code: 123456</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.phoneLabel}>Enter 6-digit OTP sent to +91 {phoneNumber}</Text>
+                  <View style={[styles.inputContainer, styles.otpInputContainer]}>
+                    <TextInput
+                      style={[styles.input, styles.otpInput]}
+                      placeholder="000000"
+                      placeholderTextColor={Colors.textTertiary}
+                      value={otp}
+                      onChangeText={setOtp}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                    />
+                  </View>
+                  {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
+
+                  <TouchableOpacity onPress={handleVerifyOTP} disabled={isLoading} style={styles.modalLoginBtn}>
+                    <LinearGradient
+                      colors={['#10B981', '#059669']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.loginButtonGradient}
+                    >
+                      {isLoading ? (
+                        <ActivityIndicator color={Colors.white} />
+                      ) : (
+                        <Text style={styles.loginButtonText}>Verify OTP</Text>
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={() => setPhoneStep('phone')} style={styles.changePhoneBtn}>
+                    <Text style={styles.changePhoneText}>Change Phone Number</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
         </View>
@@ -693,6 +841,54 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
     fontSize: 15,
     fontWeight: '600',
+  },
+  // Phone OTP styles
+  phoneLabel: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.md,
+  },
+  phoneInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  countryCode: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingVertical: 16,
+    paddingHorizontal: Spacing.md,
+  },
+  countryCodeText: {
+    fontSize: 16,
+    color: Colors.white,
+    fontWeight: '500',
+  },
+  otpInputContainer: {
+    marginBottom: Spacing.md,
+  },
+  otpInput: {
+    fontSize: 24,
+    letterSpacing: 8,
+    textAlign: 'center',
+  },
+  testNote: {
+    fontSize: 12,
+    color: Colors.textTertiary,
+    textAlign: 'center',
+    marginTop: Spacing.md,
+  },
+  changePhoneBtn: {
+    marginTop: Spacing.md,
+    alignItems: 'center',
+  },
+  changePhoneText: {
+    color: Colors.secondary,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
 
