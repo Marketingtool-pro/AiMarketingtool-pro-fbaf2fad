@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "911925145433",
+    "project_id": "marketing-tool-484720",
+    "storage_bucket": "marketing-tool-484720.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:911925145433:android:870f5b0ee0a8edb6112648",
+        "android_client_info": {
+          "package_name": "pro.marketingtool.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "911925145433-ulns32v0guck53vdob9ejqpbcqri8hes.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "pro.marketingtool.app",
+            "certificate_hash": "eaf2a45ca8d317da174ed798bbd958845f23e8f6"
+          }
+        },
+        {
+          "client_id": "100801518418929477429",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqLxexqY-R54RnutJmN7c8ot7L_7FAt_E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "100801518418929477429",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -20,6 +20,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
       "buildNumber": "13",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Allow MarketingTool to access your camera for profile photos and content creation.",
@@ -47,6 +48,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0D0F1C"
       },
+      "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
       "versionCode": 13,
       "edgeToEdgeEnabled": true,
@@ -102,6 +104,18 @@
       "bundler": "metro"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "deploymentTarget": "15.1"
+          }
+        }
+      ],
+      "./plugins/withFirebaseFix.js",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
       "expo-secure-store",
       "expo-local-authentication",
       [
