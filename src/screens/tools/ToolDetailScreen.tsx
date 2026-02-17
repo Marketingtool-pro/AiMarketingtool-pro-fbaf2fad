@@ -237,10 +237,9 @@ const ToolDetailScreen = () => {
             </TouchableOpacity>
             <TouchableOpacity style={styles.favoriteButton} onPress={handleToggleFavorite}>
               <Feather 
-                name={isFavorite ? "heart" : "heart"} 
+                name="heart"
                 size={24} 
                 color={isFavorite ? Colors.error : Colors.white}
-                fill={isFavorite ? Colors.error : 'transparent'}
               />
             </TouchableOpacity>
           </View>
