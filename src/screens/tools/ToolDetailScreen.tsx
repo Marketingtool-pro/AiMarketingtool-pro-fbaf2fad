@@ -29,7 +29,7 @@ const ToolDetailScreen = () => {
   const route = useRoute<RouteType>();
   const { toolSlug } = route.params;
   const { tools, generateContent, isGenerating } = useToolsStore();
-  const { profile } = useAuthStore();
+  const { profile, updateProfile } = useAuthStore();
 
   const [tool, setTool] = useState<Tool | null>(null);
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
@@ -109,6 +109,22 @@ const ToolDetailScreen = () => {
         language: selectedLanguage,
         outputCount,
       });
+
+      // Deduct credit for free users after successful generation
+      if (profile?.subscription === 'free' && result.success) {
+        const currentCredits = profile?.credits || 0;
+        if (currentCredits > 0) {
+          // TODO: Update credits in Appwrite database
+          // await dbService.updateDocument(COLLECTIONS.USERS, profile.$id, {
+          //   credits: currentCredits - 1
+          // });
+          
+          // Update local profile state
+          updateProfile({ credits: currentCredits - 1 });
+          
+          if (__DEV__) console.log(`Credit deducted. Remaining: ${currentCredits - 1}`);
+        }
+      }
 
       navigation.navigate('ToolResult', {
         toolSlug: tool.slug,
