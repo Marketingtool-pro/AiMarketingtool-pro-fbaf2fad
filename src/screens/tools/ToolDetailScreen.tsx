@@ -36,6 +36,7 @@ const ToolDetailScreen = () => {
   const [selectedTone, setSelectedTone] = useState('professional');
   const [selectedLanguage, setSelectedLanguage] = useState('English');
   const [outputCount, setOutputCount] = useState(3);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   const tones = ['Professional', 'Casual', 'Friendly', 'Persuasive', 'Formal', 'Creative'];
   const languages = ['English', 'Spanish', 'French', 'German', 'Hindi', 'Chinese', 'Japanese'];
@@ -55,6 +56,23 @@ const ToolDetailScreen = () => {
 
   const handleInputChange = (name: string, value: string) => {
     setInputValues(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!tool || !profile) return;
+
+    try {
+      setIsFavorite(!isFavorite);
+      // TODO: Implement Appwrite favorite toggle when backend is ready
+      // await dbService.toggleFavorite(tool.slug, profile.$id);
+      Alert.alert(
+        isFavorite ? 'Removed from Favorites' : 'Added to Favorites',
+        isFavorite ? `${tool.name} removed from your favorites` : `${tool.name} added to your favorites`
+      );
+    } catch (error) {
+      setIsFavorite(isFavorite); // Revert on error
+      Alert.alert('Error', 'Failed to update favorites');
+    }
   };
 
   const validateInputs = () => {
@@ -201,8 +219,13 @@ const ToolDetailScreen = () => {
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
               <Feather name="arrow-left" size={24} color={Colors.white} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.favoriteButton}>
-              <Feather name="heart" size={24} color={Colors.white} />
+            <TouchableOpacity style={styles.favoriteButton} onPress={handleToggleFavorite}>
+              <Feather 
+                name={isFavorite ? "heart" : "heart"} 
+                size={24} 
+                color={isFavorite ? Colors.error : Colors.white}
+                fill={isFavorite ? Colors.error : 'transparent'}
+              />
             </TouchableOpacity>
           </View>
 
