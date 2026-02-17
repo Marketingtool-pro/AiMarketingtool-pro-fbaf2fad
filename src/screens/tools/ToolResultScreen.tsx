@@ -101,7 +101,7 @@ const ToolResultScreen = () => {
         message: content,
       });
     } catch (error) {
-      console.error('Share error:', error);
+      if (__DEV__) console.error('Share error:', error);
     }
   };
 

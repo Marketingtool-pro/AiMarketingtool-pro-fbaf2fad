@@ -323,7 +323,7 @@ const ChatScreen = () => {
       };
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('[Chat] AI Error:', error);
+      if (__DEV__) console.error('[Chat] AI Error:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -384,7 +384,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
       const result = await response.json();
       return result.response || result.content || result;
     } catch (error) {
-      console.error('[Chat] Windmill error:', error);
+      if (__DEV__) console.error('[Chat] Windmill error:', error);
       // Fallback to helpful response
       return generateFallbackResponse(userMessage);
     }

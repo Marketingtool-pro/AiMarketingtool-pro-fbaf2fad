@@ -172,7 +172,7 @@ const MemeGeneratorScreen = () => {
         Alert.alert('Success! 🎉', 'Meme saved to your gallery', [{ text: 'OK' }]);
       }
     } catch (error) {
-      console.error('Save error:', error);
+      if (__DEV__) console.error('Save error:', error);
       Alert.alert('Error', 'Failed to save meme');
     } finally {
       setIsLoading(false);
@@ -201,7 +201,7 @@ const MemeGeneratorScreen = () => {
         }
       }
     } catch (error) {
-      console.error('Share error:', error);
+      if (__DEV__) console.error('Share error:', error);
       Alert.alert('Error', 'Failed to share meme');
     } finally {
       setIsLoading(false);
