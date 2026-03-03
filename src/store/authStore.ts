@@ -25,6 +25,7 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
+  tempPhone: string | null;
 
   // Actions
   login: (email: string, password: string) => Promise<void>;
@@ -48,6 +49,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: true,
   isAuthenticated: false,
   error: null,
+  tempPhone: null,
 
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
@@ -161,12 +163,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   sendOTP: async (phoneNumber: string) => {
     set({ isLoading: true, error: null });
     try {
-      const result = await sendPhoneOTP(phoneNumber);
-      if (!result.success) {
-        set({ error: result.error || 'Failed to send OTP', isLoading: false });
-        throw new Error(result.error || 'Failed to send OTP');
-      }
-      set({ isLoading: false });
+      await authService.sendOTPFunction(phoneNumber);
+      set({ isLoading: false, tempPhone: phoneNumber });
     } catch (error: any) {
       set({ error: error.message || 'Failed to send OTP', isLoading: false });
       throw error;
@@ -174,24 +172,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   verifyOTP: async (code: string) => {
+    const { tempPhone } = get();
+    if (!tempPhone) {
+      set({ error: 'Session expired. Please request a new code.' });
+      return;
+    }
+
     set({ isLoading: true, error: null });
     try {
-      const result = await verifyPhoneOTP(code);
-      if (!result.success) {
-        set({ error: result.error || 'Invalid OTP', isLoading: false });
-        throw new Error(result.error || 'Invalid OTP');
-      }
-      if (result.user) {
-        // Create a user-like object for profile creation
-        const firebaseUser = result.user;
+      const result = await authService.verifyOTPFunction(tempPhone, code);
+      if (result.success) {
         const mockUser = {
-          $id: firebaseUser.uid,
-          name: firebaseUser.displayName || firebaseUser.phoneNumber || '',
-          email: firebaseUser.email || `${firebaseUser.phoneNumber}@phone.marketingtool.pro`,
-          phone: firebaseUser.phoneNumber,
+          $id: `phone-${tempPhone.replace(/\+/g, '')}`,
+          name: tempPhone,
+          email: `${tempPhone}@phone.marketingtool.pro`,
+          phone: tempPhone,
         } as any;
         const profile = await get().fetchOrCreateProfile(mockUser);
-        set({ user: mockUser, profile, isAuthenticated: true, isLoading: false });
+        set({ user: mockUser, profile, isAuthenticated: true, isLoading: false, tempPhone: null });
+      } else {
+        throw new Error(result.message || 'Invalid OTP');
       }
     } catch (error: any) {
       set({ error: error.message || 'Invalid OTP', isLoading: false });
