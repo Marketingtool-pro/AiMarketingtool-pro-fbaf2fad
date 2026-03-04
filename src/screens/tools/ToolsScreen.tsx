@@ -20,6 +20,7 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore, TOOL_CATEGORIES, PLATFORMS, Tool } from '../../store/toolsStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
+import { getToolIcon } from '../../constants/toolIcons';
 
 const { width } = Dimensions.get('window');
 
@@ -73,42 +74,27 @@ const ToolsScreen = () => {
       onPress={() => handleToolPress(item)}
       activeOpacity={0.7}
     >
-      <View style={styles.toolHeader}>
-        <View style={[styles.toolIcon, { backgroundColor: Colors.secondary + '15' }]}>
-          <Feather name={item.icon as any} size={22} color={Colors.secondary} />
-        </View>
-        <View style={styles.toolBadges}>
-          {item.isNew && (
-            <View style={[styles.badge, { backgroundColor: Colors.success }]}>
-              <Text style={styles.badgeText}>NEW</Text>
-            </View>
-          )}
-          {item.isPro && (
-            <View style={[styles.badge, { backgroundColor: Colors.gold }]}>
-              <Text style={styles.badgeText}>PRO</Text>
-            </View>
-          )}
-          {item.isTrending && (
-            <View style={[styles.badge, { backgroundColor: Colors.secondary }]}>
-              <Feather name="trending-up" size={10} color={Colors.white} />
-            </View>
-          )}
-        </View>
+      <View style={[styles.toolIcon, { backgroundColor: Colors.accent + '15' }]}>
+        <Image source={getToolIcon(item.slug, item.category)} style={styles.toolIconImage} />
       </View>
-
-      <Text style={styles.toolName}>{item.name}</Text>
-      <Text style={styles.toolDescription} numberOfLines={2}>{item.shortDescription}</Text>
-
-      <View style={styles.toolFooter}>
-        <View style={styles.toolStats}>
-          <Feather name="users" size={12} color={Colors.textTertiary} />
-          <Text style={styles.toolStatText}>{(item.usageCount / 1000).toFixed(1)}k</Text>
-        </View>
-        <View style={styles.toolRating}>
-          <Feather name="star" size={12} color={Colors.gold} />
-          <Text style={styles.toolStatText}>{item.rating}</Text>
-        </View>
+      <View style={styles.toolBadges}>
+        {item.isNew && (
+          <View style={[styles.badge, { backgroundColor: Colors.success }]}>
+            <Text style={styles.badgeText}>NEW</Text>
+          </View>
+        )}
+        {item.isPro && (
+          <View style={[styles.badge, { backgroundColor: Colors.gold }]}>
+            <Text style={styles.badgeText}>PRO</Text>
+          </View>
+        )}
+        {item.isTrending && (
+          <View style={[styles.badge, { backgroundColor: Colors.accent }]}>
+            <Feather name="trending-up" size={10} color={Colors.white} />
+          </View>
+        )}
       </View>
+      <Text style={styles.toolName} numberOfLines={2}>{item.name}</Text>
     </TouchableOpacity>
   );
 
@@ -124,7 +110,7 @@ const ToolsScreen = () => {
           <View style={styles.heroContent}>
             <View style={styles.heroBadge}>
               <Feather name="zap" size={12} color={Colors.gold} />
-              <Text style={styles.heroBadgeText}>AI Tools</Text>
+              <Text style={styles.heroBadgeText}>75+ AI Tools</Text>
             </View>
             <Text style={styles.heroTitle}>AI Marketing Tools</Text>
             <Text style={styles.heroSubtitle}>Google • Meta • Shopify</Text>
@@ -139,7 +125,7 @@ const ToolsScreen = () => {
           <Feather name="search" size={20} color={Colors.textTertiary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search tools..."
+            placeholder="Search 75+ tools..."
             placeholderTextColor={Colors.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -207,12 +193,15 @@ const ToolsScreen = () => {
         ))}
       </ScrollView>
 
+      {/* Spacer */}
+      <View style={{ height: 4 }} />
+
       {/* Tools Grid */}
       <FlatList
         data={filteredTools}
         renderItem={renderToolCard}
         keyExtractor={(item) => item.$id}
-        numColumns={2}
+        numColumns={3}
         columnWrapperStyle={styles.toolsRow}
         contentContainerStyle={styles.toolsContainer}
         showsVerticalScrollIndicator={false}
@@ -316,7 +305,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   platformTabActive: {
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.accent,
   },
   platformTabText: {
     fontSize: 13,
@@ -344,7 +333,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.sm,
   },
   categoryChipActive: {
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.accent,
   },
   categoryChipText: {
     fontSize: 13,
@@ -363,69 +352,57 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   toolCard: {
-    width: (width - Spacing.md * 3) / 2,
+    width: (width - Spacing.md * 4) / 3,
     backgroundColor: Colors.card,
     borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
+    padding: Spacing.sm,
     marginBottom: Spacing.md,
-  },
-  toolHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.sm,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   toolIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.md,
+    width: 64,
+    height: 64,
+    borderRadius: BorderRadius.lg,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  toolIconImage: {
+    width: 52,
+    height: 52,
   },
   toolBadges: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 3,
+    marginBottom: 4,
   },
   badge: {
-    paddingHorizontal: 6,
+    paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
   },
   badgeText: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: 'bold',
     color: Colors.white,
   },
   toolName: {
-    fontSize: 15,
+    fontSize: 11,
     fontWeight: '600',
     color: Colors.white,
-    marginBottom: 4,
+    textAlign: 'center',
   },
-  toolDescription: {
-    fontSize: 12,
+  toolCountRow: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xs,
+  },
+  toolCountText: {
+    fontSize: 13,
     color: Colors.textSecondary,
-    lineHeight: 16,
-    marginBottom: Spacing.sm,
-  },
-  toolFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  toolStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  toolRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  toolStatText: {
-    fontSize: 11,
-    color: Colors.textTertiary,
+    fontWeight: '500',
   },
   emptyState: {
     alignItems: 'center',

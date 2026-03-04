@@ -102,7 +102,7 @@ const SettingsScreen = () => {
         {
           icon: 'key',
           label: 'Two-Factor Authentication',
-          description: 'Add extra security to your account',
+          description: 'Phone OTP + Biometric available',
           type: 'action',
           action: () => Alert.alert('2FA', 'Two-factor authentication coming soon'),
         },
@@ -159,7 +159,7 @@ const SettingsScreen = () => {
         {
           icon: 'info',
           label: 'App Version',
-          description: '1.0.0 (Build 1)',
+          description: '1.3.2 (Build 48)',
           type: 'info',
         },
         {
@@ -214,7 +214,7 @@ const SettingsScreen = () => {
             <Text style={styles.userEmail}>{user?.email}</Text>
           </View>
           <TouchableOpacity style={styles.editButton}>
-            <Feather name="edit-2" size={18} color={Colors.primary} />
+            <Feather name="edit-2" size={18} color={Colors.accent} />
           </TouchableOpacity>
         </View>
 
@@ -232,7 +232,7 @@ const SettingsScreen = () => {
                 >
                   <View style={styles.settingLeft}>
                     <View style={styles.settingIcon}>
-                      <Feather name={item.icon as any} size={20} color={Colors.primary} />
+                      <Feather name={item.icon as any} size={20} color={Colors.accent} />
                     </View>
                     <View style={styles.settingText}>
                       <Text style={styles.settingLabel}>{item.label}</Text>
@@ -246,7 +246,7 @@ const SettingsScreen = () => {
                       <Switch
                         value={settings[item.key as keyof typeof settings]}
                         onValueChange={() => toggleSetting(item.key as keyof typeof settings)}
-                        trackColor={{ false: Colors.border, true: Colors.primary + '50' }}
+                        trackColor={{ false: Colors.border, true: Colors.accent + '50' }}
                         thumbColor={settings[item.key as keyof typeof settings] ? Colors.primary : Colors.textTertiary}
                       />
                     )}
@@ -325,8 +325,10 @@ const styles = StyleSheet.create({
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.card,
+    backgroundColor: 'rgba(248,248,248,0.06)',
     borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
     padding: Spacing.lg,
     marginBottom: Spacing.xl,
   },
@@ -360,7 +362,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: BorderRadius.md,
-    backgroundColor: Colors.primary + '15',
+    backgroundColor: Colors.accent + '15',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -376,8 +378,10 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   sectionItems: {
-    backgroundColor: Colors.card,
+    backgroundColor: 'rgba(248,248,248,0.06)',
     borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
     overflow: 'hidden',
   },
   settingItem: {
@@ -397,7 +401,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: BorderRadius.md,
-    backgroundColor: Colors.primary + '15',
+    backgroundColor: Colors.accent + '15',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,

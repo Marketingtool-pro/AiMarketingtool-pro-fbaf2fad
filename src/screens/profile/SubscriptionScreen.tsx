@@ -97,18 +97,33 @@ const SubscriptionScreen = () => {
       ],
     },
     {
-      id: 'growth',
-      name: 'Growth',
+      id: 'alltools',
+      name: 'All Tools',
       monthlyPrice: 99,
       yearlyPrice: 999,
-      description: '1,500+ generations/month',
+      description: 'All 3 Platforms • 75+ Tools',
       features: [
-        { text: 'Full automation (auto-apply)', included: true },
-        { text: 'Predictive scaling AI', included: true },
-        { text: 'Deep analytics', included: true },
-        { text: '1,500+ generations/month', included: true },
-        { text: 'Executive dashboards', included: true },
+        { text: 'All 75+ AI marketing tools', included: true },
+        { text: 'Google + Meta + Website', included: true },
+        { text: '1,500 generations/month', included: true },
+        { text: 'Full analytics & reporting', included: true },
         { text: 'Priority support', included: true },
+        { text: 'Export & download', included: true },
+      ],
+    },
+    {
+      id: 'agency',
+      name: 'Agency',
+      monthlyPrice: 0,
+      yearlyPrice: 0,
+      description: 'Unlimited • Custom pricing',
+      features: [
+        { text: 'Everything in All Tools', included: true },
+        { text: 'Unlimited generations', included: true },
+        { text: 'White-label reports', included: true },
+        { text: 'Dedicated account manager', included: true },
+        { text: 'Custom integrations', included: true },
+        { text: 'SLA guarantee', included: true },
       ],
     },
   ];
@@ -116,6 +131,11 @@ const SubscriptionScreen = () => {
   const handleSubscribe = async () => {
     if (selectedPlan === 'free') {
       navigation.goBack();
+      return;
+    }
+
+    if (selectedPlan === 'agency') {
+      await WebBrowser.openBrowserAsync('https://marketingtool.pro/contact');
       return;
     }
 
@@ -254,14 +274,20 @@ const SubscriptionScreen = () => {
                 <Text style={styles.planDescription}>{plan.description}</Text>
               </View>
               <View style={styles.planPricing}>
-                <Text style={styles.planPrice}>
-                  ${getPrice(plan)}
-                </Text>
-                <Text style={styles.planPeriod}>
-                  /{billingPeriod === 'yearly'
-                    ? (plan.isLifetime ? 'lifetime' : 'year')
-                    : 'month'}
-                </Text>
+                {plan.id === 'agency' ? (
+                  <Text style={styles.planPrice}>Custom</Text>
+                ) : (
+                  <>
+                    <Text style={styles.planPrice}>
+                      ${getPrice(plan)}
+                    </Text>
+                    <Text style={styles.planPeriod}>
+                      /{billingPeriod === 'yearly'
+                        ? (plan.isLifetime ? 'lifetime' : 'year')
+                        : 'month'}
+                    </Text>
+                  </>
+                )}
               </View>
             </View>
 
@@ -330,6 +356,8 @@ const SubscriptionScreen = () => {
               <Text style={styles.subscribeText}>
                 {selectedPlan === 'free'
                   ? 'Continue with Free'
+                  : selectedPlan === 'agency'
+                  ? 'Contact Sales'
                   : 'Subscribe Now'}
               </Text>
             )}
@@ -484,7 +512,7 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   lifetimeBadge: {
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.accent,
   },
   planHeader: {
     flexDirection: 'row',

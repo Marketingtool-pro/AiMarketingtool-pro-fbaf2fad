@@ -55,7 +55,7 @@ export default function App() {
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
         <View style={styles.container} onLayout={onLayoutRootView}>
-          <StatusBar style="light" backgroundColor={Colors.background} />
+          <StatusBar style="light" translucent={true} />
           <AppNavigator />
         </View>
       </SafeAreaProvider>

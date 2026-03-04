@@ -162,11 +162,11 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
   imageSource,
 }) => {
   const particles = [
-    { delay: 0, size: 6, startX: width * 0.1, startY: height * 0.8, color: Colors.secondary + '60' },
+    { delay: 0, size: 6, startX: width * 0.1, startY: height * 0.8, color: Colors.accent + '60' },
     { delay: 1000, size: 8, startX: width * 0.3, startY: height * 0.9, color: Colors.purple + '60' },
     { delay: 2000, size: 5, startX: width * 0.5, startY: height * 0.85, color: Colors.gold + '60' },
     { delay: 3000, size: 7, startX: width * 0.7, startY: height * 0.95, color: Colors.cyan + '60' },
-    { delay: 4000, size: 6, startX: width * 0.9, startY: height * 0.88, color: Colors.secondary + '60' },
+    { delay: 4000, size: 6, startX: width * 0.9, startY: height * 0.88, color: Colors.accent + '60' },
     { delay: 500, size: 4, startX: width * 0.2, startY: height * 0.92, color: Colors.success + '60' },
     { delay: 1500, size: 5, startX: width * 0.6, startY: height * 0.87, color: Colors.purple + '60' },
     { delay: 2500, size: 8, startX: width * 0.8, startY: height * 0.93, color: Colors.gold + '60' },
@@ -177,7 +177,7 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
       case 'chat':
         return ['rgba(175, 21, 195, 0.1)', 'rgba(12, 11, 24, 0.95)', Colors.background];
       case 'tools':
-        return ['rgba(247, 84, 30, 0.1)', 'rgba(12, 11, 24, 0.95)', Colors.background];
+        return ['rgba(100, 65, 165, 0.1)', 'rgba(12, 11, 24, 0.95)', Colors.background];
       case 'profile':
         return ['rgba(253, 151, 7, 0.1)', 'rgba(12, 11, 24, 0.95)', Colors.background];
       case 'dashboard':
@@ -190,10 +190,10 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
   const getGlowColor = () => {
     switch (variant) {
       case 'chat': return Colors.purple;
-      case 'tools': return Colors.secondary;
+      case 'tools': return Colors.accent;
       case 'profile': return Colors.gold;
       case 'dashboard': return Colors.accent;
-      default: return Colors.secondary;
+      default: return Colors.accent;
     }
   };
 

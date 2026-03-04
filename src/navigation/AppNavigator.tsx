@@ -21,6 +21,7 @@ import ChatScreen from '../screens/chat/ChatScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import SettingsScreen from '../screens/profile/SettingsScreen';
 import SubscriptionScreen from '../screens/profile/SubscriptionScreen';
+import NotificationsScreen from '../screens/profile/NotificationsScreen';
 import HistoryScreen from '../screens/main/HistoryScreen';
 
 import { useAuthStore } from '../store/authStore';
@@ -37,6 +38,7 @@ export type RootStackParamList = {
   MemeGenerator: undefined;
   Settings: undefined;
   Subscription: undefined;
+  Notifications: undefined;
 };
 
 export type AuthStackParamList = {
@@ -84,7 +86,7 @@ const TabNavigator = () => (
         paddingTop: 8,
         height: 70,
       },
-      tabBarActiveTintColor: Colors.secondary,
+      tabBarActiveTintColor: Colors.accent,
       tabBarInactiveTintColor: Colors.textTertiary,
       tabBarLabelStyle: {
         fontSize: 12,
@@ -130,7 +132,7 @@ const TabNavigator = () => (
 // Loading Screen
 const LoadingScreen = () => (
   <View style={styles.loadingContainer}>
-    <ActivityIndicator size="large" color={Colors.secondary} />
+    <ActivityIndicator size="large" color={Colors.accent} />
   </View>
 );
 
@@ -181,6 +183,7 @@ const AppNavigator = () => {
               }}
             />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="Subscription" component={SubscriptionScreen} />
           </>
         )}
@@ -197,7 +200,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   activeTabIcon: {
-    backgroundColor: Colors.secondary + '20',
+    backgroundColor: Colors.accent + '20',
     borderRadius: 12,
     padding: 8,
   },
