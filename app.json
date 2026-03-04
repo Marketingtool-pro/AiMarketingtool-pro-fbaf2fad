@@ -52,7 +52,6 @@
       "package": "pro.marketingtool.app",
       "versionCode": 48,
       "edgeToEdgeEnabled": true,
-      "windowSoftInputMode": "adjustResize",
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -116,7 +115,8 @@
           "android": {
             "compileSdkVersion": 35,
             "targetSdkVersion": 35,
-            "minSdkVersion": 24
+            "minSdkVersion": 24,
+            "windowSoftInputMode": "adjustResize"
           }
         }
       ],
