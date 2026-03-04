@@ -71,6 +71,9 @@
       "reactNativeDirectoryCheck": {
         "exclude": []
       }
+    },
+    "install": {
+      "exclude": ["react-native-screens"]
     }
   },
   "private": true
