@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { functions } from '../../services/appwrite';
 
 const { width } = Dimensions.get('window');
 
@@ -337,55 +338,32 @@ const ChatScreen = () => {
     }
   };
 
-  // REAL Windmill AI Chat Function
+  // AI Chat via Appwrite Function
   const callWindmillChat = async (userMessage: string, history: Message[]): Promise<string> => {
-    const WINDMILL_BASE = 'https://wm.marketingtool.pro';
-    const WINDMILL_WORKSPACE = 'marketingtool-pro';
-    const WINDMILL_TOKEN = 'wm_token_marketingtool_2024';
-
-    // Build conversation history for context
     const conversationHistory = history.slice(-10).map(m => ({
       role: m.role,
       content: m.content,
     }));
 
-    const systemPrompt = `You are MarketBot, an expert AI marketing assistant for MarketingTool.pro.
-You help users with:
-- Writing ad copy (Google Ads, Facebook, Instagram)
-- Marketing strategies and campaigns
-- Email marketing and subject lines
-- Social media content
-- SEO optimization
-- E-commerce product descriptions
-
-Be helpful, specific, and provide actionable advice. Use formatting with bullet points and sections when appropriate.`;
-
     try {
-      const response = await fetch(
-        `${WINDMILL_BASE}/api/w/${WINDMILL_WORKSPACE}/jobs/run_wait_result/p/f/mobile/chat_ai`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${WINDMILL_TOKEN}`,
-          },
-          body: JSON.stringify({
-            system_prompt: systemPrompt,
-            user_message: userMessage,
-            conversation_history: conversationHistory,
-          }),
-        }
+      const execution = await functions.createExecution(
+        'chat-ai',
+        JSON.stringify({
+          message: userMessage,
+          messages: conversationHistory.length > 0
+            ? [...conversationHistory, { role: 'user', content: userMessage }]
+            : undefined,
+          user_message: userMessage,
+          conversation_history: conversationHistory,
+        }),
+        false,
+        '/'
       );
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result.response || result.content || result;
+      const result = JSON.parse(execution.responseBody);
+      return result.response || result.content || result.message || 'Sorry, I could not process that.';
     } catch (error) {
-      if (__DEV__) console.error('[Chat] Windmill error:', error);
-      // Fallback to helpful response
+      if (__DEV__) console.error('[Chat] Appwrite function error:', error);
       return generateFallbackResponse(userMessage);
     }
   };
@@ -451,10 +429,10 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle}>MarketBot</Text>
+            <Text style={styles.headerTitle}>MarketingTool AI</Text>
             <View style={styles.onlineStatus}>
               <View style={styles.onlineDot} />
-              <Text style={styles.onlineText}>Online</Text>
+              <Text style={styles.onlineText}>Ready</Text>
             </View>
           </View>
         </View>
@@ -496,7 +474,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                 </View>
               </View>
 
-              <Text style={styles.emptyTitle}>Hi, I'm MarketBot!</Text>
+              <Text style={styles.emptyTitle}>Hi, I'm MarketingTool AI!</Text>
               <Text style={styles.emptySubtitle}>Your AI Marketing Assistant powered by Claude</Text>
 
               {/* Tab Navigation */}
