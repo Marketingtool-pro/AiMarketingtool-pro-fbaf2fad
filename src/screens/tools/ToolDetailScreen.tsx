@@ -29,13 +29,14 @@ const ToolDetailScreen = () => {
   const route = useRoute<RouteType>();
   const { toolSlug } = route.params;
   const { tools, generateContent, isGenerating } = useToolsStore();
-  const { profile } = useAuthStore();
+  const { profile, updateProfile } = useAuthStore();
 
   const [tool, setTool] = useState<Tool | null>(null);
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
   const [selectedTone, setSelectedTone] = useState('professional');
   const [selectedLanguage, setSelectedLanguage] = useState('English');
   const [outputCount, setOutputCount] = useState(3);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   const tones = ['Professional', 'Casual', 'Friendly', 'Persuasive', 'Formal', 'Creative'];
   const languages = ['English', 'Spanish', 'French', 'German', 'Hindi', 'Chinese', 'Japanese'];
@@ -55,6 +56,23 @@ const ToolDetailScreen = () => {
 
   const handleInputChange = (name: string, value: string) => {
     setInputValues(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!tool || !profile) return;
+
+    try {
+      setIsFavorite(!isFavorite);
+      // TODO: Implement Appwrite favorite toggle when backend is ready
+      // await dbService.toggleFavorite(tool.slug, profile.$id);
+      Alert.alert(
+        isFavorite ? 'Removed from Favorites' : 'Added to Favorites',
+        isFavorite ? `${tool.name} removed from your favorites` : `${tool.name} added to your favorites`
+      );
+    } catch (error) {
+      setIsFavorite(isFavorite); // Revert on error
+      Alert.alert('Error', 'Failed to update favorites');
+    }
   };
 
   const validateInputs = () => {
@@ -91,6 +109,22 @@ const ToolDetailScreen = () => {
         language: selectedLanguage,
         outputCount,
       });
+
+      // Deduct credit for free users after successful generation
+      if (profile?.subscription === 'free' && result.success) {
+        const currentCredits = profile?.credits || 0;
+        if (currentCredits > 0) {
+          // TODO: Update credits in Appwrite database
+          // await dbService.updateDocument(COLLECTIONS.USERS, profile.$id, {
+          //   credits: currentCredits - 1
+          // });
+          
+          // Update local profile state
+          updateProfile({ credits: currentCredits - 1 });
+          
+          if (__DEV__) console.log(`Credit deducted. Remaining: ${currentCredits - 1}`);
+        }
+      }
 
       navigation.navigate('ToolResult', {
         toolSlug: tool.slug,
@@ -201,8 +235,12 @@ const ToolDetailScreen = () => {
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
               <Feather name="arrow-left" size={24} color={Colors.white} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.favoriteButton}>
-              <Feather name="heart" size={24} color={Colors.white} />
+            <TouchableOpacity style={styles.favoriteButton} onPress={handleToggleFavorite}>
+              <Feather 
+                name="heart"
+                size={24} 
+                color={isFavorite ? Colors.error : Colors.white}
+              />
             </TouchableOpacity>
           </View>
 

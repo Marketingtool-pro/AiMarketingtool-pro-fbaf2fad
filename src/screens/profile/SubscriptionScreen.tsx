@@ -120,23 +120,44 @@ const SubscriptionScreen = () => {
 
     setIsLoading(true);
 
-    // Simulate payment processing
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // TODO: PRODUCTION PAYMENT INTEGRATION REQUIRED
+      // This is a placeholder - real payment processing must be implemented before production release
+      // Recommended: Use Stripe or RevenueCat for in-app purchases
+      // 
+      // For Stripe: npm install @stripe/stripe-react-native
+      // For RevenueCat: npm install react-native-purchases
+      //
+      // Implementation steps:
+      // 1. Initialize payment SDK (Stripe/RevenueCat)
+      // 2. Create payment intent on backend
+      // 3. Present payment sheet to user
+      // 4. Confirm payment
+      // 5. Update subscription in Appwrite database
+      // 6. Grant user access to features
+      
+      // TEMPORARY SIMULATION - REMOVE IN PRODUCTION
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       Alert.alert(
-        'Subscription Updated',
-        `You are now subscribed to the ${plans.find(p => p.id === selectedPlan)?.name} plan!`,
+        '⚠️ Demo Mode',
+        'Payment integration not yet implemented. In production, this would process a real payment via Stripe or RevenueCat.',
         [
           {
             text: 'OK',
             onPress: () => {
+              // For demo purposes only - DO NOT USE IN PRODUCTION
               updateProfile({ subscription: selectedPlan as 'free' | 'starter' | 'pro' | 'enterprise' });
               navigation.goBack();
             },
           },
         ]
       );
-    }, 2000);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to process subscription. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getPrice = (plan: Plan) => {

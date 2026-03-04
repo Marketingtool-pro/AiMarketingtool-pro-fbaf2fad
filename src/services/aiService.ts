@@ -39,7 +39,7 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
 
   // Primary: Appwrite Function (tool-executor → Windmill → Claude)
   try {
-    console.log(`[AI] Executing tool-executor for: ${toolSlug}`);
+    if (__DEV__) console.log(`[AI] Executing tool-executor for: ${toolSlug}`);
 
     const execution = await functions.createExecution(
       TOOL_EXECUTOR_FUNCTION_ID,
@@ -60,19 +60,19 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
     if (execution.responseStatusCode >= 200 && execution.responseStatusCode < 300) {
       const result = parseExecutionResponse(execution.responseBody, outputCount);
       if (result.success && result.outputs.length > 0) {
-        console.log(`[AI] Function success: ${result.outputs.length} outputs`);
+        if (__DEV__) console.log(`[AI] Function success: ${result.outputs.length} outputs`);
         return result;
       }
     }
 
-    console.log(`[AI] Function returned status ${execution.responseStatusCode}, trying fallback`);
+    if (__DEV__) console.log(`[AI] Function returned status ${execution.responseStatusCode}, trying fallback`);
   } catch (error: any) {
-    console.log(`[AI] Function error: ${error.message}, trying fallback`);
+    if (__DEV__) console.log(`[AI] Function error: ${error.message}, trying fallback`);
   }
 
   // Fallback: Call Next.js API directly (middleware supports Bearer auth)
   try {
-    console.log(`[AI] Fallback: calling Next.js API for ${toolSlug}`);
+    if (__DEV__) console.log(`[AI] Fallback: calling Next.js API for ${toolSlug}`);
 
     const jwt = await account.createJWT();
 
@@ -92,7 +92,7 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
     if (response.ok) {
       const data = await response.json();
       if (data.success && data.output) {
-        console.log(`[AI] API fallback success`);
+        if (__DEV__) console.log(`[AI] API fallback success`);
         return {
           outputs: splitOutputs(data.output, outputCount),
           success: true,
@@ -127,7 +127,7 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
       }
     }
   } catch (fallbackError: any) {
-    console.error('[AI] Fallback also failed:', fallbackError.message);
+    if (__DEV__) console.error('[AI] Fallback also failed:', fallbackError.message);
   }
 
   return {

@@ -87,7 +87,7 @@ export const authService = {
   // Login with Google using Appwrite SDK OAuth
   async loginWithGoogle(): Promise<Models.Session | null> {
     try {
-      console.log('[OAuth] Starting Google OAuth via Appwrite SDK...');
+      if (__DEV__) console.log('[OAuth] Starting Google OAuth via Appwrite SDK...');
 
       // Use auth.marketingtool.pro for phone app OAuth (separate from web app)
       const successUrl = 'https://auth.marketingtool.pro/oauth/success';
@@ -100,15 +100,15 @@ export const authService = {
         failureUrl
       );
 
-      console.log('[OAuth] Opening URL:', oauthUrl?.toString());
+      if (__DEV__) console.log('[OAuth] Opening URL:', oauthUrl?.toString());
 
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
       const result = await WebBrowser.openAuthSessionAsync(oauthUrl?.toString() || '', 'marketingtool://');
 
-      console.log('[OAuth] Browser result type:', result.type);
+      if (__DEV__) console.log('[OAuth] Browser result type:', result.type);
 
       if (result.type === 'success' && result.url) {
-        console.log('[OAuth] Callback URL:', result.url);
+        if (__DEV__) console.log('[OAuth] Callback URL:', result.url);
 
         // Check if it's a success callback
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
@@ -118,7 +118,7 @@ export const authService = {
           const userId = urlParams.searchParams.get('userId');
 
           if (secret && userId) {
-            console.log('[OAuth] Creating session with token...');
+            if (__DEV__) console.log('[OAuth] Creating session with token...');
             const session = await account.createSession(userId, secret);
             await saveSession(session.$id);
             return session;
@@ -127,28 +127,28 @@ export const authService = {
 
         // Try to get existing session (OAuth might have set cookies)
         try {
-          console.log('[OAuth] Checking for session...');
+          if (__DEV__) console.log('[OAuth] Checking for session...');
           const user = await account.get();
           if (user) {
             const sessions = await account.listSessions();
             if (sessions.sessions.length > 0) {
               await saveSession(sessions.sessions[0].$id);
-              console.log('[OAuth] Session found for:', user.email);
+              if (__DEV__) console.log('[OAuth] Session found for:', user.email);
               return sessions.sessions[0];
             }
           }
         } catch (e) {
-          console.log('[OAuth] No existing session');
+          if (__DEV__) console.log('[OAuth] No existing session');
         }
       }
 
       if (result.type === 'cancel') {
-        console.log('[OAuth] Cancelled by user');
+        if (__DEV__) console.log('[OAuth] Cancelled by user');
       }
 
       return null;
     } catch (error: any) {
-      console.error('[OAuth] Google error:', error?.message || error);
+      if (__DEV__) console.error('[OAuth] Google error:', error?.message || error);
       throw error;
     }
   },
@@ -156,7 +156,7 @@ export const authService = {
   // Login with Apple using Appwrite SDK OAuth
   async loginWithApple(): Promise<Models.Session | null> {
     try {
-      console.log('[OAuth] Starting Apple OAuth...');
+      if (__DEV__) console.log('[OAuth] Starting Apple OAuth...');
 
       const successUrl = 'https://auth.marketingtool.pro/oauth/success';
       const failureUrl = 'https://auth.marketingtool.pro/oauth/failure';
@@ -194,13 +194,13 @@ export const authService = {
             }
           }
         } catch (e) {
-          console.log('[OAuth] No Apple session');
+          if (__DEV__) console.log('[OAuth] No Apple session');
         }
       }
 
       return null;
     } catch (error: any) {
-      console.error('[OAuth] Apple error:', error?.message || error);
+      if (__DEV__) console.error('[OAuth] Apple error:', error?.message || error);
       throw error;
     }
   },
@@ -208,7 +208,7 @@ export const authService = {
   // Login with Facebook using Appwrite SDK OAuth
   async loginWithFacebook(): Promise<Models.Session | null> {
     try {
-      console.log('[OAuth] Starting Facebook OAuth...');
+      if (__DEV__) console.log('[OAuth] Starting Facebook OAuth...');
 
       const successUrl = 'https://auth.marketingtool.pro/oauth/success';
       const failureUrl = 'https://auth.marketingtool.pro/oauth/failure';
@@ -246,13 +246,13 @@ export const authService = {
             }
           }
         } catch (e) {
-          console.log('[OAuth] No Facebook session');
+          if (__DEV__) console.log('[OAuth] No Facebook session');
         }
       }
 
       return null;
     } catch (error: any) {
-      console.error('[OAuth] Facebook error:', error?.message || error);
+      if (__DEV__) console.error('[OAuth] Facebook error:', error?.message || error);
       throw error;
     }
   },
