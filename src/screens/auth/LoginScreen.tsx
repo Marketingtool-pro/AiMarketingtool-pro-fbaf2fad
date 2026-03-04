@@ -358,7 +358,7 @@ const LoginScreen = () => {
               </LinearGradient>
             </Animated.View>
             <Text style={styles.title}>MarketingTool</Text>
-            <Text style={styles.subtitle}>206+ AI Marketing Tools</Text>
+            <Text style={styles.subtitle}>AI-Powered Marketing Platform</Text>
           </Animated.View>
 
           {/* Login Methods Grid */}
@@ -418,7 +418,7 @@ const LoginScreen = () => {
           <View style={styles.featuresBanner}>
             <View style={styles.featureItem}>
               <Feather name="zap" size={18} color={Colors.gold} />
-              <Text style={styles.featureText}>206+ Tools</Text>
+              <Text style={styles.featureText}>AI Tools</Text>
             </View>
             <View style={styles.featureDivider} />
             <View style={styles.featureItem}>

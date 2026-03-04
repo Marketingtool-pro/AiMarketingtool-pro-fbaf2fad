@@ -24,7 +24,6 @@ const { width } = Dimensions.get('window');
 
 // Chat bot image
 const ChatBotImage = require('../../assets/images/screens/chat-bot.jpg');
-const AiAssistantImage = require('../../assets/images/screens/ai-assistant.jpg');
 
 interface Message {
   id: string;
@@ -102,47 +101,6 @@ const AnimatedRipple = () => {
       <Animated.View style={createRippleStyle(ripple2)} />
       <Animated.View style={createRippleStyle(ripple3)} />
     </View>
-  );
-};
-
-// LiMo Bot Icon Component
-const BotIcon = ({ size = 80, animated = true }: { size?: number; animated?: boolean }) => {
-  const bounceAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (animated) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(bounceAnim, {
-            toValue: -8,
-            duration: 1500,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(bounceAnim, {
-            toValue: 0,
-            duration: 1500,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    }
-  }, [animated]);
-
-  return (
-    <Animated.View style={{ transform: [{ translateY: bounceAnim }] }}>
-      <LinearGradient
-        colors={['#FF6B9D', '#C44569']}
-        style={[styles.botIcon, { width: size, height: size, borderRadius: size * 0.25 }]}
-      >
-        {/* Bot Eyes */}
-        <View style={styles.botEyesContainer}>
-          <View style={[styles.botEye, { width: size * 0.22, height: size * 0.22 }]} />
-          <View style={[styles.botEye, { width: size * 0.22, height: size * 0.22 }]} />
-        </View>
-      </LinearGradient>
-    </Animated.View>
   );
 };
 
@@ -754,23 +712,6 @@ const styles = StyleSheet.create({
     right: 0,
     height: '50%',
   },
-  botIcon: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#C44569',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  botEyesContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  botEye: {
-    backgroundColor: Colors.white,
-    borderRadius: 100,
-  },
   emptyTitle: {
     fontSize: 28,
     fontWeight: 'bold',
@@ -857,9 +798,6 @@ const styles = StyleSheet.create({
   assistantMessageContainer: {
     justifyContent: 'flex-start',
   },
-  messageAvatarContainer: {
-    marginRight: Spacing.sm,
-  },
   messageBubble: {
     maxWidth: '80%',
     borderRadius: BorderRadius.lg,
@@ -886,34 +824,6 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
     marginTop: Spacing.xs,
     alignSelf: 'flex-end',
-  },
-  typingContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-  },
-  typingBubble: {
-    flexDirection: 'row',
-    backgroundColor: Colors.card,
-    borderRadius: BorderRadius.lg,
-    borderBottomLeftRadius: 4,
-    padding: Spacing.md,
-    alignItems: 'center',
-  },
-  typingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.textSecondary,
-  },
-  floatingBot: {
-    position: 'absolute',
-    bottom: 100,
-    alignSelf: 'center',
-    shadowColor: '#C44569',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
   },
   inputContainer: {
     padding: Spacing.md,
