@@ -347,15 +347,18 @@ const LoginScreen = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Animated Header - Purple Circle Logo */}
+          {/* Animated Header - Logo with Purple Glow */}
           <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
             <Animated.View style={[styles.logoContainer, { transform: [{ scale: pulseAnim }] }]}>
-              <LinearGradient
-                colors={['#7C3AED', '#A855F7']}
-                style={styles.logoGradient}
-              >
-                <Text style={styles.logoText}>M</Text>
-              </LinearGradient>
+              <View style={styles.logoGlow}>
+                <View style={styles.logoImageWrapper}>
+                  <Image
+                    source={require('../../assets/images/logo.jpeg')}
+                    style={styles.logoImage}
+                    resizeMode="cover"
+                  />
+                </View>
+              </View>
             </Animated.View>
             <Text style={styles.title}>MarketingTool</Text>
             <Text style={styles.subtitle}>AI-Powered Marketing Platform</Text>
@@ -363,15 +366,20 @@ const LoginScreen = () => {
 
           {/* Quick Login - Phone Input on Main Screen */}
           <Animated.View style={[styles.quickLoginSection, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-            <Text style={styles.quickLoginTitle}>Quick Login</Text>
+            <View style={styles.quickLoginHeader}>
+              <Feather name="phone-call" size={18} color={Colors.accent} />
+              <Text style={styles.quickLoginTitle}>Quick Login</Text>
+            </View>
             <View style={styles.phoneInputRow}>
               <TouchableOpacity style={styles.countryCode}>
-                <Text style={styles.countryCodeText}>+91</Text>
+                <Text style={styles.flagEmoji}>🇺🇸</Text>
+                <Text style={styles.countryCodeText}>+1</Text>
+                <Feather name="chevron-down" size={14} color={Colors.textTertiary} />
               </TouchableOpacity>
               <View style={[styles.inputContainer, { flex: 1, marginBottom: 0 }]}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter phone number"
+                  placeholder="Phone"
                   placeholderTextColor={Colors.textTertiary}
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
@@ -379,111 +387,105 @@ const LoginScreen = () => {
                   maxLength={10}
                 />
               </View>
-            </View>
-            <TouchableOpacity
-              onPress={() => {
-                if (phoneNumber.length >= 10) {
-                  handleSendOTP();
-                  setShowPhoneModal(true);
-                  setPhoneStep('otp');
-                } else {
-                  handleLoginMethod('phone');
-                }
-              }}
-              disabled={isLoading}
-              style={styles.sendOtpBtn}
-            >
-              <LinearGradient
-                colors={['#7C3AED', '#A855F7']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.loginButtonGradient}
+              <TouchableOpacity
+                onPress={() => {
+                  if (phoneNumber.length >= 10) {
+                    handleSendOTP();
+                    setShowPhoneModal(true);
+                    setPhoneStep('otp');
+                  } else {
+                    handleLoginMethod('phone');
+                  }
+                }}
+                disabled={isLoading}
+                style={styles.sendOtpArrow}
               >
-                {isLoading && selectedMethod === 'phone' ? (
-                  <ActivityIndicator color={Colors.white} />
-                ) : (
-                  <Text style={styles.loginButtonText}>Send OTP</Text>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
+                <LinearGradient
+                  colors={['#7C3AED', '#A855F7']}
+                  style={styles.arrowGradient}
+                >
+                  {isLoading && selectedMethod === 'phone' ? (
+                    <ActivityIndicator color={Colors.white} size="small" />
+                  ) : (
+                    <Feather name="arrow-right" size={20} color={Colors.white} />
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </Animated.View>
 
-          {/* OR CONTINUE WITH Divider */}
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Social Login Icons Row */}
-          <View style={styles.socialRow}>
-            <TouchableOpacity
-              style={styles.socialBtn}
-              onPress={() => handleLoginMethod('google')}
-              disabled={isLoading}
-            >
-              <View style={[styles.socialIcon, { backgroundColor: '#4285F4' + '20' }]}>
-                {isLoading && selectedMethod === 'google' ? (
-                  <ActivityIndicator color="#4285F4" size="small" />
-                ) : (
-                  <Feather name="chrome" size={24} color="#4285F4" />
-                )}
-              </View>
-              <Text style={styles.socialLabel}>Google</Text>
-            </TouchableOpacity>
-
-            {Platform.OS === 'ios' && (
+          {/* OR CONTINUE WITH - Glass Card */}
+          <View style={styles.socialCard}>
+            <Text style={styles.socialCardTitle}>OR CONTINUE WITH</Text>
+            <View style={styles.socialRow}>
               <TouchableOpacity
                 style={styles.socialBtn}
-                onPress={() => handleLoginMethod('apple')}
+                onPress={() => handleLoginMethod('google')}
                 disabled={isLoading}
               >
-                <View style={[styles.socialIcon, { backgroundColor: '#FFFFFF20' }]}>
-                  {isLoading && selectedMethod === 'apple' ? (
-                    <ActivityIndicator color="#FFF" size="small" />
+                <View style={styles.socialIcon}>
+                  {isLoading && selectedMethod === 'google' ? (
+                    <ActivityIndicator color={Colors.white} size="small" />
                   ) : (
-                    <Feather name="command" size={24} color="#FFFFFF" />
+                    <Feather name="chrome" size={24} color={Colors.white} />
                   )}
                 </View>
-                <Text style={styles.socialLabel}>Apple</Text>
+                <Text style={styles.socialLabel}>Google</Text>
               </TouchableOpacity>
-            )}
 
-            <TouchableOpacity
-              style={styles.socialBtn}
-              onPress={() => handleLoginMethod('facebook')}
-              disabled={isLoading}
-            >
-              <View style={[styles.socialIcon, { backgroundColor: '#1877F2' + '20' }]}>
-                {isLoading && selectedMethod === 'facebook' ? (
-                  <ActivityIndicator color="#1877F2" size="small" />
-                ) : (
-                  <Feather name="facebook" size={24} color="#1877F2" />
-                )}
-              </View>
-              <Text style={styles.socialLabel}>Facebook</Text>
-            </TouchableOpacity>
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity
+                  style={styles.socialBtn}
+                  onPress={() => handleLoginMethod('apple')}
+                  disabled={isLoading}
+                >
+                  <View style={styles.socialIcon}>
+                    {isLoading && selectedMethod === 'apple' ? (
+                      <ActivityIndicator color={Colors.white} size="small" />
+                    ) : (
+                      <Feather name="command" size={24} color={Colors.white} />
+                    )}
+                  </View>
+                  <Text style={styles.socialLabel}>Apple</Text>
+                </TouchableOpacity>
+              )}
 
+              <TouchableOpacity
+                style={styles.socialBtn}
+                onPress={() => handleLoginMethod('email')}
+                disabled={isLoading}
+              >
+                <View style={styles.socialIcon}>
+                  <Feather name="mail" size={24} color={Colors.white} />
+                </View>
+                <Text style={styles.socialLabel}>Email</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.socialBtn}
+                onPress={() => handleLoginMethod('facebook')}
+                disabled={isLoading}
+              >
+                <View style={styles.socialIcon}>
+                  {isLoading && selectedMethod === 'facebook' ? (
+                    <ActivityIndicator color={Colors.white} size="small" />
+                  ) : (
+                    <Feather name="facebook" size={24} color={Colors.white} />
+                  )}
+                </View>
+                <Text style={styles.socialLabel}>Facebook</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Biometric Login Button */}
             <TouchableOpacity
-              style={styles.socialBtn}
-              onPress={() => handleLoginMethod('email')}
-              disabled={isLoading}
+              style={styles.biometricBtn}
+              onPress={() => handleLoginMethod('biometric')}
             >
-              <View style={[styles.socialIcon, { backgroundColor: '#FF6B6B' + '20' }]}>
-                <Feather name="mail" size={24} color="#FF6B6B" />
-              </View>
-              <Text style={styles.socialLabel}>Email</Text>
+              <Feather name="smartphone" size={20} color={Colors.accent} />
+              <Text style={styles.biometricText}>Biometric Login</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Biometric Login Button */}
-          <TouchableOpacity
-            style={styles.biometricBtn}
-            onPress={() => handleLoginMethod('biometric')}
-          >
-            <Feather name="smartphone" size={20} color={Colors.success} />
-            <Text style={styles.biometricText}>Biometric Login</Text>
-          </TouchableOpacity>
 
           {/* Features Banner */}
           <View style={styles.featuresBanner}>
@@ -580,7 +582,7 @@ const LoginScreen = () => {
                 style={styles.modalLoginBtn}
               >
                 <LinearGradient
-                  colors={['#FF6B35', '#F7931E']}
+                  colors={['#7C3AED', '#A855F7']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.loginButtonGradient}
@@ -729,22 +731,29 @@ const styles = StyleSheet.create({
   logoContainer: {
     marginBottom: Spacing.md,
   },
-  logoGradient: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  logoGlow: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(124, 58, 237, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 30,
+    elevation: 15,
   },
-  logoText: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: Colors.white,
+  logoImageWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#1A1A2E',
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
   },
   title: {
     fontSize: 32,
@@ -765,36 +774,48 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },
+  quickLoginHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: Spacing.md,
+  },
   quickLoginTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: Colors.white,
-    marginBottom: Spacing.md,
   },
-  sendOtpBtn: {
+  sendOtpArrow: {
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
-    marginTop: Spacing.md,
   },
-  // Divider
-  dividerRow: {
-    flexDirection: 'row',
+  arrowGradient: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    justifyContent: 'center',
     alignItems: 'center',
+  },
+  flagEmoji: {
+    fontSize: 16,
+  },
+  // Social Card
+  socialCard: {
+    backgroundColor: 'rgba(248,248,248,0.06)',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
     marginBottom: Spacing.lg,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.border,
-  },
-  dividerText: {
+  socialCardTitle: {
     fontSize: 12,
     fontWeight: '600',
     color: Colors.textTertiary,
-    paddingHorizontal: Spacing.md,
     letterSpacing: 1,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
   },
-  // Social Row
   socialRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -807,11 +828,12 @@ const styles = StyleSheet.create({
   socialIcon: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(248,248,248,0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.08)',
     marginBottom: 6,
   },
   socialLabel: {
@@ -823,18 +845,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: 'rgba(100, 65, 165, 0.1)',
     borderRadius: BorderRadius.md,
     paddingVertical: 14,
-    marginBottom: Spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.2)',
+    borderColor: 'rgba(100, 65, 165, 0.3)',
     gap: 8,
   },
   biometricText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.success,
+    color: Colors.accent,
   },
   // Features Banner
   featuresBanner: {
@@ -940,7 +961,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   forgotPasswordText: {
-    color: Colors.secondary,
+    color: Colors.accent,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -964,7 +985,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   registerLink: {
-    color: Colors.secondary,
+    color: Colors.accent,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -981,15 +1002,18 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   countryCode: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     borderColor: Colors.border,
-    paddingVertical: 16,
-    paddingHorizontal: Spacing.md,
+    paddingVertical: 12,
+    paddingHorizontal: Spacing.sm,
   },
   countryCodeText: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.white,
     fontWeight: '500',
   },
@@ -1012,7 +1036,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   changePhoneText: {
-    color: Colors.secondary,
+    color: Colors.accent,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -1026,7 +1050,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   resendLink: {
-    color: Colors.secondary,
+    color: Colors.accent,
     fontSize: 14,
     fontWeight: '600',
     textDecorationLine: 'underline',

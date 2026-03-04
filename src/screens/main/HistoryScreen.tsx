@@ -43,53 +43,7 @@ const HistoryScreen = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Sample history data
-  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([
-    {
-      id: '1',
-      toolName: 'AI Ad Generator',
-      toolIcon: 'zap',
-      content: 'Transform your fitness journey with our AI-powered workout app. Join 500K+ users today!',
-      createdAt: new Date(Date.now() - 1000 * 60 * 30),
-      category: 'Ads',
-      liked: true,
-    },
-    {
-      id: '2',
-      toolName: 'Blog Writer',
-      toolIcon: 'file-text',
-      content: 'The future of digital marketing lies in AI-powered personalization. Here are 10 trends to watch in 2024...',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
-      category: 'Content',
-      liked: false,
-    },
-    {
-      id: '3',
-      toolName: 'Email Subject',
-      toolIcon: 'mail',
-      content: '🚀 Your exclusive early access is here - Don\'t miss out!',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5),
-      category: 'Email',
-      liked: true,
-    },
-    {
-      id: '4',
-      toolName: 'Social Caption',
-      toolIcon: 'instagram',
-      content: 'When Monday hits but you remember you\'ve got this 💪 #Motivation #MondayVibes #Success',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
-      category: 'Social',
-      liked: false,
-    },
-    {
-      id: '5',
-      toolName: 'Product Description',
-      toolIcon: 'shopping-bag',
-      content: 'Introducing our premium wireless earbuds - crystal clear audio, 40hr battery life, and seamless connectivity.',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48),
-      category: 'E-commerce',
-      liked: true,
-    },
-  ]);
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
 
   const filters = ['All', 'Ads', 'Content', 'Email', 'Social', 'E-commerce'];
 
@@ -227,7 +181,7 @@ const HistoryScreen = () => {
             <Text style={styles.heroTitle}>Generation History</Text>
             <View style={styles.heroStats}>
               <View style={styles.heroStatItem}>
-                <Feather name="layers" size={16} color={Colors.secondary} />
+                <Feather name="layers" size={16} color={Colors.accent} />
                 <Text style={styles.heroStatText}>{historyItems.length} Saved</Text>
               </View>
               <View style={styles.heroStatDivider} />
@@ -419,8 +373,10 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   historyCard: {
-    backgroundColor: Colors.card,
+    backgroundColor: 'rgba(248,248,248,0.06)',
     borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
     padding: Spacing.lg,
     marginBottom: Spacing.md,
   },

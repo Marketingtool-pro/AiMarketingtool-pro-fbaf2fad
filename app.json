@@ -52,6 +52,8 @@
       "package": "pro.marketingtool.app",
       "versionCode": 48,
       "edgeToEdgeEnabled": true,
+      "windowSoftInputMode": "adjustResize",
+      "allowBackup": false,
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
@@ -110,10 +112,16 @@
           "ios": {
             "useFrameworks": "static",
             "deploymentTarget": "15.1"
+          },
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 24
           }
         }
       ],
       "./plugins/withFirebaseFix.js",
+      "./plugins/withEdgeToEdgeFix.js",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       "expo-secure-store",

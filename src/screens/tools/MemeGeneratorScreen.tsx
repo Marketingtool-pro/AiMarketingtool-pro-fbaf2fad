@@ -355,14 +355,14 @@ const MemeGeneratorScreen = () => {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.sourceButton} onPress={takePhoto}>
-            <LinearGradient colors={Gradients.secondary} style={styles.sourceGradient}>
+            <LinearGradient colors={Gradients.accent} style={styles.sourceGradient}>
               <Feather name="camera" size={24} color={Colors.white} />
               <Text style={styles.sourceButtonText}>Camera</Text>
             </LinearGradient>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.sourceButton} onPress={() => setShowTemplates(true)}>
-            <LinearGradient colors={['#FF6B6B', '#FF8E8E']} style={styles.sourceGradient}>
+            <LinearGradient colors={['#7C3AED', '#A855F7']} style={styles.sourceGradient}>
               <Feather name="grid" size={24} color={Colors.white} />
               <Text style={styles.sourceButtonText}>Templates</Text>
             </LinearGradient>

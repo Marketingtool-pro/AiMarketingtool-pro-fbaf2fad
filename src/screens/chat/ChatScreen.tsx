@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,10 +19,12 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import { functions } from '../../services/appwrite';
+import { useToolsStore, TOOL_CATEGORIES, Tool } from '../../store/toolsStore';
+import { getToolIcon } from '../../constants/toolIcons';
 
 const { width } = Dimensions.get('window');
 
-// Chat bot image
+// Chat bot image (kept for fallback but not shown in header)
 const ChatBotImage = require('../../assets/images/screens/chat-bot.jpg');
 
 interface Message {
@@ -115,14 +117,21 @@ interface ChatCapability {
 }
 
 const ChatScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const scrollViewRef = useRef<ScrollView>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
+  const [toolCategory, setToolCategory] = useState<string | null>(null);
   const typingAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const { tools } = useToolsStore();
+
+  const filteredChatTools = useMemo(() => {
+    if (!toolCategory) return tools.slice(0, 10);
+    return tools.filter(t => t.category === toolCategory);
+  }, [toolCategory, tools]);
 
   // Full chat capabilities - NOT shortcuts
   const chatCapabilities: ChatCapability[] = [
@@ -196,7 +205,7 @@ const ChatScreen = () => {
       title: 'Email Campaign',
       description: 'Generate emails',
       prompt: 'Generate 5 email subject lines for a product launch',
-      color: Colors.secondary,
+      color: Colors.accent,
     },
     {
       icon: 'instagram',
@@ -386,13 +395,7 @@ const ChatScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle}>MarketingTool AI</Text>
-            <View style={styles.onlineStatus}>
-              <View style={styles.onlineDot} />
-              <Text style={styles.onlineText}>Ready</Text>
-            </View>
-          </View>
+          <Text style={styles.headerTitle}>AI Chat</Text>
         </View>
         <View style={styles.headerActions}>
           {messages.length > 0 && (
@@ -400,10 +403,6 @@ const ChatScreen = () => {
               <Feather name="trash-2" size={20} color={Colors.textSecondary} />
             </TouchableOpacity>
           )}
-          <View style={styles.creditsContainer}>
-            <Feather name="zap" size={14} color={Colors.gold} />
-            <Text style={styles.creditsText}>400</Text>
-          </View>
         </View>
       </View>
 
@@ -420,20 +419,8 @@ const ChatScreen = () => {
         >
           {messages.length === 0 ? (
             <View style={styles.emptyState}>
-              {/* AI Bot Image with Ripples */}
-              <View style={styles.botSection}>
-                <AnimatedRipple />
-                <View style={styles.botImageContainer}>
-                  <Image source={ChatBotImage} style={styles.botImage} resizeMode="cover" />
-                  <LinearGradient
-                    colors={['transparent', 'rgba(175, 21, 195, 0.3)']}
-                    style={styles.botImageOverlay}
-                  />
-                </View>
-              </View>
-
-              <Text style={styles.emptyTitle}>Hi, I'm MarketingTool AI!</Text>
-              <Text style={styles.emptySubtitle}>Your AI Marketing Assistant powered by Claude</Text>
+              <Text style={styles.emptyTitle}>Your AI Marketing Assistant</Text>
+              <Text style={styles.emptySubtitle}>Ask anything about marketing</Text>
 
               {/* Tab Navigation */}
               <View style={styles.tabNav}>
@@ -503,31 +490,65 @@ const ChatScreen = () => {
               )}
 
               {activeTab === 'capabilities' && (
-                <View style={styles.capabilitiesGrid}>
-                  {chatCapabilities.map((cap, index) => (
+                <View style={styles.toolsTabContainer}>
+                  {/* Same tools banner */}
+                  <View style={styles.sameToolsBanner}>
+                    <Feather name="check-circle" size={18} color={Colors.success} />
+                    <Text style={styles.sameToolsBannerText}>
+                      Same tools as web · Same AI · Same backend · Full execution
+                    </Text>
+                  </View>
+
+                  {/* Category filter chips */}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.toolCategoryScroll} contentContainerStyle={styles.toolCategoryContent}>
                     <TouchableOpacity
-                      key={cap.id}
-                      style={styles.capabilityCard}
-                      onPress={() => handlePromptPress(`Help me with ${cap.name.toLowerCase()}: ${cap.features[0]}`)}
+                      style={[styles.toolCategoryChip, !toolCategory && styles.toolCategoryChipActive]}
+                      onPress={() => setToolCategory(null)}
+                    >
+                      <Text style={[styles.toolCategoryChipText, !toolCategory && styles.toolCategoryChipTextActive]}>All</Text>
+                    </TouchableOpacity>
+                    {TOOL_CATEGORIES.slice(0, 6).map((cat) => (
+                      <TouchableOpacity
+                        key={cat.id}
+                        style={[styles.toolCategoryChip, toolCategory === cat.id && styles.toolCategoryChipActive]}
+                        onPress={() => setToolCategory(cat.id)}
+                      >
+                        <Text style={[styles.toolCategoryChipText, toolCategory === cat.id && styles.toolCategoryChipTextActive]}>
+                          {cat.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+
+                  {/* Tool count removed — policy compliance */}
+
+                  {/* Tool cards with Run button */}
+                  {filteredChatTools.map((tool) => (
+                    <TouchableOpacity
+                      key={tool.$id}
+                      style={styles.toolRunCard}
+                      onPress={() => navigation.navigate('ToolDetail', { toolSlug: tool.slug })}
                       activeOpacity={0.8}
                     >
-                      <LinearGradient
-                        colors={[cap.color + '30', cap.color + '10']}
-                        style={styles.capabilityGradient}
+                      <View style={styles.toolRunIconWrap}>
+                        <Image source={getToolIcon(tool.slug, tool.category)} style={styles.toolRunIcon} />
+                      </View>
+                      <View style={styles.toolRunInfo}>
+                        <Text style={styles.toolRunName} numberOfLines={1}>{tool.name}</Text>
+                        <Text style={styles.toolRunDesc} numberOfLines={1}>{tool.shortDescription}</Text>
+                        <View style={styles.toolRunMeta}>
+                          <Feather name="star" size={12} color={Colors.gold} />
+                          <Text style={styles.toolRunRating}>{tool.rating}</Text>
+                          <Text style={styles.toolRunUses}>{tool.usageCount} uses</Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.toolRunButton}
+                        onPress={() => navigation.navigate('ToolDetail', { toolSlug: tool.slug })}
                       >
-                        <View style={[styles.capabilityIconContainer, { backgroundColor: cap.color + '25' }]}>
-                          <Feather name={cap.icon as any} size={24} color={cap.color} />
-                        </View>
-                        <Text style={styles.capabilityName}>{cap.name}</Text>
-                        <Text style={styles.capabilityDesc}>{cap.description}</Text>
-                        <View style={styles.capabilityFeatures}>
-                          {cap.features.slice(0, 3).map((feat, i) => (
-                            <View key={i} style={[styles.featureTag, { borderColor: cap.color + '40' }]}>
-                              <Text style={[styles.featureText, { color: cap.color }]}>{feat}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      </LinearGradient>
+                        <Feather name="play" size={14} color={Colors.white} />
+                        <Text style={styles.toolRunButtonText}>Run</Text>
+                      </TouchableOpacity>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -804,7 +825,7 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
   },
   userBubble: {
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.accent,
     borderBottomRightRadius: 4,
   },
   assistantBubble: {
@@ -855,12 +876,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.accent,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: Colors.secondary + '50',
+    backgroundColor: Colors.accent + '50',
   },
   // Tab Navigation Styles
   tabNav: {
@@ -881,7 +902,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tabItemActive: {
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.accent,
   },
   tabText: {
     fontSize: 14,
@@ -891,57 +912,119 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: Colors.white,
   },
-  // Capabilities Grid
-  capabilitiesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  // Tools Tab
+  toolsTabContainer: {
     width: width - 48,
-    gap: Spacing.md,
   },
-  capabilityCard: {
-    width: (width - 48 - Spacing.md) / 2,
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-    marginBottom: Spacing.xs,
-  },
-  capabilityGradient: {
-    padding: Spacing.md,
-    minHeight: 160,
-  },
-  capabilityIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
+  sameToolsBanner: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  sameToolsBannerText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.success,
+    flex: 1,
+  },
+  toolCategoryScroll: {
     marginBottom: Spacing.sm,
   },
-  capabilityName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.white,
-    marginBottom: 4,
+  toolCategoryContent: {
+    gap: Spacing.sm,
   },
-  capabilityDesc: {
-    fontSize: 12,
+  toolCategoryChip: {
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.full,
+  },
+  toolCategoryChipActive: {
+    backgroundColor: Colors.accent,
+  },
+  toolCategoryChipText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  toolCategoryChipTextActive: {
+    color: Colors.white,
+  },
+  toolsTabCount: {
+    fontSize: 13,
     color: Colors.textSecondary,
     marginBottom: Spacing.sm,
   },
-  capabilityFeatures: {
+  toolRunCard: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    backgroundColor: Colors.card,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  toolRunIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.accent + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  toolRunIcon: {
+    width: 36,
+    height: 36,
+  },
+  toolRunInfo: {
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
+  toolRunName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.white,
+  },
+  toolRunDesc: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  toolRunMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
     gap: 4,
   },
-  featureTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-  },
-  featureText: {
-    fontSize: 10,
+  toolRunRating: {
+    fontSize: 12,
+    color: Colors.gold,
     fontWeight: '500',
+  },
+  toolRunUses: {
+    fontSize: 11,
+    color: Colors.textTertiary,
+    marginLeft: 4,
+  },
+  toolRunButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.accent,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.full,
+    gap: 4,
+  },
+  toolRunButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.white,
   },
   // History Section
   historySection: {
@@ -965,7 +1048,7 @@ const styles = StyleSheet.create({
   },
   startChatBtn: {
     marginTop: Spacing.lg,
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.accent,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.full,

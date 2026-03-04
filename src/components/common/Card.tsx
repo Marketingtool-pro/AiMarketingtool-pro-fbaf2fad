@@ -45,7 +45,7 @@ const Card: React.FC<CardProps> = ({
     return (
       <Wrapper onPress={onPress} style={[styles.container, style]}>
         <LinearGradient
-          colors={gradientColors || [Colors.primary, Colors.secondary]}
+          colors={gradientColors || [Colors.primary, Colors.accent]}
           style={[styles.gradient, { padding: cardPadding }]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}

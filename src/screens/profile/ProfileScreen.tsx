@@ -43,8 +43,7 @@ const ProfileScreen = () => {
       title: 'Subscription',
       items: [
         { icon: 'star', label: 'Manage Plan', screen: 'Subscription', badge: profile?.subscription === 'free' ? 'Upgrade' : null },
-        { icon: 'credit-card', label: 'Payment Methods', screen: 'Settings' },
-        { icon: 'file-text', label: 'Billing History', screen: 'Settings' },
+        { icon: 'credit-card', label: 'Payment & Billing', screen: 'Settings' },
       ],
     },
     {
@@ -52,14 +51,14 @@ const ProfileScreen = () => {
       items: [
         { icon: 'help-circle', label: 'Help Center', screen: 'Settings' },
         { icon: 'message-circle', label: 'Contact Support', screen: 'Settings' },
-        { icon: 'book', label: 'Tutorials', screen: 'Settings' },
+        { icon: 'book-open', label: 'Tutorials', screen: 'Settings' },
       ],
     },
     {
       title: 'App',
       items: [
         { icon: 'settings', label: 'Settings', screen: 'Settings' },
-        { icon: 'bell', label: 'Notifications', screen: 'Settings' },
+        { icon: 'bell', label: 'Notifications', screen: 'Notifications' },
         { icon: 'moon', label: 'Appearance', screen: 'Settings' },
       ],
     },
@@ -115,7 +114,7 @@ const ProfileScreen = () => {
                 <Image source={{ uri: profile.avatar }} style={styles.avatar} />
               ) : (
                 <LinearGradient
-                  colors={[Colors.secondary, Colors.accent]}
+                  colors={[Colors.accent, Colors.accent]}
                   style={styles.avatar}
                 >
                   <Text style={styles.avatarText}>
@@ -159,7 +158,7 @@ const ProfileScreen = () => {
             {stats.map((stat, index) => (
               <View key={index} style={styles.statItem}>
                 <View style={styles.statIcon}>
-                  <Feather name={stat.icon as any} size={18} color={Colors.secondary} />
+                  <Feather name={stat.icon as any} size={18} color={Colors.accent} />
                 </View>
                 <Text style={styles.statValue}>{stat.value}</Text>
                 <Text style={styles.statLabel}>{stat.label}</Text>
@@ -213,7 +212,7 @@ const ProfileScreen = () => {
                   >
                     <View style={styles.menuItemLeft}>
                       <View style={styles.menuItemIcon}>
-                        <Feather name={item.icon as any} size={18} color={Colors.secondary} />
+                        <Feather name={item.icon as any} size={18} color={Colors.accent} />
                       </View>
                       <Text style={styles.menuItemLabel}>{item.label}</Text>
                     </View>
@@ -240,7 +239,7 @@ const ProfileScreen = () => {
 
         {/* App Info */}
         <View style={styles.appInfo}>
-          <Text style={styles.appVersion}>MarketingTool v1.0.0</Text>
+          <Text style={styles.appVersion}>MarketingTool v1.3.2</Text>
           <View style={styles.appLinks}>
             <TouchableOpacity>
               <Text style={styles.appLink}>Terms</Text>
@@ -335,7 +334,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.accent,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
@@ -373,8 +372,10 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    backgroundColor: Colors.card,
+    backgroundColor: 'rgba(248,248,248,0.06)',
     borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
     padding: Spacing.md,
   },
   statItem: {
@@ -385,7 +386,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.secondary + '15',
+    backgroundColor: Colors.accent + '15',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.xs,
@@ -453,8 +454,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   menuItems: {
-    backgroundColor: Colors.card,
+    backgroundColor: 'rgba(248,248,248,0.06)',
     borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
     overflow: 'hidden',
   },
   menuItem: {
@@ -476,7 +479,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.secondary + '15',
+    backgroundColor: Colors.accent + '15',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
@@ -491,7 +494,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   menuBadge: {
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.accent,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
@@ -532,7 +535,7 @@ const styles = StyleSheet.create({
   },
   appLink: {
     fontSize: 13,
-    color: Colors.secondary,
+    color: Colors.accent,
   },
   appLinkDivider: {
     fontSize: 13,
