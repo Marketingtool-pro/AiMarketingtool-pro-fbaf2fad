@@ -264,7 +264,7 @@ const DashboardScreen = () => {
     { label: 'AI Tools', value: '75+', icon: 'zap', color: Colors.secondary, badge: 'All Access', screen: 'Tools' },
     { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
     { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
-    { label: 'Success', value: '98%', icon: 'trending-up', color: Colors.gold, badge: '+5%', screen: 'History' },
+    { label: 'Saved', value: '0', icon: 'bookmark', color: Colors.gold, badge: 'Start', screen: 'History' },
   ];
 
   // Horizontal banner data
@@ -284,14 +284,14 @@ const DashboardScreen = () => {
   ];
 
   const popularTools = [
-    { name: 'Instagram Caption', slug: 'instagram-captions', uses: '22k', icon: 'instagram', trending: true },
-    { name: 'Facebook Ad Copy', slug: 'facebook-ad-copy', uses: '18.5k', icon: 'facebook', trending: true },
-    { name: 'Product Description', slug: 'product-descriptions', uses: '16.8k', icon: 'shopping-bag', trending: true },
-    { name: 'Instagram Reels Script', slug: 'instagram-reels', uses: '15.6k', icon: 'film', trending: true },
-    { name: 'Shopify Product Title', slug: 'shopify-titles', uses: '14.5k', icon: 'tag', trending: false },
-    { name: 'Email Subject Lines', slug: 'email-subjects', uses: '13.5k', icon: 'mail', trending: false },
-    { name: 'Google Ads Headline', slug: 'google-ads-headline', uses: '15.2k', icon: 'target', trending: true },
-    { name: 'Meme Generator', slug: 'meme-generator', uses: '28.5k', icon: 'smile', trending: true },
+    { name: 'Instagram Caption', slug: 'instagram-captions', category: 'Social', icon: 'instagram', color: '#E4405F', trending: true },
+    { name: 'Facebook Ad Copy', slug: 'facebook-ad-copy', category: 'Ads', icon: 'facebook', color: '#1877F2', trending: true },
+    { name: 'Product Description', slug: 'product-descriptions', category: 'E-commerce', icon: 'shopping-bag', color: '#6C5CE7', trending: true },
+    { name: 'Instagram Reels Script', slug: 'instagram-reels', category: 'Video', icon: 'film', color: '#E4405F', trending: true },
+    { name: 'Shopify Product Title', slug: 'shopify-titles', category: 'E-commerce', icon: 'tag', color: '#96BF48', trending: false },
+    { name: 'Email Subject Lines', slug: 'email-subjects', category: 'Email', icon: 'mail', color: '#6C5CE7', trending: false },
+    { name: 'Google Ads Headline', slug: 'google-ads-headline', category: 'Ads', icon: 'target', color: '#4285F4', trending: true },
+    { name: 'Meme Generator', slug: 'meme-generator', category: 'Creative', icon: 'smile', color: '#00B894', trending: true },
   ];
 
   return (
@@ -362,7 +362,7 @@ const DashboardScreen = () => {
                 </View>
               </View>
               <Text style={styles.heroSubtitle}>
-                Create ads, blogs, emails & more with AI tools
+                Create ads, blogs, emails & more with 206+ AI tools
               </Text>
               <View style={styles.heroButton}>
                 <LottieView
@@ -568,8 +568,8 @@ const DashboardScreen = () => {
                 }}
               >
                 <View style={styles.popularInfo}>
-                  <View style={[styles.popularIcon, { backgroundColor: Colors.secondary + '15' }]}>
-                    <Feather name={tool.icon as any} size={18} color={Colors.secondary} />
+                  <View style={[styles.popularIcon, { backgroundColor: tool.color + '20' }]}>
+                    <Feather name={tool.icon as any} size={18} color={tool.color} />
                   </View>
                   <View>
                     <View style={styles.popularNameRow}>
@@ -580,7 +580,7 @@ const DashboardScreen = () => {
                         </View>
                       )}
                     </View>
-                    <Text style={styles.popularUsesText}>{tool.uses} uses</Text>
+                    <Text style={styles.popularCategoryText}>{tool.category}</Text>
                   </View>
                 </View>
                 <Feather name="chevron-right" size={20} color={Colors.textTertiary} />
@@ -1052,7 +1052,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.success + '20',
     borderRadius: 4,
   },
-  popularUsesText: {
+  popularCategoryText: {
     fontSize: 12,
     color: Colors.textSecondary,
     marginTop: 2,

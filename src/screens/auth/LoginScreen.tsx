@@ -347,78 +347,149 @@ const LoginScreen = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Animated Header */}
+          {/* Animated Header - Purple Circle Logo */}
           <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
             <Animated.View style={[styles.logoContainer, { transform: [{ scale: pulseAnim }] }]}>
               <LinearGradient
-                colors={['#FF6B35', '#F7931E']}
+                colors={['#7C3AED', '#A855F7']}
                 style={styles.logoGradient}
               >
-                <Feather name="zap" size={36} color={Colors.white} />
+                <Text style={styles.logoText}>M</Text>
               </LinearGradient>
             </Animated.View>
             <Text style={styles.title}>MarketingTool</Text>
             <Text style={styles.subtitle}>AI-Powered Marketing Platform</Text>
           </Animated.View>
 
-          {/* Login Methods Grid */}
-          <Animated.View style={[styles.methodsSection, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-            <Text style={styles.methodsTitle}>Choose how to sign in</Text>
-            <View style={styles.methodsGrid}>
-              {loginMethods.map((method, index) => {
-                // Skip Apple on Android
-                if (method.id === 'apple' && Platform.OS !== 'ios') return null;
-
-                return (
-                  <TouchableOpacity
-                    key={method.id}
-                    style={[
-                      styles.methodCard,
-                      selectedMethod === method.id && styles.methodCardActive
-                    ]}
-                    onPress={() => handleLoginMethod(method.id)}
-                    activeOpacity={0.8}
-                    disabled={isLoading}
-                  >
-                    <LinearGradient
-                      colors={method.gradient as [string, string]}
-                      style={styles.methodGradient}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                    >
-                      {isLoading && selectedMethod === method.id ? (
-                        <ActivityIndicator color={Colors.white} size="small" />
-                      ) : (
-                        <Feather name={method.icon as any} size={28} color={Colors.white} />
-                      )}
-                    </LinearGradient>
-                    <Text style={styles.methodName}>{method.name}</Text>
-                    <Text style={styles.methodDesc} numberOfLines={1}>{method.description}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </Animated.View>
-
-          {/* Quick Email Login (collapsed by default) */}
-          <Animated.View style={[styles.quickEmailSection, { opacity: fadeAnim }]}>
-            <TouchableOpacity
-              style={styles.quickEmailToggle}
-              onPress={() => setShowEmailModal(true)}
-            >
-              <View style={styles.quickEmailLeft}>
-                <Feather name="mail" size={20} color={Colors.secondary} />
-                <Text style={styles.quickEmailText}>Sign in with email & password</Text>
+          {/* Quick Login - Phone Input on Main Screen */}
+          <Animated.View style={[styles.quickLoginSection, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+            <Text style={styles.quickLoginTitle}>Quick Login</Text>
+            <View style={styles.phoneInputRow}>
+              <TouchableOpacity style={styles.countryCode}>
+                <Text style={styles.countryCodeText}>+91</Text>
+              </TouchableOpacity>
+              <View style={[styles.inputContainer, { flex: 1, marginBottom: 0 }]}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter phone number"
+                  placeholderTextColor={Colors.textTertiary}
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                />
               </View>
-              <Feather name="chevron-right" size={20} color={Colors.textSecondary} />
+            </View>
+            <TouchableOpacity
+              onPress={() => {
+                if (phoneNumber.length >= 10) {
+                  handleSendOTP();
+                  setShowPhoneModal(true);
+                  setPhoneStep('otp');
+                } else {
+                  handleLoginMethod('phone');
+                }
+              }}
+              disabled={isLoading}
+              style={styles.sendOtpBtn}
+            >
+              <LinearGradient
+                colors={['#7C3AED', '#A855F7']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.loginButtonGradient}
+              >
+                {isLoading && selectedMethod === 'phone' ? (
+                  <ActivityIndicator color={Colors.white} />
+                ) : (
+                  <Text style={styles.loginButtonText}>Send OTP</Text>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
           </Animated.View>
+
+          {/* OR CONTINUE WITH Divider */}
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Social Login Icons Row */}
+          <View style={styles.socialRow}>
+            <TouchableOpacity
+              style={styles.socialBtn}
+              onPress={() => handleLoginMethod('google')}
+              disabled={isLoading}
+            >
+              <View style={[styles.socialIcon, { backgroundColor: '#4285F4' + '20' }]}>
+                {isLoading && selectedMethod === 'google' ? (
+                  <ActivityIndicator color="#4285F4" size="small" />
+                ) : (
+                  <Feather name="chrome" size={24} color="#4285F4" />
+                )}
+              </View>
+              <Text style={styles.socialLabel}>Google</Text>
+            </TouchableOpacity>
+
+            {Platform.OS === 'ios' && (
+              <TouchableOpacity
+                style={styles.socialBtn}
+                onPress={() => handleLoginMethod('apple')}
+                disabled={isLoading}
+              >
+                <View style={[styles.socialIcon, { backgroundColor: '#FFFFFF20' }]}>
+                  {isLoading && selectedMethod === 'apple' ? (
+                    <ActivityIndicator color="#FFF" size="small" />
+                  ) : (
+                    <Feather name="command" size={24} color="#FFFFFF" />
+                  )}
+                </View>
+                <Text style={styles.socialLabel}>Apple</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={styles.socialBtn}
+              onPress={() => handleLoginMethod('facebook')}
+              disabled={isLoading}
+            >
+              <View style={[styles.socialIcon, { backgroundColor: '#1877F2' + '20' }]}>
+                {isLoading && selectedMethod === 'facebook' ? (
+                  <ActivityIndicator color="#1877F2" size="small" />
+                ) : (
+                  <Feather name="facebook" size={24} color="#1877F2" />
+                )}
+              </View>
+              <Text style={styles.socialLabel}>Facebook</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.socialBtn}
+              onPress={() => handleLoginMethod('email')}
+              disabled={isLoading}
+            >
+              <View style={[styles.socialIcon, { backgroundColor: '#FF6B6B' + '20' }]}>
+                <Feather name="mail" size={24} color="#FF6B6B" />
+              </View>
+              <Text style={styles.socialLabel}>Email</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Biometric Login Button */}
+          <TouchableOpacity
+            style={styles.biometricBtn}
+            onPress={() => handleLoginMethod('biometric')}
+          >
+            <Feather name="smartphone" size={20} color={Colors.success} />
+            <Text style={styles.biometricText}>Biometric Login</Text>
+          </TouchableOpacity>
 
           {/* Features Banner */}
           <View style={styles.featuresBanner}>
             <View style={styles.featureItem}>
               <Feather name="zap" size={18} color={Colors.gold} />
-              <Text style={styles.featureText}>AI Tools</Text>
+              <Text style={styles.featureText}>206+ Tools</Text>
             </View>
             <View style={styles.featureDivider} />
             <View style={styles.featureItem}>
@@ -661,14 +732,19 @@ const styles = StyleSheet.create({
   logoGradient: {
     width: 80,
     height: 80,
-    borderRadius: 24,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#FF6B35',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 10,
+  },
+  logoText: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: Colors.white,
   },
   title: {
     fontSize: 32,
@@ -680,76 +756,85 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textSecondary,
   },
-  // Login Methods Grid
-  methodsSection: {
-    marginBottom: Spacing.xl,
+  // Quick Login Section
+  quickLoginSection: {
+    marginBottom: Spacing.lg,
+    backgroundColor: 'rgba(248,248,248,0.06)',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  methodsTitle: {
+  quickLoginTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: Colors.white,
     marginBottom: Spacing.md,
-    textAlign: 'center',
   },
-  methodsGrid: {
+  sendOtpBtn: {
+    borderRadius: BorderRadius.md,
+    overflow: 'hidden',
+    marginTop: Spacing.md,
+  },
+  // Divider
+  dividerRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: Spacing.md,
-  },
-  methodCard: {
-    width: (width - Spacing.lg * 2 - Spacing.md) / 2,
-    backgroundColor: Colors.card,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
+    marginBottom: Spacing.lg,
   },
-  methodCardActive: {
-    borderColor: Colors.secondary,
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
   },
-  methodGradient: {
+  dividerText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textTertiary,
+    paddingHorizontal: Spacing.md,
+    letterSpacing: 1,
+  },
+  // Social Row
+  socialRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  socialBtn: {
+    alignItems: 'center',
+  },
+  socialIcon: {
     width: 56,
     height: 56,
-    borderRadius: 16,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    marginBottom: 6,
   },
-  methodName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.white,
-    marginBottom: 2,
-  },
-  methodDesc: {
+  socialLabel: {
     fontSize: 11,
     color: Colors.textSecondary,
-    textAlign: 'center',
   },
-  // Quick Email Section
-  quickEmailSection: {
-    marginBottom: Spacing.xl,
-  },
-  quickEmailToggle: {
+  // Biometric
+  biometricBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
     borderRadius: BorderRadius.md,
-    padding: Spacing.md,
+    paddingVertical: 14,
+    marginBottom: Spacing.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: 'rgba(16, 185, 129, 0.2)',
+    gap: 8,
   },
-  quickEmailLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  quickEmailText: {
+  biometricText: {
     fontSize: 15,
-    color: Colors.white,
+    fontWeight: '600',
+    color: Colors.success,
   },
   // Features Banner
   featuresBanner: {
