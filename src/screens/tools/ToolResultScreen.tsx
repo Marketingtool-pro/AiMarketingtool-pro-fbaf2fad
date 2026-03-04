@@ -51,34 +51,21 @@ const ToolResultScreen = () => {
 
   const tool = tools.find(t => t.slug === toolSlug);
 
-  // Parse results - in real app this would come from API
+  // Parse results - handle error state properly
   const [outputs, setOutputs] = useState<GeneratedOutput[]>(
     result?.outputs?.map((content: string, index: number) => ({
       id: `output-${index}`,
       content,
       liked: false,
-    })) || [
-      {
-        id: 'output-1',
-        content: 'This is a sample generated content. In the real application, this would be AI-generated content based on your inputs.',
-        liked: false,
-      },
-      {
-        id: 'output-2',
-        content: 'Here is another variation of the generated content. The AI creates multiple options so you can choose the best one for your needs.',
-        liked: false,
-      },
-      {
-        id: 'output-3',
-        content: 'A third creative option for your consideration. Each output is unique and tailored to your specifications.',
-        liked: false,
-      },
-    ]
+    })) || []
   );
 
   const [selectedOutput, setSelectedOutput] = useState<string | null>(outputs[0]?.id);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showFullContent, setShowFullContent] = useState(false);
+
+  // Check if generation failed
+  const generationFailed = !result?.success || outputs.length === 0;
 
   // Detect if this is a large/desktop-preferred result
   const isLargeOutput = useMemo(() => {
@@ -114,7 +101,7 @@ const ToolResultScreen = () => {
         message: content,
       });
     } catch (error) {
-      console.error('Share error:', error);
+      if (__DEV__) console.error('Share error:', error);
     }
   };
 
@@ -184,33 +171,53 @@ const ToolResultScreen = () => {
         )}
       </LinearGradient>
 
-      {/* Output Tabs */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.tabsScroll}
-        contentContainerStyle={styles.tabsContent}
-      >
-        {outputs.map((output, index) => (
+      {/* Error State */}
+      {generationFailed ? (
+        <View style={styles.errorContainer}>
+          <View style={styles.errorIcon}>
+            <Feather name="alert-circle" size={48} color={Colors.error} />
+          </View>
+          <Text style={styles.errorTitle}>Generation Failed</Text>
+          <Text style={styles.errorMessage}>
+            {result?.error || 'Unable to generate content. Please check your connection and try again.'}
+          </Text>
           <TouchableOpacity
-            key={output.id}
-            style={[styles.tab, selectedOutput === output.id && styles.tabActive]}
-            onPress={() => setSelectedOutput(output.id)}
+            style={styles.retryButton}
+            onPress={handleRegenerate}
           >
-            <Text style={[styles.tabText, selectedOutput === output.id && styles.tabTextActive]}>
-              Option {index + 1}
-            </Text>
-            {output.liked && (
-              <Feather name="heart" size={14} color={Colors.error} />
-            )}
+            <Feather name="refresh-cw" size={20} color={Colors.white} />
+            <Text style={styles.retryButtonText}>Try Again</Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+        </View>
+      ) : (
+        <>
+          {/* Output Tabs */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.tabsScroll}
+            contentContainerStyle={styles.tabsContent}
+          >
+            {outputs.map((output, index) => (
+              <TouchableOpacity
+                key={output.id}
+                style={[styles.tab, selectedOutput === output.id && styles.tabActive]}
+                onPress={() => setSelectedOutput(output.id)}
+              >
+                <Text style={[styles.tabText, selectedOutput === output.id && styles.tabTextActive]}>
+                  Option {index + 1}
+                </Text>
+                {output.liked && (
+                  <Feather name="heart" size={14} color={Colors.error} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
-      {/* Content */}
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
+          {/* Content */}
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
         {outputs.map((output) => (
@@ -369,6 +376,8 @@ const ToolResultScreen = () => {
           </LinearGradient>
         </TouchableOpacity>
       </View>
+      </>
+      )}
     </AnimatedBackground>
   );
 };
@@ -654,6 +663,48 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   primaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.white,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  errorIcon: {
+    width: 96,
+    height: 96,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.error + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: Colors.white,
+    marginBottom: Spacing.sm,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: Spacing.xl,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.sm,
+  },
+  retryButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.white,

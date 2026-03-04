@@ -22,7 +22,7 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
       ? phoneNumber
       : `+91${phoneNumber.replace(/\D/g, '')}`;
 
-    console.log('[FirebaseAuth] Sending OTP to:', normalizedPhone);
+    if (__DEV__) console.log('[FirebaseAuth] Sending OTP to:', normalizedPhone);
 
     // Request OTP via Firebase Phone Auth
     const confirmation = await auth().signInWithPhoneNumber(normalizedPhone);
@@ -30,10 +30,10 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
     // Store verification ID for later
     verificationId = confirmation.verificationId;
 
-    console.log('[FirebaseAuth] OTP sent successfully');
+    if (__DEV__) console.log('[FirebaseAuth] OTP sent successfully');
     return { success: true };
   } catch (error: any) {
-    console.error('[FirebaseAuth] Send OTP error:', error);
+    if (__DEV__) console.error('[FirebaseAuth] Send OTP error:', error);
 
     // Handle specific Firebase errors
     if (error.code === 'auth/invalid-phone-number') {
@@ -63,7 +63,7 @@ export async function verifyPhoneOTP(code: string): Promise<{
       return { success: false, error: 'No pending verification. Please request OTP first.' };
     }
 
-    console.log('[FirebaseAuth] Verifying OTP...');
+    if (__DEV__) console.log('[FirebaseAuth] Verifying OTP...');
 
     // Create credential with verification ID and code
     const credential = auth.PhoneAuthProvider.credential(verificationId, code);
@@ -71,14 +71,14 @@ export async function verifyPhoneOTP(code: string): Promise<{
     // Sign in with credential
     const userCredential = await auth().signInWithCredential(credential);
 
-    console.log('[FirebaseAuth] OTP verified successfully');
+    if (__DEV__) console.log('[FirebaseAuth] OTP verified successfully');
 
     // Clear verification ID
     verificationId = null;
 
     return { success: true, user: userCredential.user };
   } catch (error: any) {
-    console.error('[FirebaseAuth] Verify OTP error:', error);
+    if (__DEV__) console.error('[FirebaseAuth] Verify OTP error:', error);
 
     // Handle specific Firebase errors
     if (error.code === 'auth/invalid-verification-code') {
@@ -107,7 +107,7 @@ export async function signOutFirebase(): Promise<void> {
     await auth().signOut();
     verificationId = null;
   } catch (error) {
-    console.error('[FirebaseAuth] Sign out error:', error);
+    if (__DEV__) console.error('[FirebaseAuth] Sign out error:', error);
   }
 }
 
