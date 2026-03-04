@@ -54,22 +54,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
 
-    // Guest/Demo mode - bypass API for testing
-    if (email === 'guest@test.com' && password === 'guest123') {
-      const mockUser = { $id: 'guest', name: 'Guest User', email: 'guest@test.com' } as any;
-      const mockProfile = {
-        $id: 'guest-profile',
-        userId: 'guest',
-        subscription: 'pro',
-        generationsCount: 42,
-        savedCount: 15,
-        toolsUsed: 8,
-        avatar: null,
-      } as any;
-      set({ user: mockUser, profile: mockProfile, isAuthenticated: true, isLoading: false });
-      return;
-    }
-
     try {
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) =>
