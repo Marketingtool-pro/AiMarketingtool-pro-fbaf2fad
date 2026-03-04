@@ -78,7 +78,7 @@ export const PLATFORMS = [
   { id: 'shopify', name: 'Shopify/E-commerce', icon: 'shopping-bag', color: '#96BF48', toolCount: 66 },
 ];
 
-// AI Tool Categories (matching web app - 206+ tools)
+// AI Tool Categories (matching web app)
 export const TOOL_CATEGORIES = [
   // Google Platform Categories
   { id: 'google-ads', name: 'Google Ads', icon: 'target', count: 24, platform: 'google' },
@@ -101,7 +101,7 @@ export const TOOL_CATEGORIES = [
   { id: 'content-creation', name: 'Content Creation', icon: 'edit', count: 15, platform: 'all' },
 ];
 
-// 206+ AI Marketing Tools across 3 Platforms
+// AI Marketing Tools across 3 Platforms
 const SAMPLE_TOOLS: Tool[] = [
   // ===== GOOGLE PLATFORM TOOLS (68 tools) =====
   // Google Ads Category (24 tools)

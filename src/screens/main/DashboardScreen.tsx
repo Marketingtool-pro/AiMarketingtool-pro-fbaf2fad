@@ -261,7 +261,7 @@ const DashboardScreen = () => {
   };
 
   const stats = [
-    { label: 'AI Tools', value: '206+', icon: 'zap', color: Colors.secondary, badge: '+12 new', screen: 'Tools' },
+    { label: 'AI Tools', value: '75+', icon: 'zap', color: Colors.secondary, badge: 'All Access', screen: 'Tools' },
     { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
     { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
     { label: 'Success', value: '98%', icon: 'trending-up', color: Colors.gold, badge: '+5%', screen: 'History' },
@@ -362,7 +362,7 @@ const DashboardScreen = () => {
                 </View>
               </View>
               <Text style={styles.heroSubtitle}>
-                Create ads, blogs, emails & more with 206+ AI tools
+                Create ads, blogs, emails & more with AI tools
               </Text>
               <View style={styles.heroButton}>
                 <LottieView
@@ -942,8 +942,8 @@ const styles = StyleSheet.create({
   categoryImage: {
     position: 'absolute',
     width: '100%',
-    height: '100%',
-    top: 0,
+    height: '140%',
+    bottom: 0,
     left: 0,
   },
   categoryOverlay: {

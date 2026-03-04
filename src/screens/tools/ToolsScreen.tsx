@@ -124,7 +124,7 @@ const ToolsScreen = () => {
           <View style={styles.heroContent}>
             <View style={styles.heroBadge}>
               <Feather name="zap" size={12} color={Colors.gold} />
-              <Text style={styles.heroBadgeText}>206+ AI Tools</Text>
+              <Text style={styles.heroBadgeText}>AI Tools</Text>
             </View>
             <Text style={styles.heroTitle}>AI Marketing Tools</Text>
             <Text style={styles.heroSubtitle}>Google • Meta • Shopify</Text>
@@ -139,7 +139,7 @@ const ToolsScreen = () => {
           <Feather name="search" size={20} color={Colors.textTertiary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search 206+ tools..."
+            placeholder="Search tools..."
             placeholderTextColor={Colors.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}

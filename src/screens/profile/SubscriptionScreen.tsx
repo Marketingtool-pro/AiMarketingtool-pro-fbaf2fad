@@ -13,7 +13,9 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '../../store/authStore';
+import { functions } from '../../services/appwrite';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 
@@ -52,62 +54,61 @@ const SubscriptionScreen = () => {
       name: 'Free Trial',
       monthlyPrice: 0,
       yearlyPrice: 0,
-      description: '7-day free trial',
+      description: '7 days • Full platform visible',
       trialDays: 7,
       features: [
         { text: '7-day full access trial', included: true },
-        { text: '10 AI generations', included: true },
-        { text: 'Basic tools preview', included: true },
-        { text: 'Full platform access', included: false },
+        { text: '3 generations per day', included: true },
+        { text: 'Simulation mode', included: true },
+        { text: 'No credit card required', included: true },
         { text: 'Priority support', included: false },
-        { text: 'All 3 platforms', included: false },
+        { text: 'Full analytics', included: false },
       ],
     },
     {
       id: 'starter',
-      name: 'Single Tool',
-      monthlyPrice: 3,
-      yearlyPrice: 49,
-      description: '1 Platform • 1 Tool Type',
+      name: 'Starter',
+      monthlyPrice: 29,
+      yearlyPrice: 199,
+      description: '200 generations/month',
       features: [
-        { text: '1 tool category (20+ tools)', included: true },
-        { text: 'Google OR Meta OR Shopify', included: true },
-        { text: 'Unlimited generations', included: true },
-        { text: 'Email support', included: true },
-        { text: 'Full platform access', included: false },
-        { text: 'All 3 platforms', included: false },
+        { text: 'Full web platform access', included: true },
+        { text: 'All 7 platforms', included: true },
+        { text: 'Real account connect', included: true },
+        { text: '200 generations/month', included: true },
+        { text: 'Standard reports', included: true },
+        { text: 'Advanced automation', included: false },
       ],
     },
     {
       id: 'pro',
-      name: 'Full Platform',
-      monthlyPrice: 9,
-      yearlyPrice: 99,
-      description: '1 Platform • All Tools',
+      name: 'Professional',
+      monthlyPrice: 59,
+      yearlyPrice: 499,
+      description: '500 generations/month',
       popular: true,
       features: [
-        { text: 'Full 1 platform (70+ tools)', included: true },
-        { text: 'Google OR Meta OR Shopify', included: true },
-        { text: 'Unlimited generations', included: true },
+        { text: 'Advanced automation engine', included: true },
+        { text: 'Cross-platform intelligence', included: true },
+        { text: 'Budget reallocation AI', included: true },
+        { text: '500 generations/month', included: true },
+        { text: 'Performance forecasting', included: true },
         { text: 'Priority support', included: true },
-        { text: 'Advanced analytics', included: true },
-        { text: 'All 3 platforms', included: false },
       ],
     },
     {
-      id: 'enterprise',
-      name: 'All Platforms',
-      monthlyPrice: 16,
-      yearlyPrice: 499,
-      description: 'All 3 Platforms • 206+ Tools',
-      isLifetime: true,
+      id: 'growth',
+      name: 'Growth',
+      monthlyPrice: 99,
+      yearlyPrice: 999,
+      description: '1,500+ generations/month',
       features: [
-        { text: 'All 206+ AI marketing tools', included: true },
-        { text: 'Google + Meta + Shopify', included: true },
-        { text: 'Unlimited generations', included: true },
-        { text: 'Dedicated support', included: true },
-        { text: 'AI Marketing Agents', included: true },
-        { text: 'White-label option', included: true },
+        { text: 'Full automation (auto-apply)', included: true },
+        { text: 'Predictive scaling AI', included: true },
+        { text: 'Deep analytics', included: true },
+        { text: '1,500+ generations/month', included: true },
+        { text: 'Executive dashboards', included: true },
+        { text: 'Priority support', included: true },
       ],
     },
   ];
@@ -121,40 +122,27 @@ const SubscriptionScreen = () => {
     setIsLoading(true);
 
     try {
-      // TODO: PRODUCTION PAYMENT INTEGRATION REQUIRED
-      // This is a placeholder - real payment processing must be implemented before production release
-      // Recommended: Use Stripe or RevenueCat for in-app purchases
-      // 
-      // For Stripe: npm install @stripe/stripe-react-native
-      // For RevenueCat: npm install react-native-purchases
-      //
-      // Implementation steps:
-      // 1. Initialize payment SDK (Stripe/RevenueCat)
-      // 2. Create payment intent on backend
-      // 3. Present payment sheet to user
-      // 4. Confirm payment
-      // 5. Update subscription in Appwrite database
-      // 6. Grant user access to features
-      
-      // TEMPORARY SIMULATION - REMOVE IN PRODUCTION
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      Alert.alert(
-        '⚠️ Demo Mode',
-        'Payment integration not yet implemented. In production, this would process a real payment via Stripe or RevenueCat.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // For demo purposes only - DO NOT USE IN PRODUCTION
-              updateProfile({ subscription: selectedPlan as 'free' | 'starter' | 'pro' | 'enterprise' });
-              navigation.goBack();
-            },
-          },
-        ]
+      const execution = await functions.createExecution(
+        'stripe-checkout',
+        JSON.stringify({
+          plan: selectedPlan,
+          billing: billingPeriod,
+          userId: profile?.userId,
+          email: profile?.email,
+        }),
+        false,
+        '/'
       );
-    } catch (error) {
-      Alert.alert('Error', 'Failed to process subscription. Please try again.');
+
+      const result = JSON.parse(execution.responseBody);
+
+      if (result.url) {
+        await WebBrowser.openBrowserAsync(result.url);
+      } else if (result.error) {
+        Alert.alert('Error', result.error);
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to start checkout. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -200,7 +188,7 @@ const SubscriptionScreen = () => {
             </View>
             <Text style={styles.headerTitle}>Choose Your Plan</Text>
             <Text style={styles.headerSubtitle}>
-              Unlock all 206+ AI marketing tools. Cancel anytime.
+              Unlock all AI marketing tools. Cancel anytime.
             </Text>
           </View>
         </LinearGradient>
@@ -227,7 +215,7 @@ const SubscriptionScreen = () => {
               Yearly
             </Text>
             <View style={styles.saveBadge}>
-              <Text style={styles.saveBadgeText}>Save 40%</Text>
+              <Text style={styles.saveBadgeText}>Save up to 66%</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -342,13 +330,13 @@ const SubscriptionScreen = () => {
               <Text style={styles.subscribeText}>
                 {selectedPlan === 'free'
                   ? 'Continue with Free'
-                  : `Start 7-Day Free Trial`}
+                  : 'Subscribe Now'}
               </Text>
             )}
           </LinearGradient>
         </TouchableOpacity>
         <Text style={styles.subscribeNote}>
-          No credit card required for trial
+          Secure payment via Stripe
         </Text>
       </View>
     </AnimatedBackground>
