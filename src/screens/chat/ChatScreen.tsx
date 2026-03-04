@@ -428,11 +428,6 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
           isUser ? styles.userMessageContainer : styles.assistantMessageContainer,
         ]}
       >
-        {!isUser && (
-          <View style={styles.messageAvatarContainer}>
-            <BotIcon size={32} animated={false} />
-          </View>
-        )}
         <View
           style={[
             styles.messageBubble,
@@ -455,7 +450,6 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <BotIcon size={40} animated={false} />
           <View style={styles.headerInfo}>
             <Text style={styles.headerTitle}>MarketBot</Text>
             <View style={styles.onlineStatus}>
@@ -619,34 +613,10 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
           ) : (
             <>
               {messages.map(renderMessage)}
-              {isTyping && (
-                <View style={styles.typingContainer}>
-                  <View style={styles.messageAvatarContainer}>
-                    <BotIcon size={32} animated={false} />
-                  </View>
-                  <View style={styles.typingBubble}>
-                    <Animated.View style={[styles.typingDot, { opacity: typingAnim }]} />
-                    <Animated.View
-                      style={[
-                        styles.typingDot,
-                        { opacity: typingAnim, marginHorizontal: 4 },
-                      ]}
-                    />
-                    <Animated.View style={[styles.typingDot, { opacity: typingAnim }]} />
-                  </View>
-                </View>
-              )}
             </>
           )}
           <View style={{ height: 120 }} />
         </ScrollView>
-
-        {/* Floating Bot Icon when in chat */}
-        {messages.length > 0 && (
-          <View style={styles.floatingBot}>
-            <BotIcon size={50} animated={true} />
-          </View>
-        )}
 
         {/* Input Area */}
         <View style={styles.inputContainer}>

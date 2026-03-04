@@ -108,6 +108,22 @@ const LoginScreen = () => {
   const [phoneStep, setPhoneStep] = useState<'phone' | 'otp'>('phone');
   const [phoneError, setPhoneError] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(0);
+  const [canResend, setCanResend] = useState(true);
+
+  // Timer for OTP cooldown
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      setCanResend(false);
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    } else {
+      setCanResend(true);
+    }
+    return () => clearInterval(timer);
+  }, [countdown]);
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -156,8 +172,12 @@ const LoginScreen = () => {
   }, []);
 
   const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email.trim().toLowerCase());
+  };
+
+  const sanitizeInput = (text: string) => {
+    return text.replace(/[<>\"\'&]/g, '');
   };
 
   const handleLogin = async () => {
@@ -165,12 +185,14 @@ const LoginScreen = () => {
     setEmailError('');
     setPasswordError('');
 
-    if (!email) {
+    const sanitizedEmail = email.trim().toLowerCase();
+
+    if (!sanitizedEmail) {
       setEmailError('Email is required');
       return;
     }
-    if (!validateEmail(email)) {
-      setEmailError('Please enter a valid email');
+    if (!validateEmail(sanitizedEmail)) {
+      setEmailError('Please enter a valid email address');
       return;
     }
     if (!password) {
@@ -183,7 +205,7 @@ const LoginScreen = () => {
     }
 
     try {
-      await login(email, password);
+      await login(sanitizedEmail, password);
     } catch (err: any) {
       Alert.alert('Login Failed', err.message || 'Please check your credentials');
     }
@@ -247,32 +269,41 @@ const LoginScreen = () => {
   };
 
   const handleSendOTP = async () => {
-    if (!phoneNumber || phoneNumber.length < 10) {
-      setPhoneError('Please enter a valid phone number');
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setPhoneError('Please enter a valid 10-digit phone number');
       return;
     }
+
+    if (!canResend) {
+      setPhoneError(`Please wait ${countdown} seconds before requesting a new code`);
+      return;
+    }
+
     clearError();
     setPhoneError('');
     try {
-      await sendOTP(phoneNumber);
+      await sendOTP(cleanPhone);
       setPhoneStep('otp');
+      setCountdown(60); // Start 60s cooldown
     } catch (err: any) {
       setPhoneError(err.message || 'Failed to send OTP');
     }
   };
 
   const handleVerifyOTP = async () => {
-    if (!otp || otp.length !== 6) {
-      setPhoneError('Please enter 6-digit OTP');
+    const cleanOtp = otp.trim().replace(/\D/g, '');
+    if (!cleanOtp || cleanOtp.length !== 6) {
+      setPhoneError('Please enter a valid 6-digit code');
       return;
     }
     clearError();
     setPhoneError('');
     try {
-      await verifyOTP(otp);
+      await verifyOTP(cleanOtp);
       setShowPhoneModal(false);
     } catch (err: any) {
-      setPhoneError(err.message || 'Invalid OTP');
+      setPhoneError(err.message || 'Invalid OTP. Please check the code and try again.');
     }
   };
 
@@ -583,6 +614,16 @@ const LoginScreen = () => {
                     </LinearGradient>
                   </TouchableOpacity>
 
+                  <View style={styles.resendContainer}>
+                    {countdown > 0 ? (
+                      <Text style={styles.resendTimerText}>Resend code in {countdown}s</Text>
+                    ) : (
+                      <TouchableOpacity onPress={handleSendOTP} disabled={isLoading}>
+                        <Text style={styles.resendLink}>Resend Code</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
                   <TouchableOpacity onPress={() => setPhoneStep('phone')} style={styles.changePhoneBtn}>
                     <Text style={styles.changePhoneText}>Change Phone Number</Text>
                   </TouchableOpacity>
@@ -889,6 +930,21 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
     fontSize: 14,
     fontWeight: '500',
+  },
+  resendContainer: {
+    marginTop: Spacing.lg,
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  resendTimerText: {
+    color: Colors.textTertiary,
+    fontSize: 14,
+  },
+  resendLink: {
+    color: Colors.secondary,
+    fontSize: 14,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
 
