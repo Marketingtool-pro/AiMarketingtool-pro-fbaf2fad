@@ -17,6 +17,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
+import { functions } from '../../services/appwrite';
+import { ExecutionMethod } from 'react-native-appwrite';
 
 const { width } = Dimensions.get('window');
 
@@ -46,68 +48,68 @@ const SubscriptionScreen = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('pro');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Pricing must match rules.md (root-admin port 3010)
+  // Pricing matches marketingtool.pro/pricing/ exactly
   const plans: Plan[] = [
     {
       id: 'free',
       name: 'Free Trial',
       monthlyPrice: 0,
       yearlyPrice: 0,
-      description: '7-day free trial',
+      description: '7 days • Full platform visible',
       trialDays: 7,
       features: [
         { text: '7-day full access trial', included: true },
-        { text: '10 AI generations', included: true },
-        { text: 'Basic tools preview', included: true },
-        { text: 'Full platform access', included: false },
+        { text: '3 generations per day', included: true },
+        { text: 'Simulation mode', included: true },
+        { text: 'No credit card required', included: true },
         { text: 'Priority support', included: false },
-        { text: 'All 3 platforms', included: false },
+        { text: 'Full analytics', included: false },
       ],
     },
     {
       id: 'starter',
       name: 'Starter',
-      monthlyPrice: 49,
+      monthlyPrice: 29,
       yearlyPrice: 199,
-      description: '1 Category • ~20 tools',
+      description: '200 generations/month',
       features: [
-        { text: '1 tool category (~20 tools)', included: true },
-        { text: 'Google OR Meta OR Shopify', included: true },
-        { text: '200 AI generations/month', included: true },
-        { text: 'Email support', included: true },
-        { text: 'Full platform access', included: false },
-        { text: 'All 3 platforms', included: false },
+        { text: 'Full web platform access', included: true },
+        { text: 'All 7 platforms', included: true },
+        { text: '200 generations/month', included: true },
+        { text: 'Real account connect', included: true },
+        { text: 'Standard reports', included: true },
+        { text: 'Advanced automation', included: false },
       ],
     },
     {
       id: 'pro',
       name: 'Professional',
-      monthlyPrice: 99,
+      monthlyPrice: 59,
       yearlyPrice: 499,
-      description: '1 Platform • All Tools',
-      popular: true,
+      description: '500 generations/month',
       features: [
-        { text: 'Full 1 platform (56-77 tools)', included: true },
-        { text: 'Google OR Meta OR Shopify', included: true },
-        { text: '500 AI generations/month', included: true },
+        { text: '500 generations/month', included: true },
+        { text: 'Advanced automation engine', included: true },
+        { text: 'Cross-platform intelligence', included: true },
+        { text: 'Budget reallocation AI', included: true },
+        { text: 'Performance forecasting', included: true },
         { text: 'Priority support', included: true },
-        { text: 'Advanced analytics', included: true },
-        { text: 'All 3 platforms', included: false },
       ],
     },
     {
-      id: 'alltools',
-      name: 'All Tools',
-      monthlyPrice: 150,
+      id: 'growth',
+      name: 'Growth',
+      monthlyPrice: 99,
       yearlyPrice: 999,
-      description: 'All 3 Platforms • 206+ Tools',
+      description: '1,500+ generations/month',
+      popular: true,
       features: [
-        { text: 'All 206+ AI marketing tools', included: true },
-        { text: 'Google + Meta + Shopify', included: true },
-        { text: '1,500 AI generations/month', included: true },
+        { text: '1,500+ generations/month', included: true },
+        { text: 'Full automation with auto-apply', included: true },
+        { text: 'Predictive scaling AI', included: true },
+        { text: 'Deep analytics', included: true },
+        { text: 'Executive dashboards', included: true },
         { text: 'Priority support', included: true },
-        { text: 'Full analytics & reporting', included: true },
-        { text: 'Cancel anytime', included: true },
       ],
     },
   ];
@@ -123,10 +125,27 @@ const SubscriptionScreen = () => {
 
     setIsLoading(true);
     try {
-      const checkoutUrl = `https://app.marketingtool.pro/dashboard/checkout?plan=${selectedPlan}&cycle=${billingPeriod}`;
-      await Linking.openURL(checkoutUrl);
-    } catch {
-      Alert.alert('Error', 'Could not open checkout. Please try again.');
+      const execution = await functions.createExecution(
+        'stripe-checkout',
+        JSON.stringify({
+          plan: selectedPlan,
+          cycle: billingPeriod,
+          price: getPrice(plan),
+        }),
+        false,
+        '/',
+        ExecutionMethod.POST
+      );
+      const result = JSON.parse(execution.responseBody);
+      if (result.url) {
+        await Linking.openURL(result.url);
+      } else if (result.error) {
+        Alert.alert('Error', result.error);
+      } else {
+        Alert.alert('Error', 'Could not create checkout session. Please try again.');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Could not open checkout. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -169,7 +188,7 @@ const SubscriptionScreen = () => {
             </View>
             <Text style={styles.headerTitle}>Choose Your Plan</Text>
             <Text style={styles.headerSubtitle}>
-              Unlock all 206+ AI marketing tools. Cancel anytime.
+              Unlock all AI marketing tools. Cancel anytime.
             </Text>
           </View>
         </LinearGradient>
@@ -196,7 +215,7 @@ const SubscriptionScreen = () => {
               Yearly
             </Text>
             <View style={styles.saveBadge}>
-              <Text style={styles.saveBadgeText}>Save 40%</Text>
+              <Text style={styles.saveBadgeText}>Save up to 66%</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -345,13 +364,13 @@ const SubscriptionScreen = () => {
               <Text style={styles.subscribeText}>
                 {selectedPlan === 'free'
                   ? 'Continue with Free'
-                  : `Start 7-Day Free Trial`}
+                  : 'Subscribe Now'}
               </Text>
             )}
           </LinearGradient>
         </TouchableOpacity>
         <Text style={styles.subscribeNote}>
-          No credit card required for trial
+          Secure payment via Stripe
         </Text>
       </View>
     </AnimatedBackground>

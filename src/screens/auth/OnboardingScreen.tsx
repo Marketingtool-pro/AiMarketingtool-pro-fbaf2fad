@@ -31,7 +31,7 @@ interface OnboardingItem {
 const onboardingData: OnboardingItem[] = [
   {
     id: '1',
-    title: '206+ AI Marketing Tools',
+    title: 'AI Marketing Tools',
     description: 'Access the most comprehensive suite of AI-powered marketing tools. From ad copy to blog posts, we\'ve got you covered.',
     icon: 'zap',
     gradient: ['#6C5CE7', '#A29BFE'],

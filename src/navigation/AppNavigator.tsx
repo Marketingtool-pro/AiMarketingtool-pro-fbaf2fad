@@ -3,7 +3,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Screens
 import SplashScreen from '../screens/auth/SplashScreen';
@@ -22,6 +23,8 @@ import ProfileScreen from '../screens/profile/ProfileScreen';
 import SettingsScreen from '../screens/profile/SettingsScreen';
 import SubscriptionScreen from '../screens/profile/SubscriptionScreen';
 import NotificationsScreen from '../screens/profile/NotificationsScreen';
+import TermsScreen from '../screens/profile/TermsScreen';
+import PrivacyScreen from '../screens/profile/PrivacyScreen';
 import HistoryScreen from '../screens/main/HistoryScreen';
 
 import { useAuthStore } from '../store/authStore';
@@ -39,6 +42,8 @@ export type RootStackParamList = {
   Settings: undefined;
   Subscription: undefined;
   Notifications: undefined;
+  Terms: undefined;
+  Privacy: undefined;
 };
 
 export type AuthStackParamList = {
@@ -74,7 +79,11 @@ const AuthNavigator = () => (
 );
 
 // Tab Navigator
-const TabNavigator = () => (
+const TabNavigator = () => {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 16 : 8);
+
+  return (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       headerShown: false,
@@ -82,10 +91,11 @@ const TabNavigator = () => (
         backgroundColor: Colors.backgroundSecondary,
         borderTopColor: Colors.border,
         borderTopWidth: 1,
-        paddingBottom: 8,
+        paddingBottom: bottomPadding,
         paddingTop: 8,
-        height: 70,
+        height: 60 + bottomPadding,
       },
+      tabBarHideOnKeyboard: true,
       tabBarActiveTintColor: Colors.accent,
       tabBarInactiveTintColor: Colors.textTertiary,
       tabBarLabelStyle: {
@@ -127,7 +137,8 @@ const TabNavigator = () => (
     <Tab.Screen name="History" component={HistoryScreen} options={{ title: 'History' }} />
     <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
   </Tab.Navigator>
-);
+  );
+};
 
 // Loading Screen
 const LoadingScreen = () => (
@@ -185,6 +196,8 @@ const AppNavigator = () => {
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+            <Stack.Screen name="Terms" component={TermsScreen} />
+            <Stack.Screen name="Privacy" component={PrivacyScreen} />
           </>
         )}
       </Stack.Navigator>

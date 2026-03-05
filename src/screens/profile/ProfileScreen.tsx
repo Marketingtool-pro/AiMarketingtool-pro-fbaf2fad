@@ -243,11 +243,11 @@ const ProfileScreen = () => {
         <View style={styles.appInfo}>
           <Text style={styles.appVersion}>MarketingTool v1.3.0</Text>
           <View style={styles.appLinks}>
-            <TouchableOpacity onPress={() => Linking.openURL('https://app.marketingtool.pro/dashboard/policy')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Terms' as any)}>
               <Text style={styles.appLink}>Terms</Text>
             </TouchableOpacity>
             <Text style={styles.appLinkDivider}>•</Text>
-            <TouchableOpacity onPress={() => Linking.openURL('https://app.marketingtool.pro/dashboard/policy')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Privacy' as any)}>
               <Text style={styles.appLink}>Privacy</Text>
             </TouchableOpacity>
           </View>

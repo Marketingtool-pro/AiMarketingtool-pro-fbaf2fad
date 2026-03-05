@@ -182,7 +182,7 @@ const RegisterScreen = () => {
             <View style={styles.features}>
               <View style={styles.featureItem}>
                 <Feather name="check-circle" size={16} color={Colors.success} />
-                <Text style={styles.featureText}>206+ AI Marketing Tools</Text>
+                <Text style={styles.featureText}>AI Marketing Tools</Text>
               </View>
               <View style={styles.featureItem}>
                 <Feather name="check-circle" size={16} color={Colors.success} />

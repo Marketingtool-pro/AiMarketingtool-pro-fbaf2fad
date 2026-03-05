@@ -19,6 +19,7 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
 import { Colors, Gradients, Spacing, BorderRadius, Shadow } from '../../constants/theme';
+import { getToolIcon } from '../../constants/toolIcons';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 import LottieView from 'lottie-react-native';
 
@@ -259,7 +260,7 @@ const DashboardScreen = () => {
   };
 
   const stats = [
-    { label: 'AI Tools', value: '206+', icon: 'zap', color: Colors.secondary, badge: '+12 new', screen: 'Tools' },
+    { label: 'AI Tools', value: 'All', icon: 'zap', color: Colors.secondary, badge: 'New', screen: 'Tools' },
     { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
     { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
     { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },
@@ -282,14 +283,14 @@ const DashboardScreen = () => {
   ];
 
   const popularTools = [
-    { name: 'Instagram Caption', slug: 'instagram-captions', category: 'Social', icon: 'type', trending: true, color: '#E4405F' },
-    { name: 'Facebook Ad Copy', slug: 'facebook-ad-copy', category: 'Ads', icon: 'edit-3', trending: true, color: '#1877F2' },
-    { name: 'Product Description', slug: 'product-descriptions', category: 'E-commerce', icon: 'shopping-bag', trending: true, color: '#96BF48' },
-    { name: 'Instagram Reels Script', slug: 'instagram-reels', category: 'Video', icon: 'film', trending: true, color: '#C13584' },
-    { name: 'Shopify Product Title', slug: 'shopify-titles', category: 'E-commerce', icon: 'tag', trending: false, color: '#96BF48' },
-    { name: 'Email Subject Lines', slug: 'email-subjects', category: 'Email', icon: 'mail', trending: false, color: '#EF4444' },
-    { name: 'Google Ads Headline', slug: 'google-ads-headline', category: 'Ads', icon: 'target', trending: true, color: '#4285F4' },
-    { name: 'Meme Generator', slug: 'meme-generator', category: 'Creative', icon: 'smile', trending: true, color: '#EC4899' },
+    { name: 'Instagram Caption', slug: 'instagram-captions', category: 'Social', trending: true, color: '#E4405F' },
+    { name: 'Facebook Ad Copy', slug: 'facebook-ad-copy', category: 'Ads', trending: true, color: '#1877F2' },
+    { name: 'Product Description', slug: 'product-descriptions', category: 'E-commerce', trending: true, color: '#96BF48' },
+    { name: 'Instagram Reels Script', slug: 'instagram-reels', category: 'Video', trending: true, color: '#C13584' },
+    { name: 'Shopify Product Title', slug: 'shopify-titles', category: 'E-commerce', trending: false, color: '#96BF48' },
+    { name: 'Email Subject Lines', slug: 'email-subjects', category: 'Email', trending: false, color: '#EF4444' },
+    { name: 'Google Ads Headline', slug: 'google-ads-headline', category: 'Ads', trending: true, color: '#4285F4' },
+    { name: 'Meme Generator', slug: 'meme-generator', category: 'Creative', trending: true, color: '#EC4899' },
   ];
 
   return (
@@ -319,7 +320,7 @@ const DashboardScreen = () => {
             </View>
             <TouchableOpacity
               style={styles.notificationBtn}
-              onPress={() => navigation.navigate('Main', { screen: 'History' } as any)}
+              onPress={() => navigation.navigate('Notifications')}
             >
               <Feather name="bell" size={22} color={Colors.white} />
               <View style={styles.notificationDot} />
@@ -360,7 +361,7 @@ const DashboardScreen = () => {
                 </View>
               </View>
               <Text style={styles.heroSubtitle}>
-                Create ads, blogs, emails & more with 206+ AI tools
+                Create ads, blogs, emails & more with AI tools
               </Text>
               <View style={styles.heroButton}>
                 <LottieView
@@ -567,7 +568,11 @@ const DashboardScreen = () => {
               >
                 <View style={styles.popularInfo}>
                   <View style={[styles.popularIcon, { backgroundColor: tool.color + '20' }]}>
-                    <Feather name={tool.icon as any} size={18} color={tool.color} />
+                    <Image
+                      source={getToolIcon(tool.slug, tool.category)}
+                      style={{ width: 28, height: 28 }}
+                      resizeMode="contain"
+                    />
                   </View>
                   <View>
                     <View style={styles.popularNameRow}>

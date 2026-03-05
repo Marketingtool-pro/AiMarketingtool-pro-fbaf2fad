@@ -19,7 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "48",
+      "buildNumber": "52",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -50,7 +50,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 48,
+      "versionCode": 43,
       "edgeToEdgeEnabled": true,
       "allowBackup": false,
       "permissions": [
