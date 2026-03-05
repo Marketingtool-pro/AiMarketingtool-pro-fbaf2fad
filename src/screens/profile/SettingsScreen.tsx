@@ -273,20 +273,20 @@ const SettingsScreen = () => {
         {
           icon: 'info',
           label: 'App Version',
-          description: '1.3.0 (Build 26)',
+          description: '1.3.2 (Build 52)',
           type: 'info',
         },
         {
           icon: 'file-text',
           label: 'Terms of Service',
           type: 'action',
-          action: () => Linking.openURL('https://app.marketingtool.pro/dashboard/policy'),
+          action: () => (navigation as any).navigate('Terms'),
         },
         {
           icon: 'shield',
           label: 'Privacy Policy',
           type: 'action',
-          action: () => Linking.openURL('https://app.marketingtool.pro/dashboard/policy'),
+          action: () => (navigation as any).navigate('Privacy'),
         },
         {
           icon: 'book-open',

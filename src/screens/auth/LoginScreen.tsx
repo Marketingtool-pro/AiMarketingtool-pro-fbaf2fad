@@ -336,7 +336,7 @@ const LoginScreen = () => {
           <View style={styles.featuresBanner}>
             <View style={styles.featureItem}>
               <Feather name="zap" size={16} color={Colors.gold} />
-              <Text style={styles.featureText}>206+ Tools</Text>
+              <Text style={styles.featureText}>AI Tools</Text>
             </View>
             <Text style={styles.featureDot}>·</Text>
             <View style={styles.featureItem}>

@@ -569,23 +569,6 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
 
               {activeTab === 'chat' && (
                 <>
-                  {/* Input with gradient border */}
-                  <Animated.View style={[styles.inputPreview, { transform: [{ scale: pulseAnim }] }]}>
-                    <LinearGradient
-                      colors={['#7C3AED', '#8B5CF6']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.inputPreviewGradient}
-                    >
-                      <View style={styles.inputPreviewInner}>
-                        <Text style={styles.inputPreviewText}>Ask about marketing...</Text>
-                        <View style={styles.inputPreviewSend}>
-                          <Feather name="send" size={18} color={Colors.textSecondary} />
-                        </View>
-                      </View>
-                    </LinearGradient>
-                  </Animated.View>
-
                   {/* Quick Prompts */}
                   <View style={styles.promptsGrid}>
                     {suggestedPrompts.map((prompt, index) => (
@@ -998,7 +981,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     padding: Spacing.md,
-    paddingBottom: 34,
+    paddingBottom: 8,
     backgroundColor: Colors.background,
   },
   inputGradientBorder: {
