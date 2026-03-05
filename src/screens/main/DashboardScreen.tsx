@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -21,7 +21,6 @@ import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
 import { Colors, Gradients, Spacing, BorderRadius, Shadow } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 import LottieView from 'lottie-react-native';
-import { getToolIcon } from '../../constants/toolIcons';
 
 // Lottie animations
 const Animations = {
@@ -131,7 +130,7 @@ const CategoryImages: Record<string, { image: any; gradient: string[] }> = {
 
 // Category gradient colors for fallback
 const getCategoryGradient = (categoryId: string): string[] => {
-  return CategoryImages[categoryId]?.gradient || [Colors.accent, Colors.accent];
+  return CategoryImages[categoryId]?.gradient || [Colors.secondary, Colors.accent];
 };
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -142,43 +141,41 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Staggered pulse animation
-    const startAnimation = () => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(index * 300),
-          Animated.parallel([
-            Animated.sequence([
-              Animated.timing(pulseAnim, {
-                toValue: 1.05,
-                duration: 1000,
-                easing: Easing.inOut(Easing.ease),
-                useNativeDriver: true,
-              }),
-              Animated.timing(pulseAnim, {
-                toValue: 1,
-                duration: 1000,
-                easing: Easing.inOut(Easing.ease),
-                useNativeDriver: true,
-              }),
-            ]),
-            Animated.sequence([
-              Animated.timing(glowAnim, {
-                toValue: 1,
-                duration: 1000,
-                useNativeDriver: true,
-              }),
-              Animated.timing(glowAnim, {
-                toValue: 0,
-                duration: 1000,
-                useNativeDriver: true,
-              }),
-            ]),
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.delay(index * 300),
+        Animated.parallel([
+          Animated.sequence([
+            Animated.timing(pulseAnim, {
+              toValue: 1.05,
+              duration: 1000,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(pulseAnim, {
+              toValue: 1,
+              duration: 1000,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
           ]),
-        ])
-      ).start();
-    };
-    startAnimation();
+          Animated.sequence([
+            Animated.timing(glowAnim, {
+              toValue: 1,
+              duration: 1000,
+              useNativeDriver: true,
+            }),
+            Animated.timing(glowAnim, {
+              toValue: 0,
+              duration: 1000,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
   }, []);
 
   const handlePressIn = () => {
@@ -262,10 +259,10 @@ const DashboardScreen = () => {
   };
 
   const stats = [
-    { label: 'AI Tools', value: '75+', icon: 'zap', color: Colors.accent, badge: 'All Access', screen: 'Tools' },
+    { label: 'AI Tools', value: '206+', icon: 'zap', color: Colors.secondary, badge: '+12 new', screen: 'Tools' },
     { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
     { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
-    { label: 'Saved', value: '0', icon: 'bookmark', color: Colors.gold, badge: 'Start', screen: 'History' },
+    { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },
   ];
 
   // Horizontal banner data
@@ -279,30 +276,27 @@ const DashboardScreen = () => {
 
   const quickActions = [
     { label: 'AI Chat', icon: 'message-circle', color: Colors.accent, screen: 'Chat' },
-    { label: 'Meme Gen', icon: 'smile', color: Colors.accent, screen: 'MemeGenerator' },
+    { label: 'Meme Gen', icon: 'smile', color: Colors.secondary, screen: 'MemeGenerator' },
     { label: 'All Tools', icon: 'grid', color: Colors.success, screen: 'Tools' },
     { label: 'Reports', icon: 'bar-chart-2', color: Colors.gold, screen: 'History' },
   ];
 
-  // Use real tools from store - same as web app
-  const popularTools = useMemo(() => {
-    if (tools.length === 0) return [];
-    // Show trending/featured tools first, then by usage
-    const sorted = [...tools]
-      .sort((a, b) => {
-        if (a.isTrending && !b.isTrending) return -1;
-        if (!a.isTrending && b.isTrending) return 1;
-        return b.usageCount - a.usageCount;
-      })
-      .slice(0, 8);
-    return sorted;
-  }, [tools]);
+  const popularTools = [
+    { name: 'Instagram Caption', slug: 'instagram-captions', category: 'Social', icon: 'type', trending: true, color: '#E4405F' },
+    { name: 'Facebook Ad Copy', slug: 'facebook-ad-copy', category: 'Ads', icon: 'edit-3', trending: true, color: '#1877F2' },
+    { name: 'Product Description', slug: 'product-descriptions', category: 'E-commerce', icon: 'shopping-bag', trending: true, color: '#96BF48' },
+    { name: 'Instagram Reels Script', slug: 'instagram-reels', category: 'Video', icon: 'film', trending: true, color: '#C13584' },
+    { name: 'Shopify Product Title', slug: 'shopify-titles', category: 'E-commerce', icon: 'tag', trending: false, color: '#96BF48' },
+    { name: 'Email Subject Lines', slug: 'email-subjects', category: 'Email', icon: 'mail', trending: false, color: '#EF4444' },
+    { name: 'Google Ads Headline', slug: 'google-ads-headline', category: 'Ads', icon: 'target', trending: true, color: '#4285F4' },
+    { name: 'Meme Generator', slug: 'meme-generator', category: 'Creative', icon: 'smile', trending: true, color: '#EC4899' },
+  ];
 
   return (
     <AnimatedBackground variant="dashboard" showParticles={true}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.secondary} />}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -310,7 +304,7 @@ const DashboardScreen = () => {
             <View style={styles.headerLeft}>
               <View style={styles.avatarContainer}>
                 <LinearGradient
-                  colors={[Colors.accent, Colors.accent]}
+                  colors={[Colors.secondary, Colors.accent]}
                   style={styles.avatarGradient}
                 >
                   <Text style={styles.avatarText}>
@@ -325,7 +319,7 @@ const DashboardScreen = () => {
             </View>
             <TouchableOpacity
               style={styles.notificationBtn}
-              onPress={() => navigation.navigate('Notifications' as any)}
+              onPress={() => navigation.navigate('Main', { screen: 'History' } as any)}
             >
               <Feather name="bell" size={22} color={Colors.white} />
               <View style={styles.notificationDot} />
@@ -354,7 +348,7 @@ const DashboardScreen = () => {
             />
           </View>
           <LinearGradient
-            colors={['transparent', 'rgba(13, 15, 28, 0.8)', 'rgba(13, 15, 28, 0.95)']}
+            colors={['transparent', 'rgba(6, 11, 40, 0.8)', 'rgba(6, 11, 40, 0.95)']}
             style={styles.heroGradient}
           >
             <View style={styles.heroContent}>
@@ -412,7 +406,7 @@ const DashboardScreen = () => {
             horizontal
             showsHorizontalScrollIndicator={false}
             pagingEnabled
-            snapToInterval={width - Spacing.lg * 2}
+            snapToInterval={width - 40}
             decelerationRate="fast"
             contentContainerStyle={styles.bannerScroll}
           >
@@ -493,7 +487,7 @@ const DashboardScreen = () => {
           >
             {TOOL_CATEGORIES.slice(0, 8).map((category, index) => {
               const categoryData = CategoryImages[category.id];
-              const gradientColors = categoryData?.gradient || [Colors.accent, Colors.accent];
+              const gradientColors = categoryData?.gradient || [Colors.secondary, Colors.accent];
               return (
                 <TouchableOpacity
                   key={index}
@@ -558,7 +552,7 @@ const DashboardScreen = () => {
           <View style={styles.popularList}>
             {popularTools.map((tool, index) => (
               <TouchableOpacity
-                key={tool.$id || index}
+                key={index}
                 style={[
                   styles.popularItem,
                   index === popularTools.length - 1 && styles.popularItemLast
@@ -572,23 +566,19 @@ const DashboardScreen = () => {
                 }}
               >
                 <View style={styles.popularInfo}>
-                  <View style={styles.popularIcon}>
-                    <Image
-                      source={getToolIcon(tool.slug, tool.category)}
-                      style={styles.popularIconImage}
-                      resizeMode="contain"
-                    />
+                  <View style={[styles.popularIcon, { backgroundColor: tool.color + '20' }]}>
+                    <Feather name={tool.icon as any} size={18} color={tool.color} />
                   </View>
                   <View>
                     <View style={styles.popularNameRow}>
                       <Text style={styles.popularName}>{tool.name}</Text>
-                      {tool.isTrending && (
+                      {tool.trending && (
                         <View style={styles.trendingBadge}>
                           <Feather name="trending-up" size={10} color={Colors.success} />
                         </View>
                       )}
                     </View>
-                    <Text style={styles.popularCategoryText}>{tool.category}</Text>
+                    <Text style={styles.popularUsesText}>{tool.category}</Text>
                   </View>
                 </View>
                 <Feather name="chevron-right" size={20} color={Colors.textTertiary} />
@@ -663,14 +653,14 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.secondary,
   },
   heroBanner: {
     marginHorizontal: Spacing.lg,
     marginBottom: Spacing.lg,
     borderRadius: BorderRadius.xl,
     overflow: 'hidden',
-    height: 180,
+    height: 220,
   },
   heroImage: {
     width: '100%',
@@ -743,7 +733,7 @@ const styles = StyleSheet.create({
   heroButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.secondary,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
@@ -843,13 +833,12 @@ const styles = StyleSheet.create({
   },
   bannerSection: {
     marginBottom: Spacing.lg,
-    overflow: 'hidden',
   },
   bannerScroll: {
     paddingHorizontal: Spacing.lg,
   },
   bannerSlide: {
-    width: width - Spacing.lg * 2 - Spacing.md,
+    width: width - 48,
     height: 160,
     marginRight: Spacing.md,
     borderRadius: BorderRadius.xl,
@@ -912,7 +901,7 @@ const styles = StyleSheet.create({
   },
   seeAll: {
     fontSize: 14,
-    color: Colors.accent,
+    color: Colors.secondary,
     marginBottom: Spacing.md,
   },
   quickActions: {
@@ -937,11 +926,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   categoriesScroll: {
+    paddingLeft: Spacing.lg,
     paddingRight: Spacing.lg,
   },
   categoryCard: {
     width: (width - Spacing.lg * 2 - Spacing.md) / 2,
-    height: 200,
+    height: 220,
     marginRight: Spacing.md,
     borderRadius: BorderRadius.xl,
     overflow: 'hidden',
@@ -951,7 +941,7 @@ const styles = StyleSheet.create({
   categoryImage: {
     position: 'absolute',
     width: '100%',
-    height: '130%',
+    height: '100%',
     top: 0,
     left: 0,
   },
@@ -1019,10 +1009,8 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   popularList: {
-    backgroundColor: 'rgba(248,248,248,0.06)',
+    backgroundColor: Colors.card,
     borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
     overflow: 'hidden',
   },
   popularItem: {
@@ -1041,18 +1029,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   popularIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.md,
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.sm,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
-    backgroundColor: 'rgba(100, 65, 165, 0.15)',
-    overflow: 'hidden',
-  },
-  popularIconImage: {
-    width: 32,
-    height: 32,
   },
   popularNameRow: {
     flexDirection: 'row',
@@ -1069,7 +1051,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.success + '20',
     borderRadius: 4,
   },
-  popularCategoryText: {
+  popularUsesText: {
     fontSize: 12,
     color: Colors.textSecondary,
     marginTop: 2,

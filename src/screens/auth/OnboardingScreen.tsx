@@ -31,7 +31,7 @@ interface OnboardingItem {
 const onboardingData: OnboardingItem[] = [
   {
     id: '1',
-    title: 'AI Marketing Tools',
+    title: '206+ AI Marketing Tools',
     description: 'Access the most comprehensive suite of AI-powered marketing tools. From ad copy to blog posts, we\'ve got you covered.',
     icon: 'zap',
     gradient: ['#6C5CE7', '#A29BFE'],
@@ -170,7 +170,7 @@ const OnboardingScreen = () => {
       <View style={styles.footer}>
         <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
           <LinearGradient
-            colors={Gradients.primary}
+            colors={Gradients.button}
             style={styles.nextButtonGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   dot: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
     marginHorizontal: 4,
   },
   footer: {
