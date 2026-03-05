@@ -172,7 +172,7 @@ const MemeGeneratorScreen = () => {
         Alert.alert('Success! 🎉', 'Meme saved to your gallery', [{ text: 'OK' }]);
       }
     } catch (error) {
-      if (__DEV__) console.error('Save error:', error);
+      console.error('Save error:', error);
       Alert.alert('Error', 'Failed to save meme');
     } finally {
       setIsLoading(false);
@@ -201,7 +201,7 @@ const MemeGeneratorScreen = () => {
         }
       }
     } catch (error) {
-      if (__DEV__) console.error('Share error:', error);
+      console.error('Share error:', error);
       Alert.alert('Error', 'Failed to share meme');
     } finally {
       setIsLoading(false);
@@ -355,14 +355,14 @@ const MemeGeneratorScreen = () => {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.sourceButton} onPress={takePhoto}>
-            <LinearGradient colors={Gradients.accent} style={styles.sourceGradient}>
+            <LinearGradient colors={Gradients.secondary} style={styles.sourceGradient}>
               <Feather name="camera" size={24} color={Colors.white} />
               <Text style={styles.sourceButtonText}>Camera</Text>
             </LinearGradient>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.sourceButton} onPress={() => setShowTemplates(true)}>
-            <LinearGradient colors={['#7C3AED', '#A855F7']} style={styles.sourceGradient}>
+            <LinearGradient colors={['#FF6B6B', '#FF8E8E']} style={styles.sourceGradient}>
               <Feather name="grid" size={24} color={Colors.white} />
               <Text style={styles.sourceButtonText}>Templates</Text>
             </LinearGradient>
@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   textInputActive: {
-    borderColor: Colors.primary,
+    borderColor: Colors.secondary,
   },
   settingsPanel: {
     backgroundColor: Colors.card,
@@ -783,7 +783,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: BorderRadius.md,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -801,8 +801,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   optionSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.secondary,
+    borderColor: Colors.secondary,
   },
   fontOptionText: {
     fontSize: 14,
@@ -822,7 +822,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   colorOptionSelected: {
-    borderColor: Colors.primary,
+    borderColor: Colors.secondary,
     borderWidth: 3,
   },
   noStrokeOption: {

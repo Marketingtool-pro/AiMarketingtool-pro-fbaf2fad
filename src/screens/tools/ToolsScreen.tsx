@@ -20,7 +20,100 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore, TOOL_CATEGORIES, PLATFORMS, Tool } from '../../store/toolsStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
-import { getToolIcon } from '../../constants/toolIcons';
+
+// Category images for tool card backgrounds (matches real app 3D icon style)
+const CategoryImageAssets: Record<string, any> = {
+  'google-ads': require('../../assets/images/categories/google-ads.jpg'),
+  'google-seo': require('../../assets/images/categories/google-seo.jpg'),
+  'google-analytics': require('../../assets/images/categories/google-analytics.jpg'),
+  'google-content': require('../../assets/images/categories/google-content.jpg'),
+  'facebook-ads': require('../../assets/images/categories/facebook-ads.jpg'),
+  'instagram': require('../../assets/images/categories/instagram.jpg'),
+  'social-media': require('../../assets/images/categories/social-media.jpg'),
+  'meta-content': require('../../assets/images/categories/meta-content.jpg'),
+  'shopify-products': require('../../assets/images/categories/shopify-products.jpg'),
+  'shopify-ads': require('../../assets/images/categories/shopify-ads.jpg'),
+  'email-marketing': require('../../assets/images/categories/email-marketing.jpg'),
+  'ecommerce-seo': require('../../assets/images/categories/ecommerce-seo.jpg'),
+  'ai-agents': require('../../assets/images/categories/ai-agents.jpg'),
+  'content-creation': require('../../assets/images/categories/content-creation.jpg'),
+};
+
+// Platform color map for tool icons
+const PLATFORM_COLORS: Record<string, string> = {};
+PLATFORMS.forEach(p => { PLATFORM_COLORS[p.id] = p.color; });
+
+// Category gradient colors
+const CATEGORY_GRADIENTS: Record<string, string[]> = {
+  'google-ads': ['#4285F4', '#1A73E8'],
+  'google-seo': ['#34A853', '#1E8E3E'],
+  'google-analytics': ['#F9AB00', '#E37400'],
+  'google-content': ['#EA4335', '#C5221F'],
+  'facebook-ads': ['#1877F2', '#0C5DC7'],
+  'instagram': ['#E4405F', '#C13584'],
+  'social-media': ['#833AB4', '#5851DB'],
+  'meta-content': ['#0088FF', '#00C6FF'],
+  'shopify-products': ['#96BF48', '#5E8E3E'],
+  'shopify-ads': ['#5C6BC0', '#3949AB'],
+  'email-marketing': ['#FF6B6B', '#EE5A5A'],
+  'ecommerce-seo': ['#00BFA5', '#00897B'],
+  'ai-agents': ['#FF6B35', '#F7931E'],
+  'content-creation': ['#7C4DFF', '#651FFF'],
+};
+
+// Get color for a tool based on its category's platform
+const getToolColor = (tool: Tool): string => {
+  const category = TOOL_CATEGORIES.find(c => c.id === tool.category);
+  if (category?.platform) return PLATFORM_COLORS[category.platform] || Colors.secondary;
+  return Colors.secondary;
+};
+
+// Get category image for a tool
+const getToolCategoryImage = (tool: Tool): any => {
+  return CategoryImageAssets[tool.category] || null;
+};
+
+// Get category gradient for a tool
+const getToolGradient = (tool: Tool): string[] => {
+  return CATEGORY_GRADIENTS[tool.category] || [Colors.secondary, Colors.accent];
+};
+
+// Smarter icon selection based on tool name keywords
+const getSmartIcon = (tool: Tool): string => {
+  const n = tool.name.toLowerCase();
+  if (n.includes('caption') || n.includes('post')) return 'type';
+  if (n.includes('hashtag') || n.includes('tag')) return 'hash';
+  if (n.includes('reel') || n.includes('video') || n.includes('script')) return 'film';
+  if (n.includes('story') || n.includes('stories')) return 'camera';
+  if (n.includes('audit') || n.includes('grader') || n.includes('checker')) return 'check-circle';
+  if (n.includes('keyword') || n.includes('research')) return 'key';
+  if (n.includes('content') || n.includes('blog') || n.includes('article') || n.includes('writer')) return 'file-text';
+  if (n.includes('email') || n.includes('subject') || n.includes('newsletter')) return 'mail';
+  if (n.includes('ad copy') || n.includes('headline') || n.includes('copy')) return 'edit-3';
+  if (n.includes('budget') || n.includes('calculator') || n.includes('roi')) return 'dollar-sign';
+  if (n.includes('manager') || n.includes('suite') || n.includes('dashboard')) return 'layout';
+  if (n.includes('schedule') || n.includes('planner') || n.includes('calendar')) return 'calendar';
+  if (n.includes('analytic') || n.includes('report') || n.includes('metric')) return 'bar-chart-2';
+  if (n.includes('performance') || n.includes('optimization')) return 'trending-up';
+  if (n.includes('automation') || n.includes('ai ') || n.includes('bot')) return 'cpu';
+  if (n.includes('product') || n.includes('shopify') || n.includes('ecommerce')) return 'shopping-bag';
+  if (n.includes('campaign')) return 'target';
+  if (n.includes('landing') || n.includes('page')) return 'monitor';
+  if (n.includes('description') || n.includes('listing')) return 'align-left';
+  if (n.includes('social') || n.includes('share')) return 'share-2';
+  if (n.includes('brand') || n.includes('logo')) return 'award';
+  if (n.includes('strategy') || n.includes('plan')) return 'compass';
+  if (n.includes('template')) return 'copy';
+  if (n.includes('generator') || n.includes('create')) return 'zap';
+  if (n.includes('meme')) return 'smile';
+  if (n.includes('display')) return 'monitor';
+  if (n.includes('responsive') || n.includes('search ad')) return 'search';
+  if (n.includes('shopping') || n.includes('feed')) return 'shopping-cart';
+  if (n.includes('review') || n.includes('testimonial')) return 'message-square';
+  if (n.includes('title')) return 'bold';
+  if (n.includes('seo')) return 'globe';
+  return tool.icon; // fallback to original
+};
 
 const { width } = Dimensions.get('window');
 
@@ -68,35 +161,55 @@ const ToolsScreen = () => {
     }
   };
 
-  const renderToolCard = ({ item }: { item: Tool }) => (
-    <TouchableOpacity
-      style={styles.toolCard}
-      onPress={() => handleToolPress(item)}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.toolIcon, { backgroundColor: Colors.accent + '15' }]}>
-        <Image source={getToolIcon(item.slug, item.category)} style={styles.toolIconImage} />
-      </View>
-      <View style={styles.toolBadges}>
-        {item.isNew && (
-          <View style={[styles.badge, { backgroundColor: Colors.success }]}>
-            <Text style={styles.badgeText}>NEW</Text>
+  const renderToolCard = ({ item }: { item: Tool }) => {
+    const toolColor = getToolColor(item);
+    const categoryImage = getToolCategoryImage(item);
+    const gradient = getToolGradient(item);
+
+    return (
+      <TouchableOpacity
+        style={styles.toolCard}
+        onPress={() => handleToolPress(item)}
+        activeOpacity={0.7}
+      >
+        {/* Icon area with category image background */}
+        <View style={styles.toolIconArea}>
+          {categoryImage && (
+            <Image source={categoryImage} style={styles.toolIconImage} resizeMode="cover" />
+          )}
+          <LinearGradient
+            colors={[`${gradient[0]}40`, `${gradient[1]}90`]}
+            style={styles.toolIconOverlay}
+          />
+          <View style={styles.toolIconCenter}>
+            <Feather name={getSmartIcon(item) as any} size={28} color={Colors.white} />
           </View>
-        )}
-        {item.isPro && (
-          <View style={[styles.badge, { backgroundColor: Colors.gold }]}>
-            <Text style={styles.badgeText}>PRO</Text>
-          </View>
-        )}
-        {item.isTrending && (
-          <View style={[styles.badge, { backgroundColor: Colors.accent }]}>
-            <Feather name="trending-up" size={10} color={Colors.white} />
-          </View>
-        )}
-      </View>
-      <Text style={styles.toolName} numberOfLines={2}>{item.name}</Text>
-    </TouchableOpacity>
-  );
+        </View>
+
+        {/* Badges row */}
+        <View style={styles.toolBadges}>
+          {item.isPro && (
+            <View style={[styles.badge, { backgroundColor: Colors.gold }]}>
+              <Text style={styles.badgeText}>PRO</Text>
+            </View>
+          )}
+          {item.isNew && (
+            <View style={[styles.badge, { backgroundColor: Colors.success }]}>
+              <Text style={styles.badgeText}>NEW</Text>
+            </View>
+          )}
+          {item.isTrending && (
+            <View style={[styles.badge, { backgroundColor: toolColor }]}>
+              <Feather name="trending-up" size={10} color={Colors.white} />
+            </View>
+          )}
+        </View>
+
+        {/* Tool name */}
+        <Text style={styles.toolName} numberOfLines={2}>{item.name}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <AnimatedBackground variant="tools" showParticles={true}>
@@ -104,13 +217,13 @@ const ToolsScreen = () => {
       <View style={styles.heroBanner}>
         <Image source={ScreenImages.toolsHero} style={styles.heroImage} resizeMode="cover" />
         <LinearGradient
-          colors={['transparent', 'rgba(13, 15, 28, 0.7)', 'rgba(13, 15, 28, 0.95)']}
+          colors={['transparent', 'rgba(6, 11, 40, 0.7)', 'rgba(6, 11, 40, 0.95)']}
           style={styles.heroGradient}
         >
           <View style={styles.heroContent}>
             <View style={styles.heroBadge}>
               <Feather name="zap" size={12} color={Colors.gold} />
-              <Text style={styles.heroBadgeText}>75+ AI Tools</Text>
+              <Text style={styles.heroBadgeText}>206+ AI Tools</Text>
             </View>
             <Text style={styles.heroTitle}>AI Marketing Tools</Text>
             <Text style={styles.heroSubtitle}>Google • Meta • Shopify</Text>
@@ -125,7 +238,7 @@ const ToolsScreen = () => {
           <Feather name="search" size={20} color={Colors.textTertiary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search 75+ tools..."
+            placeholder="Search 206+ tools..."
             placeholderTextColor={Colors.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -192,9 +305,6 @@ const ToolsScreen = () => {
           </TouchableOpacity>
         ))}
       </ScrollView>
-
-      {/* Spacer */}
-      <View style={{ height: 4 }} />
 
       {/* Tools Grid */}
       <FlatList
@@ -279,7 +389,12 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.glassBorder,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   searchInput: {
     flex: 1,
@@ -303,9 +418,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.md,
     gap: 6,
+    borderWidth: 1,
+    borderColor: Colors.glassBorder,
   },
   platformTabActive: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.secondary,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    shadowColor: Colors.secondary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   platformTabText: {
     fontSize: 13,
@@ -333,7 +456,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.sm,
   },
   categoryChipActive: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.secondary,
   },
   categoryChipText: {
     fontSize: 13,
@@ -355,34 +478,45 @@ const styles = StyleSheet.create({
     width: (width - Spacing.md * 4) / 3,
     backgroundColor: Colors.card,
     borderRadius: BorderRadius.lg,
-    padding: Spacing.sm,
     marginBottom: Spacing.md,
-    alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: Colors.glassBorder,
+    overflow: 'hidden',
   },
-  toolIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: BorderRadius.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
+  toolIconArea: {
+    width: '100%',
+    height: 90,
+    position: 'relative',
+    backgroundColor: Colors.surface,
     overflow: 'hidden',
   },
   toolIconImage: {
-    width: 52,
-    height: 52,
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  toolIconOverlay: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  toolIconCenter: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   toolBadges: {
     flexDirection: 'row',
     gap: 3,
-    marginBottom: 4,
+    paddingHorizontal: 6,
+    paddingTop: 6,
+    flexWrap: 'wrap',
+    minHeight: 20,
   },
   badge: {
     paddingHorizontal: 5,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 3,
   },
   badgeText: {
     fontSize: 8,
@@ -390,19 +524,13 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   toolName: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: Colors.white,
-    textAlign: 'center',
-  },
-  toolCountRow: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xs,
-  },
-  toolCountText: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    fontWeight: '500',
+    paddingHorizontal: 6,
+    paddingBottom: 8,
+    paddingTop: 4,
+    lineHeight: 16,
   },
   emptyState: {
     alignItems: 'center',

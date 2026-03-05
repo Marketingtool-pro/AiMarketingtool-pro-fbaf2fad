@@ -28,7 +28,7 @@ const Loading: React.FC<LoadingProps> = ({
     return (
       <LinearGradient colors={Gradients.dark} style={[styles.fullScreen, style]}>
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size={size} color={Colors.primary} />
+          <ActivityIndicator size={size} color={Colors.secondary} />
           {text && <Text style={styles.text}>{text}</Text>}
         </View>
       </LinearGradient>
@@ -39,7 +39,7 @@ const Loading: React.FC<LoadingProps> = ({
     return (
       <View style={[styles.overlay, style]}>
         <View style={styles.overlayContent}>
-          <ActivityIndicator size={size} color={Colors.primary} />
+          <ActivityIndicator size={size} color={Colors.secondary} />
           {text && <Text style={styles.text}>{text}</Text>}
         </View>
       </View>
@@ -48,7 +48,7 @@ const Loading: React.FC<LoadingProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      <ActivityIndicator size={size} color={Colors.primary} />
+      <ActivityIndicator size={size} color={Colors.secondary} />
       {text && <Text style={styles.text}>{text}</Text>}
     </View>
   );

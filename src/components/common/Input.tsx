@@ -50,7 +50,7 @@ const Input: React.FC<InputProps> = ({
           <Feather
             name={icon as any}
             size={20}
-            color={isFocused ? Colors.primary : Colors.textTertiary}
+            color={isFocused ? Colors.secondary : Colors.textTertiary}
             style={styles.icon}
           />
         )}
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
   },
   inputContainerFocused: {
-    borderColor: Colors.primary,
+    borderColor: Colors.secondary,
   },
   inputContainerError: {
     borderColor: Colors.error,

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Clipboard from 'expo-clipboard';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore } from '../../store/toolsStore';
+import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 
@@ -46,12 +47,13 @@ interface GeneratedOutput {
 const ToolResultScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
-  const { toolSlug, result } = route.params;
-  const { tools } = useToolsStore();
+  const { toolSlug, result, inputs: savedInputs } = route.params;
+  const { tools, addGeneration } = useToolsStore();
+  const { user } = useAuthStore();
 
   const tool = tools.find(t => t.slug === toolSlug);
 
-  // Parse results - handle error state properly
+  // Parse results from AI generation
   const [outputs, setOutputs] = useState<GeneratedOutput[]>(
     result?.outputs?.map((content: string, index: number) => ({
       id: `output-${index}`,
@@ -63,9 +65,31 @@ const ToolResultScreen = () => {
   const [selectedOutput, setSelectedOutput] = useState<string | null>(outputs[0]?.id);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showFullContent, setShowFullContent] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
-  // Check if generation failed
-  const generationFailed = !result?.success || outputs.length === 0;
+  // Auto-save to history on mount
+  useEffect(() => {
+    const autoSave = async () => {
+      if (result?.outputs?.length && user && tool && !isSaved) {
+        try {
+          await addGeneration({
+            userId: user.$id,
+            toolId: tool.$id,
+            toolName: tool.name,
+            input: savedInputs || {},
+            output: result.outputs.join('\n\n---\n\n'),
+            outputType: tool.outputType || 'text',
+            createdAt: new Date().toISOString(),
+            isFavorite: false,
+          });
+          setIsSaved(true);
+        } catch (e) {
+          // Silent fail — user can manually save
+        }
+      }
+    };
+    autoSave();
+  }, []);
 
   // Detect if this is a large/desktop-preferred result
   const isLargeOutput = useMemo(() => {
@@ -101,7 +125,7 @@ const ToolResultScreen = () => {
         message: content,
       });
     } catch (error) {
-      if (__DEV__) console.error('Share error:', error);
+      console.error('Share error:', error);
     }
   };
 
@@ -114,11 +138,35 @@ const ToolResultScreen = () => {
   };
 
   const handleRegenerate = () => {
-    navigation.goBack();
+    if (tool && savedInputs) {
+      navigation.navigate('ToolDetail', { toolSlug: tool.slug, prefillInputs: savedInputs });
+    } else {
+      navigation.goBack();
+    }
   };
 
-  const handleSaveToHistory = () => {
-    Alert.alert('Saved', 'Content saved to your history');
+  const handleSaveToHistory = async () => {
+    if (isSaved) {
+      Alert.alert('Already Saved', 'This content is already in your history.');
+      return;
+    }
+    if (!user || !tool) return;
+    try {
+      await addGeneration({
+        userId: user.$id,
+        toolId: tool.$id,
+        toolName: tool.name,
+        input: savedInputs || {},
+        output: outputs.map(o => o.content).join('\n\n---\n\n'),
+        outputType: tool.outputType || 'text',
+        createdAt: new Date().toISOString(),
+        isFavorite: false,
+      });
+      setIsSaved(true);
+      Alert.alert('Saved', 'Content saved to your history');
+    } catch (e) {
+      Alert.alert('Error', 'Could not save. Please try again.');
+    }
   };
 
   const handleExport = () => {
@@ -160,8 +208,8 @@ const ToolResultScreen = () => {
 
         {tool && (
           <View style={styles.toolInfo}>
-            <View style={[styles.toolIcon, { backgroundColor: Colors.primary + '20' }]}>
-              <Feather name={tool.icon as any} size={24} color={Colors.primary} />
+            <View style={[styles.toolIcon, { backgroundColor: Colors.secondary + '20' }]}>
+              <Feather name={tool.icon as any} size={24} color={Colors.secondary} />
             </View>
             <View>
               <Text style={styles.toolName}>{tool.name}</Text>
@@ -171,53 +219,33 @@ const ToolResultScreen = () => {
         )}
       </LinearGradient>
 
-      {/* Error State */}
-      {generationFailed ? (
-        <View style={styles.errorContainer}>
-          <View style={styles.errorIcon}>
-            <Feather name="alert-circle" size={48} color={Colors.error} />
-          </View>
-          <Text style={styles.errorTitle}>Generation Failed</Text>
-          <Text style={styles.errorMessage}>
-            {result?.error || 'Unable to generate content. Please check your connection and try again.'}
-          </Text>
+      {/* Output Tabs */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabsScroll}
+        contentContainerStyle={styles.tabsContent}
+      >
+        {outputs.map((output, index) => (
           <TouchableOpacity
-            style={styles.retryButton}
-            onPress={handleRegenerate}
+            key={output.id}
+            style={[styles.tab, selectedOutput === output.id && styles.tabActive]}
+            onPress={() => setSelectedOutput(output.id)}
           >
-            <Feather name="refresh-cw" size={20} color={Colors.white} />
-            <Text style={styles.retryButtonText}>Try Again</Text>
+            <Text style={[styles.tabText, selectedOutput === output.id && styles.tabTextActive]}>
+              Option {index + 1}
+            </Text>
+            {output.liked && (
+              <Feather name="heart" size={14} color={Colors.error} />
+            )}
           </TouchableOpacity>
-        </View>
-      ) : (
-        <>
-          {/* Output Tabs */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.tabsScroll}
-            contentContainerStyle={styles.tabsContent}
-          >
-            {outputs.map((output, index) => (
-              <TouchableOpacity
-                key={output.id}
-                style={[styles.tab, selectedOutput === output.id && styles.tabActive]}
-                onPress={() => setSelectedOutput(output.id)}
-              >
-                <Text style={[styles.tabText, selectedOutput === output.id && styles.tabTextActive]}>
-                  Option {index + 1}
-                </Text>
-                {output.liked && (
-                  <Feather name="heart" size={14} color={Colors.error} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+        ))}
+      </ScrollView>
 
-          {/* Content */}
-          <ScrollView
-            style={styles.content}
-            contentContainerStyle={styles.contentContainer}
+      {/* Content */}
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
         {outputs.map((output) => (
@@ -239,7 +267,7 @@ const ToolResultScreen = () => {
                   style={styles.showMoreBtn}
                   onPress={() => setShowFullContent(true)}
                 >
-                  <Feather name="chevron-down" size={16} color={Colors.primary} />
+                  <Feather name="chevron-down" size={16} color={Colors.secondary} />
                   <Text style={styles.showMoreText}>Show full result</Text>
                 </TouchableOpacity>
               </>
@@ -251,7 +279,7 @@ const ToolResultScreen = () => {
             {isLargeOutput && (
               <View style={styles.desktopBanner}>
                 <View style={styles.desktopBannerHeader}>
-                  <Feather name="monitor" size={18} color={Colors.primary} />
+                  <Feather name="monitor" size={18} color={Colors.secondary} />
                   <Text style={styles.desktopBannerTitle}>Best viewed on desktop</Text>
                 </View>
                 <Text style={styles.desktopBannerText}>
@@ -263,11 +291,11 @@ const ToolResultScreen = () => {
                     <Text style={styles.desktopActionText}>View Full on Desktop</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={handleEmailResult}>
-                    <Feather name="mail" size={16} color={Colors.primary} />
+                    <Feather name="mail" size={16} color={Colors.secondary} />
                     <Text style={styles.desktopActionOutlineText}>Email Result</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={() => handleCopy(output.content, output.id)}>
-                    <Feather name="copy" size={16} color={Colors.primary} />
+                    <Feather name="copy" size={16} color={Colors.secondary} />
                     <Text style={styles.desktopActionOutlineText}>Copy Summary</Text>
                   </TouchableOpacity>
                 </View>
@@ -316,8 +344,14 @@ const ToolResultScreen = () => {
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.actionBtn} onPress={handleSaveToHistory}>
-                <Feather name="bookmark" size={20} color={Colors.textSecondary} />
-                <Text style={styles.actionText}>Save</Text>
+                <Feather
+                  name={isSaved ? 'check' : 'bookmark'}
+                  size={20}
+                  color={isSaved ? Colors.success : Colors.textSecondary}
+                />
+                <Text style={[styles.actionText, isSaved && { color: Colors.success }]}>
+                  {isSaved ? 'Saved' : 'Save'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -362,7 +396,7 @@ const ToolResultScreen = () => {
           style={styles.secondaryButton}
           onPress={handleRegenerate}
         >
-          <Feather name="refresh-cw" size={20} color={Colors.primary} />
+          <Feather name="refresh-cw" size={20} color={Colors.secondary} />
           <Text style={styles.secondaryButtonText}>Regenerate</Text>
         </TouchableOpacity>
 
@@ -376,8 +410,6 @@ const ToolResultScreen = () => {
           </LinearGradient>
         </TouchableOpacity>
       </View>
-      </>
-      )}
     </AnimatedBackground>
   );
 };
@@ -461,7 +493,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tabActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
   },
   tabText: {
     fontSize: 14,
@@ -485,7 +517,7 @@ const styles = StyleSheet.create({
   },
   outputCardSelected: {
     borderWidth: 2,
-    borderColor: Colors.primary,
+    borderColor: Colors.secondary,
   },
   outputCardHidden: {
     display: 'none',
@@ -506,16 +538,16 @@ const styles = StyleSheet.create({
   },
   showMoreText: {
     fontSize: 14,
-    color: Colors.primary,
+    color: Colors.secondary,
     fontWeight: '600',
   },
   desktopBanner: {
-    backgroundColor: Colors.primary + '12',
+    backgroundColor: Colors.secondary + '12',
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     marginBottom: Spacing.lg,
     borderWidth: 1,
-    borderColor: Colors.primary + '30',
+    borderColor: Colors.secondary + '30',
   },
   desktopBannerHeader: {
     flexDirection: 'row',
@@ -526,7 +558,7 @@ const styles = StyleSheet.create({
   desktopBannerTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.primary,
+    color: Colors.secondary,
   },
   desktopBannerText: {
     fontSize: 13,
@@ -541,7 +573,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
     paddingVertical: 10,
     borderRadius: BorderRadius.sm,
     gap: 8,
@@ -557,7 +589,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.primary + '50',
+    borderColor: Colors.secondary + '50',
     paddingVertical: 10,
     borderRadius: BorderRadius.sm,
     gap: 8,
@@ -566,7 +598,7 @@ const styles = StyleSheet.create({
   desktopActionOutlineText: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.primary,
+    color: Colors.secondary,
   },
   outputActions: {
     flexDirection: 'row',
@@ -606,7 +638,7 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   tipsCard: {
-    backgroundColor: Colors.primary + '15',
+    backgroundColor: Colors.secondary + '15',
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
   },
@@ -642,13 +674,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: Colors.primary,
+    borderColor: Colors.secondary,
     gap: Spacing.sm,
   },
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.primary,
+    color: Colors.secondary,
   },
   primaryButton: {
     flex: 1,
@@ -663,48 +695,6 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.white,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.xl,
-  },
-  errorIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.error + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
-  },
-  errorTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Colors.white,
-    marginBottom: Spacing.sm,
-  },
-  errorMessage: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: Spacing.xl,
-  },
-  retryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.primary,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
-    gap: Spacing.sm,
-  },
-  retryButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.white,

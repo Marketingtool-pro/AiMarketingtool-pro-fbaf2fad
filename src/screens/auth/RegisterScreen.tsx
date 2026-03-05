@@ -182,7 +182,7 @@ const RegisterScreen = () => {
             <View style={styles.features}>
               <View style={styles.featureItem}>
                 <Feather name="check-circle" size={16} color={Colors.success} />
-                <Text style={styles.featureText}>AI Marketing Tools</Text>
+                <Text style={styles.featureText}>206+ AI Marketing Tools</Text>
               </View>
               <View style={styles.featureItem}>
                 <Feather name="check-circle" size={16} color={Colors.success} />
@@ -291,8 +291,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.secondary,
+    borderColor: Colors.secondary,
   },
   termsText: {
     flex: 1,
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   termsLink: {
-    color: Colors.primary,
+    color: Colors.secondary,
   },
   registerButton: {
     borderRadius: BorderRadius.md,
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   loginLink: {
-    color: Colors.primary,
+    color: Colors.secondary,
     fontSize: 16,
     fontWeight: '600',
   },
