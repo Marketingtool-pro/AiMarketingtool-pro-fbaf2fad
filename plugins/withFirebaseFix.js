@@ -35,18 +35,18 @@ module.exports = function withFirebaseFix(config) {
       end
 
       # Specific fixes for Firebase modules
-      if target.name.start_with?('RNFB') || target.name.start_with?('Firebase')
+      if target.name.start_with?('RNFB') || target.name.start_with?('Firebase') || target.name.include?('ZXingObjC')
         target.build_configurations.each do |bc|
-          # Disable modules for RNFB to resolve modular boundary issues with React-Core
+          # Disable modules for these problematic libs to resolve header visibility issues
           bc.build_settings['DEFINES_MODULE'] = 'NO'
           bc.build_settings['CLANG_ENABLE_MODULES'] = 'NO'
-          
+
           # Resolve C99 implicit int errors by ensuring modern standards
           bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
           bc.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
-          
-          # Force header search path for React protocols
-          bc.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) "\${PODS_ROOT}/Headers/Public/React-Core"'
+
+          # Force header search path for React protocols and internal visibility
+          bc.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) "${PODS_ROOT}/Headers/Public/React-Core" "${PODS_ROOT}/Headers/Public/ZXingObjC"'
         end
       end
     end`;
