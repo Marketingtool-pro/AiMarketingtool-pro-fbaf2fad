@@ -342,8 +342,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
         }),
         false,
         '/',
-        ExecutionMethod.POST,
-        { 'Content-Type': 'application/json' }
+        ExecutionMethod.POST
       );
 
       // Check execution status before parsing
