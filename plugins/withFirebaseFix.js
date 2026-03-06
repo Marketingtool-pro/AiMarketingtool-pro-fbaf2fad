@@ -40,7 +40,7 @@ module.exports = function withFirebaseFix(config) {
           bc.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
 
           # Ensure React-Core headers are visible for protocols
-          bc.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) "${PODS_ROOT}/Headers/Public/React-Core"'
+          bc.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) "\${PODS_ROOT}/Headers/Public/React-Core"'
         end
       end
     end`;
