@@ -133,18 +133,13 @@ function withEdgeToEdgeFix(config) {
 
         // Add edge-to-edge setup in onCreate if not present
         if (!content.includes('WindowCompat.setDecorFitsSystemWindows')) {
-          content = content.replace(
-            'super.onCreate(null)',
-            'super.onCreate(null)\n    WindowCompat.setDecorFitsSystemWindows(window, false)'
-          );
-        }
-
-        // Add Play Integrity Initialization
-        if (!content.includes('PlayIntegrityAppCheckProviderFactory')) {
-          content = content.replace(
-            'WindowCompat.setDecorFitsSystemWindows(window, false)',
-            'WindowCompat.setDecorFitsSystemWindows(window, false)\n    Firebase.initialize(context = this)\n    Firebase.appCheck.installAppCheckProviderFactory(\n        PlayIntegrityAppCheckProviderFactory.getInstance(),\n    )'
-          );
+          const onCreateRegex = /(super\.onCreate\s*\(.*?\))/;
+          if (onCreateRegex.test(content)) {
+            content = content.replace(
+              onCreateRegex,
+              `$1\n    WindowCompat.setDecorFitsSystemWindows(window, false)\n    Firebase.initialize(context = this)\n    Firebase.appCheck.installAppCheckProviderFactory(\n        PlayIntegrityAppCheckProviderFactory.getInstance(),\n    )`
+            );
+          }
         }
 
         fs.writeFileSync(activityFile, content);
