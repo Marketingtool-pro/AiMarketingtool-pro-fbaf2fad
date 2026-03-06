@@ -113,7 +113,12 @@
         {
           "ios": {
             "useFrameworks": "static",
-            "deploymentTarget": "16.0"
+            "deploymentTarget": "16.0",
+            "extraCCFlags": [
+              "-Wno-error=implicit-function-declaration",
+              "-Wno-error=implicit-int",
+              "-Wno-redeclared-class-member"
+            ]
           },
           "android": {
             "compileSdkVersion": 35,
@@ -123,7 +128,6 @@
           }
         }
       ],
-      "./plugins/withFirebaseFix.js",
       "./plugins/withEdgeToEdgeFix.js",
       "expo-secure-store",
       "expo-font",
