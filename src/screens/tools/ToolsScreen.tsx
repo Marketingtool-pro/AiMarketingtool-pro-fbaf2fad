@@ -79,42 +79,6 @@ const getToolGradient = (tool: Tool): string[] => {
   return CATEGORY_GRADIENTS[tool.category] || [Colors.secondary, Colors.accent];
 };
 
-// Smarter icon selection based on tool name keywords
-const getSmartIcon = (tool: Tool): string => {
-  const n = tool.name.toLowerCase();
-  if (n.includes('caption') || n.includes('post')) return 'type';
-  if (n.includes('hashtag') || n.includes('tag')) return 'hash';
-  if (n.includes('reel') || n.includes('video') || n.includes('script')) return 'film';
-  if (n.includes('story') || n.includes('stories')) return 'camera';
-  if (n.includes('audit') || n.includes('grader') || n.includes('checker')) return 'check-circle';
-  if (n.includes('keyword') || n.includes('research')) return 'key';
-  if (n.includes('content') || n.includes('blog') || n.includes('article') || n.includes('writer')) return 'file-text';
-  if (n.includes('email') || n.includes('subject') || n.includes('newsletter')) return 'mail';
-  if (n.includes('ad copy') || n.includes('headline') || n.includes('copy')) return 'edit-3';
-  if (n.includes('budget') || n.includes('calculator') || n.includes('roi')) return 'dollar-sign';
-  if (n.includes('manager') || n.includes('suite') || n.includes('dashboard')) return 'layout';
-  if (n.includes('schedule') || n.includes('planner') || n.includes('calendar')) return 'calendar';
-  if (n.includes('analytic') || n.includes('report') || n.includes('metric')) return 'bar-chart-2';
-  if (n.includes('performance') || n.includes('optimization')) return 'trending-up';
-  if (n.includes('automation') || n.includes('ai ') || n.includes('bot')) return 'cpu';
-  if (n.includes('product') || n.includes('shopify') || n.includes('ecommerce')) return 'shopping-bag';
-  if (n.includes('campaign')) return 'target';
-  if (n.includes('landing') || n.includes('page')) return 'monitor';
-  if (n.includes('description') || n.includes('listing')) return 'align-left';
-  if (n.includes('social') || n.includes('share')) return 'share-2';
-  if (n.includes('brand') || n.includes('logo')) return 'award';
-  if (n.includes('strategy') || n.includes('plan')) return 'compass';
-  if (n.includes('template')) return 'copy';
-  if (n.includes('generator') || n.includes('create')) return 'zap';
-  if (n.includes('meme')) return 'smile';
-  if (n.includes('display')) return 'monitor';
-  if (n.includes('responsive') || n.includes('search ad')) return 'search';
-  if (n.includes('shopping') || n.includes('feed')) return 'shopping-cart';
-  if (n.includes('review') || n.includes('testimonial')) return 'message-square';
-  if (n.includes('title')) return 'bold';
-  if (n.includes('seo')) return 'globe';
-  return tool.icon; // fallback to original
-};
 
 const { width } = Dimensions.get('window');
 
@@ -230,7 +194,7 @@ const ToolsScreen = () => {
               <Feather name="zap" size={12} color={Colors.gold} />
               <Text style={styles.heroBadgeText}>AI Tools</Text>
             </View>
-            <Text style={styles.heroTitle}>AI Marketing Tools</Text>
+            <Text style={styles.heroTitle}>Marketing AI Tools</Text>
             <Text style={styles.heroSubtitle}>Google • Meta • Shopify</Text>
           </View>
         </LinearGradient>

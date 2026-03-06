@@ -1,24 +1,16 @@
-import React, { useRef, useEffect, useMemo } from 'react';
-import {
-  View,
-  StyleSheet,
-  Animated,
-  Easing,
-  ImageBackground,
-  Dimensions,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useMemo } from 'react';
+import { View, StyleSheet, Dimensions, Animated as RNAnimated, Easing as RNEasing } from 'react-native';
+import { 
+  Canvas, 
+  Fill, 
+  Skia, 
+  RuntimeShader,
+  vec,
+  useClock
+} from '@shopify/react-native-skia';
 import { Colors } from '../../constants/theme';
 
 const { width, height } = Dimensions.get('window');
-
-interface AnimatedBackgroundProps {
-  children: React.ReactNode;
-  variant?: 'default' | 'chat' | 'tools' | 'profile' | 'dashboard';
-  showParticles?: boolean;
-  showGradient?: boolean;
-  imageSource?: any;
-}
 
 // Floating Particle Component
 const FloatingParticle = ({ delay, size, startX, startY, color }: {
@@ -28,58 +20,58 @@ const FloatingParticle = ({ delay, size, startX, startY, color }: {
   startY: number;
   color: string;
 }) => {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const translateX = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.5)).current;
+  const translateY = React.useRef(new RNAnimated.Value(0)).current;
+  const translateX = React.useRef(new RNAnimated.Value(0)).current;
+  const opacity = React.useRef(new RNAnimated.Value(0)).current;
+  const scale = React.useRef(new RNAnimated.Value(0.5)).current;
 
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.parallel([
-          Animated.timing(translateY, {
+  React.useEffect(() => {
+    const anim = RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.delay(delay),
+        RNAnimated.parallel([
+          RNAnimated.timing(translateY, {
             toValue: -height * 0.4,
             duration: 8000 + Math.random() * 4000,
-            easing: Easing.out(Easing.ease),
+            easing: RNEasing.out(RNEasing.ease),
             useNativeDriver: true,
           }),
-          Animated.timing(translateX, {
+          RNAnimated.timing(translateX, {
             toValue: (Math.random() - 0.5) * 100,
             duration: 8000 + Math.random() * 4000,
-            easing: Easing.inOut(Easing.ease),
+            easing: RNEasing.inOut(RNEasing.ease),
             useNativeDriver: true,
           }),
-          Animated.sequence([
-            Animated.timing(opacity, {
+          RNAnimated.sequence([
+            RNAnimated.timing(opacity, {
               toValue: 0.6,
               duration: 2000,
               useNativeDriver: true,
             }),
-            Animated.timing(opacity, {
+            RNAnimated.timing(opacity, {
               toValue: 0,
               duration: 6000,
               useNativeDriver: true,
             }),
           ]),
-          Animated.sequence([
-            Animated.timing(scale, {
+          RNAnimated.sequence([
+            RNAnimated.timing(scale, {
               toValue: 1,
               duration: 3000,
               useNativeDriver: true,
             }),
-            Animated.timing(scale, {
+            RNAnimated.timing(scale, {
               toValue: 0.3,
               duration: 5000,
               useNativeDriver: true,
             }),
           ]),
         ]),
-        Animated.parallel([
-          Animated.timing(translateY, { toValue: 0, duration: 0, useNativeDriver: true }),
-          Animated.timing(translateX, { toValue: 0, duration: 0, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0, duration: 0, useNativeDriver: true }),
-          Animated.timing(scale, { toValue: 0.5, duration: 0, useNativeDriver: true }),
+        RNAnimated.parallel([
+          RNAnimated.timing(translateY, { toValue: 0, duration: 0, useNativeDriver: true }),
+          RNAnimated.timing(translateX, { toValue: 0, duration: 0, useNativeDriver: true }),
+          RNAnimated.timing(opacity, { toValue: 0, duration: 0, useNativeDriver: true }),
+          RNAnimated.timing(scale, { toValue: 0.5, duration: 0, useNativeDriver: true }),
         ]),
       ])
     );
@@ -88,7 +80,7 @@ const FloatingParticle = ({ delay, size, startX, startY, color }: {
   }, []);
 
   return (
-    <Animated.View
+    <RNAnimated.View
       style={[
         styles.particle,
         {
@@ -106,62 +98,45 @@ const FloatingParticle = ({ delay, size, startX, startY, color }: {
   );
 };
 
-// Animated Glow Ring
-const GlowRing = ({ delay, maxSize, color }: { delay: number; maxSize: number; color: string }) => {
-  const scale = useRef(new Animated.Value(0.2)).current;
-  const opacity = useRef(new Animated.Value(0.8)).current;
+// 2026 "Liquid Mesh" Shader
+const liquidShader = Skia.RuntimeEffect.Make(`
+  uniform float time;
+  uniform vec2 resolution;
+  
+  half4 main(vec2 pos) {
+    vec2 uv = pos / resolution.xy;
+    
+    // Create liquid motion using sine waves
+    float color1 = sin(uv.x * 2.0 + time * 0.0005) * 0.5 + 0.5;
+    float color2 = sin(uv.y * 3.0 - time * 0.0003) * 0.5 + 0.5;
+    float color3 = sin((uv.x + uv.y) * 1.5 + time * 0.0002) * 0.5 + 0.5;
+    
+    // Deep 2026 Marketing Tones (Purples, Navys, Golds)
+    vec3 c1 = vec3(0.06, 0.04, 0.20); // Deep Navy (#0F0B33)
+    vec3 c2 = vec3(0.49, 0.23, 0.92); // Vivid Purple (#7C3AED)
+    vec3 c3 = vec3(0.09, 0.52, 0.89); // Deep Cyan (#1885E4)
+    
+    vec3 finalColor = mix(c1, c2, color1);
+    finalColor = mix(finalColor, c3, color2 * 0.5);
+    finalColor += color3 * 0.05; // Subtle highlights
+    
+    return half4(finalColor, 1.0);
+  }
+`)!;
 
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.parallel([
-          Animated.timing(scale, {
-            toValue: 1,
-            duration: 4000,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacity, {
-            toValue: 0,
-            duration: 4000,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(scale, { toValue: 0.2, duration: 0, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0.8, duration: 0, useNativeDriver: true }),
-        ]),
-      ])
-    );
-    anim.start();
-    return () => anim.stop();
-  }, []);
-
-  return (
-    <Animated.View
-      style={[
-        styles.glowRing,
-        {
-          width: maxSize,
-          height: maxSize,
-          borderRadius: maxSize / 2,
-          borderColor: color,
-          transform: [{ scale }],
-          opacity,
-        },
-      ]}
-    />
-  );
-};
+interface AnimatedBackgroundProps {
+  children: React.ReactNode;
+  variant?: 'default' | 'chat' | 'tools' | 'profile' | 'dashboard';
+  showParticles?: boolean;
+}
 
 const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
   children,
   variant = 'default',
   showParticles = true,
-  showGradient = true,
-  imageSource,
 }) => {
+  const clock = useClock();
+
   const particles = useMemo(() => [
     { delay: 0, size: 6, startX: width * 0.1, startY: height * 0.8, color: Colors.secondary + '60' },
     { delay: 1000, size: 8, startX: width * 0.3, startY: height * 0.9, color: Colors.purple + '60' },
@@ -173,63 +148,23 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
     { delay: 2500, size: 8, startX: width * 0.8, startY: height * 0.93, color: Colors.gold + '60' },
   ], []);
 
-  const getGradientColors = () => {
-    switch (variant) {
-      case 'chat':
-        return ['rgba(124, 58, 237, 0.1)', 'rgba(6, 11, 40, 0.95)', Colors.background];
-      case 'tools':
-        return ['rgba(124, 58, 237, 0.1)', 'rgba(6, 11, 40, 0.95)', Colors.background];
-      case 'profile':
-        return ['rgba(124, 58, 237, 0.08)', 'rgba(6, 11, 40, 0.95)', Colors.background];
-      case 'dashboard':
-        return ['rgba(124, 58, 237, 0.12)', 'rgba(6, 11, 40, 0.95)', Colors.background];
-      default:
-        return ['rgba(15, 21, 53, 1)', 'rgba(6, 11, 40, 1)', Colors.background];
-    }
-  };
-
-  const getGlowColor = () => {
-    switch (variant) {
-      case 'chat': return Colors.purple;
-      case 'tools': return Colors.secondary;
-      case 'profile': return Colors.gold;
-      case 'dashboard': return Colors.accent;
-      default: return Colors.secondary;
-    }
-  };
-
   return (
     <View style={styles.container}>
-      {imageSource ? (
-        <ImageBackground
-          source={imageSource}
-          style={styles.imageBackground}
-          imageStyle={{ opacity: 0.15 }}
-        >
-          {showGradient && (
-            <LinearGradient
-              colors={getGradientColors() as any}
-              style={styles.gradientOverlay}
-              locations={[0, 0.5, 1]}
-            />
-          )}
-        </ImageBackground>
-      ) : (
-        showGradient && (
-          <LinearGradient
-            colors={getGradientColors() as any}
-            style={styles.gradientOverlay}
-            locations={[0, 0.5, 1]}
+      {/* 1. The Liquid Shader Canvas */}
+      <Canvas style={StyleSheet.absoluteFill}>
+        <Fill>
+          <RuntimeShader 
+            source={liquidShader} 
+            uniforms={{ 
+              time: clock as any, 
+              resolution: vec(width, height) 
+            }} 
           />
-        )
-      )}
+        </Fill>
+      </Canvas>
 
-      {/* Glow Rings */}
-      <View style={styles.glowContainer}>
-        <GlowRing delay={0} maxSize={300} color={getGlowColor() + '20'} />
-        <GlowRing delay={1500} maxSize={400} color={getGlowColor() + '15'} />
-        <GlowRing delay={3000} maxSize={500} color={getGlowColor() + '10'} />
-      </View>
+      {/* 2. Glass Overlay (Subtle grain for realistic texture) */}
+      <View style={styles.overlay} />
 
       {/* Floating Particles */}
       {showParticles && (
@@ -240,7 +175,7 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
         </View>
       )}
 
-      {/* Content */}
+      {/* 3. Content Container */}
       <View style={styles.content}>{children}</View>
     </View>
   );
@@ -249,23 +184,11 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#060B28', // Fallback color
   },
-  imageBackground: {
+  overlay: {
     ...StyleSheet.absoluteFillObject,
-  },
-  gradientOverlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  glowContainer: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: 100,
-  },
-  glowRing: {
-    position: 'absolute',
-    borderWidth: 1,
+    backgroundColor: 'rgba(6, 11, 40, 0.15)', // Darken slightly for readability
   },
   particlesContainer: {
     ...StyleSheet.absoluteFillObject,

@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { makeRedirectUri } from 'expo-auth-session';
+import { sendPhoneOTP, verifyPhoneOTP } from './firebaseAuth';
 
 // Ensure web browser closes properly after OAuth
 WebBrowser.maybeCompleteAuthSession();
@@ -100,10 +101,13 @@ export const authService = {
         failureUrl
       );
 
-      if (__DEV__) console.log('[OAuth] Opening URL:', oauthUrl?.toString());
+      if (!oauthUrl) throw new Error('Failed to generate OAuth URL');
+      const oauthUrlString = oauthUrl.toString();
+
+      if (__DEV__) console.log('[OAuth] Opening URL:', oauthUrlString);
 
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await WebBrowser.openAuthSessionAsync(oauthUrl?.toString() || '', 'marketingtool://');
+      const result = await WebBrowser.openAuthSessionAsync(oauthUrlString, 'marketingtool://');
 
       if (__DEV__) console.log('[OAuth] Browser result type:', result.type);
 
@@ -168,8 +172,11 @@ export const authService = {
         failureUrl
       );
 
+      if (!oauthUrl) throw new Error('Failed to generate OAuth URL');
+      const oauthUrlString = oauthUrl.toString();
+
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await WebBrowser.openAuthSessionAsync(oauthUrl?.toString() || '', 'marketingtool://');
+      const result = await WebBrowser.openAuthSessionAsync(oauthUrlString, 'marketingtool://');
 
       if (result.type === 'success' && result.url) {
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
@@ -220,8 +227,11 @@ export const authService = {
         failureUrl
       );
 
+      if (!oauthUrl) throw new Error('Failed to generate OAuth URL');
+      const oauthUrlString = oauthUrl.toString();
+
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await WebBrowser.openAuthSessionAsync(oauthUrl?.toString() || '', 'marketingtool://');
+      const result = await WebBrowser.openAuthSessionAsync(oauthUrlString, 'marketingtool://');
 
       if (result.type === 'success' && result.url) {
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
@@ -257,17 +267,12 @@ export const authService = {
     }
   },
 
-  // OTP via Appwrite Function (MSG91 Proxy)
+  // OTP via Firebase Phone Auth
   async sendOTPFunction(phone: string): Promise<any> {
     try {
-      const execution = await functions.createExecution(
-        'msg91-proxy',
-        JSON.stringify({ action: 'sendOtp', identifier: phone }),
-        false,
-        '/'
-      );
-      const result = JSON.parse(execution.responseBody);
-      if (result.type === 'error') throw new Error(result.message || 'Failed to send OTP');
+      if (__DEV__) console.log('[AuthService] Using Firebase for OTP:', phone);
+      const result = await sendPhoneOTP(phone);
+      if (!result.success) throw new Error(result.error || 'Failed to send OTP');
       return result;
     } catch (error) {
       throw error;
@@ -276,17 +281,12 @@ export const authService = {
 
   async verifyOTPFunction(phone: string, otp: string): Promise<any> {
     try {
-      const execution = await functions.createExecution(
-        'msg91-proxy',
-        JSON.stringify({ action: 'verifyOtp', identifier: phone, otp }),
-        false,
-        '/'
-      );
-      const result = JSON.parse(execution.responseBody);
-      if (result.type === 'success') {
+      if (__DEV__) console.log('[AuthService] Verifying OTP via Firebase...');
+      const result = await verifyPhoneOTP(otp);
+      if (result.success) {
         return { success: true, ...result };
       }
-      return { success: false, message: result.message || 'Invalid OTP' };
+      return { success: false, message: result.error || 'Invalid OTP' };
     } catch (error) {
       throw error;
     }

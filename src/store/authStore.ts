@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Models } from 'react-native-appwrite';
 import { authService, dbService, COLLECTIONS } from '../services/appwrite';
 import { sendPhoneOTP, verifyPhoneOTP } from '../services/firebaseAuth';
+import { biometricService } from '../services/biometric';
 
 interface UserProfile {
   $id: string;
@@ -26,6 +27,7 @@ interface AuthState {
   isAuthenticated: boolean;
   error: string | null;
   tempPhone: string | null;
+  biometricPending: boolean;
 
   // Actions
   login: (email: string, password: string) => Promise<void>;
@@ -33,8 +35,9 @@ interface AuthState {
   loginWithGoogle: () => Promise<void>;
   loginWithApple: () => Promise<void>;
   loginWithFacebook: () => Promise<void>;
-  sendOTP: (phoneNumber: string) => Promise<void>;
-  verifyOTP: (code: string) => Promise<void>;
+  sendPhoneOTP: (phoneNumber: string) => Promise<string>;
+  verifyPhoneOTP: (userId: string, code: string) => Promise<void>;
+  authenticateWithBiometric: () => Promise<boolean>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -50,6 +53,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   error: null,
   tempPhone: null,
+  biometricPending: false,
 
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
@@ -65,6 +69,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // Fetch or create user profile
         const profile = await get().fetchOrCreateProfile(user);
         set({ user, profile, isAuthenticated: true, isLoading: false });
+        
+        // If successful, we can suggest enabling biometric for next time
+        const bioAvailable = await biometricService.isBiometricAvailable();
+        if (bioAvailable) {
+          await biometricService.setBiometricEnabled(true);
+        }
       }
     } catch (error: any) {
       set({ error: error.message || 'Login failed', isLoading: false });
@@ -144,33 +154,37 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  sendOTP: async (phoneNumber: string) => {
+  sendPhoneOTP: async (phoneNumber: string) => {
     set({ isLoading: true, error: null });
     try {
       await authService.sendOTPFunction(phoneNumber);
       set({ isLoading: false, tempPhone: phoneNumber });
+      return phoneNumber; // Returning phone as userId placeholder
     } catch (error: any) {
       set({ error: error.message || 'Failed to send OTP', isLoading: false });
       throw error;
     }
   },
 
-  verifyOTP: async (code: string) => {
+  verifyPhoneOTP: async (userId: string, code: string) => {
     const { tempPhone } = get();
-    if (!tempPhone) {
+    // Use userId if tempPhone is null (placeholder logic)
+    const phone = tempPhone || userId;
+    
+    if (!phone) {
       set({ error: 'Session expired. Please request a new code.' });
       return;
     }
 
     set({ isLoading: true, error: null });
     try {
-      const result = await authService.verifyOTPFunction(tempPhone, code);
+      const result = await authService.verifyOTPFunction(phone, code);
       if (result.success) {
         const mockUser = {
-          $id: `phone-${tempPhone.replace(/\+/g, '')}`,
-          name: tempPhone,
-          email: `${tempPhone}@phone.marketingtool.pro`,
-          phone: tempPhone,
+          $id: `phone-${phone.replace(/\+/g, '')}`,
+          name: phone,
+          email: `${phone}@phone.marketingtool.pro`,
+          phone: phone,
         } as any;
         const profile = await get().fetchOrCreateProfile(mockUser);
         set({ user: mockUser, profile, isAuthenticated: true, isLoading: false, tempPhone: null });
@@ -183,6 +197,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  authenticateWithBiometric: async () => {
+    try {
+      const success = await biometricService.authenticate();
+      if (success) {
+        // Since this is a mock biometric for a sidecar app, we need a way to 
+        // retrieve the last user or just mark as authenticated if we have a profile.
+        // For now, if we have a user/profile in memory (rehydrated), we just succeed.
+        if (get().user) {
+          set({ isAuthenticated: true, biometricPending: false });
+          return true;
+        }
+        // In a real app, you'd retrieve stored credentials from SecureStore
+        return true; 
+      }
+      return false;
+    } catch (error) {
+      return false;
+    }
+  },
+
   logout: async () => {
     set({ isLoading: true });
     try {
@@ -192,6 +226,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         profile: null,
         isAuthenticated: false,
         isLoading: false,
+        biometricPending: false,
       });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
@@ -201,6 +236,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   checkAuth: async () => {
     set({ isLoading: true });
     try {
+      // Check if biometric is enabled
+      const bioEnabled = await biometricService.isBiometricEnabled();
+      if (bioEnabled) {
+        set({ biometricPending: true });
+      }
+
       // Add timeout to prevent hanging on unreachable API
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Auth check timeout')), 5000)

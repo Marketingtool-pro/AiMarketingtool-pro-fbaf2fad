@@ -91,7 +91,7 @@ const PrivacyScreen = () => {
 
           <Text style={styles.heading}>Contact Information</Text>
           <Text style={styles.paragraph}>
-            For any questions or concerns regarding this Privacy Policy, please contact us at: help@marketingtool.pro
+            For any questions or concerns regarding this Privacy Policy, please contact us at: help@marketingtool.pro or visit https://marketingtool.pro/privacy-policy/
           </Text>
 
           <Text style={styles.companyInfo}>

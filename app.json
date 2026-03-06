@@ -1,13 +1,16 @@
 {
   "expo": {
-    "name": "MarketingTool",
+    "name": "Marketing AI",
     "slug": "marketingtool",
-    "version": "1.3.2",
+    "version": "1.3.3",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "scheme": "marketingtool",
-    "newArchEnabled": true,
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -19,8 +22,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "52",
-      "googleServicesFile": "./GoogleService-Info.plist",
+      "buildNumber": "74",
+      "googleServicesFile": "GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Allow MarketingTool to access your camera for profile photos and content creation.",
@@ -48,10 +51,9 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0D0F1C"
       },
-      "googleServicesFile": "./google-services.json",
+      "googleServicesFile": "google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 43,
-      "edgeToEdgeEnabled": true,
+      "versionCode": 44,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -90,7 +92,8 @@
             },
             {
               "scheme": "https",
-              "host": "app.marketingtool.pro"
+              "host": "app.marketingtool.pro",
+              "pathPrefix": "/app"
             }
           ],
           "category": [
@@ -110,7 +113,7 @@
         {
           "ios": {
             "useFrameworks": "static",
-            "deploymentTarget": "15.1"
+            "deploymentTarget": "16.0"
           },
           "android": {
             "compileSdkVersion": 35,
@@ -122,37 +125,12 @@
       ],
       "./plugins/withFirebaseFix.js",
       "./plugins/withEdgeToEdgeFix.js",
-      "@react-native-firebase/app",
-      "@react-native-firebase/auth",
+      "./plugins/withIosFirebaseSwiftFix.js",
       "expo-secure-store",
-      "expo-local-authentication",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#6C5CE7"
-        }
-      ],
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "Allow MarketingTool to access your camera."
-        }
-      ],
-      [
-        "expo-media-library",
-        {
-          "photosPermission": "Allow MarketingTool to access your photos.",
-          "savePhotosPermission": "Allow MarketingTool to save photos.",
-          "isAccessMediaLocationEnabled": true
-        }
-      ],
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "Allow MarketingTool to use your location."
-        }
-      ]
+      "expo-font",
+      "expo-sharing",
+      "expo-web-browser",
+      "expo-asset"
     ],
     "extra": {
       "appwriteEndpoint": "https://api.marketingtool.pro/v1",

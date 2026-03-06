@@ -128,8 +128,8 @@ const SubscriptionScreen = () => {
       const execution = await functions.createExecution(
         'stripe-checkout',
         JSON.stringify({
-          plan: selectedPlan,
-          cycle: billingPeriod,
+          planId: selectedPlan,
+          billingPeriod: billingPeriod,
           price: getPrice(plan),
         }),
         false,
@@ -215,7 +215,7 @@ const SubscriptionScreen = () => {
               Yearly
             </Text>
             <View style={styles.saveBadge}>
-              <Text style={styles.saveBadgeText}>Save up to 66%</Text>
+              <Text style={styles.saveBadgeText}>Save up to 44%</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -243,17 +243,38 @@ const SubscriptionScreen = () => {
               </View>
             )}
             <View style={styles.planHeader}>
-              <View>
-                <Text style={styles.planName}>{plan.name}</Text>
-                <Text style={styles.planDescription}>{plan.description}</Text>
+              <View style={styles.planLeft}>
+                <View style={[
+                  styles.radioOuter,
+                  selectedPlan === plan.id && styles.radioOuterSelected
+                ]}>
+                  {selectedPlan === plan.id && <View style={styles.radioInner} />}
+                </View>
+                <View>
+                  <Text style={styles.planName}>{plan.name}</Text>
+                  <Text style={styles.planDescription}>{plan.description}</Text>
+                </View>
               </View>
               <View style={styles.planPricing}>
-                <Text style={styles.planPrice}>
-                  ${getPrice(plan)}
-                </Text>
-                <Text style={styles.planPeriod}>
-                  /{billingPeriod === 'yearly' ? 'year' : 'month'}
-                </Text>
+                {billingPeriod === 'yearly' && plan.yearlyPrice > 0 ? (
+                  <>
+                    <Text style={styles.planPriceMonthly}>
+                      ${(plan.yearlyPrice / 12).toFixed(0)}/mo
+                    </Text>
+                    <Text style={styles.planPriceBilled}>
+                      ${plan.yearlyPrice}/year
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.planPrice}>
+                      ${getPrice(plan)}
+                    </Text>
+                    <Text style={styles.planPeriod}>
+                      /{plan.monthlyPrice === 0 ? 'free' : 'month'}
+                    </Text>
+                  </>
+                )}
               </View>
             </View>
 
@@ -282,15 +303,6 @@ const SubscriptionScreen = () => {
               ))}
             </View>
 
-            {/* Selection indicator */}
-            <View style={styles.selectionIndicator}>
-              <View style={[
-                styles.radioOuter,
-                selectedPlan === plan.id && styles.radioOuterSelected
-              ]}>
-                {selectedPlan === plan.id && <View style={styles.radioInner} />}
-              </View>
-            </View>
           </TouchableOpacity>
         ))}
 
@@ -488,19 +500,21 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
   },
   planCard: {
-    backgroundColor: Colors.card,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
-    borderWidth: 2,
-    borderColor: Colors.border,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     position: 'relative',
   },
   planCardSelected: {
     borderColor: Colors.secondary,
+    backgroundColor: 'rgba(124, 58, 237, 0.08)',
   },
   planCardPopular: {
     borderColor: Colors.secondary,
+    backgroundColor: 'rgba(124, 58, 237, 0.08)',
   },
   popularBadge: {
     position: 'absolute',
@@ -526,6 +540,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: Spacing.md,
   },
+  planLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    flex: 1,
+  },
   planName: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -543,6 +563,16 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: Colors.white,
+  },
+  planPriceMonthly: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: Colors.white,
+  },
+  planPriceBilled: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
   },
   planPeriod: {
     fontSize: 14,
@@ -579,11 +609,6 @@ const styles = StyleSheet.create({
   featureTextDisabled: {
     color: Colors.textTertiary,
     textDecorationLine: 'line-through',
-  },
-  selectionIndicator: {
-    position: 'absolute',
-    top: Spacing.lg,
-    right: Spacing.lg,
   },
   radioOuter: {
     width: 24,

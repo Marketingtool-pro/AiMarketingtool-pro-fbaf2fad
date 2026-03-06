@@ -82,7 +82,7 @@ const TermsScreen = () => {
 
           <Text style={styles.heading}>Contact Information</Text>
           <Text style={styles.paragraph}>
-            For any questions or concerns regarding these Terms of Use, please contact us at: help@marketingtool.pro
+            For any questions or concerns regarding these Terms of Use, please contact us at: help@marketingtool.pro or visit https://marketingtool.pro/terms-policy/
           </Text>
 
           <Text style={styles.companyInfo}>

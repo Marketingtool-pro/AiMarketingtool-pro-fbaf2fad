@@ -17,10 +17,14 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/AppNavigator';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import { useAuthStore } from '../../store/authStore';
 import { functions, account } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
+import { getToolIcon } from '../../constants/toolIcons';
+import { useToolsStore, Tool } from '../../store/toolsStore';
 
 const { width } = Dimensions.get('window');
 
@@ -38,7 +42,7 @@ interface Message {
 }
 
 interface SuggestedPrompt {
-  icon: string;
+  iconSlug: string;
   title: string;
   description: string;
   prompt: string;
@@ -111,7 +115,7 @@ const AnimatedRipple = () => {
   );
 };
 
-// MarketBot logo icon (uses app logo instead of robot)
+// Bot avatar icon
 const BotAvatar = ({ size = 32 }: { size?: number }) => {
   return (
     <View style={[styles.botAvatarContainer, { width: size, height: size, borderRadius: size / 2 }]}>
@@ -124,107 +128,65 @@ const BotAvatar = ({ size = 32 }: { size?: number }) => {
   );
 };
 
-// Chat capability tabs
-interface ChatCapability {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-  description: string;
-  features: string[];
-}
+type ChatTab = 'chat' | 'tools' | 'history';
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const ChatScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const { profile } = useAuthStore();
+  const { tools, categories } = useToolsStore();
   const scrollViewRef = useRef<ScrollView>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [activeTab, setActiveTab] = useState('chat');
+  const [activeTab, setActiveTab] = useState<ChatTab>('chat');
+  const [activeCategory, setActiveCategory] = useState('All');
   const typingAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Full chat capabilities - NOT shortcuts
-  const chatCapabilities: ChatCapability[] = [
-    {
-      id: 'ads',
-      name: 'Ad Creation',
-      icon: 'target',
-      color: '#FF6B6B',
-      description: 'Create ads for any platform',
-      features: ['Google Ads', 'Facebook Ads', 'Instagram Ads', 'TikTok Ads', 'LinkedIn Ads'],
-    },
-    {
-      id: 'content',
-      name: 'Content Writing',
-      icon: 'edit-3',
-      color: '#4ECDC4',
-      description: 'Write any marketing content',
-      features: ['Blog Posts', 'Product Descriptions', 'Landing Pages', 'Press Releases', 'Case Studies'],
-    },
-    {
-      id: 'email',
-      name: 'Email Marketing',
-      icon: 'mail',
-      color: '#FFE66D',
-      description: 'Create email campaigns',
-      features: ['Subject Lines', 'Welcome Series', 'Abandoned Cart', 'Newsletters', 'Promotional'],
-    },
-    {
-      id: 'social',
-      name: 'Social Media',
-      icon: 'share-2',
-      color: '#A78BFA',
-      description: 'Social content creation',
-      features: ['Instagram', 'Twitter/X', 'LinkedIn', 'TikTok', 'Facebook'],
-    },
-    {
-      id: 'seo',
-      name: 'SEO & Keywords',
-      icon: 'search',
-      color: '#34D399',
-      description: 'SEO optimization help',
-      features: ['Meta Tags', 'Keyword Research', 'Content Optimization', 'Schema Markup', 'Link Building'],
-    },
-    {
-      id: 'strategy',
-      name: 'Strategy',
-      icon: 'trending-up',
-      color: '#F472B6',
-      description: 'Marketing strategy advice',
-      features: ['Campaign Planning', 'Audience Analysis', 'Competitor Research', 'Budget Allocation', 'ROI Analysis'],
-    },
-  ];
 
   const suggestedPrompts: SuggestedPrompt[] = [
     {
-      icon: 'edit-3',
+      iconSlug: 'facebook-ad-copy',
       title: 'Write Ad Copy',
       description: 'Create compelling ads',
       prompt: 'Write a compelling Facebook ad copy for a fitness app',
       color: Colors.gold,
     },
     {
-      icon: 'trending-up',
+      iconSlug: 'strategy',
       title: 'Marketing Strategy',
       description: 'Get expert advice',
       prompt: 'Give me a marketing strategy for launching a new product',
       color: Colors.cyan,
     },
     {
-      icon: 'mail',
+      iconSlug: 'cold-outreach-email',
       title: 'Email Campaign',
       description: 'Generate emails',
       prompt: 'Generate 5 email subject lines for a product launch',
       color: Colors.secondary,
     },
     {
-      icon: 'instagram',
+      iconSlug: 'instagram-captions',
       title: 'Social Content',
       description: 'Create viral posts',
       prompt: 'Create an engaging Instagram caption for a travel photo',
       color: Colors.purple,
+    },
+    {
+      iconSlug: 'seo-meta-title',
+      title: 'SEO & Keywords',
+      description: 'Optimize for search',
+      prompt: 'Help me find the best keywords for my e-commerce store',
+      color: Colors.success,
+    },
+    {
+      iconSlug: 'blog-post-ideas',
+      title: 'Blog Content',
+      description: 'Write blog posts',
+      prompt: 'Give me 10 blog post ideas for a SaaS company',
+      color: '#FF6B6B',
     },
   ];
 
@@ -311,24 +273,18 @@ const ChatScreen = () => {
       setMessages(prev => [...prev, assistantMessage]);
       setConsecutiveErrors(0);
       lastFailedMessage.current = null;
-    } catch (error) {
-      const errorCount = consecutiveErrors + 1;
-      setConsecutiveErrors(errorCount);
-      lastFailedMessage.current = messageText;
-
-      const errorContent = errorCount >= 3
-        ? 'Connection issue detected. Please check your internet and try again.'
-        : 'Sorry, I encountered an error. Tap "Retry" to try again.';
-
-      const errorMsg: Message = {
+    } catch (error: any) {
+      const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: errorContent,
+        content: 'I encountered an error connecting to the AI. Please try again.',
         timestamp: new Date(),
         isError: true,
         retryMessage: messageText,
       };
-      setMessages(prev => [...prev, errorMsg]);
+      setMessages(prev => [...prev, errorMessage]);
+      setConsecutiveErrors(prev => prev + 1);
+      lastFailedMessage.current = messageText;
     } finally {
       setIsTyping(false);
       scrollToBottom();
@@ -356,7 +312,7 @@ const ChatScreen = () => {
         content: m.content,
       }));
 
-    const systemPrompt = `You are MarketBot, an expert AI marketing assistant for MarketingTool.pro.
+    const systemPrompt = `You are an expert AI marketing assistant for MarketingTool.pro.
 You help users with:
 - Writing ad copy (Google Ads, Facebook, Instagram)
 - Marketing strategies and campaigns
@@ -494,7 +450,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
         <View style={styles.headerLeft}>
           <BotAvatar size={40} />
           <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle}>MarketBot</Text>
+            <Text style={styles.headerTitle}>Marketing AI</Text>
             <View style={styles.onlineStatus}>
               <View style={styles.onlineDot} />
               <Text style={styles.onlineText}>Ready</Text>
@@ -539,100 +495,146 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                 </View>
               </View>
 
-              <Text style={styles.emptyTitle}>Hi, I'm MarketBot!</Text>
+              <Text style={styles.emptyTitle}>Hi, I'm Marketing AI!</Text>
               <Text style={styles.emptySubtitle}>Your AI Marketing Assistant</Text>
 
-              {/* Tab Navigation */}
-              <View style={styles.tabNav}>
+              {/* Chat / Tools / History Tabs */}
+              <View style={styles.tabBar}>
                 <TouchableOpacity
                   style={[styles.tabItem, activeTab === 'chat' && styles.tabItemActive]}
                   onPress={() => setActiveTab('chat')}
                 >
-                  <Feather name="message-circle" size={18} color={activeTab === 'chat' ? Colors.white : Colors.textSecondary} />
+                  <Feather name="message-circle" size={16} color={activeTab === 'chat' ? Colors.white : Colors.textSecondary} />
                   <Text style={[styles.tabText, activeTab === 'chat' && styles.tabTextActive]}>Chat</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.tabItem, activeTab === 'capabilities' && styles.tabItemActive]}
-                  onPress={() => setActiveTab('capabilities')}
+                  style={[styles.tabItem, activeTab === 'tools' && styles.tabItemActive]}
+                  onPress={() => setActiveTab('tools')}
                 >
-                  <Feather name="grid" size={18} color={activeTab === 'capabilities' ? Colors.white : Colors.textSecondary} />
-                  <Text style={[styles.tabText, activeTab === 'capabilities' && styles.tabTextActive]}>Tools</Text>
+                  <Feather name="grid" size={16} color={activeTab === 'tools' ? Colors.white : Colors.textSecondary} />
+                  <Text style={[styles.tabText, activeTab === 'tools' && styles.tabTextActive]}>Tools</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.tabItem, activeTab === 'history' && styles.tabItemActive]}
                   onPress={() => setActiveTab('history')}
                 >
-                  <Feather name="clock" size={18} color={activeTab === 'history' ? Colors.white : Colors.textSecondary} />
+                  <Feather name="clock" size={16} color={activeTab === 'history' ? Colors.white : Colors.textSecondary} />
                   <Text style={[styles.tabText, activeTab === 'history' && styles.tabTextActive]}>History</Text>
                 </TouchableOpacity>
               </View>
 
+              {/* Tab Content */}
               {activeTab === 'chat' && (
-                <>
-                  {/* Quick Prompts */}
-                  <View style={styles.promptsGrid}>
-                    {suggestedPrompts.map((prompt, index) => (
-                      <TouchableOpacity
-                        key={index}
-                        style={styles.promptCard}
-                        onPress={() => handlePromptPress(prompt.prompt)}
-                        activeOpacity={0.7}
-                      >
-                        <View style={[styles.promptIcon, { backgroundColor: prompt.color + '20' }]}>
-                          <Feather name={prompt.icon as any} size={20} color={prompt.color} />
-                        </View>
-                        <View style={styles.promptTextContainer}>
-                          <Text style={styles.promptTitle}>{prompt.title}</Text>
-                          <Text style={styles.promptDescription}>{prompt.description}</Text>
-                        </View>
-                        <Text style={[styles.promptArrow, { color: prompt.color }]}>›</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </>
+                <View style={styles.promptsGrid}>
+                  {suggestedPrompts.map((prompt, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.promptCard}
+                      onPress={() => handlePromptPress(prompt.prompt)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.promptIcon, { backgroundColor: prompt.color + '20' }]}>
+                        <Image
+                          source={getToolIcon(prompt.iconSlug)}
+                          style={{ width: 32, height: 32 }}
+                          resizeMode="contain"
+                        />
+                      </View>
+                      <View style={styles.promptTextContainer}>
+                        <Text style={styles.promptTitle}>{prompt.title}</Text>
+                        <Text style={styles.promptDescription}>{prompt.description}</Text>
+                      </View>
+                      <Text style={[styles.promptArrow, { color: prompt.color }]}>›</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               )}
 
-              {activeTab === 'capabilities' && (
-                <View style={styles.capabilitiesGrid}>
-                  {chatCapabilities.map((cap, index) => (
-                    <TouchableOpacity
-                      key={cap.id}
-                      style={styles.capabilityCard}
-                      onPress={() => handlePromptPress(`Help me with ${cap.name.toLowerCase()}: ${cap.features[0]}`)}
-                      activeOpacity={0.8}
-                    >
-                      <LinearGradient
-                        colors={[cap.color + '30', cap.color + '10']}
-                        style={styles.capabilityGradient}
+              {activeTab === 'tools' && (
+                <View style={styles.toolsTabContent}>
+                  {/* Info Banner */}
+                  <View style={styles.infoBanner}>
+                    <Feather name="check-circle" size={18} color={Colors.success} />
+                    <Text style={styles.infoBannerText}>
+                      Same tools as web • Same AI • Same backend • Full execution
+                    </Text>
+                  </View>
+
+                  {/* Category Filters */}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                    {['All', ...categories].map((cat) => (
+                      <TouchableOpacity
+                        key={cat}
+                        style={[styles.categoryChip, activeCategory === cat && styles.categoryChipActive]}
+                        onPress={() => setActiveCategory(cat)}
                       >
-                        <View style={[styles.capabilityIconContainer, { backgroundColor: cap.color + '25' }]}>
-                          <Feather name={cap.icon as any} size={24} color={cap.color} />
-                        </View>
-                        <Text style={styles.capabilityName}>{cap.name}</Text>
-                        <Text style={styles.capabilityDesc}>{cap.description}</Text>
-                        <View style={styles.capabilityFeatures}>
-                          {cap.features.slice(0, 3).map((feat, i) => (
-                            <View key={i} style={[styles.featureTag, { borderColor: cap.color + '40' }]}>
-                              <Text style={[styles.featureText, { color: cap.color }]}>{feat}</Text>
+                        <Text style={[styles.categoryChipText, activeCategory === cat && styles.categoryChipTextActive]}>
+                          {cat}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+
+                  <Text style={styles.toolsCount}>
+                    {activeCategory === 'All'
+                      ? `${tools.length} AI Marketing Tools`
+                      : `${tools.filter(t => t.category === activeCategory).length} tools`}
+                  </Text>
+
+                  {/* Tools List */}
+                  {(activeCategory === 'All' ? tools : tools.filter(t => t.category === activeCategory)).map((tool) => (
+                    <TouchableOpacity
+                      key={tool.$id}
+                      style={styles.toolListCard}
+                      onPress={() => navigation.navigate('ToolDetail', { toolSlug: tool.slug })}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.toolListIcon}>
+                        <Image
+                          source={getToolIcon(tool.slug)}
+                          style={{ width: 36, height: 36 }}
+                          resizeMode="contain"
+                        />
+                      </View>
+                      <View style={styles.toolListInfo}>
+                        <View style={styles.toolListNameRow}>
+                          <Text style={styles.toolListName} numberOfLines={1}>{tool.name}</Text>
+                          {tool.isPro && (
+                            <View style={styles.proBadge}>
+                              <Text style={styles.proBadgeText}>PRO</Text>
                             </View>
-                          ))}
+                          )}
                         </View>
-                      </LinearGradient>
+                        <Text style={styles.toolListDesc} numberOfLines={1}>{tool.shortDescription}</Text>
+                        <View style={styles.toolListMeta}>
+                          <Feather name="star" size={12} color={Colors.gold} />
+                          <Text style={styles.toolListRating}>{tool.rating.toFixed(1)}</Text>
+                          <Text style={styles.toolListUses}>{tool.usageCount} uses</Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.runButton}
+                        onPress={() => navigation.navigate('ToolDetail', { toolSlug: tool.slug })}
+                      >
+                        <Feather name="play" size={14} color={Colors.white} />
+                        <Text style={styles.runButtonText}>Run</Text>
+                      </TouchableOpacity>
                     </TouchableOpacity>
                   ))}
                 </View>
               )}
 
               {activeTab === 'history' && (
-                <View style={styles.historySection}>
-                  <View style={styles.historyEmpty}>
-                    <Feather name="message-square" size={48} color={Colors.textTertiary} />
-                    <Text style={styles.historyEmptyText}>No chat history yet</Text>
-                    <Text style={styles.historyEmptySubtext}>Start a conversation to see your history</Text>
-                    <TouchableOpacity style={styles.startChatBtn} onPress={() => setActiveTab('chat')}>
-                      <Text style={styles.startChatBtnText}>Start Chatting</Text>
-                    </TouchableOpacity>
-                  </View>
+                <View style={styles.historyTabContent}>
+                  {messages.length === 0 ? (
+                    <View style={styles.emptyHistory}>
+                      <Feather name="clock" size={48} color={Colors.textTertiary} />
+                      <Text style={styles.emptyHistoryText}>No chat history yet</Text>
+                      <Text style={styles.emptyHistorySubtext}>Start a conversation to see your history here</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.emptyHistorySubtext}>Previous conversations will appear here</Text>
+                  )}
                 </View>
               )}
             </View>
@@ -833,7 +835,176 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     fontSize: 18,
     color: Colors.textSecondary,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    marginBottom: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  tabItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.surface,
+    gap: 6,
+  },
+  tabItemActive: {
+    backgroundColor: Colors.secondary,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  tabTextActive: {
+    color: Colors.white,
+  },
+  toolsTabContent: {
+    width: '100%',
+  },
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  infoBannerText: {
+    fontSize: 13,
+    color: Colors.success,
+    fontWeight: '500',
+    flex: 1,
+  },
+  categoryScroll: {
+    marginBottom: Spacing.sm,
+  },
+  categoryChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.surface,
+    marginRight: Spacing.sm,
+  },
+  categoryChipActive: {
+    backgroundColor: Colors.secondary,
+  },
+  categoryChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+  },
+  categoryChipTextActive: {
+    color: Colors.white,
+  },
+  toolsCount: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  toolListCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.card,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  toolListIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toolListInfo: {
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
+  toolListNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  toolListName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.white,
+    flexShrink: 1,
+  },
+  proBadge: {
+    backgroundColor: Colors.gold,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  proBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#000',
+  },
+  toolListDesc: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  toolListMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 4,
+  },
+  toolListRating: {
+    fontSize: 12,
+    color: Colors.gold,
+    fontWeight: '600',
+  },
+  toolListUses: {
+    fontSize: 12,
+    color: Colors.textTertiary,
+    marginLeft: 4,
+  },
+  runButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.secondary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.full,
+    gap: 4,
+  },
+  runButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.white,
+  },
+  historyTabContent: {
+    width: '100%',
+    paddingVertical: Spacing.xl,
+  },
+  emptyHistory: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
+  },
+  emptyHistoryText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    marginTop: Spacing.md,
+  },
+  emptyHistorySubtext: {
+    fontSize: 14,
+    color: Colors.textTertiary,
+    marginTop: Spacing.xs,
+    textAlign: 'center',
   },
   inputPreview: {
     width: width - 48,
@@ -1015,119 +1186,6 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: Colors.secondary + '50',
-  },
-  // Tab Navigation Styles
-  tabNav: {
-    flexDirection: 'row',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: 4,
-    marginBottom: Spacing.lg,
-    width: width - 48,
-  },
-  tabItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: BorderRadius.md,
-    gap: 6,
-  },
-  tabItemActive: {
-    backgroundColor: Colors.secondary,
-  },
-  tabText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  tabTextActive: {
-    color: Colors.white,
-  },
-  // Capabilities Grid
-  capabilitiesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    width: width - 48,
-    gap: Spacing.md,
-  },
-  capabilityCard: {
-    width: (width - 48 - Spacing.md) / 2,
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-    marginBottom: Spacing.xs,
-  },
-  capabilityGradient: {
-    padding: Spacing.md,
-    minHeight: 160,
-  },
-  capabilityIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  capabilityName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.white,
-    marginBottom: 4,
-  },
-  capabilityDesc: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.sm,
-  },
-  capabilityFeatures: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-  },
-  featureTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-  },
-  featureText: {
-    fontSize: 10,
-    fontWeight: '500',
-  },
-  // History Section
-  historySection: {
-    width: width - 48,
-    paddingVertical: Spacing.xl,
-  },
-  historyEmpty: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xxl,
-  },
-  historyEmptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.white,
-    marginTop: Spacing.md,
-  },
-  historyEmptySubtext: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginTop: Spacing.xs,
-  },
-  startChatBtn: {
-    marginTop: Spacing.lg,
-    backgroundColor: Colors.secondary,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.full,
-  },
-  startChatBtnText: {
-    color: Colors.white,
-    fontSize: 15,
-    fontWeight: '600',
   },
 });
 

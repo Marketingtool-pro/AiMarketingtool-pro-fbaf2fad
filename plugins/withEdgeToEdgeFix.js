@@ -1,19 +1,11 @@
-const { withDangerousMod, withMainActivity, withAndroidStyles } = require('@expo/config-plugins');
+const { withDangerousMod, withMainActivity, withAndroidStyles, withAndroidManifest } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
 /**
  * Fix deprecated edge-to-edge APIs for Android 15+ (API 35)
- *
- * Deprecated APIs:
- * - Window.setStatusBarColor / getStatusBarColor
- * - Window.setNavigationBarColor / getNavigationBarColor
- * - LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES / DEFAULT
- *
- * These come from: react-native StatusBarModule, react-native-screens,
- * expo-image-picker, Material components, AndroidX
- *
- * Fix: Set android:enforceEdgeToEdge in theme + configure window insets properly
+ * and Orientation restrictions for Android 16+
+ * and Initialize Play Integrity App Check for Android
  */
 
 function withEdgeToEdgeFix(config) {
@@ -47,14 +39,54 @@ function withEdgeToEdgeFix(config) {
       appTheme.item.push(
         { $: { name: 'android:windowOptOutEdgeToEdgeEnforcement' }, _: 'false' },
         { $: { name: 'android:statusBarColor' }, _: '@android:color/transparent' },
-        { $: { name: 'android:navigationBarColor' }, _: '@android:color/transparent' }
+        { $: { name: 'android:navigationBarColor' }, _: '@android:color/transparent' },
+        { $: { name: 'android:windowLayoutInDisplayCutoutMode' }, _: 'always' }
       );
     }
 
     return config;
   });
 
-  // Step 2: Patch MainActivity to use WindowCompat for edge-to-edge
+  // Step 2: Patch AndroidManifest.xml to remove orientation restrictions
+  config = withAndroidManifest(config, (config) => {
+    const androidManifest = config.modResults.manifest;
+    const mainApplication = androidManifest.application[0];
+
+    // Add tools namespace for tools:replace
+    if (!androidManifest.$) {
+      androidManifest.$ = {};
+    }
+    if (!androidManifest.$['xmlns:tools']) {
+      androidManifest.$['xmlns:tools'] = 'http://schemas.android.com/tools';
+    }
+
+    // Fix for GmsBarcodeScanningDelegateActivity orientation restriction (Android 16 requirement)
+    const barcodeActivity = {
+      $: {
+        'android:name': 'com.google.mlkit.vision.codescanner.internal.GmsBarcodeScanningDelegateActivity',
+        'android:screenOrientation': 'unspecified',
+        'tools:replace': 'android:screenOrientation',
+      },
+    };
+
+    if (!mainApplication.activity) {
+      mainApplication.activity = [];
+    }
+    
+    const existingIndex = mainApplication.activity.findIndex(
+      (a) => a.$['android:name'] === 'com.google.mlkit.vision.codescanner.internal.GmsBarcodeScanningDelegateActivity'
+    );
+    
+    if (existingIndex > -1) {
+      mainApplication.activity[existingIndex] = barcodeActivity;
+    } else {
+      mainApplication.activity.push(barcodeActivity);
+    }
+
+    return config;
+  });
+
+  // Step 3: Patch MainActivity to use WindowCompat and Play Integrity
   config = withDangerousMod(config, [
     'android',
     async (config) => {
@@ -65,6 +97,7 @@ function withEdgeToEdgeFix(config) {
 
       // Find MainActivity file
       const findMainActivity = (dir) => {
+        if (!fs.existsSync(dir)) return null;
         const files = fs.readdirSync(dir, { withFileTypes: true });
         for (const file of files) {
           const fullPath = path.join(dir, file.name);
@@ -82,24 +115,21 @@ function withEdgeToEdgeFix(config) {
       if (activityFile && activityFile.endsWith('.kt')) {
         let content = fs.readFileSync(activityFile, 'utf8');
 
-        // Add WindowCompat import if not present
-        if (!content.includes('WindowCompat')) {
-          content = content.replace(
-            'import android.os.Bundle',
-            'import android.os.Bundle\nimport androidx.core.view.WindowCompat'
-          );
+        // Add Imports
+        const imports = [
+          'import androidx.core.view.WindowCompat',
+          'import androidx.core.view.WindowInsetsControllerCompat',
+          'import com.google.firebase.Firebase',
+          'import com.google.firebase.appcheck.appCheck',
+          'import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory',
+          'import com.google.firebase.initialize'
+        ];
 
-          // If no Bundle import, add at end of imports
-          if (!content.includes('WindowCompat')) {
-            const importSection = content.match(/^import .+$/m);
-            if (importSection) {
-              content = content.replace(
-                importSection[0],
-                importSection[0] + '\nimport androidx.core.view.WindowCompat'
-              );
-            }
+        imports.forEach(imp => {
+          if (!content.includes(imp)) {
+            content = content.replace('import android.os.Bundle', `import android.os.Bundle\n${imp}`);
           }
-        }
+        });
 
         // Add edge-to-edge setup in onCreate if not present
         if (!content.includes('WindowCompat.setDecorFitsSystemWindows')) {
@@ -109,10 +139,18 @@ function withEdgeToEdgeFix(config) {
           );
         }
 
+        // Add Play Integrity Initialization
+        if (!content.includes('PlayIntegrityAppCheckProviderFactory')) {
+          content = content.replace(
+            'WindowCompat.setDecorFitsSystemWindows(window, false)',
+            'WindowCompat.setDecorFitsSystemWindows(window, false)\n    Firebase.initialize(context = this)\n    Firebase.appCheck.installAppCheckProviderFactory(\n        PlayIntegrityAppCheckProviderFactory.getInstance(),\n    )'
+          );
+        }
+
         fs.writeFileSync(activityFile, content);
       }
 
-      // Step 3: Force Material library 1.14.0-alpha05 to fix BottomSheetDialog/EdgeToEdgeUtils
+      // Step 4: Add dependencies to build.gradle
       const buildGradlePath = path.join(
         config.modRequest.platformProjectRoot,
         'app/build.gradle'
@@ -121,27 +159,39 @@ function withEdgeToEdgeFix(config) {
       if (fs.existsSync(buildGradlePath)) {
         let buildGradle = fs.readFileSync(buildGradlePath, 'utf8');
 
-        // Add resolution strategy to force updated Material library
+        // Add resolution strategy
         const resolutionStrategy = `
     configurations.all {
         resolutionStrategy {
-            force 'com.google.android.material:material:1.14.0-alpha05'
+            force 'com.google.android.material:material:1.13.0-alpha09'
+            force 'androidx.activity:activity:1.10.0-alpha03'
+            force 'androidx.activity:activity-ktx:1.10.0-alpha03'
+            force 'androidx.activity:activity-compose:1.10.0-alpha03'
         }
     }`;
 
-        if (!buildGradle.includes("com.google.android.material:material:1.14.0")) {
-          // Insert after the first 'android {' block, inside the top-level scope
+        if (!buildGradle.includes("configurations.all {")) {
           if (buildGradle.includes('dependencies {')) {
             buildGradle = buildGradle.replace(
               'dependencies {',
               resolutionStrategy + '\n\ndependencies {'
             );
-          } else {
-            // Append before the last closing brace
-            buildGradle += '\n' + resolutionStrategy + '\n';
           }
-          fs.writeFileSync(buildGradlePath, buildGradle);
         }
+
+        // Add Play Integrity dependencies
+        const firebaseDeps = `
+    implementation platform('com.google.firebase:firebase-bom:34.10.0')
+    implementation 'com.google.firebase:firebase-appcheck-playintegrity'
+`;
+        if (!buildGradle.includes("firebase-appcheck-playintegrity")) {
+          buildGradle = buildGradle.replace(
+            'dependencies {',
+            `dependencies {\n${firebaseDeps}`
+          );
+        }
+
+        fs.writeFileSync(buildGradlePath, buildGradle);
       }
 
       return config;
