@@ -3,10 +3,11 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Ultimate Firebase + RN 0.83 Compatibility Fix (v4)
+ * Ultimate Firebase + RN 0.83 Compatibility Fix (v5)
  * 1. Injects $RNFirebaseAsStaticFramework = true
- * 2. Resolves modular boundary issues with React-Core
- * 3. Suppresses legacy C99 implicit function/int errors
+ * 2. Uses "Surgical Modularity": CLANG_ENABLE_MODULES=YES but DEFINES_MODULE=NO for RNFB
+ * 3. Removes redundant HEADER_SEARCH_PATHS to prevent macro redefinitions
+ * 4. Suppresses legacy C99 implicit function/int errors
  */
 module.exports = function withFirebaseFix(config) {
   return withDangerousMod(config, [
@@ -22,7 +23,7 @@ module.exports = function withFirebaseFix(config) {
         contents = '$RNFirebaseAsStaticFramework = true\n' + contents;
       }
 
-      // 2. Clean up ALL previous snippet versions to prevent duplicates
+      // 2. Clean up ALL previous snippet versions
       const patterns = [
         /# Aggressive fix for RN 0.83[\s\S]*?end\s+end/g,
         /# Firebase \+ RN 0.83 Modular Header Fix[\s\S]*?end\s+end/g,
@@ -33,25 +34,25 @@ module.exports = function withFirebaseFix(config) {
       ];
       patterns.forEach(p => contents = contents.replace(p, ''));
 
-      // 3. Robust surgical patch for RN 0.83 + Firebase
+      // 3. Surgical patch for RN 0.83 + Firebase
       const snippet = `
-    # Robust compatibility fix for RN 0.83 + Firebase
+    # Surgical compatibility fix for RN 0.83 + Firebase
     installer.pods_project.targets.each do |target|
-      # Apply common fixes to all targets
+      # Allow non-modular includes for all to resolve Yoga/Core conflicts
       target.build_configurations.each do |bc|
         bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-        bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
-        bc.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
-        bc.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
       end
 
-      # Specific fixes for Firebase modules
+      # Firebase specific fixes
       if target.name.start_with?('RNFB') || target.name.start_with?('Firebase')
         target.build_configurations.each do |bc|
-          bc.build_settings['DEFINES_MODULE'] = 'YES'
-          bc.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) "$(PODS_ROOT)/Headers/Public/React-Core"'
-          # Force ignore legacy C99 errors that crash the build
-          bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=error'
+          # The "Surgical" Combo: Allow modules to be used, but don't define this as a module boundary.
+          # This resolves the "must be imported from module" error without breaking internal @imports.
+          bc.build_settings['DEFINES_MODULE'] = 'NO'
+          bc.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+          
+          # Force ignore legacy C99 errors and macro conflicts
+          bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-redeclared-class-member'
         end
       end
     end`;
