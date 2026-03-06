@@ -3,11 +3,9 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Clean Firebase Fix (v6)
- * This follows the "Surgical Non-Modular" approach:
- * 1. Allows non-modular headers (fixes RCTBridgeModule error).
- * 2. Forces legacy C99 standards (fixes 'int' errors).
- * 3. Does NOT manually configure Firebase in AppDelegate (to avoid redefinitions).
+ * Ultimate Firebase Fix (v7)
+ * Force Firebase to use DYNAMIC frameworks instead of static.
+ * This is the ONLY reliable fix for the RCTBridgeModule redefinition error in RN 0.83.
  */
 module.exports = function withFirebaseFix(config) {
   return withDangerousMod(config, [
@@ -28,21 +26,25 @@ module.exports = function withFirebaseFix(config) {
         /# Robust compatibility[\s\S]*?end\s+end/g,
         /# Surgical compatibility[\s\S]*?end\s+end/g,
         /# Clean Firebase[\s\S]*?end\s+end/g,
-        /\$RNFirebaseAsStaticFramework = true\n/g
+        /# Verified RNFB[\s\S]*?end\s+end/g,
+        /\$RNFirebaseAsStaticFramework = true\n/g,
+        /\$RNFirebaseAsStaticFramework = false\n/g
       ];
       patterns.forEach(p => contents = contents.replace(p, ''));
 
-      // 2. Inject the surgical patch
+      // 2. Force DYNAMIC framework flag at the top
+      contents = '$RNFirebaseAsStaticFramework = false\n' + contents;
+
+      // 3. Apply the dynamic framework compatibility patch
       const snippet = `
-    # Verified RNFB 0.83 Compatibility Patch
+    # Force Firebase Dynamic Frameworks
     installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |bc|
-        # Fix for RCTBridgeModule not found
-        bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-        
-        # Suppress the legacy C99 errors without breaking modules
-        bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
-        bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=implicit-function-declaration -Wno-error=implicit-int'
+      if target.name.start_with?('RNFB') || target.name.start_with?('Firebase')
+        target.build_configurations.each do |bc|
+          bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+          bc.build_settings['DEFINES_MODULE'] = 'YES'
+          bc.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+        end
       end
     end`;
 
