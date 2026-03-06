@@ -125,7 +125,6 @@
       ],
       "./plugins/withFirebaseFix.js",
       "./plugins/withEdgeToEdgeFix.js",
-      "./plugins/withIosFirebaseSwiftFix.js",
       "expo-secure-store",
       "expo-font",
       "expo-sharing",
