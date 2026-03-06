@@ -26,31 +26,24 @@ module.exports = function withFirebaseFix(config) {
 
       // 2. Refined surgical patch
       const snippet = `
-    # Ultimate Fix for RN 0.83 + Firebase (v3)
+    # Aggressive compatibility fix for RN 0.83 + Firebase
     installer.pods_project.targets.each do |target|
-      # Apply to all targets to avoid Yoga/Codegen issues
-      target.build_configurations.each do |bc|
-        bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-        bc.build_settings['USE_HEADERMAP'] = 'NO'
-      end
-
-      # Specific fixes for Firebase modules
-      if target.name.start_with?('RNFB') || target.name.start_with?('Firebase') || target.name.include?('ZXingObjC')
+      # Fix for Yoga/Core and non-modular headers
+      if target.name.start_with?('RNFB') || target.name.start_with?('Firebase')
         target.build_configurations.each do |bc|
-          # Disable modules for these problematic libs to resolve header visibility issues
+          bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
           bc.build_settings['DEFINES_MODULE'] = 'NO'
           bc.build_settings['CLANG_ENABLE_MODULES'] = 'NO'
 
-          # Resolve C99 implicit int errors by ensuring modern standards
+          # Force modern standards to avoid C99 errors
           bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
           bc.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
 
-          # Force header search path for React protocols and internal visibility
-          bc.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) "${PODS_ROOT}/Headers/Public/React-Core" "${PODS_ROOT}/Headers/Public/ZXingObjC"'
+          # Ensure React-Core headers are visible for protocols
+          bc.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) "${PODS_ROOT}/Headers/Public/React-Core"'
         end
       end
     end`;
-
       // 3. Inject into the post_install block
       if (contents.includes('post_install do |installer|')) {
         contents = contents.replace(
