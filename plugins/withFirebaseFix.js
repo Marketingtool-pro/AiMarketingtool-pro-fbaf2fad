@@ -26,20 +26,23 @@ module.exports = function withFirebaseFix(config) {
 
       // 2. Refined surgical patch
       const snippet = `
-    # Aggressive compatibility fix for RN 0.83 + Firebase
+    # Optimized compatibility fix for RN 0.83 + Firebase
     installer.pods_project.targets.each do |target|
-      # Fix for Yoga/Core and non-modular headers
+      # Apply common fixes to all targets
+      target.build_configurations.each do |bc|
+        bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+        bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
+        bc.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
+      end
+
+      # Firebase specific fixes
       if target.name.start_with?('RNFB') || target.name.start_with?('Firebase')
         target.build_configurations.each do |bc|
-          bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-          bc.build_settings['DEFINES_MODULE'] = 'NO'
-          bc.build_settings['CLANG_ENABLE_MODULES'] = 'NO'
+          # DO NOT disable modules (causes Heartbeat/Payload errors)
+          bc.build_settings['DEFINES_MODULE'] = 'YES'
+          bc.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
 
-          # Force modern standards to avoid C99 errors
-          bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
-          bc.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
-
-          # Ensure React-Core headers are visible for protocols
+          # Force header search path for React protocols
           bc.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) "\${PODS_ROOT}/Headers/Public/React-Core"'
         end
       end
