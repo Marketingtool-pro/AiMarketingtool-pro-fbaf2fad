@@ -12,7 +12,10 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      }
     }
   },
   "submit": {
@@ -21,10 +24,7 @@
         "track": "production"
       },
       "ios": {
-        "ascAppId": "6758618412",
-        "ascApiKeyIssuerId": "313ffa8d-5aed-4aad-a012-b1057717634c",
-        "ascApiKeyId": "D5KG7J5R95",
-        "ascApiKeyPath": "./AuthKey_D5KG7J5R95.p8"
+        "ascAppId": "6758618412"
       }
     }
   }

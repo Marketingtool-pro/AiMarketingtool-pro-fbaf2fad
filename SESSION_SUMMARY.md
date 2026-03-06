@@ -25,7 +25,7 @@
 
 **Expo Access Token:** `FeMBZxek4_UvIVq9PE0m4Y-cPynHTWtLZmiZshBO`
 - Used for: EAS builds, push notifications
-- Set as env: `EXPO_TOKEN=FeMBZxek4_UvIVq9PE0m4Y-cPynHTWtLZmiZshBO`
+- Set as env: `EXPO_TOKEN=GHjfzucse_cMA7JJbw1DpmDfDxQqOE1MJVXgq2X3`
 - AI: Claude Opus 4.5
 
 **Web App (SEPARATE):** Next.js at `app.marketingtool.pro` - WORKING ✅
@@ -394,7 +394,7 @@ curl -X POST "https://wm.marketingtool.pro/api/w/marketingtool-pro/jobs/run_wait
 ```
 FeMBZxek4_UvIVq9PE0m4Y-cPynHTWtLZmiZshBO
 ```
-Use: `EXPO_TOKEN=FeMBZxek4_UvIVq9PE0m4Y-cPynHTWtLZmiZshBO npx eas-cli ...`
+Use: `EXPO_TOKEN=GHjfzucse_cMA7JJbw1DpmDfDxQqOE1MJVXgq2X3 npx eas-cli ...`
 
 ---
 
@@ -543,7 +543,7 @@ WINDMILL_WORKSPACE=marketingtool-pro
 WINDMILL_TOKEN=wm_token_marketingtool_2024
 
 # Expo
-EXPO_TOKEN=FeMBZxek4_UvIVq9PE0m4Y-cPynHTWtLZmiZshBO
+EXPO_TOKEN=GHjfzucse_cMA7JJbw1DpmDfDxQqOE1MJVXgq2X3
 
 # SSH
 SSH_HOST=root@31.220.107.19
@@ -846,4 +846,36 @@ src/assets/animations/liquid-wave.json (NEW)
 
 ---
 
-*Last updated: January 25, 2026 - Session 5 - ALL SCREENS ENHANCED ✅*
+## SESSION 6 UPDATE (March 6, 2026) - BUILD FIXES & CODE CLEANUP ✅
+
+### MAJOR BUILD FIXES ✅
+
+1. **Standardized `app.json` Paths**: Removed `./` from `googleServicesFile` paths (Standard EAS resolution fix).
+2. **Fixed `eas.json` for TestFlight**: Removed broken local path to `AuthKey_D5KG7J5R95.p8`. EAS now uses credentials from its secure store.
+3. **Corrected Android Build Type**: Added explicit `buildType: "app-bundle"` for production Android.
+4. **Updated Expo Access Token**: Configured new token `GHjfzucse_cMA7JJbw1DpmDfDxQqOE1MJVXgq2X3`.
+
+### CRITICAL CODE CLEANUP (BUNDLER FIXES) ✅
+
+1. **Fixed Glass3DLogo.tsx**: Removed broken dummy import from `@react-native-google-fonts/roboto` which was crashing the Metro Bundler.
+2. **Completed AuthStore Implementation**:
+   - Added missing `biometricPending` and `authenticateWithBiometric`.
+   - Renamed `sendOTP`/`verifyOTP` to `sendPhoneOTP`/`verifyPhoneOTP` to match UI.
+   - Fixed return types to satisfy `LoginScreen.tsx` requirements.
+3. **Fixed Navigation Types**:
+   - Updated `RootStackParamList` to include `prefillInputs` and `inputs`.
+   - Added required `id` prop to Stack and Tab navigators (React Navigation 7.x).
+   - Properly typed `useNavigation` in `ChatScreen.tsx` and fixed navigation calls.
+4. **Resolved TypeScript Critical Errors**:
+   - Added missing `Platform` import in `DashboardScreen.tsx`.
+   - Fixed `transform` array type casting in Reanimated styles.
+   - Fixed `ExecutionMethod.POST` usage in `aiService.ts`.
+   - Handled potential `void` return from `createOAuth2Token` in `appwrite.ts`.
+
+### BUILD STATUS
+- **iOS Production**: Build triggered with auto-submit to TestFlight.
+- **Root Cause of 20+ Failures**: Identified as a combination of a broken "dummy" import in a 3D component and mismatched authentication store properties that prevented bundling.
+
+---
+
+*Last updated: March 6, 2026 - Major Build Recovery Completed ✅*

@@ -36,8 +36,8 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Auth: undefined;
   Main: undefined;
-  ToolDetail: { toolSlug: string };
-  ToolResult: { toolSlug: string; result: any };
+  ToolDetail: { toolSlug: string; prefillInputs?: Record<string, any> };
+  ToolResult: { toolSlug: string; result: any; inputs?: Record<string, any> };
   MemeGenerator: undefined;
   Settings: undefined;
   Subscription: undefined;
@@ -67,6 +67,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 // Auth Navigator
 const AuthNavigator = () => (
   <AuthStack.Navigator
+    id="AuthStack"
     screenOptions={{
       headerShown: false,
       contentStyle: { backgroundColor: Colors.background },
@@ -85,6 +86,7 @@ const TabNavigator = () => {
 
   return (
   <Tab.Navigator
+    id="MainTab"
     screenOptions={({ route }) => ({
       headerShown: false,
       tabBarStyle: {
@@ -162,6 +164,7 @@ const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
+        id="RootStack"
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: Colors.background },

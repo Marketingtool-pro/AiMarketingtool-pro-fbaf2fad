@@ -1,4 +1,4 @@
-// Firebase Phone Auth Service (uses MSG91 via Firebase Extension)
+// Firebase Phone Auth Service (Native Google/Firebase SMS)
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 // Store verification ID for OTP verification
@@ -6,8 +6,7 @@ let verificationId: string | null = null;
 
 // Firebase Phone Auth Configuration
 const FIREBASE_CONFIG = {
-  // Firebase project: marketingtool-e4930
-  // Phone auth enabled with MSG91 extension
+  // Firebase project: marketing-tool-484720
   testPhoneNumber: '+919999999999',
   testCode: '123456',
 };

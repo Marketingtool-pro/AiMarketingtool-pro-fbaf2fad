@@ -13,3 +13,8 @@ web-build/
 npm-debug.*
 /ios
 /android
+my-app/
+gemini-cli/
+.git/
+.firecrawl/
+.github/
