@@ -3,8 +3,9 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * THE DEFINITIVE FIX for Expo 55 + Firebase (v8)
- * Targets the specific "must be imported from module" and "implicit int" errors.
+ * EAS-Priority Podfile Fix
+ * REFINED FIX for Expo 55 + Firebase + RN 0.83
+ * Allows non-modular includes while keeping modules enabled for Firebase compatibility.
  */
 module.exports = function withEasPodfileFix(config) {
   return withDangerousMod(config, [
@@ -15,7 +16,7 @@ module.exports = function withEasPodfileFix(config) {
 
       let contents = fs.readFileSync(podfilePath, 'utf8');
 
-      // 1. Force Firebase to NOT use static frameworks (this is the root cause)
+      // 1. Force Firebase to NOT use static frameworks (critical for RN 0.83)
       contents = contents.replace(/\$RNFirebaseAsStaticFramework = true/g, '');
       if (!contents.includes('$RNFirebaseAsStaticFramework = false')) {
         contents = '$RNFirebaseAsStaticFramework = false\n' + contents;
@@ -26,29 +27,24 @@ module.exports = function withEasPodfileFix(config) {
         /# Robust compatibility[\s\S]*?end\s+end/g,
         /# Surgical compatibility[\s\S]*?end\s+end/g,
         /# Clean Firebase[\s\S]*?end\s+end/g,
-        /# Force non-modular includes[\s\S]*?end\s+end/g
+        /# Force non-modular includes[\s\S]*?end\s+end/g,
+        /# RNFB \+ RN 0.83[\s\S]*?end\s+end/g,
+        /# Refined fix[\s\S]*?end\s+end/g
       ];
       patterns.forEach(p => contents = contents.replace(p, ''));
 
-      // 3. Apply the "Surgical Non-Modular" patch
+      // 3. Apply the Refined Non-Modular patch
       const snippet = `
-    # Surgical fix for RNFB + RN 0.83
+    # Refined fix for RNFB + RN 0.83 compatibility
     installer.pods_project.targets.each do |target|
-      # Fix for all targets to allow mixing headers
       target.build_configurations.each do |bc|
+        # Allow non-modular headers globally
         bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-      end
-
-      # Specific fix for Firebase: DISABLE modules for them so they can see React headers
-      if target.name.start_with?('RNFB') || target.name.start_with?('Firebase')
-        target.build_configurations.each do |bc|
-          bc.build_settings['DEFINES_MODULE'] = 'NO'
-          bc.build_settings['CLANG_ENABLE_MODULES'] = 'NO'
-          
-          # Kill the C99 errors
-          bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
-          bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=implicit-function-declaration -Wno-error=implicit-int'
-        end
+        bc.build_settings['CLANG_WARN_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'NO'
+        
+        # Ensure correct C standards for modern RN
+        bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
+        bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=implicit-function-declaration -Wno-error=implicit-int'
       end
     end`;
 

@@ -22,8 +22,14 @@ import { ExecutionMethod } from 'react-native-appwrite';
 
 const { width } = Dimensions.get('window');
 
-// Pricing hero image
-const PricingHeroImage = require('../../assets/images/screens/pricing-hero.jpg');
+// Safety check for assets
+let PricingHeroImage;
+try {
+  PricingHeroImage = require('../../assets/images/screens/pricing-hero.jpg');
+} catch (e) {
+  // Fallback to a color if asset is missing
+  PricingHeroImage = null;
+}
 
 interface PlanFeature {
   text: string;
@@ -170,7 +176,14 @@ const SubscriptionScreen = () => {
     <AnimatedBackground variant="profile" showParticles={true}>
       {/* Hero Header with Image */}
       <View style={styles.heroContainer}>
-        <Image source={PricingHeroImage} style={styles.heroImage} resizeMode="cover" />
+        {PricingHeroImage ? (
+          <Image source={PricingHeroImage} style={styles.heroImage} resizeMode="cover" />
+        ) : (
+          <LinearGradient
+            colors={[Colors.primaryDark, Colors.primary]}
+            style={styles.heroImage}
+          />
+        )}
         <LinearGradient
           colors={['rgba(6, 11, 40, 0.3)', 'rgba(6, 11, 40, 0.8)', 'rgba(6, 11, 40, 1)']}
           style={styles.heroGradient}

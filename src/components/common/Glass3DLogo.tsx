@@ -1,7 +1,6 @@
 import React from 'react';
-import { View } from 'react-native';
-import { GLView } from 'expo-gl';
-import * as THREE from 'three';
+import { View, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/theme';
 
 interface Glass3DLogoProps {
@@ -9,89 +8,45 @@ interface Glass3DLogoProps {
   size?: number;
 }
 
-/**
- * High-Performance 3D Glass Logo Renderer
- * Uses native THREE.js with expo-gl directly to avoid expo-three bundling issues.
- */
+const typeColors: Record<string, string[]> = {
+  seo: [Colors.success, '#34d399'],
+  ads: [Colors.accent, '#a78bfa'],
+  ai: [Colors.secondary || '#818cf8', '#6366f1'],
+  social: [Colors.info || '#38bdf8', '#0ea5e9'],
+};
+
 export const Glass3DLogo = ({ type, size = 60 }: Glass3DLogoProps) => {
-  const onContextCreate = async (gl: any) => {
-    const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
-    
-    // 1. Create Renderer
-    const renderer = new THREE.WebGLRenderer({
-      canvas: {
-        width,
-        height,
-        style: {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        clientWidth: width,
-        clientHeight: height,
-      } as any,
-      context: gl,
-      antialias: true,
-      alpha: true,
-    });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(1);
-
-    // 2. Scene & Camera
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    camera.position.z = 3;
-
-    // 3. Geometry based on type
-    let geometry;
-    if (type === 'ai') {
-      geometry = new THREE.IcosahedronGeometry(1, 1);
-    } else if (type === 'ads') {
-      geometry = new THREE.TorusKnotGeometry(0.6, 0.2, 100, 16);
-    } else {
-      geometry = new THREE.OctahedronGeometry(1, 0);
-    }
-
-    // 4. Material (Glass effect)
-    const color = type === 'seo' ? Colors.success : 
-                 type === 'ads' ? Colors.accent : 
-                 type === 'ai' ? Colors.secondary : Colors.info;
-
-    const material = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color(color),
-      metalness: 0.1,
-      roughness: 0.1,
-      transmission: 0.9,
-      thickness: 0.5,
-      transparent: true,
-      opacity: 0.8,
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
-
-    // 5. Lights
-    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-    const pointLight = new THREE.PointLight(0xffffff, 1);
-    pointLight.position.set(5, 5, 5);
-    scene.add(pointLight);
-
-    // 6. Animation Loop
-    const render = () => {
-      requestAnimationFrame(render);
-      mesh.rotation.y += 0.01;
-      mesh.rotation.x += 0.005;
-      renderer.render(scene, camera);
-      gl.endFrameEXP();
-    };
-    render();
-  };
+  const colors = typeColors[type] || typeColors.ai;
+  const innerSize = size * 0.6;
 
   return (
-    <View style={{ width: size, height: size }}>
-      <GLView style={{ flex: 1 }} onContextCreate={onContextCreate} />
+    <View style={[styles.container, { width: size, height: size }]}>
+      <View style={[styles.glow, { width: size, height: size, borderRadius: size / 2, backgroundColor: colors[0] + '30' }]} />
+      <LinearGradient
+        colors={[colors[0] + 'CC', colors[1] + '99']}
+        style={[styles.inner, { width: innerSize, height: innerSize, borderRadius: innerSize * 0.3 }]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
     </View>
   );
 };
 
-export default Glass3DLogo;
+const styles = StyleSheet.create({
+  container: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  glow: {
+    position: 'absolute',
+  },
+  inner: {
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+});
 
 export default Glass3DLogo;

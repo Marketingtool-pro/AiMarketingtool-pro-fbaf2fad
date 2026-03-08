@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -7,7 +7,6 @@ import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Screens
-import SplashScreen from '../screens/auth/SplashScreen';
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
@@ -151,11 +150,7 @@ const LoadingScreen = () => (
 
 // Main App Navigator
 const AppNavigator = () => {
-  const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  const { isAuthenticated, isLoading } = useAuthStore();
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -188,8 +183,8 @@ const AppNavigator = () => {
               }}
             />
             <Stack.Screen name="ToolResult" component={ToolResultScreen} />
-            <Stack.Screen 
-              name="MemeGenerator" 
+            <Stack.Screen
+              name="MemeGenerator"
               component={MemeGeneratorScreen}
               options={{
                 animation: 'slide_from_bottom',
