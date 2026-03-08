@@ -1,30 +1,25 @@
-import { createTamagui, createThemes } from 'tamagui'
-import { config } from '@tamagui/config/v3'
+import { createTamagui } from 'tamagui'
+import { config as configV3 } from '@tamagui/config/v3'
 
-// We want to ensure "dark" and "light" themes exist to avoid "Missing theme" crash
-const themes = createThemes({
-  light: {
-    background: '#fff',
-    color: '#000',
-  },
-  dark: {
-    background: '#060b28',
-    color: '#fff',
-  }
-})
-
-const tamaguiConfig = createTamagui({
-  ...config,
+export const config = createTamagui({
+  ...configV3,
   themes: {
-    ...config.themes,
-    ...themes,
-  }
+    ...configV3.themes,
+    light: configV3.themes?.light || {
+      background: '#fff',
+      color: '#000',
+    },
+    dark: configV3.themes?.dark || {
+      background: '#060b28',
+      color: '#fff',
+    },
+  },
 })
 
-export type AppConfig = typeof tamaguiConfig
+export type AppConfig = typeof config
 
 declare module 'tamagui' {
   interface TamaguiCustomConfig extends AppConfig {}
 }
 
-export default tamaguiConfig
+export default config
