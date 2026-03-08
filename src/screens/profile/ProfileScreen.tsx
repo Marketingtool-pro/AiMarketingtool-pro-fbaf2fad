@@ -274,7 +274,7 @@ const ProfileScreen = () => {
           {/* Payment Information */}
           <View style={styles.liveCard}>
             <View style={styles.liveCardHeader}>
-              <PaymentIcon size={20} color={Colors.secondary} />
+              <CreditCard size={20} color={Colors.secondary} />
               <Text style={styles.liveCardTitle}>Payment Information</Text>
             </View>
             <View style={styles.liveCardBody}>
