@@ -37,14 +37,22 @@ module.exports = function withEasPodfileFix(config) {
       const snippet = `
     # Refined fix for RNFB + RN 0.83 compatibility
     installer.pods_project.targets.each do |target|
+      # Allow non-modular headers globally
       target.build_configurations.each do |bc|
-        # Allow non-modular headers globally
         bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
         bc.build_settings['CLANG_WARN_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'NO'
         
         # Ensure correct C standards for modern RN
         bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
         bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=implicit-function-declaration -Wno-error=implicit-int'
+      end
+
+      # Specific fix for Firebase: DISABLE modules for them so they can see React headers
+      if target.name.start_with?('RNFB') || target.name.start_with?('Firebase')
+        target.build_configurations.each do |bc|
+          bc.build_settings['DEFINES_MODULE'] = 'NO'
+          bc.build_settings['CLANG_ENABLE_MODULES'] = 'NO'
+        end
       end
     end`;
 
