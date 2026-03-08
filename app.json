@@ -99,23 +99,27 @@
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "dynamic",
+            "useFrameworks": "static",
             "deploymentTarget": "16.0",
-            "newArchEnabled": false
+            "extraCCFlags": [
+              "-Wno-error=implicit-function-declaration",
+              "-Wno-error=implicit-int",
+              "-Wno-redeclared-class-member",
+              "-Wno-non-modular-include-in-framework-module",
+              "-Wno-error=non-modular-include-in-framework-module"
+            ]
           },
           "android": {
             "compileSdkVersion": 35,
             "targetSdkVersion": 35,
             "minSdkVersion": 24,
-            "windowSoftInputMode": "adjustResize",
-            "newArchEnabled": false
+            "windowSoftInputMode": "adjustResize"
           }
         }
       ],
       "./plugins/withEasPodfileFix.js",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
-      "@react-native-firebase/firestore",
       "./plugins/withEdgeToEdgeFix.js",
       "expo-secure-store",
       "expo-font",
