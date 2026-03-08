@@ -77,7 +77,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <TamaguiProvider config={tamaguiConfig}>
+      <TamaguiProvider config={tamaguiConfig} defaultTheme="dark">
         <GestureHandlerRootView style={styles.container}>
           <SafeAreaProvider>
             <View style={styles.container} onLayout={onLayoutRootView}>
