@@ -43,3 +43,4 @@ yarn-error.*
 .gemini/
 gha-creds-*.json
 .expo/
+\n# Credentials and Secrets\ncredentials/\n.env*\n

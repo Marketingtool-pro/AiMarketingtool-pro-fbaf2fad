@@ -21,7 +21,8 @@
   "submit": {
     "production": {
       "android": {
-        "track": "production"
+        "track": "production",
+        "serviceAccountKeyPath": "./credentials/eas-submit.json"
       },
       "ios": {
         "ascAppId": "6758618412",
