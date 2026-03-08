@@ -319,6 +319,10 @@ const ProfileScreen = () => {
                 <Text style={styles.liveDataLabel}>Email</Text>
                 <Text style={styles.liveDataValue}>{user?.email || 'help@marketingtool.pro'}</Text>
               </View>
+              <View style={styles.liveDataRow}>
+                <Text style={styles.liveDataLabel}>Country</Text>
+                <Text style={styles.liveDataValue}>{profile?.country || 'Not Set'}</Text>
+              </View>
               <TouchableOpacity style={styles.liveActionBtn}>
                 <Text style={styles.liveActionText}>Edit your contact information</Text>
               </TouchableOpacity>
