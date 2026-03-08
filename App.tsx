@@ -11,7 +11,7 @@ import { useAuthStore } from './src/store/authStore';
 import { Colors } from './src/constants/theme';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { TamaguiProvider } from 'tamagui';
-import config from './tamagui.config';
+import tamaguiConfig from './tamagui.config';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -77,7 +77,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <TamaguiProvider config={config} defaultTheme="dark">
+      <TamaguiProvider config={tamaguiConfig} defaultTheme="dark">
         <GestureHandlerRootView style={styles.container}>
           <SafeAreaProvider>
             <View style={styles.container} onLayout={onLayoutRootView}>
