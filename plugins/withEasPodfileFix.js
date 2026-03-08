@@ -3,9 +3,9 @@ const fs = require("fs");
 const path = require("path");
 
 /**
- * EAS-Priority Podfile Fix
- * RESTORED TO SUCCESSFUL BUILD 130 STATE
- * Force Firebase to use STATIC frameworks and DISABLE modules to avoid RCTBridgeModule conflicts.
+ * EAS-Priority Podfile Fix (FINAL VERSION)
+ * Specifically targets the RN 0.83 + Firebase cycle of death.
+ * Matches Build 130 state but adds surgical module control.
  */
 module.exports = function withEasPodfileFix(config) {
   return withDangerousMod(config, [
@@ -16,7 +16,7 @@ module.exports = function withEasPodfileFix(config) {
 
       let contents = fs.readFileSync(podfilePath, "utf8");
 
-      // 1. Force Firebase to use STATIC frameworks
+      // 1. Force Firebase to use STATIC frameworks (Build 130 state)
       contents = contents.replace(/\$RNFirebaseAsStaticFramework = false/g, "");
       if (!contents.includes("$RNFirebaseAsStaticFramework = true")) {
         contents = "$RNFirebaseAsStaticFramework = true\n" + contents;
@@ -30,26 +30,35 @@ module.exports = function withEasPodfileFix(config) {
         /# Force non-modular includes[\s\S]*?end\s+end/g,
         /# RNFB \+ RN 0.83[\s\S]*?end\s+end/g,
         /# Refined fix[\s\S]*?end\s+end/g,
-        /# Refined fix for RNFB \+ RN 0.83 compatibility[\s\S]*?end\s+end/g,
+        /# Force Static Non-Modular[\s\S]*?end\s+end/g,
         /# Enable modules for all Firebase[\s\S]*?end\s+end/g
       ];
       patterns.forEach(p => contents = contents.replace(p, ""));
 
-      // 3. Apply the Static Non-Modular patch (Same as successful Build 130)
+      // 3. Apply the Definitive Surgical Patch
       const snippet = `
-    # Force Static Non-Modular for Firebase (Build 130 state)
+    # Definitive Fix for RN 0.83 + Firebase
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |bc|
+        # Allow non-modular headers globally
         bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
         bc.build_settings['CLANG_WARN_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'NO'
+        
+        # Enable modules by default for Firebase compatibility
+        bc.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+        bc.build_settings['DEFINES_MODULE'] = 'YES'
+        
+        # Ensure correct C standards
         bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
         bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=implicit-function-declaration -Wno-error=implicit-int'
       end
 
-      if target.name.start_with?('RNFB') || target.name.start_with?('Firebase')
+      # SURGICAL STEP: Disable modules ONLY for the RNFB bridge targets
+      # This stops the RCTBridgeModule redefinition error while allowing @import in Firebase headers.
+      if target.name == 'RNFBApp' || target.name == 'RNFBAuth' || target.name == 'RNFBFirestore'
         target.build_configurations.each do |bc|
-          bc.build_settings['DEFINES_MODULE'] = 'NO'
           bc.build_settings['CLANG_ENABLE_MODULES'] = 'NO'
+          bc.build_settings['DEFINES_MODULE'] = 'NO'
         end
       end
     end`;
