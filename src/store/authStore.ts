@@ -302,44 +302,56 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   // Helper function to fetch or create user profile
   fetchOrCreateProfile: async (user: Models.User<Models.Preferences>): Promise<UserProfile> => {
+    const defaultProfile: UserProfile = {
+      $id: user.$id,
+      userId: user.$id,
+      name: user.name || '',
+      email: user.email,
+      subscription: 'free',
+      generationsUsed: 0,
+      generationsLimit: 10,
+      createdAt: new Date().toISOString(),
+    };
+
     try {
-      // Try to fetch existing profile
-      const profiles = await dbService.listDocuments<UserProfile & Models.Document>(
-        COLLECTIONS.USERS,
-        [`userId=${user.$id}`]
+      const profileTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
       );
+
+      // Try to fetch existing profile
+      const profiles = await Promise.race([
+        dbService.listDocuments<UserProfile & Models.Document>(
+          COLLECTIONS.USERS,
+          [`userId=${user.$id}`]
+        ),
+        profileTimeout,
+      ]);
 
       if (profiles.documents.length > 0) {
         return profiles.documents[0] as UserProfile;
       }
 
       // Create new profile
-      const newProfile = await dbService.createDocument<UserProfile & Models.Document>(
-        COLLECTIONS.USERS,
-        {
-          userId: user.$id,
-          name: user.name || '',
-          email: user.email,
-          subscription: 'free',
-          generationsUsed: 0,
-          generationsLimit: 10,
-          createdAt: new Date().toISOString(),
-        }
-      );
+      const newProfile = await Promise.race([
+        dbService.createDocument<UserProfile & Models.Document>(
+          COLLECTIONS.USERS,
+          {
+            userId: user.$id,
+            name: user.name || '',
+            email: user.email,
+            subscription: 'free',
+            generationsUsed: 0,
+            generationsLimit: 10,
+            createdAt: new Date().toISOString(),
+          }
+        ),
+        profileTimeout,
+      ]);
 
       return newProfile as UserProfile;
     } catch (error) {
-      // Return a default profile if database operations fail
-      return {
-        $id: user.$id,
-        userId: user.$id,
-        name: user.name || '',
-        email: user.email,
-        subscription: 'free',
-        generationsUsed: 0,
-        generationsLimit: 10,
-        createdAt: new Date().toISOString(),
-      };
+      // Return a default profile if database operations fail or timeout
+      return defaultProfile;
     }
   },
 }));

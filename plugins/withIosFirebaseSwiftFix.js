@@ -29,10 +29,10 @@ module.exports = function withIosFirebaseSwiftFix(config) {
       }
 
       // 2. Add FirebaseApp.configure() in didFinishLaunchingWithOptions
-      if (content.includes('func application(_ application: UIApplication, didFinishLaunchingWithOptions')) {
+      if (content.includes('didFinishLaunchingWithOptions')) {
         if (!content.includes('FirebaseApp.configure()')) {
           content = content.replace(
-            /func application\(_ application: UIApplication, didFinishLaunchingWithOptions[\s\S]*?\{/,
+            /(didFinishLaunchingWithOptions[\s\S]*?\) -> Bool \{)/,
             (match) => `${match}\n    FirebaseApp.configure()`
           );
         }

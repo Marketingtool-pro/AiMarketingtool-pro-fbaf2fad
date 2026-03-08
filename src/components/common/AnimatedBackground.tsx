@@ -1,13 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet, Dimensions, Animated as RNAnimated, Easing as RNEasing } from 'react-native';
-import { 
-  Canvas, 
-  Fill, 
-  Skia, 
-  RuntimeShader,
-  vec,
-  useClock
-} from '@shopify/react-native-skia';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/theme';
 
 const { width, height } = Dimensions.get('window');
@@ -98,32 +91,6 @@ const FloatingParticle = ({ delay, size, startX, startY, color }: {
   );
 };
 
-// 2026 "Liquid Mesh" Shader
-const liquidShader = Skia.RuntimeEffect.Make(`
-  uniform float time;
-  uniform vec2 resolution;
-  
-  half4 main(vec2 pos) {
-    vec2 uv = pos / resolution.xy;
-    
-    // Create liquid motion using sine waves
-    float color1 = sin(uv.x * 2.0 + time * 0.0005) * 0.5 + 0.5;
-    float color2 = sin(uv.y * 3.0 - time * 0.0003) * 0.5 + 0.5;
-    float color3 = sin((uv.x + uv.y) * 1.5 + time * 0.0002) * 0.5 + 0.5;
-    
-    // Deep 2026 Marketing Tones (Purples, Navys, Golds)
-    vec3 c1 = vec3(0.06, 0.04, 0.20); // Deep Navy (#0F0B33)
-    vec3 c2 = vec3(0.49, 0.23, 0.92); // Vivid Purple (#7C3AED)
-    vec3 c3 = vec3(0.09, 0.52, 0.89); // Deep Cyan (#1885E4)
-    
-    vec3 finalColor = mix(c1, c2, color1);
-    finalColor = mix(finalColor, c3, color2 * 0.5);
-    finalColor += color3 * 0.05; // Subtle highlights
-    
-    return half4(finalColor, 1.0);
-  }
-`)!;
-
 interface AnimatedBackgroundProps {
   children: React.ReactNode;
   variant?: 'default' | 'chat' | 'tools' | 'profile' | 'dashboard';
@@ -135,8 +102,6 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
   variant = 'default',
   showParticles = true,
 }) => {
-  const clock = useClock();
-
   const particles = useMemo(() => [
     { delay: 0, size: 6, startX: width * 0.1, startY: height * 0.8, color: Colors.secondary + '60' },
     { delay: 1000, size: 8, startX: width * 0.3, startY: height * 0.9, color: Colors.purple + '60' },
@@ -150,20 +115,16 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* 1. The Liquid Shader Canvas */}
-      <Canvas style={StyleSheet.absoluteFill}>
-        <Fill>
-          <RuntimeShader 
-            source={liquidShader} 
-            uniforms={{ 
-              time: clock as any, 
-              resolution: vec(width, height) 
-            }} 
-          />
-        </Fill>
-      </Canvas>
+      {/* Liquid Mesh Gradient Background */}
+      <LinearGradient
+        colors={['#0F0B33', '#2d1b69', '#1885E4', '#060B28']}
+        locations={[0, 0.35, 0.65, 1]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
 
-      {/* 2. Glass Overlay (Subtle grain for realistic texture) */}
+      {/* Glass Overlay */}
       <View style={styles.overlay} />
 
       {/* Floating Particles */}
@@ -175,7 +136,7 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
         </View>
       )}
 
-      {/* 3. Content Container */}
+      {/* Content Container */}
       <View style={styles.content}>{children}</View>
     </View>
   );
@@ -184,11 +145,11 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#060B28', // Fallback color
+    backgroundColor: '#060B28',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(6, 11, 40, 0.15)', // Darken slightly for readability
+    backgroundColor: 'rgba(6, 11, 40, 0.15)',
   },
   particlesContainer: {
     ...StyleSheet.absoluteFillObject,

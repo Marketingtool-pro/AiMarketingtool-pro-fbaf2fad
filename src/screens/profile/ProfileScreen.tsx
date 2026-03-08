@@ -23,48 +23,32 @@ import {
   LogOut, 
   ChevronRight, 
   Zap,
-  Bookmark
+  Bookmark,
+  User,
+  Vote,
+  Calendar,
+  ShieldCheck
 } from 'lucide-react-native';
-import { Canvas, RoundedRect, Blur, LinearGradient as SkiaGradient, vec, BoxShadow, Fill } from "@shopify/react-native-skia";
+import { LinearGradient as ExpoGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { getMembershipInfo, getPaymentHistory, MembershipData, PaymentRecord } from '../../services/firebaseFirestore';
 
 const { width, height } = Dimensions.get('window');
 
-// 2026 Pro Glass Card using Shopify Skia
+// 2026 Pro Glass Card
 const ProGlassCard = ({ children }: { children: React.ReactNode }) => (
   <View style={styles.proGlassContainer}>
-    <Canvas style={styles.skiaCanvas}>
-      {/* 1. The Pro Shadow (Colored Glow) */}
-      <RoundedRect x={10} y={10} width={width - 50} height={220} r={30} color="white">
-        <BoxShadow blur={30} color="rgba(126, 34, 206, 0.4)" />
-      </RoundedRect>
-
-      {/* 2. The Glass Body with Mesh Gradient */}
-      <RoundedRect x={10} y={10} width={width - 50} height={220} r={30}>
-        <SkiaGradient
-          start={vec(0, 0)}
-          end={vec(width - 50, 220)}
-          colors={["rgba(255,255,255,0.15)", "rgba(255,255,255,0.05)"]}
-        />
-        <Blur blur={25} />
-      </RoundedRect>
-
-      {/* 3. The 'Light Source' Edge Border */}
-      <RoundedRect 
-        x={10} y={10} width={width - 50} height={220} r={30} 
-        style="stroke" strokeWidth={1.5}
-      >
-        <SkiaGradient
-          start={vec(0, 0)}
-          end={vec(width - 50, 220)}
-          colors={["rgba(255,255,255,0.6)", "transparent", "rgba(126, 34, 206, 0.4)"]}
-        />
-      </RoundedRect>
-    </Canvas>
+    <ExpoGradient
+      colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)']}
+      style={[styles.skiaCanvas, { borderRadius: 30 }]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    />
+    <View style={[styles.skiaCanvas, { borderRadius: 30, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.2)' }]} />
     <View style={styles.proGlassContent}>
       {children}
     </View>
@@ -74,19 +58,23 @@ const ProGlassCard = ({ children }: { children: React.ReactNode }) => (
 // Moving Mesh Background
 const MeshBackground = () => (
   <View style={StyleSheet.absoluteFill}>
-    <Canvas style={{ flex: 1 }}>
-      <Fill>
-        <SkiaGradient
-          start={vec(0, 0)}
-          end={vec(width, height)}
-          colors={["#1e1b4b", "#581c87", "#7e22ce"]} // Deep 2026 Purple Tones
-        />
-      </Fill>
-    </Canvas>
+    <ExpoGradient
+      colors={['#1e1b4b', '#581c87', '#7e22ce']}
+      style={{ flex: 1 }}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    />
   </View>
 );
 
-const ProfileHeroImage = require('../../assets/images/screens/profile-hero.jpg');
+// Safety check for assets
+let ProfileHeroImage;
+try {
+  ProfileHeroImage = require('../../assets/images/screens/profile-hero.jpg');
+} catch (e) {
+  // Fallback to a color if asset is missing
+  ProfileHeroImage = null;
+}
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -101,6 +89,19 @@ const StatItem = ({ label, value, icon: Icon }: { label: string; value: string |
 const ProfileScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user, profile, logout } = useAuthStore();
+  const [membership, setMembership] = React.useState<MembershipData | null>(null);
+  const [payments, setPayments] = React.useState<PaymentRecord[]>([]);
+
+  React.useEffect(() => {
+    loadLiveData();
+  }, [user?.$id]);
+
+  const loadLiveData = async () => {
+    const mData = await getMembershipInfo(user?.$id || 'current-user');
+    const pData = await getPaymentHistory(user?.$id || 'current-user');
+    setMembership(mData);
+    setPayments(pData);
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -139,8 +140,9 @@ const ProfileScreen = () => {
     {
       title: 'Support',
       items: [
+        { icon: Vote, label: 'View your voting history', url: 'https://marketingtool.pro/voting/' },
         { icon: HelpCircle, label: 'Help Center', url: 'https://marketingtool.pro/help/' },
-        { icon: MessageCircle, label: 'Contact Support', url: 'mailto:support@marketingtool.pro' },
+        { icon: MessageCircle, label: 'Contact Support', url: 'https://marketingtool.pro/help/' },
         { icon: Book, label: 'Tutorials', url: 'https://marketingtool.pro/blog/' },
       ],
     },
@@ -158,8 +160,15 @@ const ProfileScreen = () => {
       <MeshBackground />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Hero Background */}
-        <View style={styles.heroSection}>
-          <Image source={ProfileHeroImage} style={styles.heroImage} resizeMode="cover" />
+        <View style={styles.heroContainer}>
+          {ProfileHeroImage ? (
+            <Image source={ProfileHeroImage} style={styles.heroImage} resizeMode="cover" />
+          ) : (
+            <LinearGradient
+              colors={[Colors.primaryDark, Colors.primary]}
+              style={styles.heroImage}
+            />
+          )}
           <LinearGradient
             colors={['transparent', 'rgba(6, 11, 40, 0.6)', 'rgba(6, 11, 40, 1)']}
             style={styles.heroGradient}
@@ -185,7 +194,7 @@ const ProfileScreen = () => {
                     <Image source={{ uri: profile.avatar }} style={styles.avatarImg} />
                   ) : (
                     <Text style={styles.avatarText}>
-                      {user?.name?.charAt(0).toUpperCase() || 'U'}
+                      {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                     </Text>
                   )}
                 </View>
@@ -238,6 +247,84 @@ const ProfileScreen = () => {
             </LinearGradient>
           </TouchableOpacity>
         )}
+
+        {/* Membership & Payment Status */}
+        <View style={styles.liveSectionsContainer}>
+          {/* Membership Info */}
+          <View style={styles.liveCard}>
+            <View style={styles.liveCardHeader}>
+              <ShieldCheck size={20} color={Colors.secondary} />
+              <Text style={styles.liveCardTitle}>Membership Info</Text>
+            </View>
+            <View style={styles.liveCardBody}>
+              <View style={styles.liveDataRow}>
+                <Text style={styles.liveDataLabel}>Membership Type</Text>
+                <Text style={styles.liveDataValue}>{membership?.type || 'Individual'}</Text>
+              </View>
+              <View style={styles.liveDataRow}>
+                <Text style={styles.liveDataLabel}>Membership Expiration</Text>
+                <Text style={styles.liveDataValue}>{membership?.expirationDate || 'April 1, 2027'}</Text>
+              </View>
+              <TouchableOpacity style={styles.liveActionBtn}>
+                <Text style={styles.liveActionText}>Cancel your membership</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Payment Information */}
+          <View style={styles.liveCard}>
+            <View style={styles.liveCardHeader}>
+              <PaymentIcon size={20} color={Colors.secondary} />
+              <Text style={styles.liveCardTitle}>Payment Information</Text>
+            </View>
+            <View style={styles.liveCardBody}>
+              <Text style={styles.liveDescription}>
+                Paid $50.00 via credit card on March 6, 2026.
+              </Text>
+              <Text style={styles.liveSubDescription}>
+                So you know, this is all the payment information we keep in the database. If you encounter any problems with your payment or have any questions, email us with more details and we’ll look in to it right away.
+              </Text>
+              
+              <Text style={styles.liveListTitle}>Payment History</Text>
+              {payments.length > 0 ? payments.map((p, i) => (
+                <View key={i} style={styles.paymentRecord}>
+                  <Text style={styles.paymentDate}>{p.date}</Text>
+                  <View style={styles.paymentDetail}>
+                    <Text style={styles.paymentAmount}>{p.method} {p.amount} {p.status}</Text>
+                    <Text style={styles.paymentTxId}>- {p.transactionId}</Text>
+                  </View>
+                </View>
+              )) : (
+                <Text style={styles.paymentEmpty}>No recent payments found.</Text>
+              )}
+            </View>
+          </View>
+
+          {/* Contact Information */}
+          <View style={styles.liveCard}>
+            <View style={styles.liveCardHeader}>
+              <User size={20} color={Colors.secondary} />
+              <Text style={styles.liveCardTitle}>Contact Information</Text>
+            </View>
+            <View style={styles.liveCardBody}>
+              <View style={styles.liveDataRow}>
+                <Text style={styles.liveDataLabel}>Preferred OpenID</Text>
+                <Text style={styles.liveDataValue} numberOfLines={1}>issuer.hello.coop/sub_14gHcXjMn...</Text>
+              </View>
+              <View style={styles.liveDataRow}>
+                <Text style={styles.liveDataLabel}>Name</Text>
+                <Text style={styles.liveDataValue}>{user?.name || 'Marketingtool Pro'}</Text>
+              </View>
+              <View style={styles.liveDataRow}>
+                <Text style={styles.liveDataLabel}>Email</Text>
+                <Text style={styles.liveDataValue}>{user?.email || 'help@marketingtool.pro'}</Text>
+              </View>
+              <TouchableOpacity style={styles.liveActionBtn}>
+                <Text style={styles.liveActionText}>Edit your contact information</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
 
         {/* Menu Sections */}
         <View style={styles.menuContainer}>
@@ -380,6 +467,26 @@ const styles = StyleSheet.create({
   footerLinks: { flexDirection: 'row', alignItems: 'center' },
   footerLink: { fontSize: 13, color: Colors.secondary },
   footerDivider: { fontSize: 13, color: Colors.textTertiary, marginHorizontal: Spacing.sm },
+  // Live Data Styles
+  liveSectionsContainer: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.lg },
+  liveCard: { backgroundColor: Colors.surface, borderRadius: BorderRadius.lg, padding: Spacing.md, marginBottom: Spacing.md, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  liveCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm, gap: 10 },
+  liveCardTitle: { fontSize: 16, fontWeight: 'bold', color: Colors.white },
+  liveCardBody: { paddingLeft: 30 },
+  liveDataRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  liveDataLabel: { fontSize: 13, color: Colors.textSecondary },
+  liveDataValue: { fontSize: 13, color: Colors.white, fontWeight: '500' },
+  liveActionBtn: { marginTop: 10, paddingVertical: 8 },
+  liveActionText: { fontSize: 13, color: Colors.secondary, fontWeight: '600', textDecorationLine: 'underline' },
+  liveDescription: { fontSize: 13, color: Colors.white, lineHeight: 20, marginBottom: 8 },
+  liveSubDescription: { fontSize: 12, color: Colors.textTertiary, lineHeight: 18, marginBottom: 15 },
+  liveListTitle: { fontSize: 14, fontWeight: '600', color: Colors.white, marginBottom: 10, marginTop: 5 },
+  paymentRecord: { backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: 10, marginBottom: 8 },
+  paymentDate: { fontSize: 11, color: Colors.textTertiary, marginBottom: 4 },
+  paymentDetail: { flexDirection: 'row', justifyContent: 'space-between' },
+  paymentAmount: { fontSize: 12, color: Colors.white, fontWeight: '500' },
+  paymentTxId: { fontSize: 10, color: Colors.textTertiary },
+  paymentEmpty: { fontSize: 12, color: Colors.textTertiary, fontStyle: 'italic' },
 });
 
 export default ProfileScreen;

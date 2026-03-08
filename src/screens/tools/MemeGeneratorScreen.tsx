@@ -116,7 +116,7 @@ const MemeGeneratorScreen = () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        allowsEditing: false,
         aspect: [1, 1],
         quality: 1,
       });
@@ -136,7 +136,7 @@ const MemeGeneratorScreen = () => {
 
     try {
       const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
+        allowsEditing: false,
         aspect: [1, 1],
         quality: 1,
       });

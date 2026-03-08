@@ -14,15 +14,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { 
-  Canvas, 
-  RoundedRect, 
-  Blur, 
-  LinearGradient as SkiaGradient, 
-  vec, 
-  BoxShadow, 
-  Fill 
-} from "@shopify/react-native-skia";
+import { LinearGradient as ExpoGradient } from 'expo-linear-gradient';
 import AnimatedRN, { 
   useAnimatedStyle, 
   useSharedValue, 
@@ -42,6 +34,7 @@ import { getToolIcon } from '../../constants/toolIcons';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 import LottieView from 'lottie-react-native';
 import Glass3DLogo from '../../components/common/Glass3DLogo';
+import { YStack, XStack, Card, H2, H4, Paragraph, Theme, Button as TamaguiButton } from 'tamagui';
 
 const { width } = Dimensions.get('window');
 
@@ -106,37 +99,16 @@ const CategoryImages: Record<string, { image: any; gradient: string[] }> = {
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// 2026 Refractive Glass Card Component
+// 2026 Refractive Glass Card Component with Glow
 const GlassBentoCard = ({ children, color }: { children: React.ReactNode, color: string }) => (
-  <View style={styles.glassBentoContainer}>
-    <Canvas style={styles.skiaCanvas}>
-      {/* 1. The Liquid Reflection Glow */}
-      <RoundedRect x={0} y={0} width={(width - 40 - 24) / 4} height={100} r={20} color="white">
-        <BoxShadow blur={15} color={color + '30'} />
-      </RoundedRect>
-
-      {/* 2. The Refractive Glass Body */}
-      <RoundedRect x={0} y={0} width={(width - 40 - 24) / 4} height={100} r={20}>
-        <SkiaGradient
-          start={vec(0, 0)}
-          end={vec(80, 100)}
-          colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0.05)"]}
-        />
-        <Blur blur={10} />
-      </RoundedRect>
-
-      {/* 3. The 2026 Glass Edge */}
-      <RoundedRect 
-        x={0} y={0} width={(width - 40 - 24) / 4} height={100} r={20} 
-        style="stroke" strokeWidth={1}
-      >
-        <SkiaGradient
-          start={vec(0, 0)}
-          end={vec(80, 100)}
-          colors={["rgba(255,255,255,0.5)", "transparent", color + '40']}
-        />
-      </RoundedRect>
-    </Canvas>
+  <View style={[styles.glassBentoContainer, { shadowColor: color, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 }]}>
+    <ExpoGradient
+      colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)']}
+      style={[styles.skiaCanvas, { borderRadius: 20 }]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    />
+    <View style={[styles.skiaCanvas, { borderRadius: 20, borderWidth: 1.5, borderColor: color + '40' }]} />
     <View style={styles.glassBentoContent}>
       {children}
     </View>
