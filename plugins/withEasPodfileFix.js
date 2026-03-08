@@ -1,25 +1,24 @@
-const { withDangerousMod } = require("@expo/config-plugins");
-const fs = require("fs");
-const path = require("path");
+const { withDangerousMod } = require('@expo/config-plugins');
+const fs = require('fs');
+const path = require('path');
 
 /**
- * EAS-Priority Podfile Fix (FINAL VERSION)
- * Specifically targets the RN 0.83 + Firebase cycle of death.
- * Matches Build 130 state but adds surgical module control.
+ * THE DEFINITIVE FIX for Expo 55 + Firebase (v8)
+ * Targets the specific "must be imported from module" and "implicit int" errors.
  */
 module.exports = function withEasPodfileFix(config) {
   return withDangerousMod(config, [
-    "ios",
+    'ios',
     async (config) => {
-      const podfilePath = path.join(config.modRequest.platformProjectRoot, "Podfile");
+      const podfilePath = path.join(config.modRequest.platformProjectRoot, 'Podfile');
       if (!fs.existsSync(podfilePath)) return config;
 
-      let contents = fs.readFileSync(podfilePath, "utf8");
+      let contents = fs.readFileSync(podfilePath, 'utf8');
 
-      // 1. Force Firebase to use STATIC frameworks (Build 130 state)
-      contents = contents.replace(/\$RNFirebaseAsStaticFramework = false/g, "");
-      if (!contents.includes("$RNFirebaseAsStaticFramework = true")) {
-        contents = "$RNFirebaseAsStaticFramework = true\n" + contents;
+      // 1. Force Firebase to NOT use static frameworks (this is the root cause)
+      contents = contents.replace(/\$RNFirebaseAsStaticFramework = true/g, '');
+      if (!contents.includes('$RNFirebaseAsStaticFramework = false')) {
+        contents = '$RNFirebaseAsStaticFramework = false\n' + contents;
       }
 
       // 2. Clear all previous snippets
@@ -27,46 +26,36 @@ module.exports = function withEasPodfileFix(config) {
         /# Robust compatibility[\s\S]*?end\s+end/g,
         /# Surgical compatibility[\s\S]*?end\s+end/g,
         /# Clean Firebase[\s\S]*?end\s+end/g,
-        /# Force non-modular includes[\s\S]*?end\s+end/g,
-        /# RNFB \+ RN 0.83[\s\S]*?end\s+end/g,
-        /# Refined fix[\s\S]*?end\s+end/g,
-        /# Force Static Non-Modular[\s\S]*?end\s+end/g,
-        /# Enable modules for all Firebase[\s\S]*?end\s+end/g
+        /# Force non-modular includes[\s\S]*?end\s+end/g
       ];
-      patterns.forEach(p => contents = contents.replace(p, ""));
+      patterns.forEach(p => contents = contents.replace(p, ''));
 
-      // 3. Apply the Definitive Surgical Patch
+      // 3. Apply the "Surgical Non-Modular" patch
       const snippet = `
-    # Definitive Fix for RN 0.83 + Firebase
+    # Surgical fix for RNFB + RN 0.83
     installer.pods_project.targets.each do |target|
+      # Fix for all targets to allow mixing headers
       target.build_configurations.each do |bc|
-        # Allow non-modular headers globally
         bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-        bc.build_settings['CLANG_WARN_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'NO'
-        
-        # Enable modules by default for Firebase compatibility
-        bc.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
-        bc.build_settings['DEFINES_MODULE'] = 'YES'
-        
-        # Ensure correct C standards
-        bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
-        bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=implicit-function-declaration -Wno-error=implicit-int'
       end
 
-      # SURGICAL STEP: Disable modules ONLY for the RNFB bridge targets
-      # This stops the RCTBridgeModule redefinition error while allowing @import in Firebase headers.
-      if target.name == 'RNFBApp' || target.name == 'RNFBAuth' || target.name == 'RNFBFirestore'
+      # Specific fix for Firebase: DISABLE modules for them so they can see React headers
+      if target.name.start_with?('RNFB') || target.name.start_with?('Firebase')
         target.build_configurations.each do |bc|
-          bc.build_settings['CLANG_ENABLE_MODULES'] = 'NO'
           bc.build_settings['DEFINES_MODULE'] = 'NO'
+          bc.build_settings['CLANG_ENABLE_MODULES'] = 'NO'
+          
+          # Kill the C99 errors
+          bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
+          bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=implicit-function-declaration -Wno-error=implicit-int'
         end
       end
     end`;
 
-      if (contents.includes("post_install do |installer|")) {
+      if (contents.includes('post_install do |installer|')) {
         contents = contents.replace(
-          "post_install do |installer|",
-          "post_install do |installer|\n" + snippet
+          'post_install do |installer|',
+          'post_install do |installer|\n' + snippet
         );
       } else {
         contents += `\npost_install do |installer|\n${snippet}\nend\n`;
