@@ -47,11 +47,16 @@ module.exports = function withEasPodfileFix(config) {
         bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=implicit-function-declaration -Wno-error=implicit-int'
       end
 
-      # Specific fix for Firebase: DISABLE modules for them so they can see React headers
+      # Enable modules generally, but disable specifically for Firestore to avoid conflicts
       if target.name.start_with?('RNFB') || target.name.start_with?('Firebase')
         target.build_configurations.each do |bc|
-          bc.build_settings['DEFINES_MODULE'] = 'NO'
-          bc.build_settings['CLANG_ENABLE_MODULES'] = 'NO'
+          if target.name.include?('Firestore')
+            bc.build_settings['DEFINES_MODULE'] = 'NO'
+            bc.build_settings['CLANG_ENABLE_MODULES'] = 'NO'
+          else
+            bc.build_settings['DEFINES_MODULE'] = 'YES'
+            bc.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+          end
         end
       end
     end`;
