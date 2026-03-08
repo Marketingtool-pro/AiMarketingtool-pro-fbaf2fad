@@ -13,3 +13,4 @@ conductor/
 *.keystore
 *.md
 firebase-debug.log
+my-app_backup/\ngemini-cli_backup/\n
