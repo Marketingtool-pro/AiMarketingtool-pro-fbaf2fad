@@ -13,4 +13,14 @@ conductor/
 *.keystore
 *.md
 firebase-debug.log
-my-app_backup/\ngemini-cli_backup/\n
+my-app_backup/
+gemini-cli_backup/
+credentials/
+*.log
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.mp4
+!src/assets/images/tool-icons-v2/*.png
+!assets/*.png

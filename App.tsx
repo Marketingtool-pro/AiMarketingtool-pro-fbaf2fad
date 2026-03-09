@@ -11,7 +11,7 @@ import { useAuthStore } from './src/store/authStore';
 import { Colors } from './src/constants/theme';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { TamaguiProvider } from 'tamagui';
-import tamaguiConfig from './tamagui.config';
+import tamaguiConfig from './src/config/tamagui.config';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
