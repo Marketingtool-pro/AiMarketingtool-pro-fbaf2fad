@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Image,
   Dimensions,
   Linking,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -19,17 +20,37 @@ import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme'
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 import { functions } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
+import Glass3DLogo from '../../components/common/Glass3DLogo';
+import { Canvas, RoundedRect, Blur, LinearGradient as SkiaGradient, vec } from '@shopify/react-native-skia';
+import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 
-// Safety check for assets
-let PricingHeroImage;
-try {
-  PricingHeroImage = require('../../assets/images/screens/pricing-hero.jpg');
-} catch (e) {
-  // Fallback to a color if asset is missing
-  PricingHeroImage = null;
-}
+// 2026 Refractive Glass Card Component
+const GlassBentoCard = ({ children, color, isSelected }: { children: React.ReactNode, color: string, isSelected?: boolean }) => (
+  <View style={[styles.glassBentoContainer, isSelected && { borderColor: Colors.secondary, borderWidth: 2 }]}>
+    <Canvas style={styles.skiaCanvas}>
+      <RoundedRect
+        x={0}
+        y={0}
+        width={width - 40}
+        height={isSelected ? 320 : 300}
+        r={24}
+        color="rgba(6, 11, 40, 0.7)"
+      >
+        <SkiaGradient
+          start={vec(0, 0)}
+          end={vec(width, 300)}
+          colors={isSelected ? [Colors.secondary + '20', 'transparent'] : ['rgba(255,255,255,0.05)', 'transparent']}
+        />
+        <Blur blur={20} />
+      </RoundedRect>
+    </Canvas>
+    <View style={styles.glassBentoContent}>
+      {children}
+    </View>
+  </View>
+);
 
 interface PlanFeature {
   text: string;
@@ -45,6 +66,7 @@ interface Plan {
   features: PlanFeature[];
   popular?: boolean;
   trialDays?: number;
+  logoType: 'seo' | 'ads' | 'ai' | 'social';
 }
 
 const SubscriptionScreen = () => {
@@ -54,7 +76,6 @@ const SubscriptionScreen = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('pro');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Pricing matches marketingtool.pro/pricing/ exactly
   const plans: Plan[] = [
     {
       id: 'free',
@@ -63,13 +84,11 @@ const SubscriptionScreen = () => {
       yearlyPrice: 0,
       description: '7 days • Full platform visible',
       trialDays: 7,
+      logoType: 'seo',
       features: [
         { text: '7-day full access trial', included: true },
         { text: '3 generations per day', included: true },
         { text: 'Simulation mode', included: true },
-        { text: 'No credit card required', included: true },
-        { text: 'Priority support', included: false },
-        { text: 'Full analytics', included: false },
       ],
     },
     {
@@ -78,13 +97,11 @@ const SubscriptionScreen = () => {
       monthlyPrice: 29,
       yearlyPrice: 199,
       description: '200 generations/month',
+      logoType: 'social',
       features: [
         { text: 'Full web platform access', included: true },
         { text: 'All 7 platforms', included: true },
         { text: '200 generations/month', included: true },
-        { text: 'Real account connect', included: true },
-        { text: 'Standard reports', included: true },
-        { text: 'Advanced automation', included: false },
       ],
     },
     {
@@ -93,12 +110,10 @@ const SubscriptionScreen = () => {
       monthlyPrice: 49,
       yearlyPrice: 399,
       description: '500 generations/month',
+      logoType: 'ai',
       features: [
         { text: '500 generations/month', included: true },
         { text: 'Advanced automation engine', included: true },
-        { text: 'Cross-platform intelligence', included: true },
-        { text: 'Budget reallocation AI', included: true },
-        { text: 'Performance forecasting', included: true },
         { text: 'Priority support', included: true },
       ],
     },
@@ -109,18 +124,17 @@ const SubscriptionScreen = () => {
       yearlyPrice: 899,
       description: '1,500+ generations/month',
       popular: true,
+      logoType: 'ads',
       features: [
         { text: '1,500+ generations/month', included: true },
-        { text: 'Full automation with auto-apply', included: true },
-        { text: 'Predictive scaling AI', included: true },
-        { text: 'Deep analytics', included: true },
+        { text: 'Full automation', included: true },
         { text: 'Executive dashboards', included: true },
-        { text: 'Priority support', included: true },
       ],
     },
   ];
 
   const handleSubscribe = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     if (selectedPlan === 'free') {
       navigation.goBack();
       return;
@@ -136,7 +150,7 @@ const SubscriptionScreen = () => {
         JSON.stringify({
           planId: selectedPlan,
           billingPeriod: billingPeriod,
-          price: getPrice(plan),
+          price: billingPeriod === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice,
         }),
         false,
         '/',
@@ -145,257 +159,110 @@ const SubscriptionScreen = () => {
       const result = JSON.parse(execution.responseBody);
       if (result.url) {
         await Linking.openURL(result.url);
-      } else if (result.error) {
-        Alert.alert('Error', result.error);
       } else {
-        Alert.alert('Error', 'Could not create checkout session. Please try again.');
+        Alert.alert('Error', 'Could not create checkout session.');
       }
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Could not open checkout. Please try again.');
+      Alert.alert('Error', err.message || 'Could not open checkout.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getPrice = (plan: Plan) => {
-    if (billingPeriod === 'yearly') {
-      return plan.yearlyPrice;
-    }
-    return plan.monthlyPrice;
-  };
-
-  const getSavings = (plan: Plan) => {
-    if (billingPeriod === 'yearly' && plan.monthlyPrice > 0) {
-      const yearlySavings = (plan.monthlyPrice * 12) - plan.yearlyPrice;
-      return yearlySavings > 0 ? yearlySavings : 0;
-    }
-    return 0;
-  };
-
   return (
     <AnimatedBackground variant="profile" showParticles={true}>
-      {/* Hero Header with Image */}
-      <View style={styles.heroContainer}>
-        {PricingHeroImage ? (
-          <Image source={PricingHeroImage} style={styles.heroImage} resizeMode="cover" />
-        ) : (
-          <LinearGradient
-            colors={[Colors.primaryDark, Colors.primary]}
-            style={styles.heroImage}
-          />
-        )}
-        <LinearGradient
-          colors={['rgba(6, 11, 40, 0.3)', 'rgba(6, 11, 40, 0.8)', 'rgba(6, 11, 40, 1)']}
-          style={styles.heroGradient}
-        >
-          <View style={styles.headerTop}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Feather name="x" size={24} color={Colors.white} />
+      <View style={styles.headerTop}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Feather name="chevron-left" size={24} color={Colors.white} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Premium Plans</Text>
+        <View style={{ width: 44 }} />
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Billing Toggle */}
+        <View style={styles.billingContainer}>
+          <View style={styles.billingToggle}>
+            <TouchableOpacity
+              style={[styles.billingOption, billingPeriod === 'monthly' && styles.billingOptionActive]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setBillingPeriod('monthly');
+              }}
+            >
+              <Text style={[styles.billingText, billingPeriod === 'monthly' && styles.billingTextActive]}>Monthly</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.billingOption, billingPeriod === 'yearly' && styles.billingOptionActive]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setBillingPeriod('yearly');
+              }}
+            >
+              <Text style={[styles.billingText, billingPeriod === 'yearly' && styles.billingTextActive]}>Yearly</Text>
+              <View style={styles.saveBadge}>
+                <Text style={styles.saveBadgeText}>-44%</Text>
+              </View>
             </TouchableOpacity>
           </View>
-
-          <View style={styles.headerContent}>
-            <View style={styles.pricingBadge}>
-              <Feather name="star" size={14} color={Colors.gold} />
-              <Text style={styles.pricingBadgeText}>7-Day Free Trial</Text>
-            </View>
-            <Text style={styles.headerTitle}>Choose Your Plan</Text>
-            <Text style={styles.headerSubtitle}>
-              Unlock all AI marketing tools. Cancel anytime.
-            </Text>
-          </View>
-        </LinearGradient>
-      </View>
-
-      {/* Header Billing Toggle */}
-      <View style={styles.header}>
-
-        {/* Billing Toggle */}
-        <View style={styles.billingToggle}>
-          <TouchableOpacity
-            style={[styles.billingOption, billingPeriod === 'monthly' && styles.billingOptionActive]}
-            onPress={() => setBillingPeriod('monthly')}
-          >
-            <Text style={[styles.billingText, billingPeriod === 'monthly' && styles.billingTextActive]}>
-              Monthly
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.billingOption, billingPeriod === 'yearly' && styles.billingOptionActive]}
-            onPress={() => setBillingPeriod('yearly')}
-          >
-            <Text style={[styles.billingText, billingPeriod === 'yearly' && styles.billingTextActive]}>
-              Yearly
-            </Text>
-            <View style={styles.saveBadge}>
-              <Text style={styles.saveBadgeText}>Save up to 44%</Text>
-            </View>
-          </TouchableOpacity>
         </View>
-      </View>
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Plans */}
-        {plans.map((plan) => (
-          <TouchableOpacity
-            key={plan.id}
-            style={[
-              styles.planCard,
-              selectedPlan === plan.id && styles.planCardSelected,
-              plan.popular && styles.planCardPopular,
-            ]}
-            onPress={() => setSelectedPlan(plan.id)}
-          >
-            {plan.popular && (
-              <View style={styles.popularBadge}>
-                <Text style={styles.popularBadgeText}>MOST POPULAR</Text>
-              </View>
-            )}
-            <View style={styles.planHeader}>
-              <View style={styles.planLeft}>
-                <View style={[
-                  styles.radioOuter,
-                  selectedPlan === plan.id && styles.radioOuterSelected
-                ]}>
-                  {selectedPlan === plan.id && <View style={styles.radioInner} />}
-                </View>
-                <View>
-                  <Text style={styles.planName}>{plan.name}</Text>
-                  <Text style={styles.planDescription}>{plan.description}</Text>
-                </View>
-              </View>
-              <View style={styles.planPricing}>
-                {billingPeriod === 'yearly' && plan.yearlyPrice > 0 ? (
-                  <>
-                    <Text style={styles.planPriceMonthly}>
-                      ${(plan.yearlyPrice / 12).toFixed(0)}/mo
-                    </Text>
-                    <Text style={styles.planPriceBilled}>
-                      ${plan.yearlyPrice}/year
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <Text style={styles.planPrice}>
-                      ${getPrice(plan)}
-                    </Text>
-                    <Text style={styles.planPeriod}>
-                      /{plan.monthlyPrice === 0 ? 'free' : 'month'}
-                    </Text>
-                  </>
+        {/* Plan Cards Bento Grid */}
+        <View style={styles.plansGrid}>
+          {plans.map((plan) => (
+            <TouchableOpacity 
+              key={plan.id} 
+              activeOpacity={0.9} 
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setSelectedPlan(plan.id);
+              }}
+            >
+              <GlassBentoCard color={Colors.secondary} isSelected={selectedPlan === plan.id}>
+                {plan.popular && (
+                  <LinearGradient colors={Gradients.accent} style={styles.popularTag}>
+                    <Text style={styles.popularTagText}>MOST POPULAR</Text>
+                  </LinearGradient>
                 )}
-              </View>
-            </View>
-
-            {getSavings(plan) > 0 && (
-              <View style={styles.savingsTag}>
-                <Feather name="tag" size={14} color={Colors.success} />
-                <Text style={styles.savingsText}>Save ${getSavings(plan)}/year</Text>
-              </View>
-            )}
-
-            <View style={styles.planFeatures}>
-              {plan.features.map((feature, index) => (
-                <View key={index} style={styles.featureItem}>
-                  <Feather
-                    name={feature.included ? 'check-circle' : 'x-circle'}
-                    size={18}
-                    color={feature.included ? Colors.success : Colors.textTertiary}
-                  />
-                  <Text style={[
-                    styles.featureText,
-                    !feature.included && styles.featureTextDisabled
-                  ]}>
-                    {feature.text}
-                  </Text>
+                
+                <View style={styles.planHeader}>
+                  <Glass3DLogo type={plan.logoType} size={80} />
+                  <View style={styles.planInfo}>
+                    <Text style={styles.planName}>{plan.name}</Text>
+                    <Text style={styles.planPrice}>
+                      ${billingPeriod === 'yearly' ? (plan.yearlyPrice / 12).toFixed(0) : plan.monthlyPrice}
+                      <Text style={styles.planPeriod}>/mo</Text>
+                    </Text>
+                  </View>
                 </View>
-              ))}
-            </View>
 
-          </TouchableOpacity>
-        ))}
+                <View style={styles.divider} />
 
-        {/* Guarantee */}
-        <View style={styles.guarantee}>
-          <Feather name="shield" size={24} color={Colors.success} />
-          <View style={styles.guaranteeText}>
-            <Text style={styles.guaranteeTitle}>30-Day Money Back Guarantee</Text>
-            <Text style={styles.guaranteeSubtitle}>
-              Not satisfied? Get a full refund within 30 days.
-            </Text>
-          </View>
+                <View style={styles.featuresList}>
+                  {plan.features.map((f, i) => (
+                    <View key={i} style={styles.featureItem}>
+                      <Feather name="check-circle" size={16} color={Colors.secondary} />
+                      <Text style={styles.featureText}>{f.text}</Text>
+                    </View>
+                  ))}
+                </View>
+              </GlassBentoCard>
+            </TouchableOpacity>
+          ))}
         </View>
 
-        {/* Restore Purchases */}
-        <TouchableOpacity
-          style={styles.restoreButton}
-          onPress={async () => {
-            try {
-              Alert.alert('Restoring...', 'Checking your subscription status...');
-              const { fetchOrCreateProfile } = useAuthStore.getState();
-              const { user } = useAuthStore.getState();
-              if (user) {
-                await fetchOrCreateProfile(user);
-                const updatedProfile = useAuthStore.getState().profile;
-                if (updatedProfile?.subscription && updatedProfile.subscription !== 'free') {
-                  Alert.alert('Restored!', `Your ${updatedProfile.subscription} subscription has been restored.`);
-                } else {
-                  Alert.alert('No Subscription Found', 'No active subscription was found for your account. Subscribe to get started.');
-                }
-              }
-            } catch {
-              Alert.alert('Error', 'Could not restore purchases. Please try again.');
-            }
-          }}
-        >
-          <Feather name="refresh-cw" size={16} color={Colors.secondary} />
-          <Text style={styles.restoreText}>Restore Purchases</Text>
-        </TouchableOpacity>
-
-        {/* Apple Subscription Disclosure */}
-        <Text style={styles.disclosureText}>
-          Subscriptions automatically renew unless auto-renew is turned off at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel your subscriptions in your App Store account settings.
-        </Text>
-
-        {/* Terms & Privacy Links */}
-        <View style={styles.legalLinks}>
-          <TouchableOpacity onPress={() => Linking.openURL('https://app.marketingtool.pro/dashboard/policy')}>
-            <Text style={styles.legalLink}>Terms of Service</Text>
-          </TouchableOpacity>
-          <Text style={styles.legalDivider}>|</Text>
-          <TouchableOpacity onPress={() => Linking.openURL('https://app.marketingtool.pro/dashboard/policy')}>
-            <Text style={styles.legalLink}>Privacy Policy</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={{ height: 120 }} />
+        <View style={{ height: 150 }} />
       </ScrollView>
 
-      {/* Subscribe Button */}
-      <View style={styles.subscribeContainer}>
-        <TouchableOpacity
-          onPress={handleSubscribe}
-          disabled={isLoading}
-          style={styles.subscribeButton}
-        >
-          <LinearGradient colors={Gradients.primary} style={styles.subscribeGradient}>
-            {isLoading ? (
-              <ActivityIndicator color={Colors.white} />
-            ) : (
-              <Text style={styles.subscribeText}>
-                {selectedPlan === 'free'
-                  ? 'Continue with Free'
-                  : 'Subscribe Now'}
-              </Text>
-            )}
+      {/* Sticky Bottom Action */}
+      <View style={styles.bottomAction}>
+        <TouchableOpacity style={styles.subscribeButton} onPress={handleSubscribe} disabled={isLoading}>
+          <LinearGradient colors={Gradients.secondary} style={styles.subscribeGradient}>
+            {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.subscribeButtonText}>Activate {selectedPlan.toUpperCase()}</Text>}
           </LinearGradient>
         </TouchableOpacity>
-        <Text style={styles.subscribeNote}>
-          Secure payment via Stripe
+        <Text style={styles.secureText}>
+          <Feather name="lock" size={12} color={Colors.textTertiary} /> Secure payment via Stripe
         </Text>
       </View>
     </AnimatedBackground>
@@ -403,329 +270,178 @@ const SubscriptionScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  heroContainer: {
-    height: 220,
-    position: 'relative',
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
-  },
-  heroGradient: {
-    flex: 1,
-    justifyContent: 'space-between',
-    paddingTop: 50,
-    paddingBottom: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-  },
-  header: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
-  },
   headerTop: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 20,
   },
   backButton: {
     width: 44,
     height: 44,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  headerContent: {
-    alignItems: 'center',
-  },
-  pricingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(253, 151, 7, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.full,
-    gap: 6,
-    marginBottom: Spacing.sm,
-  },
-  pricingBadgeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.gold,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: 'bold',
     color: Colors.white,
-    marginBottom: 8,
+    letterSpacing: 1,
   },
-  headerSubtitle: {
-    fontSize: 15,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
+  content: {
+    flex: 1,
+  },
+  billingContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
   },
   billingToggle: {
     flexDirection: 'row',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: 'rgba(6, 11, 40, 0.8)',
     padding: 4,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    width: 240,
   },
   billingOption: {
     flex: 1,
-    flexDirection: 'row',
+    paddingVertical: 10,
     alignItems: 'center',
+    borderRadius: 12,
+    flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: BorderRadius.md,
-    gap: 8,
+    gap: 6,
   },
   billingOptionActive: {
     backgroundColor: Colors.secondary,
   },
   billingText: {
-    fontSize: 16,
-    fontWeight: '600',
     color: Colors.textSecondary,
+    fontWeight: '600',
   },
   billingTextActive: {
     color: Colors.white,
   },
   saveBadge: {
-    backgroundColor: Colors.success,
-    paddingHorizontal: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
+    borderRadius: 6,
   },
   saveBadgeText: {
     fontSize: 10,
-    fontWeight: 'bold',
     color: Colors.white,
+    fontWeight: 'bold',
   },
-  content: {
-    flex: 1,
+  plansGrid: {
+    paddingHorizontal: 20,
+    gap: 20,
   },
-  contentContainer: {
-    padding: Spacing.lg,
-  },
-  planCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    marginBottom: Spacing.md,
+  glassBentoContainer: {
+    borderRadius: 24,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    position: 'relative',
+    borderColor: 'rgba(255,255,255,0.1)',
+    marginBottom: 20,
   },
-  planCardSelected: {
-    borderColor: Colors.secondary,
-    backgroundColor: 'rgba(124, 58, 237, 0.08)',
+  skiaCanvas: {
+    ...StyleSheet.absoluteFillObject,
   },
-  planCardPopular: {
-    borderColor: Colors.secondary,
-    backgroundColor: 'rgba(124, 58, 237, 0.08)',
+  glassBentoContent: {
+    padding: 24,
   },
-  popularBadge: {
+  popularTag: {
     position: 'absolute',
-    top: -12,
-    left: '50%',
-    marginLeft: -60,
-    backgroundColor: Colors.secondary,
+    top: 0,
+    right: 20,
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: BorderRadius.sm,
+    paddingVertical: 6,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
   },
-  popularBadgeText: {
+  popularTagText: {
     fontSize: 10,
     fontWeight: 'bold',
     color: Colors.white,
   },
-  lifetimeBadge: {
-    backgroundColor: Colors.secondary,
-  },
   planHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.md,
-  },
-  planLeft: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: 20,
+  },
+  planInfo: {
     flex: 1,
   },
   planName: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: Colors.white,
-  },
-  planDescription: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  planPricing: {
-    alignItems: 'flex-end',
+    marginBottom: 4,
   },
   planPrice: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: Colors.white,
-  },
-  planPriceMonthly: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Colors.white,
-  },
-  planPriceBilled: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 2,
   },
   planPeriod: {
-    fontSize: 14,
+    fontSize: 16,
     color: Colors.textSecondary,
+    fontWeight: 'normal',
   },
-  savingsTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.success + '20',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: BorderRadius.sm,
-    marginBottom: Spacing.md,
-    gap: 6,
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    marginVertical: 20,
   },
-  savingsText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.success,
-  },
-  planFeatures: {
-    gap: Spacing.sm,
+  featuresList: {
+    gap: 12,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: 12,
   },
   featureText: {
-    fontSize: 14,
-    color: Colors.white,
-  },
-  featureTextDisabled: {
-    color: Colors.textTertiary,
-    textDecorationLine: 'line-through',
-  },
-  radioOuter: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  radioOuterSelected: {
-    borderColor: Colors.secondary,
-  },
-  radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: Colors.secondary,
-  },
-  guarantee: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.success + '15',
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    marginTop: Spacing.md,
-    gap: Spacing.md,
-  },
-  guaranteeText: {
-    flex: 1,
-  },
-  guaranteeTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.white,
-  },
-  guaranteeSubtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: Colors.textSecondary,
-    marginTop: 2,
   },
-  subscribeContainer: {
+  bottomAction: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: Spacing.lg,
-    paddingBottom: 34,
-    backgroundColor: Colors.background,
+    padding: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    backgroundColor: 'rgba(13, 15, 28, 0.95)',
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   subscribeButton: {
-    borderRadius: BorderRadius.md,
+    borderRadius: 16,
     overflow: 'hidden',
+    height: 56,
   },
   subscribeGradient: {
-    paddingVertical: 16,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  subscribeText: {
+  subscribeButtonText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: Colors.white,
+    letterSpacing: 1,
   },
-  subscribeNote: {
-    fontSize: 12,
-    color: Colors.textTertiary,
+  secureText: {
     textAlign: 'center',
-    marginTop: Spacing.sm,
-  },
-  restoreButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.md,
-    gap: 8,
-  },
-  restoreText: {
-    fontSize: 14,
-    color: Colors.secondary,
-    fontWeight: '600',
-  },
-  disclosureText: {
-    fontSize: 11,
-    color: Colors.textTertiary,
-    lineHeight: 16,
-    textAlign: 'center',
-    paddingHorizontal: Spacing.md,
-    marginTop: Spacing.sm,
-  },
-  legalLinks: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: Spacing.md,
-    gap: 8,
-  },
-  legalLink: {
-    fontSize: 12,
-    color: Colors.secondary,
-    textDecorationLine: 'underline',
-  },
-  legalDivider: {
+    marginTop: 12,
     fontSize: 12,
     color: Colors.textTertiary,
   },
