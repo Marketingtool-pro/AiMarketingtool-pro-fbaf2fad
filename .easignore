@@ -1,37 +1,32 @@
-# 1. Ignore large directories
-node_modules/
-ios/
-android/
-dist/
-.expo/
-.git/
-gemini-cli/
-my-app/
-conductor/
-credentials/
-__pycache__/
+# 1. Block everything
+/*
 
-# 2. Specifically exclude the massive image folders
-src/assets/images/tool-icons/
-src/assets/images/tool-icons-v2/
+# 2. Allow only core config
+!/package.json
+!/package-lock.json
+!/app.json
+!/eas.json
+!/App.tsx
+!/index.ts
+!/tsconfig.json
+!/babel.config.js
+!/metro.config.js
+!/.env*
+!/GoogleService-Info.plist
+!/google-services.json
 
-# 3. Allow all necessary config and source files
-!package.json
-!package-lock.json
-!app.json
-!eas.json
-!App.tsx
-!index.ts
-!tsconfig.json
-!babel.config.js
-!metro.config.js
-!.env*
-!GoogleService-Info.plist
-!google-services.json
+# 3. Allow only essential folders
+!/src/
+!/assets/
+!/plugins/
 
-# 4. CRITICAL: Allow all plugins
-!plugins/**
-
-# 5. Allow source and assets
-!src/**
-!assets/**
+# 4. CRITICAL: Block heavy items inside those folders
+/src/assets/images/tool-icons/
+/src/assets/images/tool-icons-v2/
+/dist/
+/ios/
+/android/
+/node_modules/
+**/.expo/
+**/.git/
+**/.DS_Store
