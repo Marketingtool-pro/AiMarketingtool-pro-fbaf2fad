@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "147",
+      "buildNumber": "148",
       "googleServicesFile": "GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -53,7 +53,7 @@
       },
       "googleServicesFile": "google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 143,
+      "versionCode": 148,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -96,6 +96,10 @@
           }
         }
       ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-firebase/app-check",
+      "expo-notifications",
       "./plugins/withEasPodfileFix.js",
       "./plugins/withEdgeToEdgeFix.js",
       "expo-secure-store",
