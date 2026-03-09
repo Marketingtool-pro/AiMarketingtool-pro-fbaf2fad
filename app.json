@@ -24,27 +24,8 @@
       "bundleIdentifier": "pro.marketingtool.app",
       "googleServicesFile": "GoogleService-Info.plist",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "NSCameraUsageDescription": "Allow MarketingTool to access your camera for profile photos and content creation.",
-        "NSPhotoLibraryUsageDescription": "Allow MarketingTool to access your photos for uploading media content.",
-        "NSMicrophoneUsageDescription": "Allow MarketingTool to access your microphone for voice features.",
-        "NSFaceIDUsageDescription": "Allow MarketingTool to use Face ID for secure authentication.",
-        "NSLocationWhenInUseUsageDescription": "Allow MarketingTool to access your location for personalized content.",
-        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads and analytics.",
-        "UIBackgroundModes": [
-          "remote-notification"
-        ],
-        "LSApplicationQueriesSchemes": [
-          "mailto",
-          "tel",
-          "sms"
-        ]
-      },
-      "associatedDomains": [
-        "applinks:marketingtool.pro",
-        "applinks:app.marketingtool.pro"
-      ],
-      "buildNumber": "8"
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -52,21 +33,25 @@
         "backgroundColor": "#0D0F1C"
       },
       "googleServicesFile": "google-services.json",
-      "package": "pro.marketingtool.app",
-      "allowBackup": false,
-      "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "RECORD_AUDIO",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "USE_BIOMETRIC",
-        "USE_FINGERPRINT",
-        "VIBRATE",
-        "RECEIVE_BOOT_COMPLETED"
-      ]
+      "package": "pro.marketingtool.app"
     },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "expo-secure-store",
+      "expo-font",
+      "expo-sharing",
+      "expo-web-browser",
+      "expo-asset"
+    ],
     "extra": {
       "appwriteEndpoint": "https://api.marketingtool.pro/v1",
       "appwriteProjectId": "6952c8a0002d3365625d",
