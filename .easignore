@@ -1,7 +1,7 @@
 # Dependencies
 node_modules/
 
-# Native folders (EAS generates these)
+# Native folders
 ios/
 android/
 
@@ -17,13 +17,20 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 
-# Secrets & Credentials (EAS uses its own)
+# SECURE: BLOCK ALL CREDENTIALS
+credentials/
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
 *.pem
+*.json
+!app.json
+!package.json
+!package-lock.json
+!google-services.json # Add back manually only if using EAS secrets
+!GoogleService-Info.plist # Add back manually only if using EAS secrets
 
 # IDE / System
 .vscode/
@@ -31,8 +38,8 @@ yarn-error.*
 .DS_Store
 **/.git/
 
-# Massive asset folders (EAS might struggle with these if too large)
-# /src/assets/images/tool-icons/
+# Massive asset folders
+/src/assets/images/tool-icons/
 
 # Ensure plugins and src are ALWAYS included
 !plugins/
