@@ -13,7 +13,6 @@
   "dependencies": {
     "@expo/vector-icons": "15.0.3",
     "@react-native-firebase/app": "21.9.0",
-    "@react-native-firebase/app-check": "21.9.0",
     "@react-native-firebase/auth": "21.9.0",
     "@react-navigation/bottom-tabs": "7.10.1",
     "@react-navigation/native": "7.1.28",
