@@ -26,7 +26,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "2"
+      "buildNumber": "4"
     },
     "android": {
       "adaptiveIcon": {
@@ -37,6 +37,7 @@
       "package": "pro.marketingtool.app"
     },
     "plugins": [
+      "./plugins/withIosFirebaseSwiftFix.js",
       [
         "expo-build-properties",
         {
