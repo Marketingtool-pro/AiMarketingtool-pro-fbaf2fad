@@ -25,7 +25,7 @@
 
 **Expo Access Token:** `FeMBZxek4_UvIVq9PE0m4Y-cPynHTWtLZmiZshBO`
 - Used for: EAS builds, push notifications
-- Set as env: `EXPO_TOKEN=GHjfzucse_cMA7JJbw1DpmDfDxQqOE1MJVXgq2X3`
+- Set as env: `EXPO_TOKEN=6iCzilKqGA54U_uzOQsmaeHvcjxGBiRqYGVjPh7e`
 - AI: Claude Opus 4.5
 
 **Web App (SEPARATE):** Next.js at `app.marketingtool.pro` - WORKING ✅
@@ -394,7 +394,7 @@ curl -X POST "https://wm.marketingtool.pro/api/w/marketingtool-pro/jobs/run_wait
 ```
 FeMBZxek4_UvIVq9PE0m4Y-cPynHTWtLZmiZshBO
 ```
-Use: `EXPO_TOKEN=GHjfzucse_cMA7JJbw1DpmDfDxQqOE1MJVXgq2X3 npx eas-cli ...`
+Use: `EXPO_TOKEN=6iCzilKqGA54U_uzOQsmaeHvcjxGBiRqYGVjPh7e npx eas-cli ...`
 
 ---
 
@@ -543,7 +543,7 @@ WINDMILL_WORKSPACE=marketingtool-pro
 WINDMILL_TOKEN=wm_token_marketingtool_2024
 
 # Expo
-EXPO_TOKEN=GHjfzucse_cMA7JJbw1DpmDfDxQqOE1MJVXgq2X3
+EXPO_TOKEN=6iCzilKqGA54U_uzOQsmaeHvcjxGBiRqYGVjPh7e
 
 # SSH
 SSH_HOST=root@31.220.107.19
@@ -853,7 +853,7 @@ src/assets/animations/liquid-wave.json (NEW)
 1. **Standardized `app.json` Paths**: Removed `./` from `googleServicesFile` paths (Standard EAS resolution fix).
 2. **Fixed `eas.json` for TestFlight**: Removed broken local path to `AuthKey_D5KG7J5R95.p8`. EAS now uses credentials from its secure store.
 3. **Corrected Android Build Type**: Added explicit `buildType: "app-bundle"` for production Android.
-4. **Updated Expo Access Token**: Configured new token `GHjfzucse_cMA7JJbw1DpmDfDxQqOE1MJVXgq2X3`.
+4. **Updated Expo Access Token**: Configured new token `6iCzilKqGA54U_uzOQsmaeHvcjxGBiRqYGVjPh7e`.
 
 ### CRITICAL CODE CLEANUP (BUNDLER FIXES) ✅
 
