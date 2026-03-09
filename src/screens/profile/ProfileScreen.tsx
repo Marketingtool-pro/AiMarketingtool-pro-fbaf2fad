@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,299 +6,253 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Alert,
   Dimensions,
-  StatusBar,
-  ImageBackground,
+  Platform,
+  Switch,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
+import { Canvas, RoundedRect, Blur, LinearGradient as SkiaGradient, vec } from '@shopify/react-native-skia';
+import * as Haptics from 'expo-haptics';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+// 2026 Refractive Glass Card Component
+const GlassBentoCard = ({ children, height = 100, color = 'rgba(6, 11, 40, 0.7)' }: { children: React.ReactNode, height?: number, color?: string }) => (
+  <View style={[styles.glassBentoContainer, { height }]}>
+    <Canvas style={styles.skiaCanvas}>
+      <RoundedRect
+        x={0}
+        y={0}
+        width={width - 40}
+        height={height}
+        r={24}
+        color={color}
+      >
+        <SkiaGradient
+          start={vec(0, 0)}
+          end={vec(width, height)}
+          colors={['rgba(255,255,255,0.05)', 'transparent']}
+        />
+        <Blur blur={20} />
+      </RoundedRect>
+    </Canvas>
+    <View style={styles.glassBentoContent}>
+      {children}
+    </View>
+  </View>
+);
 
 const ProfileScreen = () => {
-  const navigation = useNavigation<NavigationProp>();
-  const { user, profile, logout } = useAuthStore();
+  const navigation = useNavigation<any>();
+  const { profile, logout } = useAuthStore();
+  const [notifications, setNotifications] = useState(true);
+  const [biometric, setBiometric] = useState(true);
+
+  const stats = [
+    { label: 'Generations', value: profile?.generationsUsed || 0, icon: 'cpu' },
+    { label: 'Saved', value: 0, icon: 'bookmark' },
+    { label: 'Tools', value: 75, icon: 'grid' },
+  ];
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Logout', 
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-          }
-        },
-      ]
-    );
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    logout();
   };
 
   return (
-    <AnimatedBackground variant="profile">
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* Top Hero Section with "Ad Campaign" Banner Image */}
-        <View style={styles.heroContainer}>
-          <ImageBackground 
-            source={require('../../assets/images/banners/banner-1.jpg')} // Fallback if ad-campaign banner is missing
-            style={styles.heroImage}
-            resizeMode="cover"
-          >
-            <LinearGradient
-              colors={['rgba(10, 10, 10, 0.1)', 'rgba(10, 10, 10, 1)']}
-              style={styles.heroGradient}
-            >
-              <View style={styles.headerTop}>
-                <Text style={styles.headerTitle}>Profile</Text>
-                <TouchableOpacity style={styles.settingsButton} onPress={() => navigation.navigate('Settings')}>
-                  <Feather name="settings" size={22} color={Colors.white} />
+    <AnimatedBackground variant="profile" showParticles={true}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Header Section */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Account</Text>
+          <TouchableOpacity style={styles.settingsBtn} onPress={() => navigation.navigate('Settings')}>
+            <Feather name="settings" size={24} color={Colors.white} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Profile Card Bento */}
+        <View style={styles.section}>
+          <GlassBentoCard height={180}>
+            <View style={styles.profileInfo}>
+              <View style={styles.avatarContainer}>
+                <Image 
+                  source={require('../../assets/images/logo-icon.png')} 
+                  style={styles.avatar} 
+                />
+                <TouchableOpacity style={styles.editAvatar}>
+                  <Feather name="camera" size={12} color={Colors.white} />
                 </TouchableOpacity>
               </View>
-            </LinearGradient>
-          </ImageBackground>
+              <View style={styles.profileText}>
+                <Text style={styles.userName}>{profile?.name || 'Marketing Pro'}</Text>
+                <Text style={styles.userEmail}>{profile?.email || 'user@marketingtool.pro'}</Text>
+                <View style={styles.planBadge}>
+                  <Text style={styles.planBadgeText}>{(profile?.subscription || 'Free').toUpperCase()}</Text>
+                </View>
+              </View>
+            </View>
+          </GlassBentoCard>
         </View>
 
-        {/* Profile Card (Glass Bento Overlapping Hero) */}
-        <View style={styles.profileCardWrapper}>
-          <View style={styles.profileCard}>
-            <LinearGradient
-              colors={['rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.02)']}
-              style={StyleSheet.absoluteFillObject}
-            />
-            
-            {/* Avatar */}
-            <View style={styles.avatarWrapper}>
-              <View style={styles.avatarContainer}>
-                <Text style={styles.avatarText}>
-                  {user?.name?.charAt(0)?.toUpperCase() || 'A'}
-                </Text>
-              </View>
-              <TouchableOpacity style={styles.editAvatarBtn}>
-                <Feather name="camera" size={14} color={Colors.white} />
-              </TouchableOpacity>
+        {/* Stats Grid Bento */}
+        <View style={styles.statsGrid}>
+          {stats.map((stat, i) => (
+            <View key={i} style={styles.statItem}>
+              <GlassBentoCard height={100} color="rgba(124, 58, 237, 0.1)">
+                <Feather name={stat.icon as any} size={20} color={Colors.secondary} />
+                <Text style={styles.statValue}>{stat.value}</Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+              </GlassBentoCard>
             </View>
-
-            {/* Info */}
-            <Text style={styles.userName}>{user?.name || 'Admin User'}</Text>
-            <Text style={styles.userEmail}>{user?.email || 'help@marketingtool.pro'}</Text>
-            
-            <View style={styles.planBadge}>
-              <Text style={styles.planText}>Free Plan</Text>
-            </View>
-
-            {/* Stats Row */}
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Feather name="zap" size={20} color="#A855F7" />
-                <Text style={styles.statValue}>0</Text>
-                <Text style={styles.statLabel}>Generations</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Feather name="bookmark" size={20} color="#A855F7" />
-                <Text style={styles.statValue}>0</Text>
-                <Text style={styles.statLabel}>Saved</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Feather name="credit-card" size={20} color="#A855F7" />
-                <Text style={styles.statValue}>0</Text>
-                <Text style={styles.statLabel}>Credits</Text>
-              </View>
-            </View>
-          </View>
+          ))}
         </View>
 
-        {/* Upgrade Banner */}
+        {/* Upgrade Banner Bento */}
         <TouchableOpacity 
-          style={styles.upgradeBanner}
+          style={styles.section} 
           onPress={() => navigation.navigate('Subscription')}
+          activeOpacity={0.9}
         >
-          <LinearGradient
-            colors={['#FF9900', '#D35400']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.upgradeGradient}
-          >
-            <View style={styles.upgradeTextContainer}>
-              <Text style={styles.upgradeTitle}>Upgrade to Pro</Text>
-              <Text style={styles.upgradeSubtitle}>Get unlimited generations & 3D tools</Text>
-            </View>
-            <View style={styles.upgradeArrowCircle}>
-              <Feather name="chevron-right" size={20} color="#D35400" />
-            </View>
-          </LinearGradient>
+          <GlassBentoCard height={100}>
+            <LinearGradient 
+              colors={Gradients.accent} 
+              start={{x:0, y:0}} 
+              end={{x:1, y:0}} 
+              style={styles.upgradeGradient}
+            >
+              <View style={styles.upgradeContent}>
+                <View>
+                  <Text style={styles.upgradeTitle}>Unlock Unlimited Power</Text>
+                  <Text style={styles.upgradeSubtitle}>Upgrade to Pro Plan today</Text>
+                </View>
+                <Feather name="chevron-right" size={24} color={Colors.white} />
+              </View>
+            </LinearGradient>
+          </GlassBentoCard>
         </TouchableOpacity>
 
-        {/* Subscription Section */}
+        {/* Settings Bento Group */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>SUBSCRIPTION</Text>
-          <View style={styles.menuContainer}>
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Subscription')}>
-              <View style={styles.menuItemLeft}>
-                <Feather name="star" size={20} color="#9D4EDD" />
-                <Text style={styles.menuText}>Manage Plan</Text>
+          <GlassBentoCard height={240}>
+            <Text style={styles.sectionTitle}>Preferences</Text>
+            
+            <View style={styles.settingRow}>
+              <View style={styles.settingLabelGroup}>
+                <Feather name="bell" size={18} color={Colors.textSecondary} />
+                <Text style={styles.settingLabel}>Push Notifications</Text>
               </View>
-              <View style={styles.menuItemRight}>
-                <View style={styles.upgradeMiniBadge}>
-                  <Text style={styles.upgradeMiniText}>Upgrade</Text>
-                </View>
-                <Feather name="chevron-right" size={20} color={Colors.textTertiary} />
-              </View>
-            </TouchableOpacity>
+              <Switch 
+                value={notifications} 
+                onValueChange={setNotifications}
+                trackColor={{ false: '#3e3e3e', true: Colors.secondary }}
+              />
+            </View>
 
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Subscription')}>
-              <View style={styles.menuItemLeft}>
-                <Feather name="credit-card" size={20} color="#9D4EDD" />
-                <Text style={styles.menuText}>Payment & Billing</Text>
+            <View style={styles.settingRow}>
+              <View style={styles.settingLabelGroup}>
+                <Feather name="shield" size={18} color={Colors.textSecondary} />
+                <Text style={styles.settingLabel}>Biometric Security</Text>
               </View>
-              <Feather name="chevron-right" size={20} color={Colors.textTertiary} />
+              <Switch 
+                value={biometric} 
+                onValueChange={setBiometric}
+                trackColor={{ false: '#3e3e3e', true: Colors.secondary }}
+              />
+            </View>
+
+            <TouchableOpacity style={styles.settingRow} onPress={handleLogout}>
+              <View style={styles.settingLabelGroup}>
+                <Feather name="log-out" size={18} color={Colors.error} />
+                <Text style={[styles.settingLabel, { color: Colors.error }]}>Log Out</Text>
+              </View>
             </TouchableOpacity>
-          </View>
+          </GlassBentoCard>
         </View>
 
-        {/* Support Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>SUPPORT</Text>
-          <View style={styles.menuContainer}>
-            <TouchableOpacity style={styles.menuItem} onPress={() => Linking.openURL('https://marketingtool.pro/help')}>
-              <View style={styles.menuItemLeft}>
-                <Feather name="help-circle" size={20} color="#9D4EDD" />
-                <Text style={styles.menuText}>Help Center</Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={Colors.textTertiary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem} onPress={() => Linking.openURL('mailto:help@marketingtool.pro')}>
-              <View style={styles.menuItemLeft}>
-                <Feather name="message-square" size={20} color="#9D4EDD" />
-                <Text style={styles.menuText}>Contact Support</Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={Colors.textTertiary} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ACCOUNT</Text>
-          <View style={styles.menuContainer}>
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Settings')}>
-              <View style={styles.menuItemLeft}>
-                <Feather name="user" size={20} color="#9D4EDD" />
-                <Text style={styles.menuText}>Edit Profile</Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={Colors.textTertiary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.menuItem, {borderBottomWidth: 0}]} onPress={handleLogout}>
-              <View style={styles.menuItemLeft}>
-                <Feather name="log-out" size={20} color="#EF4444" />
-                <Text style={[styles.menuText, {color: '#EF4444'}]}>Logout</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={{height: 100}} />
+        <View style={{ height: 100 }} />
       </ScrollView>
     </AnimatedBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingBottom: 40,
-  },
-  heroContainer: {
-    height: 300,
-    width: '100%',
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-  },
-  heroGradient: {
+  container: {
     flex: 1,
-    paddingTop: 50,
-    paddingHorizontal: Spacing.lg,
   },
-  headerTop: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    marginBottom: 20,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
     color: Colors.white,
   },
-  settingsButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+  settingsBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  profileCardWrapper: {
-    paddingHorizontal: Spacing.lg,
-    marginTop: -100, // Overlap the hero image
-    zIndex: 10,
+  section: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
   },
-  profileCard: {
-    backgroundColor: 'rgba(26, 29, 46, 0.85)',
-    borderRadius: 30,
-    alignItems: 'center',
-    paddingVertical: 30,
+  glassBentoContainer: {
+    borderRadius: 24,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
-    overflow: 'hidden',
   },
-  avatarWrapper: {
-    position: 'relative',
-    marginBottom: 16,
+  skiaCanvas: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  glassBentoContent: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+  },
+  profileInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
   },
   avatarContainer: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: '#7C3AED',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 4,
-    borderColor: '#161824',
+    position: 'relative',
   },
-  avatarText: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: Colors.white,
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: Colors.secondary,
   },
-  editAvatarBtn: {
+  editAvatar: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#9D4EDD',
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#161824',
+    borderWidth: 2,
+    borderColor: Colors.background,
+  },
+  profileText: {
+    flex: 1,
   },
   userName: {
     fontSize: 22,
@@ -309,129 +263,79 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 14,
     color: Colors.textSecondary,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   planBadge: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginBottom: 24,
+    backgroundColor: 'rgba(124, 58, 237, 0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
   },
-  planText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.white,
+  planBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: Colors.secondary,
   },
-  statsRow: {
+  statsGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-evenly',
-    width: '100%',
     paddingHorizontal: 20,
+    gap: 12,
+    marginBottom: 20,
   },
   statItem: {
-    alignItems: 'center',
     flex: 1,
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: Colors.white,
     marginTop: 8,
-    marginBottom: 4,
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textSecondary,
   },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  upgradeBanner: {
-    marginHorizontal: Spacing.lg,
-    marginTop: 24,
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
   upgradeGradient: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 24,
+  },
+  upgradeContent: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-  },
-  upgradeTextContainer: {
-    flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
   },
   upgradeTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: Colors.white,
-    marginBottom: 4,
   },
   upgradeSubtitle: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.8)',
   },
-  upgradeArrowCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  section: {
-    marginTop: 30,
-    paddingHorizontal: Spacing.lg,
-  },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.textTertiary,
-    letterSpacing: 1,
-    marginBottom: 12,
-    marginLeft: 8,
-  },
-  menuContainer: {
-    backgroundColor: '#161824',
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-  },
-  menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  menuText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: Colors.white,
+    marginBottom: 20,
   },
-  menuItemRight: {
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  settingLabelGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  upgradeMiniBadge: {
-    backgroundColor: '#9D4EDD',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  upgradeMiniText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.white,
+  settingLabel: {
+    fontSize: 15,
+    color: Colors.textSecondary,
   },
 });
 
