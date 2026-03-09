@@ -34,7 +34,6 @@ import { getToolIcon } from '../../constants/toolIcons';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 import LottieView from 'lottie-react-native';
 import Glass3DLogo from '../../components/common/Glass3DLogo';
-import { YStack, XStack, Card, H2, H4, Paragraph, Theme, Button as TamaguiButton } from 'tamagui';
 
 const { width } = Dimensions.get('window');
 
