@@ -67,7 +67,7 @@ const ToolIconImages = {
 };
 
 // Map specific tool SLUG to 3D icon
-const toolSlugMap: Record<string, keyof typeof ToolIconImages> = {
+const toolSlugMap: Record<string, string> = {
   // GOOGLE ADS
   'google-ads-headline': 'ads',
   'google-ads-description': 'sem',
@@ -183,7 +183,7 @@ const toolSlugMap: Record<string, keyof typeof ToolIconImages> = {
 };
 
 // Map tool CATEGORY to 3D icon (fallback)
-const categoryMap: Record<string, keyof typeof ToolIconImages> = {
+const categoryMap: Record<string, string> = {
   'google-ads': 'ads',
   'google-seo': 'seo',
   'google-analytics': 'analytics',
@@ -210,19 +210,19 @@ const categoryMap: Record<string, keyof typeof ToolIconImages> = {
 // Get 3D icon for a tool
 export const getToolIcon = (slugOrCategory: string, category?: string): any => {
   const slugKey = toolSlugMap[slugOrCategory];
-  if (slugKey && ToolIconImages[slugKey]) return ToolIconImages[slugKey];
+  if (slugKey && (ToolIconImages as any)[slugKey]) return (ToolIconImages as any)[slugKey];
 
-  if (slugOrCategory in ToolIconImages) return ToolIconImages[slugOrCategory as keyof typeof ToolIconImages];
+  if (slugOrCategory in ToolIconImages) return (ToolIconImages as any)[slugOrCategory];
 
   if (category) {
     const catKey = categoryMap[category];
-    if (catKey && ToolIconImages[catKey]) return ToolIconImages[catKey];
+    if (catKey && (ToolIconImages as any)[catKey]) return (ToolIconImages as any)[catKey];
   }
 
   const catKey = categoryMap[slugOrCategory];
-  if (catKey && ToolIconImages[catKey]) return ToolIconImages[catKey];
+  if (catKey && (ToolIconImages as any)[catKey]) return (ToolIconImages as any)[catKey];
 
-  return ToolIconImages['marketing-strategy'];
+  return (ToolIconImages as any)['marketing-strategy'];
 };
 
 export default ToolIconImages;
