@@ -119,13 +119,6 @@
       ],
       "./plugins/withEasPodfileFix.js",
       "./plugins/withEdgeToEdgeFix.js",
-      [
-        "tamagui",
-        {
-          "config": "./tamagui.config.ts",
-          "components": ["tamagui"]
-        }
-      ],
       "expo-secure-store",
       "expo-font",
       "expo-sharing",
