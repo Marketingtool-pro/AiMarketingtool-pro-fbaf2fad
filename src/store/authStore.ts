@@ -157,9 +157,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   sendPhoneOTP: async (phoneNumber: string) => {
     set({ isLoading: true, error: null });
     try {
-      await authService.sendOTPFunction(phoneNumber);
+      const result = await sendPhoneOTP(phoneNumber);
+      if (!result.success) throw new Error(result.error);
       set({ isLoading: false, tempPhone: phoneNumber });
-      return phoneNumber; // Returning phone as userId placeholder
+      return "pending_firebase_verification";
     } catch (error: any) {
       set({ error: error.message || 'Failed to send OTP', isLoading: false });
       throw error;
@@ -167,36 +168,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   verifyPhoneOTP: async (userId: string, code: string) => {
-    const { tempPhone } = get();
-    // Use userId if tempPhone is null (placeholder logic)
-    const phone = tempPhone || userId;
-    
-    if (!phone) {
-      set({ error: 'Session expired. Please request a new code.' });
-      return;
-    }
-
     set({ isLoading: true, error: null });
     try {
-      const result = await authService.verifyOTPFunction(phone, code);
+      const result = await verifyPhoneOTP(code);
       if (result.success) {
-        // BRIDGE: Create an Appwrite session so the backend functions work
+        const firebaseUser = result.user;
+        const phone = firebaseUser.phoneNumber;
+
+        // BRIDGE: Create an Appwrite session
         try {
-          await authService.login('help@marketingtool.pro', 'Cloth-vastr@123'); // Using known administrative session for this environment or could use anonymous
+          await authService.login('help@marketingtool.pro', 'Cloth-vastr@123');
         } catch (bridgeError) {
-          console.log('Appwrite session bridge failed, falling back to mock');
+          console.log('Appwrite bridge failed');
         }
 
         const mockUser = {
-          $id: `phone-${phone.replace(/\+/g, '')}`,
+          $id: firebaseUser.uid,
           name: phone,
           email: `${phone}@phone.marketingtool.pro`,
           phone: phone,
         } as any;
+        
         const profile = await get().fetchOrCreateProfile(mockUser);
         set({ user: mockUser, profile, isAuthenticated: true, isLoading: false, tempPhone: null });
       } else {
-        throw new Error(result.message || 'Invalid OTP');
+        throw new Error(result.error || 'Invalid OTP');
       }
     } catch (error: any) {
       set({ error: error.message || 'Invalid OTP', isLoading: false });

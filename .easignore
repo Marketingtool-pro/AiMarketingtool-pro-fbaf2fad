@@ -1,3 +1,4 @@
+# 1. Ignore large directories
 node_modules/
 ios/
 android/
@@ -7,20 +8,30 @@ dist/
 gemini-cli/
 my-app/
 conductor/
-*.jks
-*.p12
-*.p8
-*.keystore
-*.md
-firebase-debug.log
-my-app_backup/
-gemini-cli_backup/
 credentials/
-*.log
-*.pdf
-*.png
-*.jpg
-*.jpeg
-*.mp4
-!src/assets/images/tool-icons-v2/*.png
-!assets/*.png
+__pycache__/
+
+# 2. Specifically exclude the massive image folders
+src/assets/images/tool-icons/
+src/assets/images/tool-icons-v2/
+
+# 3. Allow all necessary config and source files
+!package.json
+!package-lock.json
+!app.json
+!eas.json
+!App.tsx
+!index.ts
+!tsconfig.json
+!babel.config.js
+!metro.config.js
+!.env*
+!GoogleService-Info.plist
+!google-services.json
+
+# 4. CRITICAL: Allow all plugins
+!plugins/**
+
+# 5. Allow source and assets
+!src/**
+!assets/**

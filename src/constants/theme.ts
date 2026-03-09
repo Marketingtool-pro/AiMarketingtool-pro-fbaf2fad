@@ -3,7 +3,7 @@ export const Colors = {
   // Primary Brand Colors (Deep Navy)
   primary: '#0f1535',
   primaryLight: '#131538',
-  primaryDark: '#060b28',
+  primaryDark: '#0D0F1C',
 
   // Secondary Colors (Purple - CTAs & accents)
   secondary: '#7C3AED',
@@ -25,7 +25,7 @@ export const Colors = {
   info: '#0075FF',
 
   // Background Colors (Vision UI Dark)
-  background: '#060b28',
+  background: '#0D0F1C',
   backgroundSecondary: '#0f1535',
   backgroundTertiary: '#131538',
   card: 'rgba(6, 11, 40, 0.94)',

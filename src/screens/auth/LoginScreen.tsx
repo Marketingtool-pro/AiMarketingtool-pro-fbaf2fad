@@ -25,7 +25,6 @@ import { AuthStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
-import { biometricService, BiometricType } from '../../services/biometric';
 
 const { width } = Dimensions.get('window');
 
@@ -41,22 +40,6 @@ const COUNTRIES: Country[] = [
   { name: 'India', code: '+91', flag: '🇮🇳' },
   { name: 'Canada', code: '+1', flag: '🇨🇦' },
   { name: 'United Kingdom', code: '+44', flag: '🇬🇧' },
-  { name: 'Australia', code: '+61', flag: '🇦🇺' },
-  { name: 'Germany', code: '+49', flag: '🇩🇪' },
-  { name: 'France', code: '+33', flag: '🇫🇷' },
-  { name: 'Japan', code: '+81', flag: '🇯🇵' },
-  { name: 'Brazil', code: '+55', flag: '🇧🇷' },
-  { name: 'Mexico', code: '+52', flag: '🇲🇽' },
-  { name: 'South Korea', code: '+82', flag: '🇰🇷' },
-  { name: 'Italy', code: '+39', flag: '🇮🇹' },
-  { name: 'Spain', code: '+34', flag: '🇪🇸' },
-  { name: 'Netherlands', code: '+31', flag: '🇳🇱' },
-  { name: 'Singapore', code: '+65', flag: '🇸🇬' },
-  { name: 'UAE', code: '+971', flag: '🇦🇪' },
-  { name: 'Saudi Arabia', code: '+966', flag: '🇸🇦' },
-  { name: 'South Africa', code: '+27', flag: '🇿🇦' },
-  { name: 'Nigeria', code: '+234', flag: '🇳🇬' },
-  { name: 'Indonesia', code: '+62', flag: '🇮🇩' },
 ];
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
@@ -64,107 +47,23 @@ type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const {
-    login, loginWithGoogle, loginWithApple, loginWithFacebook,
-    sendPhoneOTP, verifyPhoneOTP, isLoading, error, clearError,
-    biometricPending, authenticateWithBiometric,
+    login, loginWithGoogle, loginWithApple,
+    sendPhoneOTP, verifyPhoneOTP, isLoading, clearError,
   } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[0]);
+  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[1]); // Default to India as per image
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpUserId, setOtpUserId] = useState('');
   const [showOtpModal, setShowOtpModal] = useState(false);
-  const [biometricType, setBiometricType] = useState<BiometricType>('none');
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
 
-  // Animations
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const glowAnim = useRef(new Animated.Value(0.6)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 800,
-        easing: Easing.out(Easing.back(1.2)),
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Glow pulse for logo
-    const glowLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0.6,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    glowLoop.start();
-    return () => glowLoop.stop();
-  }, []);
-
-  // Check biometric
-  useEffect(() => {
-    const checkBiometric = async () => {
-      const available = await biometricService.isBiometricAvailable();
-      setBiometricAvailable(available);
-      if (available) {
-        const type = await biometricService.getBiometricType();
-        setBiometricType(type);
-      }
-      if (available && biometricPending) {
-        await authenticateWithBiometric();
-      }
-    };
-    checkBiometric();
-  }, [biometricPending]);
-
-  const handleBiometricLogin = async () => {
-    const success = await authenticateWithBiometric();
-    if (!success) {
-      Alert.alert('Authentication Failed', 'Biometric authentication failed. Please try another sign in method.');
-    }
-  };
-
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
   const handleLogin = async () => {
-    clearError();
-    setEmailError('');
-    setPasswordError('');
-
-    if (!email) { setEmailError('Email is required'); return; }
-    if (!validateEmail(email)) { setEmailError('Please enter a valid email'); return; }
-    if (!password) { setPasswordError('Password is required'); return; }
-    if (password.length < 8) { setPasswordError('Password must be at least 8 characters'); return; }
-
     try {
       await login(email, password);
     } catch (err: any) {
@@ -172,28 +71,13 @@ const LoginScreen = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try { await loginWithGoogle(); }
-    catch (err: any) { Alert.alert('Google Login Failed', err.message || 'Please try again'); }
-  };
-
-  const handleAppleLogin = async () => {
-    try { await loginWithApple(); }
-    catch (err: any) { Alert.alert('Apple Login Failed', err.message); }
-  };
-
-  const handleFacebookLogin = async () => {
-    try { await loginWithFacebook(); }
-    catch (err: any) { Alert.alert('Facebook Login Failed', err.message || 'Please try again'); }
-  };
-
   const handleSendOTP = async () => {
-    if (!phoneNumber || phoneNumber.length < 7) {
-      Alert.alert('Invalid Number', 'Please enter a valid phone number');
+    if (!phoneNumber) {
+      Alert.alert('Invalid Number', 'Please enter a phone number');
       return;
     }
     try {
-      const formattedPhone = `${selectedCountry.code}${phoneNumber.replace(/[\s\-()]/g, '')}`;
+      const formattedPhone = `${selectedCountry.code}${phoneNumber}`;
       const userId = await sendPhoneOTP(formattedPhone);
       setOtpUserId(userId);
       setOtpSent(true);
@@ -204,10 +88,6 @@ const LoginScreen = () => {
   };
 
   const handleVerifyOTP = async () => {
-    if (!otpCode || otpCode.length < 6) {
-      Alert.alert('Invalid OTP', 'Please enter the 6-digit OTP');
-      return;
-    }
     try {
       await verifyPhoneOTP(otpUserId, otpCode);
       setShowOtpModal(false);
@@ -221,142 +101,94 @@ const LoginScreen = () => {
     : COUNTRIES;
 
   return (
-    <AnimatedBackground variant="default" showParticles={true}>
+    <AnimatedBackground variant="default">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        style={{ flex: 1 }}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
         >
-          {/* Logo with Purple Glow */}
-          <Animated.View style={[styles.logoSection, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-            <View style={styles.logoGlowWrapper}>
-              <Animated.View style={[styles.logoGlow, { opacity: glowAnim }]} />
-              <View style={styles.logoIconWrapper}>
-                <Image
+          {/* Logo Section */}
+          <View style={styles.logoSection}>
+            <View style={styles.logoIconBg}>
+               <Image
                   source={require('../../assets/images/logo-icon.png')}
                   style={styles.logoImage}
                   resizeMode="contain"
                 />
-              </View>
             </View>
             <Text style={styles.title}>MarketingTool</Text>
             <Text style={styles.subtitle}>AI-Powered Marketing Platform</Text>
-          </Animated.View>
+          </View>
 
-          {/* Quick Login - Phone */}
-          <Animated.View style={[styles.quickLoginCard, { opacity: fadeAnim }]}>
+          {/* Quick Login */}
+          <View style={styles.quickLoginContainer}>
             <View style={styles.quickLoginHeader}>
-              <Feather name="phone" size={18} color={Colors.accent} />
-              <Text style={styles.quickLoginTitle}>Quick Login</Text>
+              <Feather name="phone" size={16} color="#9D4EDD" />
+              <Text style={styles.quickLoginText}>Quick Login</Text>
             </View>
+            
             <View style={styles.phoneRow}>
-              <TouchableOpacity
+              <TouchableOpacity 
                 style={styles.countrySelector}
                 onPress={() => setShowCountryPicker(true)}
               >
-                <Text style={styles.countryFlag}>{selectedCountry.flag}</Text>
-                <Text style={styles.countryCode}>{selectedCountry.code}</Text>
-                <Feather name="chevron-down" size={14} color={Colors.textSecondary} />
+                <Text style={styles.flagText}>{selectedCountry.flag}</Text>
+                <Text style={styles.codeText}>{selectedCountry.code}</Text>
+                <Feather name="chevron-down" size={14} color="#4A5568" />
               </TouchableOpacity>
+
               <TextInput
                 style={styles.phoneInput}
                 placeholder="Phone"
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor="#4A5568"
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
                 keyboardType="phone-pad"
-                maxLength={15}
               />
-              <TouchableOpacity
-                style={styles.phoneSendButton}
+
+              <TouchableOpacity 
+                style={styles.arrowBtn}
                 onPress={handleSendOTP}
-                disabled={isLoading}
               >
                 <LinearGradient
-                  colors={['#7C3AED', '#8B5CF6']}
-                  style={styles.phoneSendGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator color={Colors.white} size="small" />
-                  ) : (
-                    <Feather name="arrow-right" size={20} color={Colors.white} />
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-
-          {/* OR CONTINUE WITH */}
-          <Animated.View style={[styles.socialSection, { opacity: fadeAnim }]}>
-            <Text style={styles.orText}>OR CONTINUE WITH</Text>
-            <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.socialButton} onPress={handleGoogleLogin} disabled={isLoading}>
-                <Feather name="search" size={22} color={Colors.textSecondary} />
-                <Text style={styles.socialLabel}>Google</Text>
-              </TouchableOpacity>
-
-              {Platform.OS === 'ios' && (
-                <TouchableOpacity style={styles.socialButton} onPress={handleAppleLogin} disabled={isLoading}>
-                  <Feather name="command" size={22} color={Colors.textSecondary} />
-                  <Text style={styles.socialLabel}>Apple</Text>
-                </TouchableOpacity>
-              )}
-
-              <TouchableOpacity style={styles.socialButton} onPress={() => setShowEmailModal(true)} disabled={isLoading}>
-                <Feather name="mail" size={22} color={Colors.textSecondary} />
-                <Text style={styles.socialLabel}>Email</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.socialButton} onPress={handleFacebookLogin} disabled={isLoading}>
-                <Feather name="facebook" size={22} color={Colors.textSecondary} />
-                <Text style={styles.socialLabel}>Facebook</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Biometric Login */}
-            {biometricAvailable && (
-              <TouchableOpacity style={styles.biometricButton} onPress={handleBiometricLogin}>
-                <Feather
-                  name={biometricType === 'face' ? 'smartphone' : 'smartphone'}
-                  size={18}
-                  color={Colors.accent}
+                  colors={['#3D2914', '#16132B']} // Subtle dark gradient for the button background
+                  style={StyleSheet.absoluteFill}
                 />
-                <Text style={styles.biometricText}>Biometric Login</Text>
+                <View style={styles.arrowCircle}>
+                   <Feather name="arrow-right" size={20} color="#FFFFFF" />
+                </View>
               </TouchableOpacity>
-            )}
-          </Animated.View>
-
-          {/* Features Banner */}
-          <View style={styles.featuresBanner}>
-            <View style={styles.featureItem}>
-              <Feather name="zap" size={16} color={Colors.gold} />
-              <Text style={styles.featureText}>AI Tools</Text>
-            </View>
-            <Text style={styles.featureDot}>·</Text>
-            <View style={styles.featureItem}>
-              <Feather name="shield" size={16} color={Colors.success} />
-              <Text style={styles.featureText}>Secure</Text>
-            </View>
-            <Text style={styles.featureDot}>·</Text>
-            <View style={styles.featureItem}>
-              <Feather name="clock" size={16} color={Colors.cyan} />
-              <Text style={styles.featureText}>7-Day Trial</Text>
             </View>
           </View>
 
-          {/* Sign Up */}
+          <View style={styles.orContainer}>
+            <Text style={styles.orText}>OR CONTINUE WITH</Text>
+          </View>
+
+          <View style={styles.socialRow}>
+             <TouchableOpacity style={styles.socialBtn} onPress={loginWithGoogle}>
+                <Feather name="search" size={22} color="#FFFFFF" />
+             </TouchableOpacity>
+             <TouchableOpacity style={styles.socialBtn} onPress={() => setShowEmailModal(true)}>
+                <Feather name="mail" size={22} color="#FFFFFF" />
+             </TouchableOpacity>
+             {Platform.OS === 'ios' && (
+               <TouchableOpacity style={styles.socialBtn} onPress={loginWithApple}>
+                  <Feather name="apple" size={22} color="#FFFFFF" />
+               </TouchableOpacity>
+             )}
+          </View>
+
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.registerLink}>Sign Up Free</Text>
-            </TouchableOpacity>
+             <Text style={styles.footerText}>Don't have an account? </Text>
+             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                <Text style={styles.signupText}>Sign Up Free</Text>
+             </TouchableOpacity>
           </View>
+
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -365,183 +197,49 @@ const LoginScreen = () => {
         visible={showCountryPicker}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowCountryPicker(false)}
       >
-        <View style={styles.countryModalOverlay}>
-          <View style={styles.countryModalContent}>
-            <View style={styles.countryModalHandle} />
-            <View style={styles.countryModalHeader}>
-              <Text style={styles.countryModalTitle}>Select Country</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Country</Text>
               <TouchableOpacity onPress={() => setShowCountryPicker(false)}>
-                <Feather name="x" size={24} color={Colors.textSecondary} />
+                <Feather name="x" size={24} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
-            <View style={styles.countrySearchContainer}>
-              <Feather name="search" size={18} color={Colors.textTertiary} />
-              <TextInput
-                style={styles.countrySearchInput}
+            <View style={styles.searchBox}>
+               <Feather name="search" size={18} color="#4A5568" />
+               <TextInput 
+                style={styles.searchInput}
                 placeholder="Search country..."
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor="#4A5568"
                 value={countrySearch}
                 onChangeText={setCountrySearch}
-              />
+               />
             </View>
             <FlatList
               data={filteredCountries}
               keyExtractor={(item) => item.name}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[
-                    styles.countryItem,
-                    selectedCountry.name === item.name && styles.countryItemActive,
-                  ]}
+                  style={styles.countryItem}
                   onPress={() => {
                     setSelectedCountry(item);
                     setShowCountryPicker(false);
-                    setCountrySearch('');
                   }}
                 >
-                  <Text style={styles.countryItemFlag}>{item.flag}</Text>
-                  <View style={styles.countryItemInfo}>
-                    <Text style={styles.countryItemName}>{item.name}</Text>
-                    <Text style={styles.countryItemCode}>{item.code}</Text>
+                  <View style={styles.countryInfo}>
+                    <Text style={styles.countryFlagLarge}>{item.flag}</Text>
+                    <Text style={styles.countryName}>{item.name}</Text>
                   </View>
-                  {selectedCountry.name === item.name && (
-                    <Feather name="check" size={20} color={Colors.accent} />
-                  )}
+                  <View style={styles.countryCodeRow}>
+                    <Text style={styles.countryCodeValue}>{item.code}</Text>
+                    {selectedCountry.name === item.name && (
+                      <Feather name="check" size={18} color="#9D4EDD" style={{ marginLeft: 10 }} />
+                    )}
+                  </View>
                 </TouchableOpacity>
               )}
             />
-          </View>
-        </View>
-      </Modal>
-
-      {/* OTP Modal */}
-      <Modal
-        visible={showOtpModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowOtpModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Enter OTP</Text>
-              <TouchableOpacity onPress={() => setShowOtpModal(false)} style={styles.modalClose}>
-                <Feather name="x" size={24} color={Colors.white} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.modalBody}>
-              <Text style={styles.otpSentText}>
-                OTP sent to {selectedCountry.code}{phoneNumber}
-              </Text>
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={[styles.input, { textAlign: 'center', letterSpacing: 8, fontSize: 24, fontWeight: 'bold' }]}
-                  placeholder="000000"
-                  placeholderTextColor={Colors.textTertiary}
-                  value={otpCode}
-                  onChangeText={(t) => setOtpCode(t.replace(/\D/g, '').slice(0, 6))}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  autoFocus
-                />
-              </View>
-              <TouchableOpacity onPress={handleVerifyOTP} disabled={isLoading} style={styles.verifyButton}>
-                <LinearGradient
-                  colors={['#7C3AED', '#8B5CF6']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.verifyGradient}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator color={Colors.white} />
-                  ) : (
-                    <Text style={styles.verifyText}>Verify & Sign In</Text>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => { setOtpSent(false); setOtpCode(''); setShowOtpModal(false); }}
-                style={styles.changeNumberBtn}
-              >
-                <Text style={styles.changeNumberText}>Change Number</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Email Login Modal */}
-      <Modal
-        visible={showEmailModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowEmailModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Sign in with Email</Text>
-              <TouchableOpacity onPress={() => setShowEmailModal(false)} style={styles.modalClose}>
-                <Feather name="x" size={24} color={Colors.white} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.modalBody}>
-              <View style={[styles.inputContainer, emailError ? styles.inputError : null]}>
-                <Feather name="mail" size={20} color={Colors.textTertiary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email address"
-                  placeholderTextColor={Colors.textTertiary}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-              {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-
-              <View style={[styles.inputContainer, passwordError ? styles.inputError : null]}>
-                <Feather name="lock" size={20} color={Colors.textTertiary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Password"
-                  placeholderTextColor={Colors.textTertiary}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color={Colors.textTertiary} />
-                </TouchableOpacity>
-              </View>
-              {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-
-              <TouchableOpacity
-                onPress={() => { setShowEmailModal(false); navigation.navigate('ForgotPassword'); }}
-                style={styles.forgotPassword}
-              >
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={handleLogin} disabled={isLoading} style={styles.verifyButton}>
-                <LinearGradient
-                  colors={['#7C3AED', '#8B5CF6']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.verifyGradient}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator color={Colors.white} />
-                  ) : (
-                    <Text style={styles.verifyText}>Sign In</Text>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </Modal>
@@ -550,412 +248,202 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  keyboardView: {
-    flex: 1,
-  },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: 80,
-    paddingBottom: 40,
-    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 100,
+    alignItems: 'center',
   },
-  // Logo Section
   logoSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 60,
   },
-  logoGlowWrapper: {
-    width: 140,
-    height: 140,
+  logoIconBg: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(157, 78, 221, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  logoGlow: {
-    position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: '#7C3AED',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 30,
-    elevation: 20,
-  },
-  logoIconWrapper: {
-    width: 90,
-    height: 90,
-    borderRadius: 22,
-    overflow: 'hidden',
-    backgroundColor: Colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginBottom: 20,
   },
   logoImage: {
     width: 80,
     height: 80,
-    borderRadius: 18,
   },
   title: {
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: Colors.white,
-    marginBottom: 4,
+    color: '#FFFFFF',
   },
   subtitle: {
-    fontSize: 15,
-    color: Colors.textSecondary,
+    fontSize: 14,
+    color: '#A0AEC0',
+    marginTop: 8,
   },
-  // Quick Login Phone
-  quickLoginCard: {
-    backgroundColor: 'rgba(26, 26, 46, 0.5)',
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+  quickLoginContainer: {
+    width: '100%',
+    backgroundColor: '#161824',
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 40,
   },
   quickLoginHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 20,
     gap: 8,
-    marginBottom: 14,
   },
-  quickLoginTitle: {
+  quickLoginText: {
     fontSize: 16,
+    color: '#A0AEC0',
     fontWeight: '600',
-    color: Colors.white,
   },
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
   countrySelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(6, 11, 40, 0.8)',
-    borderRadius: BorderRadius.md,
+    backgroundColor: '#0A0A0A',
     paddingHorizontal: 12,
-    paddingVertical: 14,
+    height: 56,
+    borderRadius: 16,
     gap: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
-  countryFlag: {
-    fontSize: 18,
+  flagText: {
+    fontSize: 20,
   },
-  countryCode: {
-    fontSize: 15,
-    color: Colors.white,
-    fontWeight: '500',
+  codeText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
   phoneInput: {
     flex: 1,
-    backgroundColor: 'rgba(6, 11, 40, 0.8)',
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    backgroundColor: '#0A0A0A',
+    height: 56,
+    borderRadius: 16,
+    paddingHorizontal: 16,
     fontSize: 16,
-    color: Colors.white,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    color: '#FFFFFF',
   },
-  phoneSendButton: {
-    borderRadius: BorderRadius.md,
+  arrowBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     overflow: 'hidden',
-  },
-  phoneSendGradient: {
-    width: 48,
-    height: 48,
-    borderRadius: BorderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Social Section
-  socialSection: {
-    backgroundColor: 'rgba(26, 26, 46, 0.5)',
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+  arrowCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#9D4EDD',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  orContainer: {
+    marginBottom: 24,
   },
   orText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: Colors.textTertiary,
-    textAlign: 'center',
-    letterSpacing: 1.5,
-    marginBottom: 16,
+    color: '#4A5568',
+    letterSpacing: 1,
   },
   socialRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-    marginBottom: 16,
+    gap: 20,
+    marginBottom: 60,
   },
-  socialButton: {
-    width: 70,
-    height: 70,
-    backgroundColor: 'rgba(6, 11, 40, 0.6)',
-    borderRadius: BorderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    gap: 6,
-  },
-  socialLabel: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-  },
-  // Biometric
-  biometricButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(124, 58, 237, 0.3)',
-  },
-  biometricText: {
-    fontSize: 15,
-    color: Colors.accent,
-    fontWeight: '500',
-  },
-  // Features Banner
-  featuresBanner: {
-    flexDirection: 'row',
+  socialBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#161824',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(100, 65, 165, 0.1)',
-    borderRadius: BorderRadius.full,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(100, 65, 165, 0.2)',
   },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  featureText: {
-    fontSize: 13,
-    color: Colors.white,
-    fontWeight: '500',
-  },
-  featureDot: {
-    fontSize: 16,
-    color: Colors.textTertiary,
-    marginHorizontal: 10,
-  },
-  // Footer
   footer: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   footerText: {
-    color: Colors.textSecondary,
-    fontSize: 15,
+    color: '#A0AEC0',
   },
-  registerLink: {
-    color: Colors.secondary,
-    fontSize: 15,
-    fontWeight: '600',
+  signupText: {
+    color: '#9D4EDD',
+    fontWeight: 'bold',
   },
-  // Country Picker Modal
-  countryModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'flex-end',
-  },
-  countryModalContent: {
-    backgroundColor: '#060b28',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '70%',
-    paddingBottom: 40,
-  },
-  countryModalHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: Colors.textTertiary,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  countryModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 12,
-  },
-  countryModalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: Colors.white,
-  },
-  countrySearchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(6, 11, 40, 0.8)',
-    borderRadius: BorderRadius.md,
-    marginHorizontal: Spacing.lg,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  countrySearchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    fontSize: 15,
-    color: Colors.white,
-  },
-  countryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 14,
-    gap: 14,
-  },
-  countryItemActive: {
-    backgroundColor: 'rgba(124, 58, 237, 0.15)',
-  },
-  countryItemFlag: {
-    fontSize: 24,
-  },
-  countryItemInfo: {
-    flex: 1,
-  },
-  countryItemName: {
-    fontSize: 16,
-    color: Colors.white,
-    fontWeight: '500',
-  },
-  countryItemCode: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-  },
-  // Shared Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: 'rgba(6, 11, 40, 0.95)',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: 40,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#161824',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    height: '70%',
+    padding: 24,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: Spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    marginBottom: 24,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: Colors.white,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
-  modalClose: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalBody: {
-    padding: Spacing.lg,
-  },
-  otpSentText: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  inputContainer: {
+  searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: Spacing.md,
-    paddingHorizontal: Spacing.md,
+    backgroundColor: '#0A0A0A',
+    height: 50,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    marginBottom: 20,
   },
-  inputError: {
-    borderColor: Colors.error,
-  },
-  inputIcon: {
-    marginRight: Spacing.sm,
-  },
-  input: {
+  searchInput: {
     flex: 1,
+    marginLeft: 12,
+    color: '#FFFFFF',
+  },
+  countryItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  countryInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  countryFlagLarge: {
+    fontSize: 24,
+  },
+  countryName: {
     fontSize: 16,
-    color: Colors.white,
-  },
-  eyeIcon: {
-    padding: Spacing.sm,
-  },
-  errorText: {
-    color: Colors.error,
-    fontSize: 12,
-    marginTop: -8,
-    marginBottom: Spacing.sm,
-    marginLeft: Spacing.sm,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: Spacing.lg,
-  },
-  forgotPasswordText: {
-    color: Colors.accent,
-    fontSize: 14,
+    color: '#FFFFFF',
     fontWeight: '500',
   },
-  verifyButton: {
-    borderRadius: BorderRadius.md,
-    overflow: 'hidden',
-  },
-  verifyGradient: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderRadius: BorderRadius.md,
-  },
-  verifyText: {
-    color: Colors.white,
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  changeNumberBtn: {
-    marginTop: 12,
+  countryCodeRow: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  changeNumberText: {
-    color: Colors.accent,
-    fontSize: 14,
+  countryCodeValue: {
+    fontSize: 16,
+    color: '#A0AEC0',
   },
 });
 
 export default LoginScreen;
+

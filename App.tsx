@@ -9,6 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import AppNavigator from './src/navigation/AppNavigator';
 import { useAuthStore } from './src/store/authStore';
 import { Colors } from './src/constants/theme';
+import { matomo } from './src/services/matomo';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -20,6 +21,9 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       try {
+        // Initialize Matomo early but don't block
+        matomo.init().catch(e => console.warn('Matomo init error', e));
+
         // Pre-load fonts
         await Font.loadAsync({
           ...Feather.font,
