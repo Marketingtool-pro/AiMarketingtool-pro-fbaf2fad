@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "74",
+      "buildNumber": "175",
       "googleServicesFile": "GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -53,7 +53,7 @@
       },
       "googleServicesFile": "google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 44,
+      "versionCode": 130,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -66,33 +66,7 @@
         "USE_FINGERPRINT",
         "VIBRATE",
         "RECEIVE_BOOT_COMPLETED"
-      ],
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "https",
-              "host": "marketingtool.pro",
-              "pathPrefix": "/app"
-            },
-            {
-              "scheme": "https",
-              "host": "app.marketingtool.pro",
-              "pathPrefix": "/app"
-            }
-          ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
-        }
       ]
-    },
-    "web": {
-      "favicon": "./assets/favicon.png",
-      "bundler": "metro"
     },
     "plugins": [
       [
@@ -100,30 +74,23 @@
         {
           "ios": {
             "useFrameworks": "static",
-            "deploymentTarget": "16.0",
-            "extraCCFlags": [
-              "-Wno-error=implicit-function-declaration",
-              "-Wno-error=implicit-int",
-              "-Wno-redeclared-class-member",
-              "-Wno-non-modular-include-in-framework-module",
-              "-Wno-error=non-modular-include-in-framework-module"
-            ]
+            "deploymentTarget": "16.0"
           },
           "android": {
             "compileSdkVersion": 35,
             "targetSdkVersion": 35,
-            "minSdkVersion": 24,
-            "windowSoftInputMode": "adjustResize"
+            "minSdkVersion": 24
           }
         }
       ],
-      "./plugins/withEasPodfileFix.js",
-      "./plugins/withEdgeToEdgeFix.js",
       "expo-secure-store",
       "expo-font",
       "expo-sharing",
       "expo-web-browser",
-      "expo-asset"
+      "expo-asset",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-firebase/app-check"
     ],
     "extra": {
       "appwriteEndpoint": "https://api.marketingtool.pro/v1",

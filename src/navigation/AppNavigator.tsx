@@ -84,54 +84,55 @@ const TabNavigator = () => {
   const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 16 : 8);
 
   return (
-  <Tab.Navigator
-    id="MainTab"
-    screenOptions={({ route }) => ({
-      headerShown: false,
-      tabBarStyle: {
-        backgroundColor: Colors.backgroundSecondary,
-        borderTopColor: Colors.border,
-        borderTopWidth: 1,
-        paddingBottom: bottomPadding,
-        paddingTop: 8,
-        height: 60 + bottomPadding,
-      },
-      tabBarHideOnKeyboard: true,
-      tabBarActiveTintColor: Colors.accent,
-      tabBarInactiveTintColor: Colors.textTertiary,
-      tabBarLabelStyle: {
-        fontSize: 12,
-        fontWeight: '500',
-      },
-      tabBarIcon: ({ focused, color, size }) => {
-        let iconName: keyof typeof Feather.glyphMap = 'home';
+    <Tab.Navigator
+      id="MainTab"
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#0A0A0A', // Deep black for tab bar
+          borderTopColor: 'rgba(255,255,255,0.05)',
+          borderTopWidth: 1,
+          paddingBottom: bottomPadding,
+          paddingTop: 8,
+          height: 60 + bottomPadding,
+        },
+        tabBarHideOnKeyboard: true,
+        tabBarActiveTintColor: '#9D4EDD', // The purple from the image
+        tabBarInactiveTintColor: Colors.textTertiary,
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '600',
+          marginTop: 4,
+        },
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: keyof typeof Feather.glyphMap = 'home';
 
-        switch (route.name) {
-          case 'Dashboard':
-            iconName = 'home';
-            break;
-          case 'Tools':
-            iconName = 'grid';
-            break;
-          case 'Chat':
-            iconName = 'message-circle';
-            break;
-          case 'History':
-            iconName = 'clock';
-            break;
-          case 'Profile':
-            iconName = 'user';
-            break;
-        }
+          switch (route.name) {
+            case 'Dashboard':
+              iconName = 'home';
+              break;
+            case 'Tools':
+              iconName = 'grid'; // Or list icon depending on what we have
+              break;
+            case 'Chat':
+              iconName = 'message-circle';
+              break;
+            case 'History':
+              iconName = 'clock';
+              break;
+            case 'Profile':
+              iconName = 'user';
+              break;
+          }
 
-        return (
-          <View style={focused ? styles.activeTabIcon : undefined}>
-            <Feather name={iconName} size={24} color={color} />
-          </View>
-        );
-      },
-    })}
-  >
+          return (
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+              <Feather name={iconName} size={24} color={focused ? '#9D4EDD' : color} />
+            </View>
+          );
+        },
+      })}
+    >
     <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Home' }} />
     <Tab.Screen name="Tools" component={ToolsScreen} options={{ title: 'Tools' }} />
     <Tab.Screen name="Chat" component={ChatScreen} options={{ title: 'AI Chat' }} />

@@ -90,8 +90,8 @@ const SubscriptionScreen = () => {
     {
       id: 'pro',
       name: 'Professional',
-      monthlyPrice: 59,
-      yearlyPrice: 499,
+      monthlyPrice: 49,
+      yearlyPrice: 399,
       description: '500 generations/month',
       features: [
         { text: '500 generations/month', included: true },
@@ -104,9 +104,9 @@ const SubscriptionScreen = () => {
     },
     {
       id: 'growth',
-      name: 'Growth',
+      name: 'Agency',
       monthlyPrice: 99,
-      yearlyPrice: 999,
+      yearlyPrice: 899,
       description: '1,500+ generations/month',
       popular: true,
       features: [

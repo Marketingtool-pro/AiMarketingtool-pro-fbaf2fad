@@ -115,17 +115,22 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Liquid Mesh Gradient Background */}
+      {/* Minimal Dark Gradient Background */}
       <LinearGradient
-        colors={['#0F0B33', '#2d1b69', '#1885E4', '#060B28']}
-        locations={[0, 0.35, 0.65, 1]}
+        colors={['#0A0A0A', '#12121A', '#0A0A0A']}
+        locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       />
 
-      {/* Glass Overlay */}
-      <View style={styles.overlay} />
+      {/* Subtle orbs instead of bright ones */}
+      <View style={[styles.orb, { top: -100, right: -100, backgroundColor: '#9D4EDD', opacity: 0.05 }]} />
+      <View style={[styles.orb, { bottom: -150, left: -100, backgroundColor: '#1885E4', opacity: 0.03 }]} />
+      <View style={[styles.orb, { top: '40%', right: '10%', backgroundColor: '#EC4899', opacity: 0.15, width: 250, height: 250 }]} />
+
+      {/* Glass Frost Layer */}
+      <View style={styles.frostLayer} />
 
       {/* Floating Particles */}
       {showParticles && (
@@ -147,9 +152,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#060B28',
   },
-  overlay: {
+  orb: {
+    position: 'absolute',
+    width: 350,
+    height: 350,
+    borderRadius: 175,
+    blur: 80, // Note: standard View doesn't have blur, but we use it for reference
+  },
+  frostLayer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(6, 11, 40, 0.15)',
+    backgroundColor: 'rgba(13, 15, 28, 0.2)',
   },
   particlesContainer: {
     ...StyleSheet.absoluteFillObject,

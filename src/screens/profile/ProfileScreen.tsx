@@ -71,18 +71,18 @@ const ProfileScreen = () => {
         {/* Top Hero Section */}
         <View style={styles.heroContainer}>
           <Image 
-            source={require('../../assets/images/screens/profile-hero.jpg')} 
+            source={require('../../assets/images/logo.jpeg')} 
             style={styles.heroImage}
             resizeMode="cover"
           />
           <LinearGradient
-            colors={['rgba(13, 15, 28, 0.2)', 'rgba(13, 15, 28, 0.95)']}
+            colors={['rgba(13, 15, 28, 0.3)', 'rgba(13, 15, 28, 0.8)']}
             style={styles.heroGradient}
           >
             <View style={styles.headerActions}>
               <Text style={styles.headerTitle}>Profile</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-                <Settings size={24} color={Colors.white} />
+              <TouchableOpacity style={styles.settingsButton} onPress={() => navigation.navigate('Settings')}>
+                <Settings size={22} color={Colors.white} />
               </TouchableOpacity>
             </View>
 
@@ -97,16 +97,16 @@ const ProfileScreen = () => {
                   </Text>
                 </LinearGradient>
                 <TouchableOpacity style={styles.editAvatarBtn}>
-                  <Image source={require('../../assets/images/tool-icons/content-creator-3d.png')} style={{width: 20, height: 20}} />
+                  <Feather name="camera" size={14} color={Colors.white} />
                 </TouchableOpacity>
               </View>
               <Text style={styles.userName}>{user?.name || 'Admin User'}</Text>
               <Text style={styles.userEmail}>{user?.email || 'help@marketingtool.pro'}</Text>
               
-              <View style={styles.planBadge}>
+              <TouchableOpacity style={styles.planBadge}>
                 <User size={14} color={Colors.textSecondary} />
                 <Text style={styles.planText}>Free Plan</Text>
-              </View>
+              </TouchableOpacity>
             </View>
           </LinearGradient>
         </View>
@@ -115,7 +115,7 @@ const ProfileScreen = () => {
         <View style={styles.statsGrid}>
           {statItems.map((item, index) => (
             <View key={index} style={styles.statCard}>
-              <item.icon size={20} color={item.color} style={{marginBottom: 8}} />
+              <item.icon size={22} color={item.color} style={{marginBottom: 8}} />
               <Text style={styles.statValue}>{item.value}</Text>
               <Text style={styles.statLabel}>{item.label}</Text>
             </View>
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   heroContainer: {
-    height: 380,
+    height: 420,
     width: '100%',
     position: 'relative',
   },
@@ -248,25 +248,37 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: Spacing.lg,
     justifyContent: 'space-between',
-    paddingBottom: 30,
+    paddingBottom: 50,
   },
   headerActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 10,
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: '900',
     color: Colors.white,
-    letterSpacing: 0.5,
+    letterSpacing: -0.5,
+  },
+  settingsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   profileInfo: {
     alignItems: 'center',
+    marginTop: -20,
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   avatarGradient: {
     width: 100,
@@ -274,8 +286,8 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   avatarText: {
     fontSize: 42,
@@ -287,23 +299,23 @@ const styles = StyleSheet.create({
     bottom: 0,
     right: 0,
     backgroundColor: Colors.secondary,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#0D0F1C',
   },
   userName: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '800',
     color: Colors.white,
     marginBottom: 4,
   },
   userEmail: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: 'rgba(255,255,255,0.6)',
     marginBottom: 12,
   },
   planBadge: {
@@ -311,49 +323,54 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
     paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingVertical: 8,
+    borderRadius: 25,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
     gap: 8,
   },
   planText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.8)',
   },
   statsGrid: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.lg,
     justifyContent: 'space-between',
-    marginTop: -20,
+    marginTop: -30,
     zIndex: 10,
   },
   statCard: {
-    width: (width - Spacing.lg * 2 - 24) / 3,
+    width: (width - Spacing.lg * 2 - 20) / 3,
     backgroundColor: '#1A1D2E',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 24,
+    paddingVertical: 20,
+    paddingHorizontal: 10,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '900',
     color: Colors.white,
     marginBottom: 2,
   },
   statLabel: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-    fontWeight: '500',
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.5)',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   upgradeBanner: {
     marginHorizontal: Spacing.lg,
     marginTop: 24,
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 181, 71, 0.2)', // Gold border
   },
   upgradeGradient: {
     flexDirection: 'row',

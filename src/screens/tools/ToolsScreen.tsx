@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,6 @@ import {
   Dimensions,
   FlatList,
   Image,
-  Animated,
-  Easing,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -18,75 +16,17 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore, TOOL_CATEGORIES, PLATFORMS, Tool } from '../../store/toolsStore';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 import { getToolIcon } from '../../constants/toolIcons';
-
-// Category images for tool card backgrounds (matches real app 3D icon style)
-const CategoryImageAssets: Record<string, any> = {
-  'google-ads': require('../../assets/images/categories/google-ads.jpg'),
-  'google-seo': require('../../assets/images/categories/google-seo.jpg'),
-  'google-analytics': require('../../assets/images/categories/google-analytics.jpg'),
-  'google-content': require('../../assets/images/categories/google-content.jpg'),
-  'facebook-ads': require('../../assets/images/categories/facebook-ads.jpg'),
-  'instagram': require('../../assets/images/categories/instagram.jpg'),
-  'social-media': require('../../assets/images/categories/social-media.jpg'),
-  'meta-content': require('../../assets/images/categories/meta-content.jpg'),
-  'shopify-products': require('../../assets/images/categories/shopify-products.jpg'),
-  'shopify-ads': require('../../assets/images/categories/shopify-ads.jpg'),
-  'email-marketing': require('../../assets/images/categories/email-marketing.jpg'),
-  'ecommerce-seo': require('../../assets/images/categories/ecommerce-seo.jpg'),
-  'ai-agents': require('../../assets/images/categories/ai-agents.jpg'),
-  'content-creation': require('../../assets/images/categories/content-creation.jpg'),
-};
-
-// Platform color map for tool icons
-const PLATFORM_COLORS: Record<string, string> = {};
-PLATFORMS.forEach(p => { PLATFORM_COLORS[p.id] = p.color; });
-
-// Category gradient colors
-const CATEGORY_GRADIENTS: Record<string, string[]> = {
-  'google-ads': ['#4285F4', '#1A73E8'],
-  'google-seo': ['#34A853', '#1E8E3E'],
-  'google-analytics': ['#F9AB00', '#E37400'],
-  'google-content': ['#EA4335', '#C5221F'],
-  'facebook-ads': ['#1877F2', '#0C5DC7'],
-  'instagram': ['#E4405F', '#C13584'],
-  'social-media': ['#833AB4', '#5851DB'],
-  'meta-content': ['#0088FF', '#00C6FF'],
-  'shopify-products': ['#96BF48', '#5E8E3E'],
-  'shopify-ads': ['#5C6BC0', '#3949AB'],
-  'email-marketing': ['#FF6B6B', '#EE5A5A'],
-  'ecommerce-seo': ['#00BFA5', '#00897B'],
-  'ai-agents': ['#FF6B35', '#F7931E'],
-  'content-creation': ['#7C4DFF', '#651FFF'],
-};
-
-// Get color for a tool based on its category's platform
-const getToolColor = (tool: Tool): string => {
-  const category = TOOL_CATEGORIES.find(c => c.id === tool.category);
-  if (category?.platform) return PLATFORM_COLORS[category.platform] || Colors.secondary;
-  return Colors.secondary;
-};
-
-// Get category image for a tool
-const getToolCategoryImage = (tool: Tool): any => {
-  return CategoryImageAssets[tool.category] || null;
-};
-
-// Get category gradient for a tool
-const getToolGradient = (tool: Tool): string[] => {
-  return CATEGORY_GRADIENTS[tool.category] || [Colors.secondary, Colors.accent];
-};
-
 
 const { width } = Dimensions.get('window');
 
 // Screen images
 const ScreenImages = {
   toolsHero: require('../../assets/images/screens/tools-hero.jpg'),
-  marketingTools: require('../../assets/images/screens/marketing-tools.jpg'),
 };
+
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const ToolsScreen = () => {
@@ -127,184 +67,160 @@ const ToolsScreen = () => {
   };
 
   const renderToolCard = ({ item }: { item: Tool }) => {
-    const toolColor = getToolColor(item);
-    const categoryImage = getToolCategoryImage(item);
-    const gradient = getToolGradient(item);
-
     return (
       <TouchableOpacity
         style={styles.toolCard}
         onPress={() => handleToolPress(item)}
         activeOpacity={0.7}
       >
-        {/* Icon area with category image background */}
-        <View style={styles.toolIconArea}>
-          {categoryImage && (
-            <Image source={categoryImage} style={styles.toolIconImage} resizeMode="cover" />
-          )}
-          <LinearGradient
-            colors={[`${gradient[0]}40`, `${gradient[1]}90`]}
-            style={styles.toolIconOverlay}
+        <View style={styles.toolIconContainer}>
+          <Image
+            source={getToolIcon(item.slug, item.category)}
+            style={styles.toolIconImage}
+            resizeMode="contain"
           />
-          <View style={styles.toolIconCenter}>
-            <Image
-              source={getToolIcon(item.slug, item.category)}
-              style={{ width: 48, height: 48 }}
-              resizeMode="contain"
-            />
+        </View>
+
+        <View style={styles.badgeContainer}>
+          {item.isPro && (
+            <View style={[styles.proBadge, { backgroundColor: '#FF8A00' }]}>
+              <Text style={styles.proBadgeText}>PRO</Text>
+            </View>
+          )}
+          <View style={styles.platformMiniBadge}>
+            <Feather name="trending-up" size={10} color={Colors.white} />
           </View>
         </View>
 
-        {/* Badges row */}
-        <View style={styles.toolBadges}>
-          {item.isPro && (
-            <View style={[styles.badge, { backgroundColor: Colors.gold }]}>
-              <Text style={styles.badgeText}>PRO</Text>
-            </View>
-          )}
-          {item.isNew && (
-            <View style={[styles.badge, { backgroundColor: Colors.success }]}>
-              <Text style={styles.badgeText}>NEW</Text>
-            </View>
-          )}
-          {item.isTrending && (
-            <View style={[styles.badge, { backgroundColor: toolColor }]}>
-              <Feather name="trending-up" size={10} color={Colors.white} />
-            </View>
-          )}
-        </View>
-
-        {/* Tool name */}
-        <Text style={styles.toolName} numberOfLines={2}>{item.name}</Text>
+        <Text style={styles.toolName} numberOfLines={2} textAlign="center">
+          {item.name}
+        </Text>
       </TouchableOpacity>
     );
   };
 
   return (
     <AnimatedBackground variant="tools" showParticles={true}>
-      {/* Hero Banner */}
-      <View style={styles.heroBanner}>
-        <Image source={ScreenImages.toolsHero} style={styles.heroImage} resizeMode="cover" />
-        <LinearGradient
-          colors={['transparent', 'rgba(6, 11, 40, 0.7)', 'rgba(6, 11, 40, 0.95)']}
-          style={styles.heroGradient}
-        >
-          <View style={styles.heroContent}>
-            <View style={styles.heroBadge}>
-              <Feather name="zap" size={12} color={Colors.gold} />
-              <Text style={styles.heroBadgeText}>AI Tools</Text>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Hero Banner */}
+        <View style={styles.heroBanner}>
+          <Image source={ScreenImages.toolsHero} style={styles.heroImage} resizeMode="cover" />
+          <LinearGradient
+            colors={['rgba(10, 11, 24, 0.2)', 'rgba(10, 11, 24, 0.9)']}
+            style={styles.heroGradient}
+          >
+            <View style={styles.heroContent}>
+              <View style={styles.heroBadge}>
+                <Feather name="zap" size={12} color={Colors.gold} />
+                <Text style={styles.heroBadgeText}>75+ AI Tools</Text>
+              </View>
+              <Text style={styles.heroTitle}>AI Marketing Tools</Text>
+              <Text style={styles.heroSubtitle}>Google Meta Shopify</Text>
             </View>
-            <Text style={styles.heroTitle}>Marketing AI Tools</Text>
-            <Text style={styles.heroSubtitle}>Google • Meta • Shopify</Text>
-          </View>
-        </LinearGradient>
-      </View>
-
-      {/* Header */}
-      <View style={styles.header}>
-        {/* Search */}
-        <View style={styles.searchContainer}>
-          <Feather name="search" size={20} color={Colors.textTertiary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search tools..."
-            placeholderTextColor={Colors.textTertiary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Feather name="x" size={20} color={Colors.textTertiary} />
-            </TouchableOpacity>
-          ) : null}
+          </LinearGradient>
         </View>
-      </View>
 
-      {/* Platform Tabs */}
-      <View style={styles.platformTabs}>
-        <TouchableOpacity
-          style={[styles.platformTab, !selectedPlatform && styles.platformTabActive]}
-          onPress={() => { setSelectedPlatform(null); setSelectedCategory(null); }}
-        >
-          <Text style={[styles.platformTabText, !selectedPlatform && styles.platformTabTextActive]}>All</Text>
-        </TouchableOpacity>
-        {PLATFORMS.map((platform) => (
-          <TouchableOpacity
-            key={platform.id}
-            style={[styles.platformTab, selectedPlatform === platform.id && styles.platformTabActive]}
-            onPress={() => { setSelectedPlatform(platform.id); setSelectedCategory(null); }}
-          >
-            <Feather
-              name={platform.icon as any}
-              size={16}
-              color={selectedPlatform === platform.id ? Colors.white : Colors.textSecondary}
+        {/* Search */}
+        <View style={styles.searchContainerWrapper}>
+          <View style={styles.searchContainer}>
+            <Feather name="search" size={20} color={Colors.textTertiary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search 75+ tools..."
+              placeholderTextColor={Colors.textTertiary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
             />
-            <Text style={[styles.platformTabText, selectedPlatform === platform.id && styles.platformTabTextActive]}>
-              {platform.name.split('/')[0]}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Categories */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoriesScroll}
-        contentContainerStyle={styles.categoriesContent}
-      >
-        <TouchableOpacity
-          style={[styles.categoryChip, !selectedCategory && styles.categoryChipActive]}
-          onPress={() => setSelectedCategory(null)}
-        >
-          <Text style={[styles.categoryChipText, !selectedCategory && styles.categoryChipTextActive]}>
-            All
-          </Text>
-        </TouchableOpacity>
-
-        {filteredCategories.map((category) => (
-          <TouchableOpacity
-            key={category.id}
-            style={[styles.categoryChip, selectedCategory === category.id && styles.categoryChipActive]}
-            onPress={() => setSelectedCategory(category.id)}
-          >
-            <Text style={[styles.categoryChipText, selectedCategory === category.id && styles.categoryChipTextActive]}>
-              {category.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Tools Grid */}
-      <FlatList
-        data={filteredTools}
-        renderItem={renderToolCard}
-        keyExtractor={(item) => item.$id}
-        numColumns={3}
-        columnWrapperStyle={styles.toolsRow}
-        contentContainerStyle={styles.toolsContainer}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Feather name="search" size={48} color={Colors.textTertiary} />
-            <Text style={styles.emptyText}>No tools found</Text>
-            <Text style={styles.emptySubtext}>Try a different search term</Text>
           </View>
-        }
-      />
+        </View>
+
+        {/* Platform Tabs */}
+        <View style={styles.platformTabsWrapper}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.platformTabs}>
+            <TouchableOpacity
+              style={[styles.platformTab, !selectedPlatform && styles.platformTabActive]}
+              onPress={() => { setSelectedPlatform(null); setSelectedCategory(null); }}
+            >
+              <Text style={[styles.platformTabText, !selectedPlatform && styles.platformTabTextActive]}>All</Text>
+            </TouchableOpacity>
+            {PLATFORMS.map((platform) => (
+              <TouchableOpacity
+                key={platform.id}
+                style={[styles.platformTab, selectedPlatform === platform.id && styles.platformTabActive]}
+                onPress={() => { setSelectedPlatform(platform.id); setSelectedCategory(null); }}
+              >
+                <Feather
+                  name={platform.icon as any}
+                  size={16}
+                  color={selectedPlatform === platform.id ? Colors.white : Colors.textSecondary}
+                />
+                <Text style={[styles.platformTabText, selectedPlatform === platform.id && styles.platformTabTextActive]}>
+                  {platform.name.split('/')[0]}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Categories */}
+        <View style={styles.categoriesWrapper}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesContent}>
+            <TouchableOpacity
+              style={[styles.categoryChip, !selectedCategory && styles.categoryChipActive]}
+              onPress={() => setSelectedCategory(null)}
+            >
+              <Text style={[styles.categoryChipText, !selectedCategory && styles.categoryChipTextActive]}>
+                All
+              </Text>
+            </TouchableOpacity>
+
+            {filteredCategories.map((category) => (
+              <TouchableOpacity
+                key={category.id}
+                style={[styles.categoryChip, selectedCategory === category.id && styles.categoryChipActive]}
+                onPress={() => setSelectedCategory(category.id)}
+              >
+                <Text style={[styles.categoryChipText, selectedCategory === category.id && styles.categoryChipTextActive]}>
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Tools Count */}
+        <View style={styles.countContainer}>
+          <Text style={styles.countText}>{filteredTools.length} tools</Text>
+        </View>
+
+        {/* Tools Grid */}
+        <FlatList
+          data={filteredTools}
+          renderItem={renderToolCard}
+          keyExtractor={(item) => item.$id}
+          numColumns={3}
+          columnWrapperStyle={styles.toolsRow}
+          contentContainerStyle={styles.toolsContainer}
+          scrollEnabled={false} // Disable inner scroll since we are in a ScrollView
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Feather name="search" size={48} color={Colors.textTertiary} />
+              <Text style={styles.emptyText}>No tools found</Text>
+              <Text style={styles.emptySubtext}>Try a different search term</Text>
+            </View>
+          }
+        />
+      </ScrollView>
     </AnimatedBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   heroBanner: {
     height: 180,
-    marginTop: 50,
+    marginTop: 60,
     marginHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.xl,
+    borderRadius: 24,
     overflow: 'hidden',
   },
   heroImage: {
@@ -323,182 +239,169 @@ const styles = StyleSheet.create({
   heroBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(253, 151, 7, 0.2)',
-    paddingHorizontal: 10,
+    backgroundColor: 'rgba(255, 138, 0, 0.15)',
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: BorderRadius.full,
-    gap: 6,
+    borderRadius: 8,
+    gap: 4,
     marginBottom: Spacing.sm,
   },
   heroBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: Colors.gold,
+    fontWeight: '700',
+    color: '#FFB800',
   },
   heroTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: 'bold',
     color: Colors.white,
     marginBottom: 4,
   },
   heroSubtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.7)',
   },
-  header: {
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.md,
+  searchContainerWrapper: {
     paddingHorizontal: Spacing.lg,
-    backgroundColor: Colors.background,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
+    backgroundColor: '#161824',
+    borderRadius: 16,
     paddingHorizontal: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.glassBorder,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
+    height: 56,
   },
   searchInput: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 15,
+    marginLeft: Spacing.sm,
+    fontSize: 16,
     color: Colors.white,
   },
+  platformTabsWrapper: {
+    marginBottom: Spacing.sm,
+  },
   platformTabs: {
-    flexDirection: 'row',
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
     gap: Spacing.sm,
   },
   platformTab: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.surface,
-    paddingVertical: 10,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.md,
-    gap: 6,
+    backgroundColor: '#161824',
+    height: 44,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    gap: 8,
     borderWidth: 1,
-    borderColor: Colors.glassBorder,
+    borderColor: 'rgba(255,255,255,0.03)',
   },
   platformTabActive: {
-    backgroundColor: Colors.secondary,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    shadowColor: Colors.secondary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
+    backgroundColor: '#9D4EDD', // The vibrant purple from the image
+    borderColor: '#9D4EDD',
   },
   platformTabText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
     color: Colors.textSecondary,
   },
   platformTabTextActive: {
     color: Colors.white,
   },
-  categoriesScroll: {
-    maxHeight: 44,
+  categoriesWrapper: {
+    marginBottom: Spacing.md,
   },
   categoriesContent: {
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.xs,
     gap: Spacing.sm,
   },
   categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-    borderRadius: BorderRadius.full,
-    marginRight: Spacing.sm,
-  },
-  categoryChipActive: {
-    backgroundColor: Colors.secondary,
-  },
-  categoryChipText: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-  },
-  categoryChipTextActive: {
-    color: Colors.white,
-    fontWeight: '500',
-  },
-  toolsContainer: {
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    paddingBottom: 100,
-  },
-  toolsRow: {
-    justifyContent: 'space-between',
-  },
-  toolCard: {
-    width: (width - Spacing.md * 4) / 3,
-    backgroundColor: Colors.card,
-    borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.glassBorder,
-    overflow: 'hidden',
-  },
-  toolIconArea: {
-    width: '100%',
-    height: 90,
-    position: 'relative',
-    backgroundColor: Colors.surface,
-    overflow: 'hidden',
-  },
-  toolIconImage: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-  },
-  toolIconOverlay: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-  },
-  toolIconCenter: {
-    flex: 1,
+    height: 36,
+    paddingHorizontal: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  toolBadges: {
-    flexDirection: 'row',
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingTop: 6,
-    flexWrap: 'wrap',
-    minHeight: 20,
+  categoryChipActive: {
+    backgroundColor: '#9D4EDD', // Purple pill for sub categories
+    borderRadius: 20,
   },
-  badge: {
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 3,
+  categoryChipText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: '500',
   },
-  badgeText: {
-    fontSize: 8,
-    fontWeight: 'bold',
+  categoryChipTextActive: {
     color: Colors.white,
+    fontWeight: '600',
+  },
+  countContainer: {
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
+  },
+  countText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  toolsContainer: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: 100,
+  },
+  toolsRow: {
+    justifyContent: 'flex-start',
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  toolCard: {
+    width: (width - Spacing.lg * 2 - Spacing.md * 2) / 3, // 3 columns with gaps
+    backgroundColor: '#161824',
+    borderRadius: 16,
+    padding: Spacing.sm,
+    alignItems: 'center',
+  },
+  toolIconContainer: {
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  toolIconImage: {
+    width: 48,
+    height: 48,
+  },
+  badgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 8,
+    height: 16,
+  },
+  proBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  proBadgeText: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: Colors.white,
+  },
+  platformMiniBadge: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+    backgroundColor: '#9D4EDD',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   toolName: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: Colors.white,
-    paddingHorizontal: 6,
-    paddingBottom: 8,
-    paddingTop: 4,
+    textAlign: 'center',
     lineHeight: 16,
   },
   emptyState: {
@@ -519,3 +422,4 @@ const styles = StyleSheet.create({
 });
 
 export default ToolsScreen;
+

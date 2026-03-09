@@ -208,8 +208,12 @@ const ToolResultScreen = () => {
 
         {tool && (
           <View style={styles.toolInfo}>
-            <View style={[styles.toolIcon, { backgroundColor: Colors.secondary + '20' }]}>
-              <Feather name={tool.icon as any} size={24} color={Colors.secondary} />
+            <View style={styles.toolIcon}>
+              <Image
+                source={getToolIcon(tool.slug, tool.category)}
+                style={{ width: 44, height: 44 }}
+                resizeMode="contain"
+              />
             </View>
             <View>
               <Text style={styles.toolName}>{tool.name}</Text>
@@ -283,7 +287,7 @@ const ToolResultScreen = () => {
                   <Text style={styles.desktopBannerTitle}>Best viewed on desktop</Text>
                 </View>
                 <Text style={styles.desktopBannerText}>
-                  The tool completed successfully. This result is long, so we show a preview on mobile for readability.
+                  The tool completed successfully. This result is long, so we show a preview on mobile for readability. You can view the full output on desktop anytime.
                 </Text>
                 <View style={styles.desktopActions}>
                   <TouchableOpacity style={styles.desktopActionBtn} onPress={handleViewOnDesktop}>
@@ -292,7 +296,7 @@ const ToolResultScreen = () => {
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={handleEmailResult}>
                     <Feather name="mail" size={16} color={Colors.secondary} />
-                    <Text style={styles.desktopActionOutlineText}>Email Result</Text>
+                    <Text style={styles.desktopActionOutlineText}>Email Full Result</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={() => handleCopy(output.content, output.id)}>
                     <Feather name="copy" size={16} color={Colors.secondary} />
