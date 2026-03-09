@@ -1,25 +1,19 @@
 import { createTamagui } from 'tamagui'
-import { config } from '@tamagui/config/v3'
+import { config as configV3 } from '@tamagui/config/v3'
 
-const tamaguiConfig = createTamagui({
-  ...config,
+export const config = createTamagui({
+  ...configV3,
   themes: {
-    ...config.themes,
-    light: config.themes?.light || {
+    ...configV3.themes,
+    light: configV3.themes?.light || {
       background: '#fff',
       color: '#000',
     },
-    dark: config.themes?.dark || {
+    dark: configV3.themes?.dark || {
       background: '#060b28',
       color: '#fff',
     },
   },
 })
 
-export type AppConfig = typeof tamaguiConfig
-
-declare module 'tamagui' {
-  interface TamaguiCustomConfig extends AppConfig {}
-}
-
-export default tamaguiConfig
+export default config
