@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "184",
+      "buildNumber": "185",
       "googleServicesFile": "GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -53,7 +53,7 @@
       },
       "googleServicesFile": "google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 184,
+      "versionCode": 185,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -69,21 +69,12 @@
       ]
     },
     "plugins": [
-      "./plugins/withEasPodfileFix.js",
-      "./plugins/withFirebaseFix.js",
       [
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "static",
-            "deploymentTarget": "16.0",
-            "extraCCFlags": [
-              "-Wno-error=implicit-function-declaration",
-              "-Wno-error=implicit-int",
-              "-Wno-redeclared-class-member",
-              "-Wno-non-modular-include-in-framework-module",
-              "-Wno-error=non-modular-include-in-framework-module"
-            ]
+            "useFrameworks": "dynamic",
+            "deploymentTarget": "16.0"
           },
           "android": {
             "compileSdkVersion": 35,
@@ -92,6 +83,9 @@
           }
         }
       ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-firebase/app-check",
       "expo-secure-store",
       "expo-font",
       "expo-sharing",
