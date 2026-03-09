@@ -38,6 +38,7 @@
       "versionCode": 130
     },
     "plugins": [
+      "./plugins/withEasPodfileFix.js",
       [
         "expo-build-properties",
         {

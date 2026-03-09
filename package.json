@@ -4,6 +4,10 @@
   "license": "UNLICENSED",
   "main": "index.ts",
   "private": true,
+  "resolutions": {
+    "react-native": "0.83.2",
+    "expo-file-system": "55.0.10"
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
