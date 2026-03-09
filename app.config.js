@@ -1,8 +1,8 @@
-import fs from 'fs';
-import path from 'path';
-import { withDangerousMod } from '@expo/config-plugins';
+const fs = require('fs');
+const path = require('path');
 
 const withIosFirebaseSwiftFix = (config) => {
+  const { withDangerousMod } = require('@expo/config-plugins');
   return withDangerousMod(config, [
     'ios',
     async (config) => {
@@ -33,7 +33,7 @@ const withIosFirebaseSwiftFix = (config) => {
   ]);
 };
 
-export default ({ config }) => ({
+module.exports = ({ config }) => ({
   ...config,
   plugins: [
     [withIosFirebaseSwiftFix],
