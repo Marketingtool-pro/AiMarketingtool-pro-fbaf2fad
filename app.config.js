@@ -4,10 +4,8 @@ const { withDangerousMod } = require('@expo/config-plugins');
 
 /**
  * INLINED BUILD PLUGINS
- * This file replaces all local plugin files to ensure EAS cloud compatibility.
  */
 
-// 1. Firebase Swift AppDelegate Fix
 const withIosFirebaseSwiftFix = (config) => {
   return withDangerousMod(config, [
     'ios',
@@ -27,7 +25,6 @@ const withIosFirebaseSwiftFix = (config) => {
   ]);
 };
 
-// 2. Xcode Modular Header Fix
 const withEasPodfileFix = (config) => {
   return withDangerousMod(config, [
     'ios',
@@ -38,9 +35,11 @@ const withEasPodfileFix = (config) => {
       const snippet = `
     # Force modular header compatibility for RNFB
     installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-        config.build_settings['DEFINES_MODULE'] = 'YES'
+      if target.name.start_with?('RNFB') || target.name.start_with?('Firebase')
+        target.build_configurations.each do |config|
+          config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+          config.build_settings['DEFINES_MODULE'] = 'YES'
+        end
       end
     end`;
       if (contents.includes('post_install do |installer|')) {
@@ -71,7 +70,13 @@ module.exports = ({ config }) => ({
         "android": {
           "compileSdkVersion": 35,
           "targetSdkVersion": 35,
-          "minSdkVersion": 24
+          "minSdkVersion": 24,
+          "packagingOptions": {
+            "pickFirsts": [
+              "**/LICENSE",
+              "**/picasa.ini"
+            ]
+          }
         }
       }
     ],
