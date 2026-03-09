@@ -43,7 +43,8 @@
       "associatedDomains": [
         "applinks:marketingtool.pro",
         "applinks:app.marketingtool.pro"
-      ]
+      ],
+      "buildNumber": "4"
     },
     "android": {
       "adaptiveIcon": {
