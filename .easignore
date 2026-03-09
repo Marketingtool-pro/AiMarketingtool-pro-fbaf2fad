@@ -1,32 +1,40 @@
-# 1. Block everything
-/*
+# Dependencies
+node_modules/
 
-# 2. Allow only core config
-!/package.json
-!/package-lock.json
-!/app.json
-!/eas.json
-!/App.tsx
-!/index.ts
-!/tsconfig.json
-!/babel.config.js
-!/metro.config.js
-!/.env*
-!/GoogleService-Info.plist
-!/google-services.json
+# Native folders (EAS generates these)
+ios/
+android/
 
-# 3. Allow only essential folders
-!/src/
-!/assets/
-!/plugins/
+# Build artifacts
+dist/
+build/
+web-build/
 
-# 4. CRITICAL: Block heavy items inside those folders
-/src/assets/images/tool-icons/
-/src/assets/images/tool-icons-v2/
-/dist/
-/ios/
-/android/
-/node_modules/
-**/.expo/
+# Expo / Debug
+.expo/
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Secrets & Credentials (EAS uses its own)
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+
+# IDE / System
+.vscode/
+.idea/
+.DS_Store
 **/.git/
-**/.DS_Store
+
+# Massive asset folders (EAS might struggle with these if too large)
+# /src/assets/images/tool-icons/
+
+# Ensure plugins and src are ALWAYS included
+!plugins/
+!src/
+!assets/
