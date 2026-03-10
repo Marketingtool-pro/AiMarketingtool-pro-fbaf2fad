@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: BorderRadius.full,
-    backgroundColor: 'rgba(22, 24, 36, 0.65)',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   contentContainer: { padding: Spacing.lg },
   infoCard: {
-    backgroundColor: 'rgba(22, 24, 36, 0.65)',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderRadius: BorderRadius.lg,
     padding: Spacing.xl,
     alignItems: 'center',
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   },
   methodCard: {
     flex: 1,
-    backgroundColor: 'rgba(22, 24, 36, 0.65)',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     alignItems: 'center',
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.xs,
   },
   formCard: {
-    backgroundColor: 'rgba(22, 24, 36, 0.65)',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     borderWidth: 1,
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   input: {
-    backgroundColor: 'rgba(22, 24, 36, 0.65)',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     fontSize: 16,

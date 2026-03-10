@@ -25,7 +25,7 @@ const { width } = Dimensions.get('window');
 const GlassCard = ({ children }: { children: React.ReactNode }) => (
   <View style={styles.glassCardOuter}>
     <LinearGradient
-      colors={['rgba(126, 34, 206, 0.25)', 'rgba(22, 24, 36, 0.65)']}
+      colors={['rgba(126, 34, 206, 0.25)', 'rgba(22, 24, 36, 0.55)']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.glassCardGradient}
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   menuSection: { marginBottom: Spacing.lg },
   sectionTitle: { fontSize: 14, fontWeight: '600', color: Colors.textTertiary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: Spacing.sm, marginLeft: Spacing.xs },
   menuCard: {
-    backgroundColor: 'rgba(22, 24, 36, 0.85)',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
     borderWidth: 1,
