@@ -4,13 +4,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
-import AnimatedBackground from '../../components/common/AnimatedBackground';
+
 
 const TermsScreen = () => {
   const navigation = useNavigation();
 
   return (
-    <AnimatedBackground variant="profile" showParticles={false}>
+    <View style={styles.screenContainer}>
       <LinearGradient colors={Gradients.dark} style={styles.header}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -99,11 +99,15 @@ const TermsScreen = () => {
 
         <View style={{ height: 100 }} />
       </ScrollView>
-    </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#0D0F1C',
+  },
   header: {
     paddingTop: 60,
     paddingBottom: Spacing.lg,

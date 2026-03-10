@@ -20,7 +20,7 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore, Generation } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
-import AnimatedBackground from '../../components/common/AnimatedBackground';
+
 
 const { width } = Dimensions.get('window');
 
@@ -241,7 +241,7 @@ const HistoryScreen = () => {
   };
 
   return (
-    <AnimatedBackground variant="dashboard" showParticles={true}>
+    <View style={styles.screenContainer}>
       {/* Hero Banner */}
       <View style={styles.heroBanner}>
         <Image source={HistoryHeroImage} style={styles.heroImage} resizeMode="cover" />
@@ -341,11 +341,15 @@ const HistoryScreen = () => {
           </View>
         }
       />
-    </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#0D0F1C',
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,

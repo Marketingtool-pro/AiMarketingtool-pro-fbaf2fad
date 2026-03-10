@@ -25,7 +25,7 @@ import * as Sharing from 'expo-sharing';
 import ViewShot from 'react-native-view-shot';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
-import AnimatedBackground from '../../components/common/AnimatedBackground';
+
 
 const { width, height } = Dimensions.get('window');
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -303,7 +303,7 @@ const MemeGeneratorScreen = () => {
   );
 
   return (
-    <AnimatedBackground variant="tools" showParticles={true}>
+    <View style={styles.screenContainer}>
       {/* Header */}
       <LinearGradient colors={Gradients.dark} style={styles.header}>
         <View style={styles.headerTop}>
@@ -602,11 +602,15 @@ const MemeGeneratorScreen = () => {
           </View>
         </View>
       </Modal>
-    </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#0D0F1C',
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,

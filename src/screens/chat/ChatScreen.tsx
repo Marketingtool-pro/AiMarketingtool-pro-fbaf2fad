@@ -31,6 +31,7 @@ const { width } = Dimensions.get('window');
 // Chat bot image
 const ChatBotImage = require('../../assets/images/screens/chat-bot.jpg');
 const AiAssistantImage = require('../../assets/images/screens/ai-assistant.jpg');
+const LogoImage = require('../../assets/images/logo.jpeg');
 
 interface Message {
   id: string;
@@ -115,14 +116,14 @@ const AnimatedRipple = () => {
   );
 };
 
-// Bot avatar icon
+// Bot avatar icon - uses real logo with dark background
 const BotAvatar = ({ size = 32 }: { size?: number }) => {
   return (
     <View style={[styles.botAvatarContainer, { width: size, height: size, borderRadius: size / 2 }]}>
       <Image
-        source={require('../../assets/images/logo-icon.png')}
-        style={{ width: size * 0.7, height: size * 0.7 }}
-        resizeMode="contain"
+        source={LogoImage}
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+        resizeMode="cover"
       />
     </View>
   );
@@ -447,6 +448,9 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Feather name="arrow-left" size={22} color={Colors.white} />
+          </TouchableOpacity>
           <BotAvatar size={40} />
           <View style={styles.headerInfo}>
             <Text style={styles.headerTitle}>AI MarketingTool</Text>
@@ -703,6 +707,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.sm,
+  },
   headerInfo: {
     marginLeft: Spacing.md,
   },
@@ -805,9 +818,10 @@ const styles = StyleSheet.create({
     height: '50%',
   },
   botAvatarContainer: {
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#0D0F1C',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   emptyTitle: {
     fontSize: 28,

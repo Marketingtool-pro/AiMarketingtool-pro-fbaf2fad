@@ -43,7 +43,7 @@ const { width } = Dimensions.get('window');
 const GlassCard = ({ children }: { children: React.ReactNode }) => (
   <View style={styles.glassCardOuter}>
     <LinearGradient
-      colors={['rgba(126, 34, 206, 0.15)', 'rgba(22, 24, 36, 0.55)']}
+      colors={['rgba(126, 34, 206, 0.25)', 'rgba(22, 24, 36, 0.65)']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.glassCardGradient}
@@ -120,7 +120,7 @@ const ProfileScreen = () => {
       title: 'Support',
       items: [
         { icon: HelpCircle, label: 'Help Center', url: 'https://marketingtool.pro/help/' },
-        { icon: MessageCircle, label: 'Contact Support', url: 'mailto:support@marketingtool.pro' },
+        { icon: MessageCircle, label: 'Contact Support', url: 'https://marketingtool.pro/contact/' },
         { icon: Book, label: 'Tutorials', url: 'https://marketingtool.pro/blog/' },
       ],
     },
@@ -135,9 +135,9 @@ const ProfileScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Dark gradient background instead of Skia Canvas */}
+      {/* Dark gradient background */}
       <LinearGradient
-        colors={['#1e1b4b', '#581c87', '#0D0F1C']}
+        colors={['#0D0F1C', '#131538', '#0D0F1C']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -147,7 +147,7 @@ const ProfileScreen = () => {
         <View style={styles.heroSection}>
           <Image source={ProfileHeroImage} style={styles.heroImage} resizeMode="cover" />
           <LinearGradient
-            colors={['transparent', 'rgba(6, 11, 40, 0.6)', 'rgba(6, 11, 40, 1)']}
+            colors={['transparent', 'rgba(13, 15, 28, 0.7)', 'rgba(13, 15, 28, 1)']}
             style={styles.heroGradient}
           />
           <View style={styles.headerTop}>
@@ -267,7 +267,7 @@ const ProfileScreen = () => {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.versionText}>AI MarketingTool v1.3.3</Text>
+          <Text style={styles.versionText}>MarketingTool v1.3.3</Text>
           <View style={styles.footerLinks}>
             <TouchableOpacity onPress={() => navigation.navigate('Terms' as any)}>
               <Text style={styles.footerLink}>Terms</Text>
@@ -305,13 +305,13 @@ const styles = StyleSheet.create({
   glassCardBorder: {
     borderRadius: 27,
     overflow: 'hidden',
-    backgroundColor: 'rgba(13, 15, 28, 0.55)',
+    backgroundColor: 'rgba(13, 15, 28, 0.85)',
   },
   glassCardContent: {
     padding: 24,
     paddingTop: 28,
   },
-  heroSection: { height: 240, width: '100%' },
+  heroSection: { height: 220, width: '100%' },
   heroImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
   heroGradient: { ...StyleSheet.absoluteFillObject },
   headerTop: {
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: { paddingHorizontal: 0, marginTop: -80, marginBottom: Spacing.lg },
+  header: { paddingHorizontal: 0, marginTop: -60, marginBottom: Spacing.lg },
   profileHeader: { alignItems: 'center' },
   avatarWrapper: { position: 'relative' },
   avatarContainer: {
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   menuSection: { marginBottom: Spacing.lg },
   sectionTitle: { fontSize: 14, fontWeight: '600', color: Colors.textTertiary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: Spacing.sm, marginLeft: Spacing.xs },
   menuCard: {
-    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    backgroundColor: 'rgba(22, 24, 36, 0.85)',
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
     borderWidth: 1,

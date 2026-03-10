@@ -12,7 +12,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
-import AnimatedBackground from '../../components/common/AnimatedBackground';
+
 
 interface NotificationItem {
   id: string;
@@ -112,7 +112,7 @@ const NotificationsScreen = () => {
   );
 
   return (
-    <AnimatedBackground variant="profile" showParticles={true}>
+    <View style={styles.screenContainer}>
       <LinearGradient colors={Gradients.dark} style={styles.header}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -183,11 +183,15 @@ const NotificationsScreen = () => {
           </View>
         }
       />
-    </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#0D0F1C',
+  },
   header: {
     paddingTop: 60,
     paddingBottom: Spacing.lg,
