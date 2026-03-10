@@ -301,12 +301,12 @@ const styles = StyleSheet.create({
   },
   card: {
     width: CARD_WIDTH,
-    backgroundColor: 'rgba(22,24,36,0.9)',
+    backgroundColor: 'rgba(22,24,36,0.55)',
     borderRadius: 16,
     padding: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   iconLiquid: {
     width: 68,

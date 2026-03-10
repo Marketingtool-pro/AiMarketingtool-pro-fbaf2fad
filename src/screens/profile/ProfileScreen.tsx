@@ -43,7 +43,7 @@ const { width } = Dimensions.get('window');
 const GlassCard = ({ children }: { children: React.ReactNode }) => (
   <View style={styles.glassCardOuter}>
     <LinearGradient
-      colors={['rgba(126, 34, 206, 0.25)', 'rgba(22, 24, 36, 0.85)']}
+      colors={['rgba(126, 34, 206, 0.15)', 'rgba(22, 24, 36, 0.55)']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.glassCardGradient}
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   glassCardBorder: {
     borderRadius: 27,
     overflow: 'hidden',
-    backgroundColor: 'rgba(13, 15, 28, 0.85)',
+    backgroundColor: 'rgba(13, 15, 28, 0.55)',
   },
   glassCardContent: {
     padding: 24,
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(13, 15, 28, 0.85)',
+    borderColor: 'rgba(13, 15, 28, 0.55)',
   },
   userName: { color: '#fff', fontSize: 22, fontWeight: '700', marginTop: 10 },
   email: { color: 'rgba(255,255,255,0.6)', fontSize: 14, marginBottom: 8 },
@@ -384,11 +384,11 @@ const styles = StyleSheet.create({
   menuSection: { marginBottom: Spacing.lg },
   sectionTitle: { fontSize: 14, fontWeight: '600', color: Colors.textTertiary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: Spacing.sm, marginLeft: Spacing.xs },
   menuCard: {
-    backgroundColor: 'rgba(22, 24, 36, 0.92)',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: Spacing.md, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.05)' },
   noBorder: { borderBottomWidth: 0 },
