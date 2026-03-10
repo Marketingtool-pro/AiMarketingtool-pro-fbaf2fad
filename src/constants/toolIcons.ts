@@ -180,6 +180,74 @@ const toolSlugMap: Record<string, string> = {
   'quote-image': 'optimized-content',
   'thumbnail-generator': 'video-player',
   'story-templates': 'instagram',
+
+  // COPYWRITING & CONTENT (new)
+  'content-rewriter': 'copywriting',
+  'article-rewriter': 'copywriting',
+  'article-summarizer': 'copywriting',
+  'cta-writer': 'conversion-rate',
+  'sales-page-copy-writer': 'landing-page',
+  'marketing-copy-generator': 'copywriting',
+  'brand-voice-generator': 'marketing-strategy',
+  'paragraph-rewriter': 'copywriting',
+  'testimonial-generator': 'marketing-target',
+  'case-study-writer': 'optimized-content',
+  'faq-generator': 'optimized-content',
+  'press-release-generator': 'optimized-content',
+
+  // SEO EXTENDED (new)
+  'seo-audit-tool': 'seo',
+  'on-page-seo-checker': 'seo',
+  'content-gap-finder': 'search-volume',
+  'competitor-analysis-tool': 'analytics',
+  'seo-title-generator': 'seo',
+  'website-grader': 'web-report',
+  'faq-schema-writer': 'sitemap',
+  'landing-page-audit': 'landing-page',
+
+  // LEAD GEN & BUSINESS (new)
+  'lead-magnet-creator': 'marketing-target',
+  'roi-calculator': 'growth-chart',
+
+  // INSTAGRAM EXTENDED (new)
+  'instagram-bio-optimizer': 'instagram',
+  'instagram-hashtag-strategy': 'instagram',
+  'instagram-carousel-designer': 'instagram',
+  'instagram-ad-creative-generator': 'instagram',
+
+  // GOOGLE ADS EXTENDED (new)
+  'google-ads-quality-score': 'ads',
+  'google-ads-performance-grader': 'analytics',
+  'negative-keywords-tool': 'keyword',
+
+  // META EXTENDED (new)
+  'facebook-ads-performance-grader': 'facebook',
+  'meta-audience-builder': 'marketing-target',
+
+  // SHOPIFY EXTENDED (new)
+  'shopify-store-audit': 'online-store',
+  'product-description-writer': 'product-trolley',
+
+  // MARKETING STRATEGY (new)
+  'marketing-calendar': 'marketing-strategy',
+  'marketing-budget-planner': 'marketing-budget',
+  'marketing-proposal-generator': 'optimized-content',
+
+  // EMAIL EXTENDED (new)
+  'backlink-outreach-email-generator': 'email',
+
+  // PODCAST & WEBINAR (new)
+  'webinar-script-writer': 'video-player',
+  'podcast-script-writer': 'video-player',
+
+  // PLAY STORE VISIBLE TOOLS (new)
+  'newsletter-writer': 'email',
+  'comparison-chart-creator': 'optimized-content',
+  'market-research-summary': 'marketing-strategy',
+  'affiliate-marketing-copy': 'conversion-rate',
+  'ai-campaign-manager': 'bot',
+  'copy-generator': 'copywriting',
+  'engagement-calculator': 'analytics',
 };
 
 // Map tool CATEGORY to 3D icon (fallback)
@@ -205,6 +273,7 @@ const categoryMap: Record<string, string> = {
   'ecommerce': 'online-store',
   'ai-agents': 'bot',
   'content-creation': 'optimized-content',
+  'copywriting': 'copywriting',
 };
 
 // Get 3D icon for a tool
