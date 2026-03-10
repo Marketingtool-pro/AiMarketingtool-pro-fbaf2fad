@@ -28,11 +28,11 @@ export const Colors = {
   background: '#0D0F1C',
   backgroundSecondary: '#0f1535',
   backgroundTertiary: '#131538',
-  card: 'rgba(22, 24, 36, 0.65)',
-  cardHover: 'rgba(22, 24, 36, 0.55)',
+  card: 'rgba(22, 24, 36, 0.55)',
+  cardHover: 'rgba(22, 24, 36, 0.45)',
 
   // Surface Colors
-  surface: 'rgba(22, 24, 36, 0.65)',
+  surface: 'rgba(22, 24, 36, 0.55)',
   surfaceLight: 'rgba(26, 28, 42, 0.6)',
   surfaceDark: 'rgba(16, 18, 28, 0.75)',
 

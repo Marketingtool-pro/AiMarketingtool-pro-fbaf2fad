@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(22,24,36,0.65)',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   billingWrap: { alignItems: 'center', paddingVertical: 16 },
   billingToggle: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(22,24,36,0.65)',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     padding: 3,
     borderRadius: 14,
     borderWidth: 1,
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   saveBadgeText: { fontSize: 10, color: '#22C55E', fontWeight: 'bold' },
   plansWrap: { paddingHorizontal: 20, gap: 12 },
   planCard: {
-    backgroundColor: 'rgba(22,24,36,0.65)',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,

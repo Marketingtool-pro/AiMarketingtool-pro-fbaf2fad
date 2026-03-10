@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: CARD_WIDTH,
-    backgroundColor: 'rgba(22,24,36,0.55)',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderRadius: 16,
     padding: 10,
     alignItems: 'center',
