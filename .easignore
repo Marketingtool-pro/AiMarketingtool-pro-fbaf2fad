@@ -29,8 +29,9 @@ credentials/
 !app.json
 !package.json
 !package-lock.json
-!google-services.json # Add back manually only if using EAS secrets
-!GoogleService-Info.plist # Add back manually only if using EAS secrets
+!google-services.json
+!GoogleService-Info.plist
+!src/**/*.json
 
 # IDE / System
 .vscode/
