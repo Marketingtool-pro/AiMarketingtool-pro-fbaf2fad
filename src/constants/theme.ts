@@ -28,13 +28,13 @@ export const Colors = {
   background: '#0D0F1C',
   backgroundSecondary: '#0f1535',
   backgroundTertiary: '#131538',
-  card: 'rgba(6, 11, 40, 0.94)',
-  cardHover: 'rgba(10, 14, 35, 0.8)',
+  card: 'rgba(22, 24, 36, 0.92)',
+  cardHover: 'rgba(22, 24, 36, 0.85)',
 
   // Surface Colors
-  surface: '#0f1535',
-  surfaceLight: '#131538',
-  surfaceDark: '#060b28',
+  surface: 'rgba(22, 24, 36, 0.92)',
+  surfaceLight: 'rgba(26, 28, 42, 0.9)',
+  surfaceDark: 'rgba(16, 18, 28, 0.95)',
 
   // Text Colors
   text: '#FFFFFF',
@@ -44,8 +44,8 @@ export const Colors = {
   textInverse: '#060b28',
 
   // Border Colors
-  border: '#56577A',
-  borderLight: '#718096',
+  border: 'rgba(255, 255, 255, 0.06)',
+  borderLight: 'rgba(255, 255, 255, 0.08)',
   borderFocus: '#7C3AED',
 
   // Gradient Colors
@@ -58,11 +58,11 @@ export const Colors = {
 
   // Glassmorphism (Vision UI style)
   glass: 'rgba(255, 255, 255, 0.05)',
-  glassBorder: 'rgba(255, 255, 255, 0.1)',
+  glassBorder: 'rgba(255, 255, 255, 0.06)',
   glassLight: 'rgba(255, 255, 255, 0.08)',
   glassDark: 'rgba(0, 0, 0, 0.3)',
-  glassCard: 'rgba(6, 11, 40, 0.7)',
-  glassAccent: 'rgba(124, 58, 237, 0.15)',
+  glassCard: 'rgba(22, 24, 36, 0.92)',
+  glassAccent: 'rgba(124, 58, 237, 0.12)',
 
   // Transparent
   transparent: 'transparent',
@@ -83,7 +83,7 @@ export const Gradients: Record<string, readonly [string, string, ...string[]]> =
   primary: ['#0f1535', '#060b28'] as const,
   secondary: ['#7C3AED', '#6D28D9'] as const,
   accent: ['#7C3AED', '#A78BFA'] as const,
-  card: ['rgba(6, 11, 40, 0.94)', 'rgba(10, 14, 35, 0.49)'] as const,
+  card: ['rgba(22, 24, 36, 0.92)', 'rgba(22, 24, 36, 0.7)'] as const,
   button: ['#7C3AED', '#8B5CF6'] as const,
   success: ['#01B574', '#34D399'] as const,
   dark: ['#060b28', '#0f1535'] as const,
@@ -193,9 +193,9 @@ export const Shadow = {
 // Glassmorphism style helper (Vision UI style)
 export const GlassStyle = {
   card: {
-    backgroundColor: 'rgba(6, 11, 40, 0.6)',
+    backgroundColor: 'rgba(22, 24, 36, 0.92)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     backdropFilter: 'blur(20px)',
   },
   cardLight: {
@@ -204,9 +204,9 @@ export const GlassStyle = {
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   input: {
-    backgroundColor: '#0f1535',
+    backgroundColor: 'rgba(22, 24, 36, 0.92)',
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   button: {
     backgroundColor: 'rgba(124, 58, 237, 0.9)',
