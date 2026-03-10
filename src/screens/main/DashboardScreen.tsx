@@ -110,7 +110,7 @@ const GlassBentoCard = ({ children, color }: { children: React.ReactNode, color:
     elevation: 6,
   }]}>
     <LinearGradient
-      colors={[color + '20', 'rgba(22, 24, 36, 0.92)']}
+      colors={[color + '20', 'rgba(22, 24, 36, 0.55)']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={StyleSheet.absoluteFill}

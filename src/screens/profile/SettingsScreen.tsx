@@ -497,10 +497,12 @@ const styles = StyleSheet.create({
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.card,
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     marginBottom: Spacing.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   userAvatar: {
     width: 56,
@@ -548,9 +550,11 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   sectionItems: {
-    backgroundColor: Colors.card,
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   settingItem: {
     flexDirection: 'row',

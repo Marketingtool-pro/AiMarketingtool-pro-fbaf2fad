@@ -28,13 +28,13 @@ export const Colors = {
   background: '#0D0F1C',
   backgroundSecondary: '#0f1535',
   backgroundTertiary: '#131538',
-  card: 'rgba(22, 24, 36, 0.92)',
-  cardHover: 'rgba(22, 24, 36, 0.85)',
+  card: 'rgba(22, 24, 36, 0.65)',
+  cardHover: 'rgba(22, 24, 36, 0.55)',
 
   // Surface Colors
-  surface: 'rgba(22, 24, 36, 0.92)',
-  surfaceLight: 'rgba(26, 28, 42, 0.9)',
-  surfaceDark: 'rgba(16, 18, 28, 0.95)',
+  surface: 'rgba(22, 24, 36, 0.65)',
+  surfaceLight: 'rgba(26, 28, 42, 0.6)',
+  surfaceDark: 'rgba(16, 18, 28, 0.75)',
 
   // Text Colors
   text: '#FFFFFF',
@@ -61,7 +61,7 @@ export const Colors = {
   glassBorder: 'rgba(255, 255, 255, 0.06)',
   glassLight: 'rgba(255, 255, 255, 0.08)',
   glassDark: 'rgba(0, 0, 0, 0.3)',
-  glassCard: 'rgba(22, 24, 36, 0.92)',
+  glassCard: 'rgba(22, 24, 36, 0.55)',
   glassAccent: 'rgba(124, 58, 237, 0.12)',
 
   // Transparent
@@ -83,7 +83,7 @@ export const Gradients: Record<string, readonly [string, string, ...string[]]> =
   primary: ['#0f1535', '#060b28'] as const,
   secondary: ['#7C3AED', '#6D28D9'] as const,
   accent: ['#7C3AED', '#A78BFA'] as const,
-  card: ['rgba(22, 24, 36, 0.92)', 'rgba(22, 24, 36, 0.7)'] as const,
+  card: ['rgba(22, 24, 36, 0.55)', 'rgba(22, 24, 36, 0.4)'] as const,
   button: ['#7C3AED', '#8B5CF6'] as const,
   success: ['#01B574', '#34D399'] as const,
   dark: ['#060b28', '#0f1535'] as const,
@@ -193,9 +193,9 @@ export const Shadow = {
 // Glassmorphism style helper (Vision UI style)
 export const GlassStyle = {
   card: {
-    backgroundColor: 'rgba(22, 24, 36, 0.92)',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     backdropFilter: 'blur(20px)',
   },
   cardLight: {
@@ -204,9 +204,9 @@ export const GlassStyle = {
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   input: {
-    backgroundColor: 'rgba(22, 24, 36, 0.92)',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   button: {
     backgroundColor: 'rgba(124, 58, 237, 0.9)',

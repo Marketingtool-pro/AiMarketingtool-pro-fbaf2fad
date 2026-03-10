@@ -640,23 +640,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
           ) : (
             <>
               {messages.map(renderMessage)}
-              {isTyping && (
-                <View style={styles.typingContainer}>
-                  <View style={styles.messageAvatarContainer}>
-                    <BotAvatar size={32} />
-                  </View>
-                  <View style={styles.typingBubble}>
-                    <Animated.View style={[styles.typingDot, { opacity: typingAnim }]} />
-                    <Animated.View
-                      style={[
-                        styles.typingDot,
-                        { opacity: typingAnim, marginHorizontal: 4 },
-                      ]}
-                    />
-                    <Animated.View style={[styles.typingDot, { opacity: typingAnim }]} />
-                  </View>
-                </View>
-              )}
+              {/* Typing dots removed - direct reply */}
             </>
           )}
           <View style={{ height: 120 }} />
@@ -821,7 +805,7 @@ const styles = StyleSheet.create({
     height: '50%',
   },
   botAvatarContainer: {
-    backgroundColor: '#F472B6',
+    backgroundColor: '#7C3AED',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1093,8 +1077,10 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   assistantBubble: {
-    backgroundColor: Colors.card,
+    backgroundColor: 'rgba(22, 24, 36, 0.65)',
     borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   errorBubble: {
     backgroundColor: '#3D1F1F',

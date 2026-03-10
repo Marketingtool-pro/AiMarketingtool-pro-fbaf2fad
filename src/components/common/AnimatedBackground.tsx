@@ -124,10 +124,10 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
         end={{ x: 1, y: 1 }}
       />
 
-      {/* Subtle orbs instead of bright ones */}
-      <View style={[styles.orb, { top: -100, right: -100, backgroundColor: '#9D4EDD', opacity: 0.05 }]} />
-      <View style={[styles.orb, { bottom: -150, left: -100, backgroundColor: '#1885E4', opacity: 0.03 }]} />
-      <View style={[styles.orb, { top: '40%', right: '10%', backgroundColor: '#EC4899', opacity: 0.15, width: 250, height: 250 }]} />
+      {/* Very subtle orbs - no bloom */}
+      <View style={[styles.orb, { top: -100, right: -100, backgroundColor: '#9D4EDD', opacity: 0.03 }]} />
+      <View style={[styles.orb, { bottom: -150, left: -100, backgroundColor: '#1885E4', opacity: 0.02 }]} />
+      <View style={[styles.orb, { top: '40%', right: '10%', backgroundColor: '#7C3AED', opacity: 0.04, width: 250, height: 250 }]} />
 
       {/* Glass Frost Layer */}
       <View style={styles.frostLayer} />
