@@ -18,7 +18,7 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
-import AnimatedBackground from '../../components/common/AnimatedBackground';
+
 
 // Desktop-preferred tool categories (big/complex tools — show preview on mobile)
 const DESKTOP_PREFERRED_CATEGORIES = [
@@ -193,7 +193,7 @@ const ToolResultScreen = () => {
   };
 
   return (
-    <AnimatedBackground variant="tools" showParticles={true}>
+    <View style={styles.screenContainer}>
       {/* Header */}
       <LinearGradient colors={Gradients.dark} style={styles.header}>
         <View style={styles.headerTop}>
@@ -414,11 +414,15 @@ const ToolResultScreen = () => {
           </LinearGradient>
         </TouchableOpacity>
       </View>
-    </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#0D0F1C',
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,

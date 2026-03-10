@@ -16,7 +16,6 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useToolsStore, Tool, TOOL_CATEGORIES, PLATFORMS } from '../../store/toolsStore';
 import { Colors } from '../../constants/theme';
-import AnimatedBackground from '../../components/common/AnimatedBackground';
 import { getToolIcon } from '../../constants/toolIcons';
 import * as Haptics from 'expo-haptics';
 
@@ -63,7 +62,7 @@ const ToolsScreen = () => {
   ];
 
   return (
-    <AnimatedBackground variant="tools" showParticles={false}>
+    <View style={styles.screenContainer}>
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} stickyHeaderIndices={[]}>
         {/* Hero Banner */}
         <ImageBackground
@@ -181,11 +180,15 @@ const ToolsScreen = () => {
         </View>
         <View style={{ height: 120 }} />
       </ScrollView>
-    </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#0D0F1C',
+  },
   heroBanner: {
     width: '100%',
     height: 200,

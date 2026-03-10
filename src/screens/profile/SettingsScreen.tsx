@@ -19,7 +19,6 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { authService } from '../../services/appwrite';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
-import AnimatedBackground from '../../components/common/AnimatedBackground';
 import { biometricService } from '../../services/biometric';
 
 const SettingsScreen = () => {
@@ -303,9 +302,9 @@ const SettingsScreen = () => {
   ];
 
   return (
-    <AnimatedBackground variant="profile" showParticles={true}>
+    <View style={styles.container}>
       {/* Header */}
-      <LinearGradient colors={Gradients.dark} style={styles.header}>
+      <View style={styles.header}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Feather name="arrow-left" size={24} color={Colors.white} />
@@ -313,7 +312,7 @@ const SettingsScreen = () => {
           <Text style={styles.headerTitle}>Settings</Text>
           <View style={styles.placeholder} />
         </View>
-      </LinearGradient>
+      </View>
 
       <ScrollView
         style={styles.content}
@@ -400,7 +399,7 @@ const SettingsScreen = () => {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Change Password Modal (cross-platform: works on both iOS and Android) */}
+      {/* Change Password Modal */}
       <Modal
         visible={passwordModal !== 'hidden'}
         transparent
@@ -453,19 +452,20 @@ const SettingsScreen = () => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#0D0F1C',
   },
   header: {
     paddingTop: 60,
     paddingBottom: Spacing.lg,
     paddingHorizontal: Spacing.lg,
+    backgroundColor: '#0D0F1C',
   },
   headerContent: {
     flexDirection: 'row',
