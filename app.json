@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "151",
+      "buildNumber": "153",
       "googleServicesFile": "GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -98,7 +98,6 @@
       ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
-      "@react-native-firebase/app-check",
       "expo-notifications",
       "./plugins/withEasPodfileFix.js",
       "./plugins/withEdgeToEdgeFix.js",
