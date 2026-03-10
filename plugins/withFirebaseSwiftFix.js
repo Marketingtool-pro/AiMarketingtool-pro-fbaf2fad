@@ -5,28 +5,55 @@ const path = require('path');
 /**
  * Firebase Swift AppDelegate Fix for Expo SDK 55+
  *
- * The official @react-native-firebase/app plugin only supports Objective-C.
- * Expo SDK 55 uses Swift AppDelegate, causing the Firebase plugin to throw:
+ * The @react-native-firebase/app plugin only supports Objective-C AppDelegate.
+ * Expo SDK 55 uses Swift AppDelegate, causing:
  *   "Cannot add Firebase code to AppDelegate of language swift"
  *
- * This plugin:
- * 1. Patches the Firebase plugin's modifyAppDelegateAsync to handle Swift (no-op)
- * 2. Manually injects FirebaseApp.configure() into AppDelegate.swift
+ * Fix: Patch the Firebase plugin source file on disk so it returns a no-op
+ * for Swift, then use withDangerousMod to manually inject Firebase into Swift.
  */
 
-// Patch Firebase plugin BEFORE prebuild runs
+// Patch the Firebase plugin FILE on disk (not in memory)
 try {
-  const firebaseAppDelegate = require('@react-native-firebase/app/plugin/build/ios/appDelegate');
-  const originalModify = firebaseAppDelegate.modifyAppDelegateAsync;
+  const firebaseAppDelegatePath = require.resolve(
+    '@react-native-firebase/app/plugin/build/ios/appDelegate.js'
+  );
+  let src = fs.readFileSync(firebaseAppDelegatePath, 'utf8');
 
-  firebaseAppDelegate.modifyAppDelegateAsync = async function(appDelegateFileInfo) {
-    const { language } = appDelegateFileInfo;
-    if (['objc', 'objcpp'].includes(language)) {
-      return originalModify(appDelegateFileInfo);
+  // Only patch if not already patched
+  if (!src.includes('SWIFT_PATCHED')) {
+    const original = `async function modifyAppDelegateAsync(appDelegateFileInfo) {
+    const { language, contents } = appDelegateFileInfo;
+    if (!['objc', 'objcpp'].includes(language)) {
+        throw new Error(\`Cannot add Firebase code to AppDelegate of language "\${language}"\`);
+    }`;
+
+    const patched = `async function modifyAppDelegateAsync(appDelegateFileInfo) {
+    const { language, contents } = appDelegateFileInfo; // SWIFT_PATCHED
+    if (!['objc', 'objcpp'].includes(language)) {
+        console.log('[Firebase] Skipping ObjC plugin for ' + language + ' AppDelegate');
+        return appDelegateFileInfo;
+    }`;
+
+    if (src.includes('Cannot add Firebase code to AppDelegate of language')) {
+      src = src.replace(
+        /async function modifyAppDelegateAsync\(appDelegateFileInfo\)\s*\{[^}]*?throw new Error\(`Cannot add Firebase code[^`]*`\);[^}]*?\}/s,
+        `async function modifyAppDelegateAsync(appDelegateFileInfo) {
+    const { language, contents } = appDelegateFileInfo; // SWIFT_PATCHED
+    if (!['objc', 'objcpp'].includes(language)) {
+        console.log('[Firebase] Skipping ObjC plugin for ' + language + ' AppDelegate');
+        return appDelegateFileInfo;
     }
-    // Swift: skip - our withDangerousMod below handles it
-    console.log('[withFirebaseSwiftFix] Skipping Firebase ObjC plugin for Swift AppDelegate');
-  };
+    // Original ObjC logic continues below`
+      );
+      fs.writeFileSync(firebaseAppDelegatePath, src);
+      console.log('[withFirebaseSwiftFix] Patched Firebase appDelegate.js on disk');
+    } else {
+      console.warn('[withFirebaseSwiftFix] Could not find throw pattern in Firebase plugin');
+    }
+  } else {
+    console.log('[withFirebaseSwiftFix] Firebase plugin already patched');
+  }
 } catch (e) {
   console.warn('[withFirebaseSwiftFix] Could not patch Firebase plugin:', e.message);
 }
@@ -62,7 +89,7 @@ module.exports = function withFirebaseSwiftFix(config) {
       }
 
       fs.writeFileSync(appDelegatePath, content);
-      console.log('[withFirebaseSwiftFix] Successfully injected Firebase into AppDelegate.swift');
+      console.log('[withFirebaseSwiftFix] Injected Firebase into AppDelegate.swift');
       return config;
     },
   ]);
