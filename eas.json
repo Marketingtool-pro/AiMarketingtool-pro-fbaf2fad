@@ -36,7 +36,10 @@
         "track": "production"
       },
       "ios": {
-        "ascAppId": "6758618412"
+        "ascAppId": "6758618412",
+        "ascApiKeyPath": "./asc-api-key.p8",
+        "ascApiKeyIssuerId": "313ffa8d-5aed-4aad-a012-b1057717634c",
+        "ascApiKeyId": "D5KG7J5R95"
       }
     }
   }

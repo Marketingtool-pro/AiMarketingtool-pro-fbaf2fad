@@ -449,7 +449,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
         <View style={styles.headerLeft}>
           <BotAvatar size={40} />
           <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle}>Marketing AI</Text>
+            <Text style={styles.headerTitle}>AI MarketingTool</Text>
             <View style={styles.onlineStatus}>
               <View style={styles.onlineDot} />
               <Text style={styles.onlineText}>Ready</Text>

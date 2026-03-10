@@ -2,27 +2,29 @@ import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   Dimensions,
   FlatList,
   TouchableOpacity,
   Platform,
+  ImageSourcePropType,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Gradients } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
-import Glass3DLogo from '../../components/common/Glass3DLogo';
-import { Canvas, RoundedRect, Blur, LinearGradient as SkiaGradient, vec } from '@shopify/react-native-skia';
 import * as Haptics from 'expo-haptics';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
+const CARD_SIZE = width * 0.52;
+const ICON_SIZE = CARD_SIZE * 0.55;
 
 interface OnboardingItem {
   id: string;
   title: string;
   description: string;
-  logoType: 'ai' | 'ads' | 'seo' | 'social';
+  icon: ImageSourcePropType;
 }
 
 const ONBOARDING_DATA: OnboardingItem[] = [
@@ -30,25 +32,25 @@ const ONBOARDING_DATA: OnboardingItem[] = [
     id: '1',
     title: 'AI Marketing Tools',
     description: 'Access the most comprehensive suite of AI-powered marketing tools. From ad copy to blog posts, we\'ve got you covered.',
-    logoType: 'ai',
+    icon: require('../../assets/images/tool-icons-v2/bot.png'),
   },
   {
     id: '2',
-    title: 'Smart Ads Generator',
-    description: 'Create high-converting headlines and descriptions for Google, Meta, and LinkedIn in seconds.',
-    logoType: 'ads',
+    title: 'Create Content Instantly',
+    description: 'Generate high-converting ads, engaging social posts, and SEO-optimized content in seconds with Claude AI.',
+    icon: require('../../assets/images/tool-icons-v2/copywriting.png'),
   },
   {
     id: '3',
-    title: 'Advanced SEO AI',
-    description: 'Optimize your content for search engines with keyword research and E-commerce SEO tools.',
-    logoType: 'seo',
+    title: 'Boost Your ROI',
+    description: 'Our AI analyzes top-performing content to help you create marketing materials that convert.',
+    icon: require('../../assets/images/tool-icons-v2/growth-chart.png'),
   },
   {
     id: '4',
-    title: 'Social Growth',
-    description: 'Grow your social presence with engaging captions, hashtags, and viral content ideas.',
-    logoType: 'social',
+    title: '7-Day Free Trial',
+    description: 'Start creating amazing marketing content today. No credit card required to get started.',
+    icon: require('../../assets/images/tool-icons-v2/marketing-target.png'),
   },
 ];
 
@@ -69,27 +71,13 @@ const OnboardingScreen = () => {
 
   const renderItem = ({ item }: { item: OnboardingItem }) => (
     <View style={styles.slide}>
-      <View style={styles.glassContainer}>
-        <Canvas style={styles.skiaCanvas}>
-          <RoundedRect
-            x={0}
-            y={0}
-            width={width * 0.8}
-            height={width * 0.8}
-            r={48}
-            color="rgba(255, 255, 255, 0.05)"
-          >
-            <Blur blur={20} />
-            <SkiaGradient
-              start={vec(0, 0)}
-              end={vec(width * 0.8, width * 0.8)}
-              colors={['rgba(255,255,255,0.1)', 'transparent']}
-            />
-          </RoundedRect>
-        </Canvas>
-        <Glass3DLogo type={item.logoType} size={width * 0.5} />
+      <View style={styles.cardShadow}>
+        <View style={styles.glassCard}>
+          <View style={styles.iconGlow} />
+          <Image source={item.icon} style={styles.icon3d} resizeMode="contain" />
+        </View>
       </View>
-      
+
       <View style={styles.textContainer}>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.description}>{item.description}</Text>
@@ -98,10 +86,10 @@ const OnboardingScreen = () => {
   );
 
   return (
-    <AnimatedBackground variant="auth" showParticles={true}>
+    <AnimatedBackground variant="default" showParticles={false}>
       <View style={styles.container}>
-        <TouchableOpacity 
-          style={styles.skipBtn} 
+        <TouchableOpacity
+          style={styles.skipBtn}
           onPress={() => navigation.navigate('Auth')}
         >
           <Text style={styles.skipText}>Skip</Text>
@@ -123,12 +111,12 @@ const OnboardingScreen = () => {
         <View style={styles.footer}>
           <View style={styles.pagination}>
             {ONBOARDING_DATA.map((_, i) => (
-              <View 
-                key={i} 
+              <View
+                key={i}
                 style={[
-                  styles.dot, 
-                  currentIndex === i ? styles.activeDot : null
-                ]} 
+                  styles.dot,
+                  currentIndex === i ? styles.activeDot : null,
+                ]}
               />
             ))}
           </View>
@@ -136,7 +124,7 @@ const OnboardingScreen = () => {
           <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
             <LinearGradient colors={Gradients.button} style={styles.nextGradient}>
               <Text style={styles.nextText}>
-                {currentIndex === ONBOARDING_DATA.length - 1 ? 'Get Started' : 'Next →'}
+                {currentIndex === ONBOARDING_DATA.length - 1 ? 'Get Started  \u2192' : 'Next  \u2192'}
               </Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -147,43 +135,57 @@ const OnboardingScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   skipBtn: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 60 : 40,
     right: 20,
     zIndex: 10,
   },
-  skipText: {
-    color: Colors.textSecondary,
-    fontSize: 16,
-    fontWeight: '500',
-  },
+  skipText: { color: Colors.textSecondary, fontSize: 16, fontWeight: '500' },
   slide: {
     width,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 40,
   },
-  glassContainer: {
-    width: width * 0.8,
-    height: width * 0.8,
-    borderRadius: 48,
+  cardShadow: {
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 28,
+    elevation: 12,
+    marginBottom: 40,
+  },
+  glassCard: {
+    width: CARD_SIZE,
+    height: CARD_SIZE,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 40,
-    overflow: 'hidden',
+    backgroundColor: 'rgba(22,24,36,0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  skiaCanvas: {
-    ...StyleSheet.absoluteFillObject,
+  iconGlow: {
+    position: 'absolute',
+    width: ICON_SIZE + 20,
+    height: ICON_SIZE + 20,
+    borderRadius: (ICON_SIZE + 20) / 2,
+    backgroundColor: 'rgba(124,58,237,0.15)',
+    shadowColor: '#9D4EDD',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    elevation: 8,
   },
-  textContainer: {
-    alignItems: 'center',
+  icon3d: {
+    width: ICON_SIZE,
+    height: ICON_SIZE,
   },
+  textContainer: { alignItems: 'center' },
   title: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: 'bold',
     color: Colors.white,
     textAlign: 'center',
@@ -211,26 +213,10 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
-  activeDot: {
-    width: 24,
-    backgroundColor: Colors.secondary,
-  },
-  nextBtn: {
-    width: '100%',
-    height: 56,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  nextGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  nextText: {
-    color: Colors.white,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+  activeDot: { width: 24, backgroundColor: Colors.secondary },
+  nextBtn: { width: '100%', height: 56, borderRadius: 28, overflow: 'hidden' },
+  nextGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  nextText: { color: Colors.white, fontSize: 18, fontWeight: 'bold' },
 });
 
 export default OnboardingScreen;

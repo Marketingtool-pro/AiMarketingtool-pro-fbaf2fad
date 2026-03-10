@@ -7,145 +7,175 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
+  ImageBackground,
   Dimensions,
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useToolsStore, Tool } from '../../store/toolsStore';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { useToolsStore, Tool, TOOL_CATEGORIES, PLATFORMS } from '../../store/toolsStore';
+import { Colors } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 import { getToolIcon } from '../../constants/toolIcons';
-import { Canvas, RoundedRect, Blur, LinearGradient as SkiaGradient, vec } from '@shopify/react-native-skia';
 import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
-
-// 2026 Refractive Glass Card Component
-const GlassBentoCard = ({ children, height = 120, color = 'rgba(6, 11, 40, 0.7)' }: { children: React.ReactNode, height?: number, color?: string }) => (
-  <View style={[styles.glassBentoContainer, { height }]}>
-    <Canvas style={styles.skiaCanvas}>
-      <RoundedRect
-        x={0}
-        y={0}
-        width={(width - 52) / 2}
-        height={height}
-        r={24}
-        color={color}
-      >
-        <SkiaGradient
-          start={vec(0, 0)}
-          end={vec(width / 2, height)}
-          colors={['rgba(255,255,255,0.05)', 'transparent']}
-        />
-        <Blur blur={20} />
-      </RoundedRect>
-    </Canvas>
-    <View style={styles.glassBentoContent}>
-      {children}
-    </View>
-  </View>
-);
+const CARD_WIDTH = (width - 48 - 16) / 3;
 
 const ToolsScreen = () => {
   const navigation = useNavigation<any>();
-  const { tools, categories } = useToolsStore();
+  const { tools } = useToolsStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('All');
+  const [activePlatform, setActivePlatform] = useState('All');
+  const [activeSubcategory, setActiveSubcategory] = useState('All');
+
+  const subcategories = useMemo(() => {
+    if (activePlatform === 'All') return [];
+    const platformId = activePlatform === 'Google Ads' ? 'google' : activePlatform === 'Meta' ? 'meta' : 'shopify';
+    return TOOL_CATEGORIES.filter(c => c.platform === platformId);
+  }, [activePlatform]);
 
   const filteredTools = useMemo(() => {
     let result = tools;
-    if (activeCategory !== 'All') {
-      result = result.filter(t => t.category === activeCategory);
+    if (activePlatform !== 'All') {
+      const platformId = activePlatform === 'Google Ads' ? 'google' : activePlatform === 'Meta' ? 'meta' : 'shopify';
+      const platformCats = TOOL_CATEGORIES.filter(c => c.platform === platformId).map(c => c.id);
+      result = result.filter(t => platformCats.includes(t.category));
+    }
+    if (activeSubcategory !== 'All') {
+      result = result.filter(t => t.category === activeSubcategory);
     }
     if (searchQuery) {
-      result = result.filter(t => 
-        t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      result = result.filter(t =>
+        t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.description.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     return result;
-  }, [tools, activeCategory, searchQuery]);
+  }, [tools, activePlatform, activeSubcategory, searchQuery]);
+
+  const platformTabs = [
+    { name: 'All', icon: null },
+    { name: 'Google Ads', icon: 'search' },
+    { name: 'Meta', icon: 'facebook' },
+    { name: 'Shopify', icon: 'shopping-bag' },
+  ];
 
   return (
-    <AnimatedBackground variant="main" showParticles={true}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Marketing AI</Text>
-        <Text style={styles.headerSubtitle}>75+ Pro AI Tools</Text>
-      </View>
-
-      {/* Search Bar Bento */}
-      <View style={styles.searchContainer}>
-        <View style={styles.glassSearch}>
-          <Feather name="search" size={20} color={Colors.textSecondary} />
-          <TextInput
-            placeholder="Search 75+ tools..."
-            placeholderTextColor={Colors.textTertiary}
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-      </View>
-
-      {/* Category Chips */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        style={styles.categoriesScroll}
-        contentContainerStyle={styles.categoriesContainer}
-      >
-        <TouchableOpacity 
-          style={[styles.categoryChip, activeCategory === 'All' && styles.categoryChipActive]}
-          onPress={() => {
-            Haptics.selectionAsync();
-            setActiveCategory('All');
-          }}
+    <AnimatedBackground variant="tools" showParticles={false}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} stickyHeaderIndices={[]}>
+        {/* Hero Banner */}
+        <ImageBackground
+          source={require('../../assets/images/screens/tools-hero.jpg')}
+          style={styles.heroBanner}
+          resizeMode="cover"
         >
-          <Text style={[styles.categoryText, activeCategory === 'All' && styles.categoryTextActive]}>All</Text>
-        </TouchableOpacity>
-        {categories.map((cat) => (
-          <TouchableOpacity 
-            key={cat.id}
-            style={[styles.categoryChip, activeCategory === cat.id && styles.categoryChipActive]}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setActiveCategory(cat.id);
-            }}
+          <LinearGradient
+            colors={['rgba(13,15,28,0.3)', 'rgba(13,15,28,0.85)']}
+            style={styles.heroOverlay}
           >
-            <Text style={[styles.categoryText, activeCategory === cat.id && styles.categoryTextActive]}>{cat.name}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+            <View style={styles.heroContent}>
+              <View style={styles.aiBadge}>
+                <Feather name="zap" size={12} color="#F59E0B" />
+                <Text style={styles.aiBadgeText}>AI Tools</Text>
+              </View>
+              <Text style={styles.heroTitle}>Marketing AI Tools</Text>
+              <Text style={styles.heroSubtitle}>Google  ·  Meta  ·  Shopify</Text>
+            </View>
+          </LinearGradient>
+        </ImageBackground>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.toolsGrid}>
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Feather name="search" size={18} color={Colors.textTertiary} />
+            <TextInput
+              placeholder="Search tools..."
+              placeholderTextColor={Colors.textTertiary}
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+        </View>
+
+        {/* Platform Tabs */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.platformRow}
+        >
+          {platformTabs.map((tab) => (
+            <TouchableOpacity
+              key={tab.name}
+              style={[styles.platformChip, activePlatform === tab.name && styles.platformChipActive]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setActivePlatform(tab.name);
+                setActiveSubcategory('All');
+              }}
+            >
+              {tab.icon && <Feather name={tab.icon as any} size={14} color={activePlatform === tab.name ? '#FFF' : Colors.textSecondary} />}
+              <Text style={[styles.platformText, activePlatform === tab.name && styles.platformTextActive]}>{tab.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Subcategory Chips */}
+        {subcategories.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.subRow}
+          >
+            <TouchableOpacity
+              style={[styles.subChip, activeSubcategory === 'All' && styles.subChipActive]}
+              onPress={() => { Haptics.selectionAsync(); setActiveSubcategory('All'); }}
+            >
+              <Text style={[styles.subText, activeSubcategory === 'All' && styles.subTextActive]}>All</Text>
+            </TouchableOpacity>
+            {subcategories.map((s) => (
+              <TouchableOpacity
+                key={s.id}
+                style={[styles.subChip, activeSubcategory === s.id && styles.subChipActive]}
+                onPress={() => { Haptics.selectionAsync(); setActiveSubcategory(s.id); }}
+              >
+                <Text style={[styles.subText, activeSubcategory === s.id && styles.subTextActive]}>{s.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
+        {/* Spacer */}
+        <View style={{ height: 8 }} />
+
+        {/* 3-Column Grid */}
+        <View style={styles.grid}>
           {filteredTools.map((tool) => (
-            <TouchableOpacity 
+            <TouchableOpacity
               key={tool.$id}
-              style={styles.toolItem}
+              style={styles.card}
+              activeOpacity={0.75}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 navigation.navigate('ToolDetail', { toolSlug: tool.slug });
               }}
             >
-              <GlassBentoCard height={180}>
-                <View style={styles.toolIconContainer}>
-                  <Image source={getToolIcon(tool.slug)} style={styles.toolIcon} resizeMode="contain" />
-                </View>
-                <View style={styles.toolInfo}>
-                  <Text style={styles.toolName} numberOfLines={1}>{tool.name}</Text>
-                  <View style={styles.toolFooter}>
-                    {tool.isPro && (
-                      <View style={styles.proBadge}>
-                        <Text style={styles.proBadgeText}>PRO</Text>
-                      </View>
-                    )}
-                    <Text style={styles.usageText}>{tool.usageCount} uses</Text>
-                  </View>
-                </View>
-              </GlassBentoCard>
+              <View style={styles.iconLiquid}>
+                <View style={styles.iconGlow} />
+                <Image source={getToolIcon(tool.slug)} style={styles.cardIcon} resizeMode="contain" />
+              </View>
+              <View style={styles.badgeRow}>
+                {tool.isPro && (
+                  <View style={styles.proBadge}><Text style={styles.proBadgeText}>PRO</Text></View>
+                )}
+                {tool.isNew && (
+                  <View style={styles.newBadge}><Text style={styles.newBadgeText}>NEW</Text></View>
+                )}
+                {tool.isTrending && <Feather name="trending-up" size={12} color={Colors.secondary} />}
+              </View>
+              <Text style={styles.cardName} numberOfLines={2}>{tool.name}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -156,137 +186,178 @@ const ToolsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    marginBottom: 20,
+  heroBanner: {
+    width: '100%',
+    height: 200,
+    marginTop: Platform.OS === 'ios' ? 44 : 0,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: Colors.white,
+  heroOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: 20,
   },
-  headerSubtitle: {
-    fontSize: 16,
-    color: Colors.secondary,
+  heroContent: {},
+  aiBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  aiBadgeText: {
+    fontSize: 12,
+    color: '#F59E0B',
     fontWeight: '600',
+  },
+  heroTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
     marginTop: 4,
   },
   searchContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  glassSearch: {
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    height: 56,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 46,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   searchInput: {
     flex: 1,
-    color: Colors.white,
-    marginLeft: 12,
-    fontSize: 16,
+    color: '#FFFFFF',
+    marginLeft: 10,
+    fontSize: 15,
   },
-  categoriesScroll: {
-    maxHeight: 50,
-    marginBottom: 20,
+  platformRow: {
+    paddingHorizontal: 16,
+    gap: 8,
+    marginBottom: 8,
   },
-  categoriesContainer: {
-    paddingHorizontal: 20,
-    gap: 10,
-  },
-  categoryChip: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  platformChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  categoryChipActive: {
+  platformChipActive: {
     backgroundColor: Colors.secondary,
     borderColor: Colors.secondary,
   },
-  categoryText: {
+  platformText: {
     color: Colors.textSecondary,
+    fontSize: 13,
     fontWeight: '600',
   },
-  categoryTextActive: {
-    color: Colors.white,
+  platformTextActive: {
+    color: '#FFFFFF',
   },
-  content: {
-    flex: 1,
+  subRow: {
+    paddingHorizontal: 16,
+    gap: 8,
+    marginBottom: 8,
   },
-  toolsGrid: {
+  subChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  subChipActive: {
+    backgroundColor: 'rgba(124,58,237,0.2)',
+  },
+  subText: {
+    color: Colors.textTertiary,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  subTextActive: {
+    color: Colors.secondary,
+  },
+  grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 16,
-    justifyContent: 'space-between',
+    gap: 8,
   },
-  toolItem: {
-    width: (width - 48) / 2,
-    marginBottom: 16,
-  },
-  glassBentoContainer: {
-    borderRadius: 24,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  skiaCanvas: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  glassBentoContent: {
-    flex: 1,
-    padding: 16,
+  card: {
+    width: CARD_WIDTH,
+    backgroundColor: 'rgba(22,24,36,0.9)',
+    borderRadius: 16,
+    padding: 10,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
-  toolIconContainer: {
-    width: 80,
-    height: 80,
+  iconLiquid: {
+    width: 68,
+    height: 68,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 6,
   },
-  toolIcon: {
-    width: '100%',
-    height: '100%',
+  iconGlow: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(124,58,237,0.15)',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  toolInfo: {
-    width: '100%',
-    alignItems: 'flex-start',
+  cardIcon: {
+    width: 56,
+    height: 56,
   },
-  toolName: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: Colors.white,
-    marginBottom: 8,
-  },
-  toolFooter: {
+  badgeRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
+    gap: 3,
+    marginBottom: 4,
+    minHeight: 16,
   },
   proBadge: {
-    backgroundColor: 'rgba(253, 151, 7, 0.2)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    backgroundColor: 'rgba(253,151,7,0.25)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
     borderRadius: 4,
   },
-  proBadgeText: {
-    fontSize: 10,
-    color: Colors.gold,
-    fontWeight: 'bold',
+  proBadgeText: { fontSize: 8, color: '#FD9707', fontWeight: 'bold' },
+  newBadge: {
+    backgroundColor: 'rgba(34,197,94,0.25)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
   },
-  usageText: {
-    fontSize: 10,
-    color: Colors.textTertiary,
+  newBadgeText: { fontSize: 8, color: '#22C55E', fontWeight: 'bold' },
+  cardName: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    lineHeight: 14,
   },
 });
 

@@ -50,3 +50,4 @@ yarn-error.*
 
 .gemini/
 gha-creds-*.json
+asc-api-key.p8
