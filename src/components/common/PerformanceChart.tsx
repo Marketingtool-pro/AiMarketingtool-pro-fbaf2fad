@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
 import { Canvas, Path, Skia, LinearGradient, vec, Group, Rect, Text as SkiaText, useFont } from '@shopify/react-native-skia';
-import { Colors, Spacing } from '../constants/theme';
+import { Colors, Spacing } from '../../constants/theme';
 
 const { width } = Dimensions.get('window');
 const CHART_HEIGHT = 180;

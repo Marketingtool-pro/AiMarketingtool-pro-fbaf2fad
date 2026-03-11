@@ -1,5 +1,9 @@
 // Firebase Phone Auth Service - Safe lazy loading
+import { Platform } from 'react-native';
+
 let auth: any = null;
+let messaging: any = null;
+let apnsRegistered = false;
 
 function getAuth() {
   if (!auth) {
@@ -11,6 +15,35 @@ function getAuth() {
     }
   }
   return auth;
+}
+
+function getMessaging() {
+  if (!messaging) {
+    try {
+      messaging = require('@react-native-firebase/messaging').default;
+    } catch (e) {
+      console.warn('[FirebaseAuth] Messaging module not available:', e);
+      return null;
+    }
+  }
+  return messaging;
+}
+
+// Register APNs token with Firebase so phone auth uses silent push instead of reCAPTCHA
+async function ensureAPNsRegistered() {
+  if (apnsRegistered || Platform.OS !== 'ios') return;
+  try {
+    const fcm = getMessaging();
+    if (!fcm) return;
+    const authStatus = await fcm().requestPermission();
+    if (__DEV__) console.log('[FirebaseAuth] Notification permission status:', authStatus);
+    // Get APNs token - this registers with Apple and Firebase
+    const apnsToken = await fcm().getAPNSToken();
+    if (__DEV__) console.log('[FirebaseAuth] APNs token registered:', !!apnsToken);
+    apnsRegistered = true;
+  } catch (e) {
+    if (__DEV__) console.warn('[FirebaseAuth] APNs registration failed:', e);
+  }
 }
 
 let verificationId: string | null = null;
@@ -28,6 +61,9 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
       : `+91${cleaned}`;
 
     if (__DEV__) console.log('[FirebaseAuth] Sending OTP to:', normalizedPhone);
+
+    // Ensure APNs token is registered so Firebase uses silent push (no reCAPTCHA)
+    await ensureAPNsRegistered();
 
     const confirmation = await firebaseAuth().signInWithPhoneNumber(normalizedPhone);
     verificationId = confirmation.verificationId;

@@ -29,11 +29,11 @@ export default function App() {
           ...Feather.font,
         });
 
-        // Check authentication state
-        await checkAuth();
-
-        // Artificial delay for splash screen (optional)
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Check authentication state with hard timeout
+        await Promise.race([
+          checkAuth(),
+          new Promise(resolve => setTimeout(resolve, 4000)),
+        ]);
       } catch (e) {
         console.warn('Error loading app resources:', e);
       } finally {

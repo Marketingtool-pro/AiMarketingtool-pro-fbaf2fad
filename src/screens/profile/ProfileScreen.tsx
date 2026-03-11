@@ -21,6 +21,7 @@ import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 
 const { width } = Dimensions.get('window');
 
+// Glass Card matching Play Store style
 const GlassCard = ({ children }: { children: React.ReactNode }) => (
   <View style={styles.glassCardOuter}>
     <LinearGradient
@@ -125,28 +126,22 @@ const ProfileScreen = () => {
       />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Hero Background */}
-        <ImageBackground source={ProfileHeroImage} style={styles.heroSection} resizeMode="cover">
+        <View style={styles.heroSection}>
+          <Image source={ProfileHeroImage} style={styles.heroImage} resizeMode="cover" />
           <LinearGradient
-            colors={['rgba(13, 15, 28, 0.2)', 'rgba(13, 15, 28, 0.6)', 'rgba(13, 15, 28, 1)']}
+            colors={['transparent', 'rgba(13, 15, 28, 0.7)', 'rgba(13, 15, 28, 1)']}
             style={styles.heroGradient}
           />
           <View style={styles.headerTop}>
             <Text style={styles.headerTitle}>Profile</Text>
             <TouchableOpacity
               onPress={() => navigation.navigate('Settings')}
-              style={styles.settingsButtonWrapper}
+              style={styles.settingsButton}
             >
-              <LinearGradient
-                colors={['rgba(126, 34, 206, 0.4)', 'rgba(22, 24, 36, 0.8)']}
-                style={styles.settingsButton}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Feather name="settings" size={20} color={Colors.white} />
-              </LinearGradient>
+              <Feather name="settings" size={22} color={Colors.white} />
             </TouchableOpacity>
           </View>
-        </ImageBackground>
+        </View>
 
         {/* Glass Profile Card */}
         <View style={styles.header}>
@@ -197,11 +192,14 @@ const ProfileScreen = () => {
             onPress={() => navigation.navigate('Subscription')}
           >
             <LinearGradient
-              colors={['#FFB547', '#D48106']}
+              colors={['#f59e0b', '#78350f']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.upgradeGradient}
             >
+              <View style={styles.upgradeIconWrap}>
+                <Feather name="star" size={20} color="#FFF" />
+              </View>
               <View style={styles.upgradeInfo}>
                 <Text style={styles.upgradeTitle}>Upgrade to Pro</Text>
                 <Text style={styles.upgradeSubtitle}>Unlimited generations & premium features</Text>
@@ -300,7 +298,7 @@ const styles = StyleSheet.create({
   glassCardBorder: {
     borderRadius: 27,
     overflow: 'hidden',
-    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    backgroundColor: 'rgba(13, 15, 28, 0.85)',
   },
   glassCardContent: {
     padding: 24,
@@ -308,10 +306,7 @@ const styles = StyleSheet.create({
   },
   heroSection: { height: 260, width: '100%' },
   heroImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
-  heroGradient: { 
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(13, 15, 28, 0.2)' 
-  },
+  heroGradient: { ...StyleSheet.absoluteFillObject },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -320,21 +315,13 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 56 : 40,
   },
   headerTitle: { fontSize: 28, fontWeight: 'bold', color: Colors.white },
-  settingsButtonWrapper: {
-    shadowColor: '#7e22ce',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
   settingsButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   header: { paddingHorizontal: 0, marginTop: -80, marginBottom: Spacing.lg },
   profileHeader: { alignItems: 'center' },
@@ -418,14 +405,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(227, 26, 26, 0.05)',
+    backgroundColor: 'rgba(227, 26, 26, 0.1)',
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(227, 26, 26, 0.3)',
+    borderColor: 'rgba(227, 26, 26, 0.2)',
     gap: 8,
   },
-  logoutText: { fontSize: 16, fontWeight: '700', color: Colors.error },
+  logoutText: { fontSize: 16, fontWeight: '600', color: Colors.error },
   footer: { alignItems: 'center', paddingVertical: Spacing.xl },
   versionText: { fontSize: 13, color: Colors.textTertiary, marginBottom: Spacing.sm },
   footerLinks: { flexDirection: 'row', alignItems: 'center' },
