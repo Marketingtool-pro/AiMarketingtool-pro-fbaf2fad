@@ -1,18 +1,33 @@
 {
   "cli": {
     "version": ">= 16.28.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "node": "22.14.0",
+      "ios": {
+        "image": "sdk-55"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "node": "22.14.0",
+      "ios": {
+        "image": "sdk-55"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "node": "22.14.0",
+      "ios": {
+        "image": "sdk-55"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
     }
   },
   "submit": {
@@ -22,9 +37,9 @@
       },
       "ios": {
         "ascAppId": "6758618412",
+        "ascApiKeyPath": "./asc-api-key.p8",
         "ascApiKeyIssuerId": "313ffa8d-5aed-4aad-a012-b1057717634c",
-        "ascApiKeyId": "SRHUB6D5A8",
-        "ascApiKeyPath": "./AuthKey_SRHUB6D5A8.p8"
+        "ascApiKeyId": "D5KG7J5R95"
       }
     }
   }

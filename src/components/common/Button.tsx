@@ -67,7 +67,7 @@ const Button: React.FC<ButtonProps> = ({
   const sizeStyles = getSizeStyles();
 
   const renderContent = () => {
-    const textColor = variant === 'outline' || variant === 'ghost' ? Colors.secondary : Colors.white;
+    const textColor = variant === 'outline' || variant === 'ghost' ? Colors.accent : Colors.white;
 
     return (
       <>
@@ -119,7 +119,7 @@ const Button: React.FC<ButtonProps> = ({
         ]}
       >
         <LinearGradient
-          colors={disabled ? ['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.3)'] : Gradients.button}
+          colors={disabled ? ['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.3)'] : Gradients.accent}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={[
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   outlineButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: Colors.secondary,
+    borderColor: Colors.accent,
   },
   ghostButton: {
     backgroundColor: 'transparent',

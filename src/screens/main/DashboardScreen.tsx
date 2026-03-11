@@ -10,28 +10,40 @@ import {
   Image,
   Animated,
   Easing,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+// Skia removed - using cross-platform LinearGradient instead for iOS compatibility
+import AnimatedRN, { 
+  useAnimatedStyle, 
+  useSharedValue, 
+  withRepeat, 
+  withTiming, 
+  withSequence,
+  Easing as EasingRN
+} from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
-import { Colors, Gradients, Spacing, BorderRadius, Shadow } from '../../constants/theme';
-import AnimatedBackground from '../../components/common/AnimatedBackground';
+import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { getToolIcon } from '../../constants/toolIcons';
 import LottieView from 'lottie-react-native';
+import Glass3DLogo from '../../components/common/Glass3DLogo';
 
-// Lottie animations
+const { width } = Dimensions.get('window');
+
+const isVisionOS = (Platform.OS as any) === 'visionos';
+
 const Animations = {
   aiRobot: require('../../assets/animations/ai-robot.json'),
   pulseGlow: require('../../assets/animations/pulse-glow.json'),
   loadingDots: require('../../assets/animations/loading-dots.json'),
   liquidWave: require('../../assets/animations/liquid-wave.json'),
 };
-
-const { width } = Dimensions.get('window');
-const { height } = Dimensions.get('window');
 
 const DashboardImages = {
   aiRobot: require('../../assets/images/dashboard/ai-robot.jpg'),
@@ -41,7 +53,6 @@ const DashboardImages = {
   webAnalytics: require('../../assets/images/dashboard/web-analytics.jpg'),
 };
 
-// LOCAL Category images - guaranteed to work
 const CategoryImageAssets = {
   'google-ads': require('../../assets/images/categories/google-ads.jpg'),
   'google-seo': require('../../assets/images/categories/google-seo.jpg'),
@@ -59,7 +70,6 @@ const CategoryImageAssets = {
   'content-creation': require('../../assets/images/categories/content-creation.jpg'),
 };
 
-// Banner images for horizontal scroll
 const BannerImages = {
   banner1: require('../../assets/images/banners/banner-1.jpg'),
   banner2: require('../../assets/images/banners/banner-2.jpg'),
@@ -68,157 +78,84 @@ const BannerImages = {
   banner5: require('../../assets/images/banners/banner-5.jpg'),
 };
 
-// Category images mapping with gradients
 const CategoryImages: Record<string, { image: any; gradient: string[] }> = {
-  'google-ads': {
-    image: CategoryImageAssets['google-ads'],
-    gradient: ['#4285F4', '#1A73E8']
-  },
-  'google-seo': {
-    image: CategoryImageAssets['google-seo'],
-    gradient: ['#34A853', '#1E8E3E']
-  },
-  'google-analytics': {
-    image: CategoryImageAssets['google-analytics'],
-    gradient: ['#F9AB00', '#E37400']
-  },
-  'google-content': {
-    image: CategoryImageAssets['google-content'],
-    gradient: ['#EA4335', '#C5221F']
-  },
-  'facebook-ads': {
-    image: CategoryImageAssets['facebook-ads'],
-    gradient: ['#1877F2', '#0C5DC7']
-  },
-  'instagram': {
-    image: CategoryImageAssets['instagram'],
-    gradient: ['#E4405F', '#C13584']
-  },
-  'social-media': {
-    image: CategoryImageAssets['social-media'],
-    gradient: ['#833AB4', '#5851DB']
-  },
-  'meta-content': {
-    image: CategoryImageAssets['meta-content'],
-    gradient: ['#0088FF', '#00C6FF']
-  },
-  'shopify-products': {
-    image: CategoryImageAssets['shopify-products'],
-    gradient: ['#96BF48', '#5E8E3E']
-  },
-  'shopify-ads': {
-    image: CategoryImageAssets['shopify-ads'],
-    gradient: ['#5C6BC0', '#3949AB']
-  },
-  'email-marketing': {
-    image: CategoryImageAssets['email-marketing'],
-    gradient: ['#FF6B6B', '#EE5A5A']
-  },
-  'ecommerce-seo': {
-    image: CategoryImageAssets['ecommerce-seo'],
-    gradient: ['#00BFA5', '#00897B']
-  },
-  'ai-agents': {
-    image: CategoryImageAssets['ai-agents'],
-    gradient: ['#FF6B35', '#F7931E']
-  },
-  'content-creation': {
-    image: CategoryImageAssets['content-creation'],
-    gradient: ['#7C4DFF', '#651FFF']
-  },
+  'google-ads': { image: CategoryImageAssets['google-ads'], gradient: ['#4285F4', '#1A73E8'] },
+  'google-seo': { image: CategoryImageAssets['google-seo'], gradient: ['#34A853', '#1E8E3E'] },
+  'google-analytics': { image: CategoryImageAssets['google-analytics'], gradient: ['#F9AB00', '#E37400'] },
+  'google-content': { image: CategoryImageAssets['google-content'], gradient: ['#EA4335', '#C5221F'] },
+  'facebook-ads': { image: CategoryImageAssets['facebook-ads'], gradient: ['#1877F2', '#0C5DC7'] },
+  'instagram': { image: CategoryImageAssets['instagram'], gradient: ['#E4405F', '#C13584'] },
+  'social-media': { image: CategoryImageAssets['social-media'], gradient: ['#833AB4', '#5851DB'] },
+  'meta-content': { image: CategoryImageAssets['meta-content'], gradient: ['#0088FF', '#00C6FF'] },
+  'shopify-products': { image: CategoryImageAssets['shopify-products'], gradient: ['#96BF48', '#5E8E3E'] },
+  'shopify-ads': { image: CategoryImageAssets['shopify-ads'], gradient: ['#5C6BC0', '#3949AB'] },
+  'email-marketing': { image: CategoryImageAssets['email-marketing'], gradient: ['#FF6B6B', '#EE5A5A'] },
+  'ecommerce-seo': { image: CategoryImageAssets['ecommerce-seo'], gradient: ['#00BFA5', '#00897B'] },
+  'ai-agents': { image: CategoryImageAssets['ai-agents'], gradient: ['#FF6B35', '#F7931E'] },
+  'content-creation': { image: CategoryImageAssets['content-creation'], gradient: ['#7C4DFF', '#651FFF'] },
 };
 
-// Category gradient colors for fallback
-const getCategoryGradient = (categoryId: string): string[] => {
-  return CategoryImages[categoryId]?.gradient || [Colors.secondary, Colors.accent];
-};
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Animated Stat Card with pulse effect - NOW CLICKABLE
+// Cross-platform Glass Bento Card (works on iOS + Android)
+const GlassBentoCard = ({ children, color }: { children: React.ReactNode, color: string }) => (
+  <View style={[styles.glassBentoContainer, {
+    borderWidth: 1,
+    borderColor: color + '30',
+    shadowColor: color,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  }]}>
+    <LinearGradient
+      colors={[color + '20', 'rgba(22, 24, 36, 0.55)']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={StyleSheet.absoluteFill}
+    />
+    <View style={styles.glassBentoContent}>
+      {children}
+    </View>
+  </View>
+);
+
 const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; onPress: () => void }) => {
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const scale = useSharedValue(1);
+  const floating = useSharedValue(0);
 
   useEffect(() => {
-    // Staggered pulse animation
-    const startAnimation = () => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(index * 300),
-          Animated.parallel([
-            Animated.sequence([
-              Animated.timing(pulseAnim, {
-                toValue: 1.05,
-                duration: 1000,
-                easing: Easing.inOut(Easing.ease),
-                useNativeDriver: true,
-              }),
-              Animated.timing(pulseAnim, {
-                toValue: 1,
-                duration: 1000,
-                easing: Easing.inOut(Easing.ease),
-                useNativeDriver: true,
-              }),
-            ]),
-            Animated.sequence([
-              Animated.timing(glowAnim, {
-                toValue: 1,
-                duration: 1000,
-                useNativeDriver: true,
-              }),
-              Animated.timing(glowAnim, {
-                toValue: 0,
-                duration: 1000,
-                useNativeDriver: true,
-              }),
-            ]),
-          ]),
-        ])
-      ).start();
-    };
-    startAnimation();
+    floating.value = withRepeat(
+      withTiming(1, { duration: 2000 + index * 200, easing: EasingRN.bezier(0.4, 0, 0.2, 1) }),
+      -1,
+      true
+    );
   }, []);
 
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.92, useNativeDriver: true }).start();
-  };
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: scale.value },
+      { translateY: floating.value * -5 }
+    ] as any
+  }));
 
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    scale.value = withSequence(withTiming(0.9, { duration: 100 }), withTiming(1, { duration: 100 }));
+    onPress();
   };
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      activeOpacity={0.9}
-    >
-      <Animated.View style={[styles.statCard, { transform: [{ scale: Animated.multiply(pulseAnim, scaleAnim) }] }]}>
-        <Animated.View
-          style={[
-            styles.statGlow,
-            {
-              backgroundColor: stat.color,
-              opacity: glowAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, 0.25]
-              })
-            }
-          ]}
-        />
-        <View style={[styles.statIcon, { backgroundColor: stat.color + '20' }]}>
-          <Feather name={stat.icon as any} size={20} color={stat.color} />
-        </View>
-        <Text style={styles.statValue}>{stat.value}</Text>
-        <Text style={styles.statLabel}>{stat.label}</Text>
-        {stat.badge && (
-          <View style={[styles.statBadge, { backgroundColor: stat.color + '20' }]}>
-            <Text style={[styles.statBadgeText, { color: stat.color }]}>{stat.badge}</Text>
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.9}>
+      <AnimatedRN.View style={[styles.statCardWrapper, animatedStyle]}>
+        <GlassBentoCard color={stat.color}>
+          <View style={[styles.statIcon, { backgroundColor: stat.color + '20' }]}>
+            <Feather name={stat.icon as any} size={18} color={stat.color} />
           </View>
-        )}
-      </Animated.View>
+          <Text style={styles.statValue}>{stat.value}</Text>
+          <Text style={styles.statLabel} numberOfLines={1}>{stat.label}</Text>
+        </GlassBentoCard>
+      </AnimatedRN.View>
     </TouchableOpacity>
   );
 };
@@ -261,10 +198,10 @@ const DashboardScreen = () => {
   };
 
   const stats = [
-    { label: 'AI Tools', value: '206+', icon: 'zap', color: Colors.secondary, badge: '+12 new', screen: 'Tools' },
+    { label: 'AI Tools', value: 'All', icon: 'zap', color: Colors.secondary, badge: 'New', screen: 'Tools' },
     { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
     { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
-    { label: 'Success', value: '98%', icon: 'trending-up', color: Colors.gold, badge: '+5%', screen: 'History' },
+    { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },
   ];
 
   // Horizontal banner data
@@ -284,18 +221,18 @@ const DashboardScreen = () => {
   ];
 
   const popularTools = [
-    { name: 'Instagram Caption', slug: 'instagram-captions', uses: '22k', icon: 'instagram', trending: true },
-    { name: 'Facebook Ad Copy', slug: 'facebook-ad-copy', uses: '18.5k', icon: 'facebook', trending: true },
-    { name: 'Product Description', slug: 'product-descriptions', uses: '16.8k', icon: 'shopping-bag', trending: true },
-    { name: 'Instagram Reels Script', slug: 'instagram-reels', uses: '15.6k', icon: 'film', trending: true },
-    { name: 'Shopify Product Title', slug: 'shopify-titles', uses: '14.5k', icon: 'tag', trending: false },
-    { name: 'Email Subject Lines', slug: 'email-subjects', uses: '13.5k', icon: 'mail', trending: false },
-    { name: 'Google Ads Headline', slug: 'google-ads-headline', uses: '15.2k', icon: 'target', trending: true },
-    { name: 'Meme Generator', slug: 'meme-generator', uses: '28.5k', icon: 'smile', trending: true },
+    { name: 'Instagram Caption', slug: 'instagram-captions', category: 'Social', trending: true, color: '#E4405F' },
+    { name: 'Facebook Ad Copy', slug: 'facebook-ad-copy', category: 'Ads', trending: true, color: '#1877F2' },
+    { name: 'Product Description', slug: 'product-descriptions', category: 'E-commerce', trending: true, color: '#96BF48' },
+    { name: 'Instagram Reels Script', slug: 'instagram-reels', category: 'Video', trending: true, color: '#C13584' },
+    { name: 'Shopify Product Title', slug: 'shopify-titles', category: 'E-commerce', trending: false, color: '#96BF48' },
+    { name: 'Email Subject Lines', slug: 'email-subjects', category: 'Email', trending: false, color: '#EF4444' },
+    { name: 'Google Ads Headline', slug: 'google-ads-headline', category: 'Ads', trending: true, color: '#4285F4' },
+    { name: 'Meme Generator', slug: 'meme-generator', category: 'Creative', trending: true, color: '#EC4899' },
   ];
 
   return (
-    <AnimatedBackground variant="dashboard" showParticles={true}>
+    <View style={styles.screenContainer}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.secondary} />}
@@ -321,7 +258,7 @@ const DashboardScreen = () => {
             </View>
             <TouchableOpacity
               style={styles.notificationBtn}
-              onPress={() => navigation.navigate('Main', { screen: 'History' } as any)}
+              onPress={() => navigation.navigate('Notifications')}
             >
               <Feather name="bell" size={22} color={Colors.white} />
               <View style={styles.notificationDot} />
@@ -350,19 +287,20 @@ const DashboardScreen = () => {
             />
           </View>
           <LinearGradient
-            colors={['transparent', 'rgba(13, 15, 28, 0.8)', 'rgba(13, 15, 28, 0.95)']}
+            colors={['transparent', 'rgba(6, 11, 40, 0.8)', 'rgba(6, 11, 40, 0.95)']}
             style={styles.heroGradient}
           >
             <View style={styles.heroContent}>
+              <Glass3DLogo type="ai" size={80} />
               <View style={styles.heroTitleRow}>
-                <Text style={styles.heroTitle}>AI Marketing Assistant</Text>
+                <Text style={styles.heroTitle}>Marketing AI Assistant</Text>
                 <View style={styles.liveBadge}>
                   <View style={styles.liveDot} />
                   <Text style={styles.liveText}>LIVE</Text>
                 </View>
               </View>
               <Text style={styles.heroSubtitle}>
-                Create ads, blogs, emails & more with 206+ AI tools
+                Create ads, blogs, emails & more with AI tools
               </Text>
               <View style={styles.heroButton}>
                 <LottieView
@@ -533,7 +471,7 @@ const DashboardScreen = () => {
                     </View>
                     <Text style={styles.categoryName}>{category.name}</Text>
                     <View style={styles.categoryCountBadge}>
-                      <Text style={styles.categoryCountText}>{category.count} tools</Text>
+                      <Feather name="chevron-right" size={14} color={Colors.textSecondary} />
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -568,8 +506,12 @@ const DashboardScreen = () => {
                 }}
               >
                 <View style={styles.popularInfo}>
-                  <View style={[styles.popularIcon, { backgroundColor: Colors.secondary + '15' }]}>
-                    <Feather name={tool.icon as any} size={18} color={Colors.secondary} />
+                  <View style={[styles.popularIcon, { backgroundColor: tool.color + '20' }]}>
+                    <Image
+                      source={getToolIcon(tool.slug, tool.category)}
+                      style={{ width: 28, height: 28 }}
+                      resizeMode="contain"
+                    />
                   </View>
                   <View>
                     <View style={styles.popularNameRow}>
@@ -580,7 +522,7 @@ const DashboardScreen = () => {
                         </View>
                       )}
                     </View>
-                    <Text style={styles.popularUsesText}>{tool.uses} uses</Text>
+                    <Text style={styles.popularUsesText}>{tool.category}</Text>
                   </View>
                 </View>
                 <Feather name="chevron-right" size={20} color={Colors.textTertiary} />
@@ -591,14 +533,38 @@ const DashboardScreen = () => {
 
         <View style={{ height: 100 }} />
       </ScrollView>
-    </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#0D0F1C',
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  glassBentoContainer: {
+    position: 'relative',
+    width: (width - Spacing.lg * 2 - Spacing.sm * 3) / 4,
+    height: 100,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  skiaCanvas: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  glassBentoContent: {
+    flex: 1,
+    padding: Spacing.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statCardWrapper: {
+    width: (width - Spacing.lg * 2 - Spacing.sm * 3) / 4,
+    height: 100,
   },
   header: {
     paddingTop: 60,
@@ -662,7 +628,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
     borderRadius: BorderRadius.xl,
     overflow: 'hidden',
-    height: 180,
+    height: 220,
   },
   heroImage: {
     width: '100%',
@@ -928,11 +894,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   categoriesScroll: {
+    paddingLeft: Spacing.lg,
     paddingRight: Spacing.lg,
   },
   categoryCard: {
-    width: 150,
-    height: 180,
+    width: (width - Spacing.lg * 2 - Spacing.md) / 2,
+    height: 220,
     marginRight: Spacing.md,
     borderRadius: BorderRadius.xl,
     overflow: 'hidden',

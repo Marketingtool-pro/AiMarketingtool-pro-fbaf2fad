@@ -15,621 +15,231 @@ import {
   Easing,
   Image,
   Modal,
+  FlatList,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import * as LocalAuthentication from 'expo-local-authentication';
-import LottieView from 'lottie-react-native';
 import { AuthStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-// Login method options
-interface LoginMethod {
-  id: string;
+// Country data for phone login
+interface Country {
   name: string;
-  icon: string;
-  color: string;
-  gradient: string[];
-  description: string;
+  code: string;
+  flag: string;
 }
 
-const loginMethods: LoginMethod[] = [
-  {
-    id: 'phone',
-    name: 'Phone',
-    icon: 'phone',
-    color: '#10B981',
-    gradient: ['#10B981', '#059669'],
-    description: 'Sign in with OTP',
-  },
-  {
-    id: 'google',
-    name: 'Google',
-    icon: 'chrome',
-    color: '#4285F4',
-    gradient: ['#4285F4', '#34A853'],
-    description: 'Sign in with your Google account',
-  },
-  {
-    id: 'apple',
-    name: 'Apple',
-    icon: 'command',
-    color: '#000000',
-    gradient: ['#1D1D1F', '#555555'],
-    description: 'Sign in with your Apple ID',
-  },
-  {
-    id: 'facebook',
-    name: 'Facebook',
-    icon: 'facebook',
-    color: '#1877F2',
-    gradient: ['#1877F2', '#3B5998'],
-    description: 'Sign in with Facebook',
-  },
-  {
-    id: 'email',
-    name: 'Email',
-    icon: 'mail',
-    color: '#FF6B6B',
-    gradient: ['#FF6B6B', '#EE5A5A'],
-    description: 'Sign in with email & password',
-  },
-  {
-    id: 'biometric',
-    name: 'Face ID',
-    icon: 'smartphone',
-    color: '#34D399',
-    gradient: ['#34D399', '#10B981'],
-    description: 'Use Face ID or Touch ID',
-  },
+const COUNTRIES: Country[] = [
+  { name: 'United States', code: '+1', flag: '🇺🇸' },
+  { name: 'India', code: '+91', flag: '🇮🇳' },
+  { name: 'Canada', code: '+1', flag: '🇨🇦' },
+  { name: 'United Kingdom', code: '+44', flag: '🇬🇧' },
 ];
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { login, loginWithGoogle, loginWithApple, loginWithFacebook, sendOTP, verifyOTP, isLoading, error, clearError } = useAuthStore();
+  const {
+    login, loginWithGoogle, loginWithApple,
+    sendPhoneOTP, verifyPhoneOTP, isLoading, clearError,
+  } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[1]); // Default to India as per image
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [otp, setOtp] = useState('');
-  const [phoneStep, setPhoneStep] = useState<'phone' | 'otp'>('phone');
-  const [phoneError, setPhoneError] = useState('');
-  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState(0);
-  const [canResend, setCanResend] = useState(true);
-
-  // Timer for OTP cooldown
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (countdown > 0) {
-      setCanResend(false);
-      timer = setInterval(() => {
-        setCountdown((prev) => prev - 1);
-      }, 1000);
-    } else {
-      setCanResend(true);
-    }
-    return () => clearInterval(timer);
-  }, [countdown]);
-
-  // Animations
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    // Entrance animations
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 800,
-        easing: Easing.out(Easing.back(1.2)),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Pulse animation for logo
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.05,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
-
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return emailRegex.test(email.trim().toLowerCase());
-  };
-
-  const sanitizeInput = (text: string) => {
-    return text.replace(/[<>\"\'&]/g, '');
-  };
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpUserId, setOtpUserId] = useState('');
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
 
   const handleLogin = async () => {
-    clearError();
-    setEmailError('');
-    setPasswordError('');
-
-    const sanitizedEmail = email.trim().toLowerCase();
-
-    if (!sanitizedEmail) {
-      setEmailError('Email is required');
-      return;
-    }
-    if (!validateEmail(sanitizedEmail)) {
-      setEmailError('Please enter a valid email address');
-      return;
-    }
-    if (!password) {
-      setPasswordError('Password is required');
-      return;
-    }
-    if (password.length < 8) {
-      setPasswordError('Password must be at least 8 characters');
-      return;
-    }
-
     try {
-      await login(sanitizedEmail, password);
+      await login(email, password);
     } catch (err: any) {
       Alert.alert('Login Failed', err.message || 'Please check your credentials');
     }
   };
 
-  const handleBiometricAuth = async () => {
-    const hasHardware = await LocalAuthentication.hasHardwareAsync();
-    if (!hasHardware) {
-      Alert.alert('Biometric authentication not available');
-      return;
-    }
-
-    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-    if (!isEnrolled) {
-      Alert.alert('No biometrics enrolled');
-      return;
-    }
-
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Login to MarketingTool',
-      fallbackLabel: 'Use password',
-    });
-
-    if (result.success) {
-      Alert.alert('Biometric login', 'Feature coming soon');
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      if (__DEV__) console.log('[Login] Starting Google OAuth...');
-      await loginWithGoogle();
-      if (__DEV__) console.log('[Login] Google OAuth completed');
-    } catch (err: any) {
-      if (__DEV__) console.error('[Login] Google OAuth error:', err);
-      Alert.alert(
-        'Google Login Failed',
-        err.message || 'Please check your internet connection and try again'
-      );
-    }
-  };
-
-  const handleAppleLogin = async () => {
-    try {
-      await loginWithApple();
-    } catch (err: any) {
-      Alert.alert('Apple Login Failed', err.message);
-    }
-  };
-
-  const handleFacebookLogin = async () => {
-    try {
-      if (loginWithFacebook) {
-        await loginWithFacebook();
-      } else {
-        Alert.alert('Coming Soon', 'Facebook login will be available soon');
-      }
-    } catch (err: any) {
-      Alert.alert('Facebook Login Failed', err.message);
-    }
-  };
-
   const handleSendOTP = async () => {
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
-    if (!cleanPhone || cleanPhone.length < 10) {
-      setPhoneError('Please enter a valid 10-digit phone number');
+    if (!phoneNumber) {
+      Alert.alert('Invalid Number', 'Please enter a phone number');
       return;
     }
-
-    if (!canResend) {
-      setPhoneError(`Please wait ${countdown} seconds before requesting a new code`);
-      return;
-    }
-
-    clearError();
-    setPhoneError('');
     try {
-      await sendOTP(cleanPhone);
-      setPhoneStep('otp');
-      setCountdown(60); // Start 60s cooldown
+      const formattedPhone = `${selectedCountry.code}${phoneNumber}`;
+      const userId = await sendPhoneOTP(formattedPhone);
+      setOtpUserId(userId);
+      setOtpSent(true);
+      setShowOtpModal(true);
     } catch (err: any) {
-      setPhoneError(err.message || 'Failed to send OTP');
+      Alert.alert('OTP Failed', err.message || 'Failed to send OTP');
     }
   };
 
   const handleVerifyOTP = async () => {
-    const cleanOtp = otp.trim().replace(/\D/g, '');
-    if (!cleanOtp || cleanOtp.length !== 6) {
-      setPhoneError('Please enter a valid 6-digit code');
-      return;
-    }
-    clearError();
-    setPhoneError('');
     try {
-      await verifyOTP(cleanOtp);
-      setShowPhoneModal(false);
+      await verifyPhoneOTP(otpUserId, otpCode);
+      setShowOtpModal(false);
     } catch (err: any) {
-      setPhoneError(err.message || 'Invalid OTP. Please check the code and try again.');
+      Alert.alert('Verification Failed', err.message || 'Invalid OTP');
     }
   };
 
-  const handleLoginMethod = (methodId: string) => {
-    setSelectedMethod(methodId);
-    switch (methodId) {
-      case 'phone':
-        setShowPhoneModal(true);
-        setPhoneStep('phone');
-        setPhoneNumber('');
-        setOtp('');
-        setPhoneError('');
-        break;
-      case 'google':
-        handleGoogleLogin();
-        break;
-      case 'apple':
-        handleAppleLogin();
-        break;
-      case 'facebook':
-        handleFacebookLogin();
-        break;
-      case 'email':
-        setShowEmailModal(true);
-        break;
-      case 'biometric':
-        handleBiometricAuth();
-        break;
-    }
-    setTimeout(() => setSelectedMethod(null), 1000);
-  };
+  const filteredCountries = countrySearch
+    ? COUNTRIES.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()))
+    : COUNTRIES;
 
   return (
-    <AnimatedBackground variant="default" showParticles={true}>
+    <AnimatedBackground variant="default">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        style={{ flex: 1 }}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
         >
-          {/* Animated Header */}
-          <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-            <Animated.View style={[styles.logoContainer, { transform: [{ scale: pulseAnim }] }]}>
-              <LinearGradient
-                colors={['#FF6B35', '#F7931E']}
-                style={styles.logoGradient}
-              >
-                <Feather name="zap" size={36} color={Colors.white} />
-              </LinearGradient>
-            </Animated.View>
+          {/* Logo Section */}
+          <View style={styles.logoSection}>
+            <View style={styles.logoIconBg}>
+               <Image
+                  source={require('../../assets/images/logo-icon.png')}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
+            </View>
             <Text style={styles.title}>MarketingTool</Text>
-            <Text style={styles.subtitle}>206+ AI Marketing Tools</Text>
-          </Animated.View>
+            <Text style={styles.subtitle}>AI-Powered Marketing Platform</Text>
+          </View>
 
-          {/* Login Methods Grid */}
-          <Animated.View style={[styles.methodsSection, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-            <Text style={styles.methodsTitle}>Choose how to sign in</Text>
-            <View style={styles.methodsGrid}>
-              {loginMethods.map((method, index) => {
-                // Skip Apple on Android
-                if (method.id === 'apple' && Platform.OS !== 'ios') return null;
-
-                return (
-                  <TouchableOpacity
-                    key={method.id}
-                    style={[
-                      styles.methodCard,
-                      selectedMethod === method.id && styles.methodCardActive
-                    ]}
-                    onPress={() => handleLoginMethod(method.id)}
-                    activeOpacity={0.8}
-                    disabled={isLoading}
-                  >
-                    <LinearGradient
-                      colors={method.gradient as [string, string]}
-                      style={styles.methodGradient}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                    >
-                      {isLoading && selectedMethod === method.id ? (
-                        <ActivityIndicator color={Colors.white} size="small" />
-                      ) : (
-                        <Feather name={method.icon as any} size={28} color={Colors.white} />
-                      )}
-                    </LinearGradient>
-                    <Text style={styles.methodName}>{method.name}</Text>
-                    <Text style={styles.methodDesc} numberOfLines={1}>{method.description}</Text>
-                  </TouchableOpacity>
-                );
-              })}
+          {/* Quick Login */}
+          <View style={styles.quickLoginContainer}>
+            <View style={styles.quickLoginHeader}>
+              <Feather name="phone" size={16} color="#9D4EDD" />
+              <Text style={styles.quickLoginText}>Quick Login</Text>
             </View>
-          </Animated.View>
+            
+            <View style={styles.phoneRow}>
+              <TouchableOpacity 
+                style={styles.countrySelector}
+                onPress={() => setShowCountryPicker(true)}
+              >
+                <Text style={styles.flagText}>{selectedCountry.flag}</Text>
+                <Text style={styles.codeText}>{selectedCountry.code}</Text>
+                <Feather name="chevron-down" size={14} color="#4A5568" />
+              </TouchableOpacity>
 
-          {/* Quick Email Login (collapsed by default) */}
-          <Animated.View style={[styles.quickEmailSection, { opacity: fadeAnim }]}>
-            <TouchableOpacity
-              style={styles.quickEmailToggle}
-              onPress={() => setShowEmailModal(true)}
-            >
-              <View style={styles.quickEmailLeft}>
-                <Feather name="mail" size={20} color={Colors.secondary} />
-                <Text style={styles.quickEmailText}>Sign in with email & password</Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={Colors.textSecondary} />
-            </TouchableOpacity>
-          </Animated.View>
+              <TextInput
+                style={styles.phoneInput}
+                placeholder="Phone"
+                placeholderTextColor="#4A5568"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                keyboardType="phone-pad"
+              />
 
-          {/* Features Banner */}
-          <View style={styles.featuresBanner}>
-            <View style={styles.featureItem}>
-              <Feather name="zap" size={18} color={Colors.gold} />
-              <Text style={styles.featureText}>206+ Tools</Text>
-            </View>
-            <View style={styles.featureDivider} />
-            <View style={styles.featureItem}>
-              <Feather name="shield" size={18} color={Colors.success} />
-              <Text style={styles.featureText}>Secure</Text>
-            </View>
-            <View style={styles.featureDivider} />
-            <View style={styles.featureItem}>
-              <Feather name="clock" size={18} color={Colors.cyan} />
-              <Text style={styles.featureText}>7-Day Trial</Text>
+              <TouchableOpacity 
+                style={styles.arrowBtn}
+                onPress={handleSendOTP}
+              >
+                <LinearGradient
+                  colors={['#3D2914', '#16132B']} // Subtle dark gradient for the button background
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.arrowCircle}>
+                   <Feather name="arrow-right" size={20} color="#FFFFFF" />
+                </View>
+              </TouchableOpacity>
             </View>
           </View>
 
-          {/* Register Link */}
+          <View style={styles.orContainer}>
+            <Text style={styles.orText}>OR CONTINUE WITH</Text>
+          </View>
+
+          <View style={styles.socialRow}>
+             <TouchableOpacity style={styles.socialBtn} onPress={loginWithGoogle}>
+                <Feather name="search" size={22} color="#FFFFFF" />
+             </TouchableOpacity>
+             <TouchableOpacity style={styles.socialBtn} onPress={() => setShowEmailModal(true)}>
+                <Feather name="mail" size={22} color="#FFFFFF" />
+             </TouchableOpacity>
+             {Platform.OS === 'ios' && (
+               <TouchableOpacity style={styles.socialBtn} onPress={loginWithApple}>
+                  <Feather name="apple" size={22} color="#FFFFFF" />
+               </TouchableOpacity>
+             )}
+          </View>
+
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.registerLink}>Sign Up Free</Text>
-            </TouchableOpacity>
+             <Text style={styles.footerText}>Don't have an account? </Text>
+             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                <Text style={styles.signupText}>Sign Up Free</Text>
+             </TouchableOpacity>
           </View>
+
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Email Login Modal */}
+      {/* Country Picker Modal */}
       <Modal
-        visible={showEmailModal}
+        visible={showCountryPicker}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowEmailModal(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Sign in with Email</Text>
-              <TouchableOpacity onPress={() => setShowEmailModal(false)} style={styles.modalClose}>
-                <Feather name="x" size={24} color={Colors.white} />
+              <Text style={styles.modalTitle}>Select Country</Text>
+              <TouchableOpacity onPress={() => setShowCountryPicker(false)}>
+                <Feather name="x" size={24} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
-
-            <View style={styles.modalBody}>
-              <View style={[styles.inputContainer, emailError && styles.inputError]}>
-                <Feather name="mail" size={20} color={Colors.textTertiary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email address"
-                  placeholderTextColor={Colors.textTertiary}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-              {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-
-              <View style={[styles.inputContainer, passwordError && styles.inputError]}>
-                <Feather name="lock" size={20} color={Colors.textTertiary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Password"
-                  placeholderTextColor={Colors.textTertiary}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color={Colors.textTertiary} />
-                </TouchableOpacity>
-              </View>
-              {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-
-              <TouchableOpacity
-                onPress={() => {
-                  setShowEmailModal(false);
-                  navigation.navigate('ForgotPassword');
-                }}
-                style={styles.forgotPassword}
-              >
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => {
-                  handleLogin();
-                }}
-                disabled={isLoading}
-                style={styles.modalLoginBtn}
-              >
-                <LinearGradient
-                  colors={['#FF6B35', '#F7931E']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.loginButtonGradient}
+            <View style={styles.searchBox}>
+               <Feather name="search" size={18} color="#4A5568" />
+               <TextInput 
+                style={styles.searchInput}
+                placeholder="Search country..."
+                placeholderTextColor="#4A5568"
+                value={countrySearch}
+                onChangeText={setCountrySearch}
+               />
+            </View>
+            <FlatList
+              data={filteredCountries}
+              keyExtractor={(item) => item.name}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.countryItem}
+                  onPress={() => {
+                    setSelectedCountry(item);
+                    setShowCountryPicker(false);
+                  }}
                 >
-                  {isLoading ? (
-                    <ActivityIndicator color={Colors.white} />
-                  ) : (
-                    <Text style={styles.loginButtonText}>Sign In</Text>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Phone OTP Modal */}
-      <Modal
-        visible={showPhoneModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowPhoneModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {phoneStep === 'phone' ? 'Sign in with Phone' : 'Verify OTP'}
-              </Text>
-              <TouchableOpacity onPress={() => setShowPhoneModal(false)} style={styles.modalClose}>
-                <Feather name="x" size={24} color={Colors.white} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalBody}>
-              {phoneStep === 'phone' ? (
-                <>
-                  <Text style={styles.phoneLabel}>Enter your phone number</Text>
-                  <View style={styles.phoneInputRow}>
-                    <View style={styles.countryCode}>
-                      <Text style={styles.countryCodeText}>+91</Text>
-                    </View>
-                    <View style={[styles.inputContainer, { flex: 1, marginBottom: 0 }]}>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="9999999999"
-                        placeholderTextColor={Colors.textTertiary}
-                        value={phoneNumber}
-                        onChangeText={setPhoneNumber}
-                        keyboardType="phone-pad"
-                        maxLength={10}
-                      />
-                    </View>
+                  <View style={styles.countryInfo}>
+                    <Text style={styles.countryFlagLarge}>{item.flag}</Text>
+                    <Text style={styles.countryName}>{item.name}</Text>
                   </View>
-                  {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
-
-                  <TouchableOpacity onPress={handleSendOTP} disabled={isLoading} style={styles.modalLoginBtn}>
-                    <LinearGradient
-                      colors={['#10B981', '#059669']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.loginButtonGradient}
-                    >
-                      {isLoading ? (
-                        <ActivityIndicator color={Colors.white} />
-                      ) : (
-                        <Text style={styles.loginButtonText}>Send OTP</Text>
-                      )}
-                    </LinearGradient>
-                  </TouchableOpacity>
-
-                  <Text style={styles.testNote}>Test: +91 99999 99999 / Code: 123456</Text>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.phoneLabel}>Enter 6-digit OTP sent to +91 {phoneNumber}</Text>
-                  <View style={[styles.inputContainer, styles.otpInputContainer]}>
-                    <TextInput
-                      style={[styles.input, styles.otpInput]}
-                      placeholder="000000"
-                      placeholderTextColor={Colors.textTertiary}
-                      value={otp}
-                      onChangeText={setOtp}
-                      keyboardType="number-pad"
-                      maxLength={6}
-                    />
-                  </View>
-                  {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
-
-                  <TouchableOpacity onPress={handleVerifyOTP} disabled={isLoading} style={styles.modalLoginBtn}>
-                    <LinearGradient
-                      colors={['#10B981', '#059669']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.loginButtonGradient}
-                    >
-                      {isLoading ? (
-                        <ActivityIndicator color={Colors.white} />
-                      ) : (
-                        <Text style={styles.loginButtonText}>Verify OTP</Text>
-                      )}
-                    </LinearGradient>
-                  </TouchableOpacity>
-
-                  <View style={styles.resendContainer}>
-                    {countdown > 0 ? (
-                      <Text style={styles.resendTimerText}>Resend code in {countdown}s</Text>
-                    ) : (
-                      <TouchableOpacity onPress={handleSendOTP} disabled={isLoading}>
-                        <Text style={styles.resendLink}>Resend Code</Text>
-                      </TouchableOpacity>
+                  <View style={styles.countryCodeRow}>
+                    <Text style={styles.countryCodeValue}>{item.code}</Text>
+                    {selectedCountry.name === item.name && (
+                      <Feather name="check" size={18} color="#9D4EDD" style={{ marginLeft: 10 }} />
                     )}
                   </View>
-
-                  <TouchableOpacity onPress={() => setPhoneStep('phone')} style={styles.changePhoneBtn}>
-                    <Text style={styles.changePhoneText}>Change Phone Number</Text>
-                  </TouchableOpacity>
-                </>
+                </TouchableOpacity>
               )}
-            </View>
+            />
           </View>
         </View>
       </Modal>
@@ -638,314 +248,202 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#16132B',
-  },
-  keyboardView: {
-    flex: 1,
-  },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: 80,
-    paddingBottom: 40,
-  },
-  header: {
+    paddingHorizontal: 24,
+    paddingTop: 100,
     alignItems: 'center',
-    marginBottom: Spacing.xl,
   },
-  logoContainer: {
-    marginBottom: Spacing.md,
+  logoSection: {
+    alignItems: 'center',
+    marginBottom: 60,
   },
-  logoGradient: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
+  logoIconBg: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(157, 78, 221, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 10,
+    marginBottom: 20,
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: Colors.white,
-    marginBottom: 4,
+    color: '#FFFFFF',
   },
   subtitle: {
-    fontSize: 16,
-    color: Colors.textSecondary,
+    fontSize: 14,
+    color: '#A0AEC0',
+    marginTop: 8,
   },
-  // Login Methods Grid
-  methodsSection: {
-    marginBottom: Spacing.xl,
+  quickLoginContainer: {
+    width: '100%',
+    backgroundColor: '#161824',
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 40,
   },
-  methodsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.white,
-    marginBottom: Spacing.md,
-    textAlign: 'center',
-  },
-  methodsGrid: {
+  quickLoginHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: Spacing.md,
-  },
-  methodCard: {
-    width: (width - Spacing.lg * 2 - Spacing.md) / 2,
-    backgroundColor: Colors.card,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
+    marginBottom: 20,
+    gap: 8,
   },
-  methodCardActive: {
-    borderColor: Colors.secondary,
+  quickLoginText: {
+    fontSize: 16,
+    color: '#A0AEC0',
+    fontWeight: '600',
   },
-  methodGradient: {
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  countrySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0A0A0A',
+    paddingHorizontal: 12,
+    height: 56,
+    borderRadius: 16,
+    gap: 6,
+  },
+  flagText: {
+    fontSize: 20,
+  },
+  codeText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  phoneInput: {
+    flex: 1,
+    backgroundColor: '#0A0A0A',
+    height: 56,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  arrowBtn: {
     width: 56,
     height: 56,
     borderRadius: 16,
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
   },
-  methodName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.white,
-    marginBottom: 2,
-  },
-  methodDesc: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
-  // Quick Email Section
-  quickEmailSection: {
-    marginBottom: Spacing.xl,
-  },
-  quickEmailToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  quickEmailLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  quickEmailText: {
-    fontSize: 15,
-    color: Colors.white,
-  },
-  // Features Banner
-  featuresBanner: {
-    flexDirection: 'row',
+  arrowCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#9D4EDD',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    marginBottom: Spacing.xl,
   },
-  featureItem: {
+  orContainer: {
+    marginBottom: 24,
+  },
+  orText: {
+    fontSize: 12,
+    color: '#4A5568',
+    letterSpacing: 1,
+  },
+  socialRow: {
     flexDirection: 'row',
+    gap: 20,
+    marginBottom: 60,
+  },
+  socialBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#161824',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: Spacing.md,
   },
-  featureText: {
-    fontSize: 13,
-    color: Colors.white,
-    fontWeight: '500',
+  footer: {
+    flexDirection: 'row',
   },
-  featureDivider: {
-    width: 1,
-    height: 20,
-    backgroundColor: Colors.border,
+  footerText: {
+    color: '#A0AEC0',
   },
-  // Modal Styles
+  signupText: {
+    color: '#9D4EDD',
+    fontWeight: 'bold',
+  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: Colors.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: 40,
+    backgroundColor: '#161824',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    height: '70%',
+    padding: 24,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: Spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    marginBottom: 24,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: Colors.white,
-  },
-  modalClose: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalBody: {
-    padding: Spacing.lg,
-  },
-  modalLoginBtn: {
-    borderRadius: BorderRadius.md,
-    overflow: 'hidden',
-  },
-  // Form Inputs
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: Spacing.md,
-    paddingHorizontal: Spacing.md,
-  },
-  inputError: {
-    borderColor: Colors.error,
-  },
-  inputIcon: {
-    marginRight: Spacing.sm,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: Colors.white,
-  },
-  eyeIcon: {
-    padding: Spacing.sm,
-  },
-  errorText: {
-    color: Colors.error,
-    fontSize: 12,
-    marginTop: -8,
-    marginBottom: Spacing.sm,
-    marginLeft: Spacing.sm,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: Spacing.lg,
-  },
-  forgotPasswordText: {
-    color: Colors.secondary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  loginButtonGradient: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderRadius: BorderRadius.md,
-  },
-  loginButtonText: {
-    color: Colors.white,
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  footerText: {
-    color: Colors.textSecondary,
-    fontSize: 15,
-  },
-  registerLink: {
-    color: Colors.secondary,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  // Phone OTP styles
-  phoneLabel: {
-    fontSize: 15,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.md,
-  },
-  phoneInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-    gap: Spacing.sm,
-  },
-  countryCode: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingVertical: 16,
-    paddingHorizontal: Spacing.md,
-  },
-  countryCodeText: {
-    fontSize: 16,
-    color: Colors.white,
-    fontWeight: '500',
-  },
-  otpInputContainer: {
-    marginBottom: Spacing.md,
-  },
-  otpInput: {
     fontSize: 24,
-    letterSpacing: 8,
-    textAlign: 'center',
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
-  testNote: {
-    fontSize: 12,
-    color: Colors.textTertiary,
-    textAlign: 'center',
-    marginTop: Spacing.md,
-  },
-  changePhoneBtn: {
-    marginTop: Spacing.md,
+  searchBox: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#0A0A0A',
+    height: 50,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    marginBottom: 20,
   },
-  changePhoneText: {
-    color: Colors.secondary,
-    fontSize: 14,
+  searchInput: {
+    flex: 1,
+    marginLeft: 12,
+    color: '#FFFFFF',
+  },
+  countryItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  countryInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  countryFlagLarge: {
+    fontSize: 24,
+  },
+  countryName: {
+    fontSize: 16,
+    color: '#FFFFFF',
     fontWeight: '500',
   },
-  resendContainer: {
-    marginTop: Spacing.lg,
+  countryCodeRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.sm,
   },
-  resendTimerText: {
-    color: Colors.textTertiary,
-    fontSize: 14,
-  },
-  resendLink: {
-    color: Colors.secondary,
-    fontSize: 14,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+  countryCodeValue: {
+    fontSize: 16,
+    color: '#A0AEC0',
   },
 });
 
 export default LoginScreen;
+

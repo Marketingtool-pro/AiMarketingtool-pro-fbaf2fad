@@ -3,6 +3,7 @@
 // NO direct Windmill calls — clients never talk to Windmill directly
 
 import { functions, account } from './appwrite';
+import { ExecutionMethod } from 'react-native-appwrite';
 
 const TOOL_EXECUTOR_FUNCTION_ID = 'tool-executor';
 const NEXTJS_API_BASE = 'https://app.marketingtool.pro';
@@ -54,7 +55,7 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
       }),
       false,  // async = false (wait for result)
       '/',    // path
-      'POST', // method
+      ExecutionMethod.POST, // method
     );
 
     if (execution.responseStatusCode >= 200 && execution.responseStatusCode < 300) {

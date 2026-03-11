@@ -1,5 +1,3 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
 # dependencies
 node_modules/
 
@@ -17,6 +15,16 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+
+# SECURE: BLOCK ALL CREDENTIALS & JSON SECRETS
+credentials/
+*.json
+!app.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!google-services.json
+!GoogleService-Info.plist
 
 # Metro
 .metro-health-check*
@@ -39,3 +47,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+.gemini/
+gha-creds-*.json
+asc-api-key.p8

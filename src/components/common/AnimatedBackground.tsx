@@ -1,24 +1,9 @@
-import React, { useRef, useEffect } from 'react';
-import {
-  View,
-  StyleSheet,
-  Animated,
-  Easing,
-  ImageBackground,
-  Dimensions,
-} from 'react-native';
+import React, { useMemo } from 'react';
+import { View, StyleSheet, Dimensions, Animated as RNAnimated, Easing as RNEasing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/theme';
 
 const { width, height } = Dimensions.get('window');
-
-interface AnimatedBackgroundProps {
-  children: React.ReactNode;
-  variant?: 'default' | 'chat' | 'tools' | 'profile' | 'dashboard';
-  showParticles?: boolean;
-  showGradient?: boolean;
-  imageSource?: any;
-}
 
 // Floating Particle Component
 const FloatingParticle = ({ delay, size, startX, startY, color }: {
@@ -28,68 +13,67 @@ const FloatingParticle = ({ delay, size, startX, startY, color }: {
   startY: number;
   color: string;
 }) => {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const translateX = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.5)).current;
+  const translateY = React.useRef(new RNAnimated.Value(0)).current;
+  const translateX = React.useRef(new RNAnimated.Value(0)).current;
+  const opacity = React.useRef(new RNAnimated.Value(0)).current;
+  const scale = React.useRef(new RNAnimated.Value(0.5)).current;
 
-  useEffect(() => {
-    const animate = () => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(delay),
-          Animated.parallel([
-            Animated.timing(translateY, {
-              toValue: -height * 0.4,
-              duration: 8000 + Math.random() * 4000,
-              easing: Easing.out(Easing.ease),
+  React.useEffect(() => {
+    const anim = RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.delay(delay),
+        RNAnimated.parallel([
+          RNAnimated.timing(translateY, {
+            toValue: -height * 0.4,
+            duration: 8000 + Math.random() * 4000,
+            easing: RNEasing.out(RNEasing.ease),
+            useNativeDriver: true,
+          }),
+          RNAnimated.timing(translateX, {
+            toValue: (Math.random() - 0.5) * 100,
+            duration: 8000 + Math.random() * 4000,
+            easing: RNEasing.inOut(RNEasing.ease),
+            useNativeDriver: true,
+          }),
+          RNAnimated.sequence([
+            RNAnimated.timing(opacity, {
+              toValue: 0.6,
+              duration: 2000,
               useNativeDriver: true,
             }),
-            Animated.timing(translateX, {
-              toValue: (Math.random() - 0.5) * 100,
-              duration: 8000 + Math.random() * 4000,
-              easing: Easing.inOut(Easing.ease),
+            RNAnimated.timing(opacity, {
+              toValue: 0,
+              duration: 6000,
               useNativeDriver: true,
             }),
-            Animated.sequence([
-              Animated.timing(opacity, {
-                toValue: 0.6,
-                duration: 2000,
-                useNativeDriver: true,
-              }),
-              Animated.timing(opacity, {
-                toValue: 0,
-                duration: 6000,
-                useNativeDriver: true,
-              }),
-            ]),
-            Animated.sequence([
-              Animated.timing(scale, {
-                toValue: 1,
-                duration: 3000,
-                useNativeDriver: true,
-              }),
-              Animated.timing(scale, {
-                toValue: 0.3,
-                duration: 5000,
-                useNativeDriver: true,
-              }),
-            ]),
           ]),
-          Animated.parallel([
-            Animated.timing(translateY, { toValue: 0, duration: 0, useNativeDriver: true }),
-            Animated.timing(translateX, { toValue: 0, duration: 0, useNativeDriver: true }),
-            Animated.timing(opacity, { toValue: 0, duration: 0, useNativeDriver: true }),
-            Animated.timing(scale, { toValue: 0.5, duration: 0, useNativeDriver: true }),
+          RNAnimated.sequence([
+            RNAnimated.timing(scale, {
+              toValue: 1,
+              duration: 3000,
+              useNativeDriver: true,
+            }),
+            RNAnimated.timing(scale, {
+              toValue: 0.3,
+              duration: 5000,
+              useNativeDriver: true,
+            }),
           ]),
-        ])
-      ).start();
-    };
-    animate();
+        ]),
+        RNAnimated.parallel([
+          RNAnimated.timing(translateY, { toValue: 0, duration: 0, useNativeDriver: true }),
+          RNAnimated.timing(translateX, { toValue: 0, duration: 0, useNativeDriver: true }),
+          RNAnimated.timing(opacity, { toValue: 0, duration: 0, useNativeDriver: true }),
+          RNAnimated.timing(scale, { toValue: 0.5, duration: 0, useNativeDriver: true }),
+        ]),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
   }, []);
 
   return (
-    <Animated.View
+    <RNAnimated.View
       style={[
         styles.particle,
         {
@@ -107,61 +91,18 @@ const FloatingParticle = ({ delay, size, startX, startY, color }: {
   );
 };
 
-// Animated Glow Ring
-const GlowRing = ({ delay, maxSize, color }: { delay: number; maxSize: number; color: string }) => {
-  const scale = useRef(new Animated.Value(0.2)).current;
-  const opacity = useRef(new Animated.Value(0.8)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.parallel([
-          Animated.timing(scale, {
-            toValue: 1,
-            duration: 4000,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacity, {
-            toValue: 0,
-            duration: 4000,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(scale, { toValue: 0.2, duration: 0, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0.8, duration: 0, useNativeDriver: true }),
-        ]),
-      ])
-    ).start();
-  }, []);
-
-  return (
-    <Animated.View
-      style={[
-        styles.glowRing,
-        {
-          width: maxSize,
-          height: maxSize,
-          borderRadius: maxSize / 2,
-          borderColor: color,
-          transform: [{ scale }],
-          opacity,
-        },
-      ]}
-    />
-  );
-};
+interface AnimatedBackgroundProps {
+  children: React.ReactNode;
+  variant?: 'default' | 'chat' | 'tools' | 'profile' | 'dashboard';
+  showParticles?: boolean;
+}
 
 const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
   children,
   variant = 'default',
   showParticles = true,
-  showGradient = true,
-  imageSource,
 }) => {
-  const particles = [
+  const particles = useMemo(() => [
     { delay: 0, size: 6, startX: width * 0.1, startY: height * 0.8, color: Colors.secondary + '60' },
     { delay: 1000, size: 8, startX: width * 0.3, startY: height * 0.9, color: Colors.purple + '60' },
     { delay: 2000, size: 5, startX: width * 0.5, startY: height * 0.85, color: Colors.gold + '60' },
@@ -170,65 +111,26 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
     { delay: 500, size: 4, startX: width * 0.2, startY: height * 0.92, color: Colors.success + '60' },
     { delay: 1500, size: 5, startX: width * 0.6, startY: height * 0.87, color: Colors.purple + '60' },
     { delay: 2500, size: 8, startX: width * 0.8, startY: height * 0.93, color: Colors.gold + '60' },
-  ];
-
-  const getGradientColors = () => {
-    switch (variant) {
-      case 'chat':
-        return ['rgba(175, 21, 195, 0.1)', 'rgba(12, 11, 24, 0.95)', Colors.background];
-      case 'tools':
-        return ['rgba(247, 84, 30, 0.1)', 'rgba(12, 11, 24, 0.95)', Colors.background];
-      case 'profile':
-        return ['rgba(253, 151, 7, 0.1)', 'rgba(12, 11, 24, 0.95)', Colors.background];
-      case 'dashboard':
-        return ['rgba(100, 65, 165, 0.15)', 'rgba(12, 11, 24, 0.95)', Colors.background];
-      default:
-        return ['rgba(22, 19, 43, 1)', 'rgba(12, 11, 24, 1)', Colors.background];
-    }
-  };
-
-  const getGlowColor = () => {
-    switch (variant) {
-      case 'chat': return Colors.purple;
-      case 'tools': return Colors.secondary;
-      case 'profile': return Colors.gold;
-      case 'dashboard': return Colors.accent;
-      default: return Colors.secondary;
-    }
-  };
+  ], []);
 
   return (
     <View style={styles.container}>
-      {imageSource ? (
-        <ImageBackground
-          source={imageSource}
-          style={styles.imageBackground}
-          imageStyle={{ opacity: 0.15 }}
-        >
-          {showGradient && (
-            <LinearGradient
-              colors={getGradientColors() as any}
-              style={styles.gradientOverlay}
-              locations={[0, 0.5, 1]}
-            />
-          )}
-        </ImageBackground>
-      ) : (
-        showGradient && (
-          <LinearGradient
-            colors={getGradientColors() as any}
-            style={styles.gradientOverlay}
-            locations={[0, 0.5, 1]}
-          />
-        )
-      )}
+      {/* Minimal Dark Gradient Background */}
+      <LinearGradient
+        colors={['#0A0A0A', '#12121A', '#0A0A0A']}
+        locations={[0, 0.5, 1]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
 
-      {/* Glow Rings */}
-      <View style={styles.glowContainer}>
-        <GlowRing delay={0} maxSize={300} color={getGlowColor() + '20'} />
-        <GlowRing delay={1500} maxSize={400} color={getGlowColor() + '15'} />
-        <GlowRing delay={3000} maxSize={500} color={getGlowColor() + '10'} />
-      </View>
+      {/* Very subtle orbs - no bloom */}
+      <View style={[styles.orb, { top: -100, right: -100, backgroundColor: '#9D4EDD', opacity: 0.03 }]} />
+      <View style={[styles.orb, { bottom: -150, left: -100, backgroundColor: '#1885E4', opacity: 0.02 }]} />
+      <View style={[styles.orb, { top: '40%', right: '10%', backgroundColor: '#7C3AED', opacity: 0.04, width: 250, height: 250 }]} />
+
+      {/* Glass Frost Layer */}
+      <View style={styles.frostLayer} />
 
       {/* Floating Particles */}
       {showParticles && (
@@ -239,7 +141,7 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
         </View>
       )}
 
-      {/* Content */}
+      {/* Content Container */}
       <View style={styles.content}>{children}</View>
     </View>
   );
@@ -248,23 +150,18 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#060B28',
   },
-  imageBackground: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  gradientOverlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  glowContainer: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: 100,
-  },
-  glowRing: {
+  orb: {
     position: 'absolute',
-    borderWidth: 1,
+    width: 350,
+    height: 350,
+    borderRadius: 175,
+    blur: 80, // Note: standard View doesn't have blur, but we use it for reference
+  },
+  frostLayer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(13, 15, 28, 0.2)',
   },
   particlesContainer: {
     ...StyleSheet.absoluteFillObject,
