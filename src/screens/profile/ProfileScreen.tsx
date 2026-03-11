@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   glassCardBorder: {
     borderRadius: 27,
     overflow: 'hidden',
-    backgroundColor: 'rgba(13, 15, 28, 0.85)',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
   },
   glassCardContent: {
     padding: 24,
@@ -308,7 +308,10 @@ const styles = StyleSheet.create({
   },
   heroSection: { height: 260, width: '100%' },
   heroImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
-  heroGradient: { ...StyleSheet.absoluteFillObject },
+  heroGradient: { 
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(13, 15, 28, 0.2)' 
+  },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
