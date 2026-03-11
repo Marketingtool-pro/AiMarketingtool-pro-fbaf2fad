@@ -21,9 +21,7 @@ import AnimatedRN, {
   withRepeat, 
   withTiming, 
   withSequence,
-  Easing as EasingRN,
-  FadeInDown,
-  FadeInRight,
+  Easing as EasingRN
 } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -31,12 +29,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
-import { useDashboardStore, DashboardMetric } from '../../store/dashboardStore';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 import LottieView from 'lottie-react-native';
 import Glass3DLogo from '../../components/common/Glass3DLogo';
-import PerformanceChart from '../../components/common/PerformanceChart';
 
 const { width } = Dimensions.get('window');
 
@@ -105,7 +101,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const GlassBentoCard = ({ children, color }: { children: React.ReactNode, color: string }) => (
   <View style={[styles.glassBentoContainer, {
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: color + '30',
     shadowColor: color,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -113,7 +109,7 @@ const GlassBentoCard = ({ children, color }: { children: React.ReactNode, color:
     elevation: 6,
   }]}>
     <LinearGradient
-      colors={[color + '15', 'rgba(22, 24, 36, 0.55)']}
+      colors={[color + '20', 'rgba(22, 24, 36, 0.55)']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={StyleSheet.absoluteFill}
@@ -156,18 +152,7 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
           <View style={[styles.statIcon, { backgroundColor: stat.color + '20' }]}>
             <Feather name={stat.icon as any} size={18} color={stat.color} />
           </View>
-          <View style={styles.statValueRow}>
-            <Text style={styles.statValue}>{stat.value}</Text>
-            {stat.trend && stat.trend !== 'neutral' && (
-              <View style={[styles.trendBadge, { backgroundColor: stat.trend === 'up' ? '#22C55E20' : '#EF444420' }]}>
-                <Feather 
-                  name={stat.trend === 'up' ? 'trending-up' : 'trending-down'} 
-                  size={10} 
-                  color={stat.trend === 'up' ? '#22C55E' : '#EF4444'} 
-                />
-              </View>
-            )}
-          </View>
+          <Text style={styles.statValue}>{stat.value}</Text>
           <Text style={styles.statLabel} numberOfLines={1}>{stat.label}</Text>
         </GlassBentoCard>
       </AnimatedRN.View>
@@ -178,50 +163,46 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
 const DashboardScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user, profile } = useAuthStore();
-  const { tools, featuredTools, fetchTools, isLoading: toolsLoading } = useToolsStore();
-  const { 
-    metrics, 
-    performanceData, 
-    recentActivities, 
-    dateRange,
-    setDateRange,
-    fetchDashboardData, 
-    setupRealtimeListeners,
-    isLoading: dashboardLoading 
-  } = useDashboardStore();
-  
+  const { tools, featuredTools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
   const [refreshing, setRefreshing] = React.useState(false);
+  const [campaignsCount, setCampaignsCount] = React.useState<number>(0);
+  const [generationsCount, setGenerationsCount] = React.useState<number>(0);
 
   useEffect(() => {
     fetchTools();
+    // Fetch user generations when logged in
     if (user?.$id) {
-      fetchDashboardData(user.$id);
-      const unsubscribe = setupRealtimeListeners(user.$id);
-      return () => unsubscribe();
+      fetchGenerations(user.$id);
     }
   }, [user?.$id]);
+
+  // Update counts when generations change
+  useEffect(() => {
+    if (user?.$id && generations.length > 0) {
+      // Get generations count for this user
+      const userGenerations = generations.filter(g => g.userId === user.$id);
+      setGenerationsCount(userGenerations.length);
+      // Campaigns = unique tools used
+      const uniqueTools = new Set(userGenerations.map(g => g.toolId));
+      setCampaignsCount(uniqueTools.size);
+    }
+  }, [generations, user]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchTools();
     if (user?.$id) {
-      await fetchDashboardData(user.$id);
+      await fetchGenerations(user.$id);
     }
     setRefreshing(false);
   };
 
-  const isLoading = toolsLoading || dashboardLoading;
-
-  // Use metrics from store if available, otherwise fallback to defaults
-  const stats = (metrics.length > 0 ? metrics : [
-    { id: 'clicks', label: 'Clicks', value: '0', icon: 'mouse-pointer', color: Colors.secondary, trend: 'neutral', change: 0 },
-    { id: 'convs', label: 'Convs', value: '0', icon: 'target', color: Colors.success, trend: 'neutral', change: 0 },
-    { id: 'revenue', label: 'Revenue', value: '$0', icon: 'dollar-sign', color: Colors.accent, trend: 'neutral', change: 0 },
-    { id: 'gen', label: 'Generated', value: '0', icon: 'zap', color: Colors.gold, trend: 'neutral', change: 0 },
-  ]).map(s => ({
-    ...s,
-    screen: s.id === 'gen' ? 'History' : 'Tools'
-  }));
+  const stats = [
+    { label: 'AI Tools', value: 'All', icon: 'zap', color: Colors.secondary, badge: 'New', screen: 'Tools' },
+    { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
+    { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
+    { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },
+  ];
 
   // Horizontal banner data
   const bannerSlides = [
@@ -395,51 +376,15 @@ const DashboardScreen = () => {
 
         {/* Stats Grid with Animations - NOW CLICKABLE */}
         <View style={styles.statsGrid}>
-          {stats.map((stat, index) => {
-            const AnimatedStatCardAny = AnimatedStatCard as any;
-            return (
-              <AnimatedStatCardAny
-                key={stat.id || index.toString()}
-                stat={stat}
-                index={index}
-                onPress={() => navigation.navigate('Main', { screen: stat.screen as any } as any)}
-              />
-            );
-          })}
+          {stats.map((stat, index) => (
+            <AnimatedStatCard
+              key={index}
+              stat={stat}
+              index={index}
+              onPress={() => navigation.navigate('Main', { screen: stat.screen as any } as any)}
+            />
+          ))}
         </View>
-
-        {/* Performance Section Header */}
-        {!isLoading && performanceData.length > 0 && (
-          <View style={[styles.section, { marginBottom: -Spacing.md }]}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Performance</Text>
-              <View style={styles.rangeSelector}>
-                {(['7d', '30d', 'all'] as const).map((r) => (
-                  <TouchableOpacity
-                    key={r}
-                    style={[
-                      styles.rangeBtn,
-                      dateRange === r && styles.rangeBtnActive
-                    ]}
-                    onPress={() => setDateRange(r)}
-                  >
-                    <Text style={[
-                      styles.rangeBtnText,
-                      dateRange === r && styles.rangeBtnTextActive
-                    ]}>
-                      {r.toUpperCase()}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Performance Chart */}
-        {!isLoading && performanceData.length > 0 && (
-          <PerformanceChart data={performanceData} />
-        )}
 
         {/* Quick Actions */}
         <View style={styles.section}>
@@ -585,42 +530,6 @@ const DashboardScreen = () => {
             ))}
           </View>
         </View>
-
-        {/* Recent Activities */}
-        {!isLoading && recentActivities.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recent Activity</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Main', { screen: 'History' } as any)}>
-                <Text style={styles.seeAll}>View all</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.activityList}>
-              {recentActivities.slice(0, 5).map((activity, index) => (
-                <AnimatedRN.View 
-                  key={activity.id} 
-                  style={styles.activityItem}
-                  entering={FadeInDown.delay(index * 100).duration(500)}
-                >
-                  <View style={[styles.activityIcon, { backgroundColor: activity.type === 'generation' ? Colors.secondary + '20' : Colors.accent + '20' }]}>
-                    <Feather 
-                      name={activity.type === 'generation' ? 'zap' : activity.type === 'favorite' ? 'heart' : 'activity'} 
-                      size={14} 
-                      color={activity.type === 'generation' ? Colors.secondary : Colors.accent} 
-                    />
-                  </View>
-                  <View style={styles.activityContent}>
-                    <Text style={styles.activityTitle}>{activity.title}</Text>
-                    <Text style={styles.activityDesc}>{activity.description}</Text>
-                  </View>
-                  <Text style={styles.activityTime}>
-                    {new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -1068,11 +977,9 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   popularList: {
-    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    backgroundColor: Colors.card,
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   popularItem: {
     flexDirection: 'row',
@@ -1116,78 +1023,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textSecondary,
     marginTop: 2,
-  },
-  statValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  trendBadge: {
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 6,
-  },
-  activityList: {
-    backgroundColor: 'rgba(22, 24, 36, 0.55)',
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  activityIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: Spacing.md,
-  },
-  activityContent: {
-    flex: 1,
-  },
-  activityTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.white,
-  },
-  activityDesc: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  activityTime: {
-    fontSize: 11,
-    color: Colors.textTertiary,
-  },
-  rangeSelector: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 8,
-    padding: 2,
-    marginBottom: Spacing.md,
-  },
-  rangeBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  rangeBtnActive: {
-    backgroundColor: Colors.secondary,
-  },
-  rangeBtnText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  rangeBtnTextActive: {
-    color: Colors.white,
   },
 });
 

@@ -27,7 +27,7 @@ const withIosFirebaseSwiftFix = (config) => {
   ]);
 };
 
-// 2. Xcode Modular Header Fix
+// 2. Xcode Modular Header Fix + RecaptchaEnterprise Pod
 const withEasPodfileFix = (config) => {
   return withDangerousMod(config, [
     'ios',
@@ -35,6 +35,15 @@ const withEasPodfileFix = (config) => {
       const podfilePath = path.join(config.modRequest.platformProjectRoot, 'Podfile');
       if (!fs.existsSync(podfilePath)) return config;
       let contents = fs.readFileSync(podfilePath, 'utf8');
+
+      // Add RecaptchaEnterprise pod for Firebase Phone Auth
+      if (!contents.includes('RecaptchaEnterprise')) {
+        contents = contents.replace(
+          /use_expo_modules!/,
+          "use_expo_modules!\n  pod 'RecaptchaEnterprise', '~> 18.6'"
+        );
+      }
+
       const snippet = `
     # Force modular header compatibility for RNFB
     installer.pods_project.targets.each do |target|
@@ -69,7 +78,7 @@ module.exports = ({ config }) => ({
           "deploymentTarget": "16.0"
         },
         "android": {
-          "compileSdkVersion": 35,
+          "compileSdkVersion": 36,
           "targetSdkVersion": 35,
           "minSdkVersion": 24
         }
@@ -77,6 +86,7 @@ module.exports = ({ config }) => ({
     ],
     "@react-native-firebase/app",
     "@react-native-firebase/auth",
+    "@react-native-firebase/messaging",
     "expo-secure-store",
     "expo-font",
     "expo-sharing",
