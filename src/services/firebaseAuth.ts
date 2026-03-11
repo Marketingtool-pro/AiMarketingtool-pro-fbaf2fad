@@ -22,9 +22,10 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
       return { success: false, error: 'Firebase Auth not available on this platform' };
     }
 
+    const cleaned = phoneNumber.replace(/\D/g, '');
     const normalizedPhone = phoneNumber.startsWith('+')
-      ? phoneNumber
-      : `+91${phoneNumber.replace(/\D/g, '')}`;
+      ? `+${cleaned}`
+      : `+91${cleaned}`;
 
     if (__DEV__) console.log('[FirebaseAuth] Sending OTP to:', normalizedPhone);
 

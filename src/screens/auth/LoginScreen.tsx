@@ -192,6 +192,126 @@ const LoginScreen = () => {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {/* Email Login Modal */}
+      <Modal
+        visible={showEmailModal}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Email Login</Text>
+              <TouchableOpacity onPress={() => setShowEmailModal(false)}>
+                <Feather name="x" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Email Address</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="email@example.com"
+                placeholderTextColor="#4A5568"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="••••••••"
+                placeholderTextColor="#4A5568"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+            </View>
+
+            <TouchableOpacity 
+              style={styles.primaryBtn}
+              onPress={handleLogin}
+              disabled={isLoading}
+            >
+              <LinearGradient
+                colors={['#9D4EDD', '#7B2CBF']}
+                style={styles.btnGradient}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.btnText}>Login</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* OTP Entry Modal */}
+      <Modal
+        visible={showOtpModal}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Verify OTP</Text>
+              <TouchableOpacity onPress={() => setShowOtpModal(false)}>
+                <Feather name="x" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.modalSubtitle}>
+              Enter the 6-digit code sent to {selectedCountry.code} {phoneNumber}
+            </Text>
+
+            <View style={styles.otpContainer}>
+              <TextInput
+                style={styles.otpInput}
+                placeholder="000000"
+                placeholderTextColor="#4A5568"
+                value={otpCode}
+                onChangeText={setOtpCode}
+                keyboardType="number-pad"
+                maxLength={6}
+                letterSpacing={10}
+              />
+            </View>
+
+            <TouchableOpacity 
+              style={styles.primaryBtn}
+              onPress={handleVerifyOTP}
+              disabled={isLoading}
+            >
+              <LinearGradient
+                colors={['#9D4EDD', '#7B2CBF']}
+                style={styles.btnGradient}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.btnText}>Verify & Login</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.resendBtn}
+              onPress={handleSendOTP}
+              disabled={isLoading}
+            >
+              <Text style={styles.resendText}>Didn't receive code? Resend</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Country Picker Modal */}
       <Modal
         visible={showCountryPicker}
@@ -283,10 +403,12 @@ const styles = StyleSheet.create({
   },
   quickLoginContainer: {
     width: '100%',
-    backgroundColor: '#161824',
+    backgroundColor: Colors.card,
     borderRadius: 24,
     padding: 24,
     marginBottom: 40,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   quickLoginHeader: {
     flexDirection: 'row',
@@ -442,6 +564,70 @@ const styles = StyleSheet.create({
   countryCodeValue: {
     fontSize: 16,
     color: '#A0AEC0',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#A0AEC0',
+    marginBottom: 32,
+    lineHeight: 20,
+  },
+  inputGroup: {
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  modalInput: {
+    backgroundColor: '#0A0A0A',
+    height: 56,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  primaryBtn: {
+    height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginTop: 16,
+  },
+  btnGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  btnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  otpContainer: {
+    marginBottom: 32,
+  },
+  otpInput: {
+    backgroundColor: '#0A0A0A',
+    height: 70,
+    borderRadius: 16,
+    textAlign: 'center',
+    fontSize: 32,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    borderWidth: 1,
+    borderColor: '#9D4EDD',
+  },
+  resendBtn: {
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  resendText: {
+    color: '#9D4EDD',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
 

@@ -49,7 +49,7 @@ export const Colors = {
   borderFocus: '#7C3AED',
 
   // Gradient Colors
-  gradientStart: '#0f1535',
+  gradientStart: '#0D0F1C',
   gradientEnd: '#131538',
 
   // Overlay

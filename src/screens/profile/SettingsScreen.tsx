@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -602,9 +602,11 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '100%',
-    backgroundColor: Colors.card,
+    backgroundColor: 'rgba(22, 24, 36, 0.95)',
     borderRadius: BorderRadius.lg,
     padding: Spacing.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   modalTitle: {
     fontSize: 20,
@@ -618,7 +620,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   modalInput: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(0,0,0,0.3)',
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     fontSize: 16,
