@@ -1,8 +1,8 @@
 // Firebase Phone Auth Service - Safe lazy loading
 import { Platform } from 'react-native';
+import * as Notifications from 'expo-notifications';
 
 let auth: any = null;
-let messaging: any = null;
 let apnsRegistered = false;
 
 function getAuth() {
@@ -17,29 +17,17 @@ function getAuth() {
   return auth;
 }
 
-function getMessaging() {
-  if (!messaging) {
-    try {
-      messaging = require('@react-native-firebase/messaging').default;
-    } catch (e) {
-      console.warn('[FirebaseAuth] Messaging module not available:', e);
-      return null;
-    }
-  }
-  return messaging;
-}
-
-// Register APNs token with Firebase so phone auth uses silent push instead of reCAPTCHA
+// Register for push notifications so iOS gets an APNs token.
+// Firebase Auth SDK auto-swizzles the AppDelegate to pick up the APNs token,
+// then uses silent push for phone verification instead of reCAPTCHA web view.
 async function ensureAPNsRegistered() {
   if (apnsRegistered || Platform.OS !== 'ios') return;
   try {
-    const fcm = getMessaging();
-    if (!fcm) return;
-    const authStatus = await fcm().requestPermission();
-    if (__DEV__) console.log('[FirebaseAuth] Notification permission status:', authStatus);
-    // Get APNs token - this registers with Apple and Firebase
-    const apnsToken = await fcm().getAPNSToken();
-    if (__DEV__) console.log('[FirebaseAuth] APNs token registered:', !!apnsToken);
+    const { status } = await Notifications.requestPermissionsAsync();
+    if (__DEV__) console.log('[FirebaseAuth] Notification permission:', status);
+    // Getting the device push token triggers APNs registration
+    const token = await Notifications.getDevicePushTokenAsync();
+    if (__DEV__) console.log('[FirebaseAuth] APNs token registered:', !!token);
     apnsRegistered = true;
   } catch (e) {
     if (__DEV__) console.warn('[FirebaseAuth] APNs registration failed:', e);
