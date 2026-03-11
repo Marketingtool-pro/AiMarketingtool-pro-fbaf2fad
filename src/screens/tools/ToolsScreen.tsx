@@ -161,10 +161,6 @@ const ToolsScreen = () => {
                 navigation.navigate('ToolDetail', { toolSlug: tool.slug });
               }}
             >
-              <View style={styles.iconLiquid}>
-                <View style={styles.iconGlow} />
-                <Image source={getToolIcon(tool.slug)} style={styles.cardIcon} resizeMode="contain" />
-              </View>
               <View style={styles.badgeRow}>
                 {tool.isPro && (
                   <View style={styles.proBadge}><Text style={styles.proBadgeText}>PRO</Text></View>
@@ -172,7 +168,15 @@ const ToolsScreen = () => {
                 {tool.isNew && (
                   <View style={styles.newBadge}><Text style={styles.newBadgeText}>NEW</Text></View>
                 )}
-                {tool.isTrending && <Feather name="trending-up" size={12} color={Colors.secondary} />}
+                {tool.isTrending && (
+                  <View style={styles.trendingBadge}>
+                    <Feather name="zap" size={8} color="#A78BFA" />
+                  </View>
+                )}
+              </View>
+              <View style={styles.iconLiquid}>
+                <View style={styles.iconGlow} />
+                <Image source={getToolIcon(tool.slug)} style={styles.cardIcon} resizeMode="contain" />
               </View>
               <Text style={styles.cardName} numberOfLines={2}>{tool.name}</Text>
             </TouchableOpacity>
@@ -192,38 +196,44 @@ const styles = StyleSheet.create({
   heroBanner: {
     width: '100%',
     height: 200,
-    marginTop: Platform.OS === 'ios' ? 44 : 0,
+    marginTop: 0,
   },
   heroOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
     padding: 20,
+    backgroundColor: 'rgba(13, 15, 28, 0.4)',
   },
   heroContent: {},
   aiBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     alignSelf: 'flex-start',
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
   },
   aiBadgeText: {
     fontSize: 12,
     color: '#F59E0B',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   heroTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   heroSubtitle: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.85)',
     marginTop: 4,
   },
   searchContainer: {
@@ -233,10 +243,10 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderRadius: 14,
     paddingHorizontal: 14,
-    height: 46,
+    height: 48,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },
@@ -281,87 +291,110 @@ const styles = StyleSheet.create({
   },
   subChip: {
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
   subChipActive: {
     backgroundColor: 'rgba(124,58,237,0.2)',
+    borderColor: 'rgba(124,58,237,0.4)',
   },
   subText: {
-    color: Colors.textTertiary,
-    fontSize: 12,
-    fontWeight: '500',
+    color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '600',
   },
   subTextActive: {
-    color: Colors.secondary,
+    color: Colors.white,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 16,
-    gap: 8,
+    gap: 12,
+    paddingTop: 8,
   },
   card: {
-    width: CARD_WIDTH,
+    width: (width - 32 - 24) / 3,
     backgroundColor: 'rgba(22, 24, 36, 0.55)',
-    borderRadius: 16,
-    padding: 10,
+    borderRadius: 20,
+    padding: 12,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
+    position: 'relative',
+    overflow: 'hidden',
   },
   iconLiquid: {
-    width: 68,
-    height: 68,
+    width: 64,
+    height: 64,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
+    marginTop: 4,
   },
   iconGlow: {
     position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(124,58,237,0.15)',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 4,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(124,58,237,0.12)',
   },
   cardIcon: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
   },
   badgeRow: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    right: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    marginBottom: 4,
-    minHeight: 16,
+    justifyContent: 'space-between',
+    zIndex: 10,
+    minHeight: 18,
   },
   proBadge: {
-    backgroundColor: 'rgba(253,151,7,0.25)',
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 4,
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
-  proBadgeText: { fontSize: 8, color: '#FD9707', fontWeight: 'bold' },
+  proBadgeText: { 
+    fontSize: 9, 
+    color: '#FFFFFF', 
+    fontWeight: '800' 
+  },
   newBadge: {
-    backgroundColor: 'rgba(34,197,94,0.25)',
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 4,
+    backgroundColor: '#10B981',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
-  newBadgeText: { fontSize: 8, color: '#22C55E', fontWeight: 'bold' },
+  newBadgeText: { 
+    fontSize: 9, 
+    color: '#FFFFFF', 
+    fontWeight: '800' 
+  },
+  trendingBadge: {
+    backgroundColor: 'rgba(124, 58, 237, 0.2)',
+    padding: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(124, 58, 237, 0.4)',
+  },
   cardName: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 14,
+    lineHeight: 16,
+    marginTop: 4,
   },
+});
 });
 
 export default ToolsScreen;

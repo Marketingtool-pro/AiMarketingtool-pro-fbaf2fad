@@ -14,7 +14,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0D0F1C"
+      "backgroundColor": "#060b28"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "172",
+      "buildNumber": "173",
       "googleServicesFile": "GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -49,12 +49,21 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0D0F1C"
+        "backgroundColor": "#060b28"
       },
       "googleServicesFile": "google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 150,
+      "versionCode": 151,
       "allowBackup": false,
+      "statusBar": {
+        "backgroundColor": "transparent",
+        "translucent": true,
+        "barStyle": "light-content"
+      },
+      "navigationBar": {
+        "backgroundColor": "#060b28",
+        "barStyle": "light-content"
+      },
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
@@ -89,7 +98,7 @@
             ]
           },
           "android": {
-            "compileSdkVersion": 35,
+            "compileSdkVersion": 36,
             "targetSdkVersion": 35,
             "minSdkVersion": 24,
             "windowSoftInputMode": "adjustResize"
