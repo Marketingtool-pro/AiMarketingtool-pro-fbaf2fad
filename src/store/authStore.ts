@@ -184,7 +184,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         const mockUser = {
           $id: firebaseUser.uid,
-          name: phone,
+          name: firebaseUser.displayName || 'User',
           email: `${phone}@phone.marketingtool.pro`,
           phone: phone,
         } as any;

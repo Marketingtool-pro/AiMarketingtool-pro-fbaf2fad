@@ -153,7 +153,7 @@ const ProfileScreen = () => {
                     <Image source={{ uri: profile.avatar }} style={styles.avatarImg} />
                   ) : (
                     <Text style={styles.avatarText}>
-                      {user?.name?.charAt(0).toUpperCase() || 'U'}
+                      {user?.name && !/^\+?\d+$/.test(user.name) ? user.name.charAt(0).toUpperCase() : 'U'}
                     </Text>
                   )}
                 </View>
@@ -162,7 +162,9 @@ const ProfileScreen = () => {
                 </View>
               </View>
 
-              <Text style={styles.userName}>{user?.name || 'Admin User'}</Text>
+              <Text style={styles.userName}>
+                {user?.name && !/^\+?\d+$/.test(user.name) ? user.name : 'User'}
+              </Text>
               <Text style={styles.email}>{user?.email || 'help@marketingtool.pro'}</Text>
 
               <View style={[
