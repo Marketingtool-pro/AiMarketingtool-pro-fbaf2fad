@@ -17,23 +17,33 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/AppNavigator';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { useAuthStore } from '../../store/authStore';
+import { functions, account } from '../../services/appwrite';
+import { ExecutionMethod } from 'react-native-appwrite';
+import { getToolIcon } from '../../constants/toolIcons';
+import { useToolsStore, Tool } from '../../store/toolsStore';
 
 const { width } = Dimensions.get('window');
 
 // Chat bot image
 const ChatBotImage = require('../../assets/images/screens/chat-bot.jpg');
 const AiAssistantImage = require('../../assets/images/screens/ai-assistant.jpg');
+const LogoImage = require('../../assets/images/logo.jpeg');
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  isError?: boolean;
+  retryMessage?: string;
 }
 
 interface SuggestedPrompt {
-  icon: string;
+  iconSlug: string;
   title: string;
   description: string;
   prompt: string;
@@ -66,11 +76,13 @@ const AnimatedRipple = () => {
       );
     };
 
-    Animated.parallel([
+    const anim = Animated.parallel([
       createRippleAnimation(ripple1, 0),
       createRippleAnimation(ripple2, 1000),
       createRippleAnimation(ripple3, 2000),
-    ]).start();
+    ]);
+    anim.start();
+    return () => anim.stop();
   }, []);
 
   const createRippleStyle = (anim: Animated.Value) => ({
@@ -87,7 +99,7 @@ const AnimatedRipple = () => {
     borderWidth: 2,
     borderColor: anim.interpolate({
       inputRange: [0, 0.5, 1],
-      outputRange: ['rgba(175, 21, 195, 0.6)', 'rgba(175, 21, 195, 0.3)', 'rgba(175, 21, 195, 0)'],
+      outputRange: ['rgba(124, 58, 237, 0.6)', 'rgba(124, 58, 237, 0.3)', 'rgba(124, 58, 237, 0)'],
     }),
     opacity: anim.interpolate({
       inputRange: [0, 1],
@@ -104,153 +116,84 @@ const AnimatedRipple = () => {
   );
 };
 
-// LiMo Bot Icon Component
-const BotIcon = ({ size = 80, animated = true }: { size?: number; animated?: boolean }) => {
-  const bounceAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (animated) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(bounceAnim, {
-            toValue: -8,
-            duration: 1500,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(bounceAnim, {
-            toValue: 0,
-            duration: 1500,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    }
-  }, [animated]);
-
+// Bot avatar icon - uses real logo with dark background
+const BotAvatar = ({ size = 32 }: { size?: number }) => {
   return (
-    <Animated.View style={{ transform: [{ translateY: bounceAnim }] }}>
-      <LinearGradient
-        colors={['#FF6B9D', '#C44569']}
-        style={[styles.botIcon, { width: size, height: size, borderRadius: size * 0.25 }]}
-      >
-        {/* Bot Eyes */}
-        <View style={styles.botEyesContainer}>
-          <View style={[styles.botEye, { width: size * 0.22, height: size * 0.22 }]} />
-          <View style={[styles.botEye, { width: size * 0.22, height: size * 0.22 }]} />
-        </View>
-      </LinearGradient>
-    </Animated.View>
+    <View style={[styles.botAvatarContainer, { width: size, height: size, borderRadius: size / 2 }]}>
+      <Image
+        source={LogoImage}
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+        resizeMode="cover"
+      />
+    </View>
   );
 };
 
-// Chat capability tabs
-interface ChatCapability {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-  description: string;
-  features: string[];
-}
+type ChatTab = 'chat' | 'tools' | 'history';
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const ChatScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
+  const { profile } = useAuthStore();
+  const { tools, categories } = useToolsStore();
   const scrollViewRef = useRef<ScrollView>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [activeTab, setActiveTab] = useState('chat');
+  const [activeTab, setActiveTab] = useState<ChatTab>('chat');
+  const [activeCategory, setActiveCategory] = useState('All');
   const typingAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Full chat capabilities - NOT shortcuts
-  const chatCapabilities: ChatCapability[] = [
-    {
-      id: 'ads',
-      name: 'Ad Creation',
-      icon: 'target',
-      color: '#FF6B6B',
-      description: 'Create ads for any platform',
-      features: ['Google Ads', 'Facebook Ads', 'Instagram Ads', 'TikTok Ads', 'LinkedIn Ads'],
-    },
-    {
-      id: 'content',
-      name: 'Content Writing',
-      icon: 'edit-3',
-      color: '#4ECDC4',
-      description: 'Write any marketing content',
-      features: ['Blog Posts', 'Product Descriptions', 'Landing Pages', 'Press Releases', 'Case Studies'],
-    },
-    {
-      id: 'email',
-      name: 'Email Marketing',
-      icon: 'mail',
-      color: '#FFE66D',
-      description: 'Create email campaigns',
-      features: ['Subject Lines', 'Welcome Series', 'Abandoned Cart', 'Newsletters', 'Promotional'],
-    },
-    {
-      id: 'social',
-      name: 'Social Media',
-      icon: 'share-2',
-      color: '#A78BFA',
-      description: 'Social content creation',
-      features: ['Instagram', 'Twitter/X', 'LinkedIn', 'TikTok', 'Facebook'],
-    },
-    {
-      id: 'seo',
-      name: 'SEO & Keywords',
-      icon: 'search',
-      color: '#34D399',
-      description: 'SEO optimization help',
-      features: ['Meta Tags', 'Keyword Research', 'Content Optimization', 'Schema Markup', 'Link Building'],
-    },
-    {
-      id: 'strategy',
-      name: 'Strategy',
-      icon: 'trending-up',
-      color: '#F472B6',
-      description: 'Marketing strategy advice',
-      features: ['Campaign Planning', 'Audience Analysis', 'Competitor Research', 'Budget Allocation', 'ROI Analysis'],
-    },
-  ];
 
   const suggestedPrompts: SuggestedPrompt[] = [
     {
-      icon: 'edit-3',
+      iconSlug: 'facebook-ad-copy',
       title: 'Write Ad Copy',
       description: 'Create compelling ads',
       prompt: 'Write a compelling Facebook ad copy for a fitness app',
       color: Colors.gold,
     },
     {
-      icon: 'trending-up',
+      iconSlug: 'strategy',
       title: 'Marketing Strategy',
       description: 'Get expert advice',
       prompt: 'Give me a marketing strategy for launching a new product',
       color: Colors.cyan,
     },
     {
-      icon: 'mail',
+      iconSlug: 'cold-outreach-email',
       title: 'Email Campaign',
       description: 'Generate emails',
       prompt: 'Generate 5 email subject lines for a product launch',
       color: Colors.secondary,
     },
     {
-      icon: 'instagram',
+      iconSlug: 'instagram-captions',
       title: 'Social Content',
       description: 'Create viral posts',
       prompt: 'Create an engaging Instagram caption for a travel photo',
       color: Colors.purple,
     },
+    {
+      iconSlug: 'seo-meta-title',
+      title: 'SEO & Keywords',
+      description: 'Optimize for search',
+      prompt: 'Help me find the best keywords for my e-commerce store',
+      color: Colors.success,
+    },
+    {
+      iconSlug: 'blog-post-ideas',
+      title: 'Blog Content',
+      description: 'Write blog posts',
+      prompt: 'Give me 10 blog post ideas for a SaaS company',
+      color: '#FF6B6B',
+    },
   ];
 
   useEffect(() => {
     if (isTyping) {
-      Animated.loop(
+      const anim = Animated.loop(
         Animated.sequence([
           Animated.timing(typingAnim, {
             toValue: 1,
@@ -263,7 +206,9 @@ const ChatScreen = () => {
             useNativeDriver: true,
           }),
         ])
-      ).start();
+      );
+      anim.start();
+      return () => anim.stop();
     } else {
       typingAnim.setValue(0);
     }
@@ -271,7 +216,7 @@ const ChatScreen = () => {
 
   // Pulse animation for input border
   useEffect(() => {
-    Animated.loop(
+    const anim = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1.02,
@@ -286,7 +231,9 @@ const ChatScreen = () => {
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+    anim.start();
+    return () => anim.stop();
   }, []);
 
   const scrollToBottom = () => {
@@ -294,6 +241,10 @@ const ChatScreen = () => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
   };
+
+  // Track consecutive errors for smart recovery
+  const [consecutiveErrors, setConsecutiveErrors] = useState(0);
+  const lastFailedMessage = useRef<string | null>(null);
 
   const handleSend = async (text?: string) => {
     const messageText = text || inputText.trim();
@@ -312,7 +263,6 @@ const ChatScreen = () => {
     scrollToBottom();
 
     try {
-      // Call REAL Windmill AI
       const response = await callWindmillChat(messageText, messages);
 
       const assistantMessage: Message = {
@@ -322,34 +272,48 @@ const ChatScreen = () => {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, assistantMessage]);
-    } catch (error) {
-      if (__DEV__) console.error('[Chat] AI Error:', error);
+      setConsecutiveErrors(0);
+      lastFailedMessage.current = null;
+    } catch (error: any) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: 'I encountered an error connecting to the AI. Please try again.',
         timestamp: new Date(),
+        isError: true,
+        retryMessage: messageText,
       };
       setMessages(prev => [...prev, errorMessage]);
+      setConsecutiveErrors(prev => prev + 1);
+      lastFailedMessage.current = messageText;
     } finally {
       setIsTyping(false);
       scrollToBottom();
     }
   };
 
-  // REAL Windmill AI Chat Function
-  const callWindmillChat = async (userMessage: string, history: Message[]): Promise<string> => {
-    const WINDMILL_BASE = 'https://wm.marketingtool.pro';
-    const WINDMILL_WORKSPACE = 'marketingtool-pro';
-    const WINDMILL_TOKEN = 'wm_token_marketingtool_2024';
+  // Retry a failed message
+  const handleRetry = (retryText: string) => {
+    // Remove the error message before retrying
+    setMessages(prev => prev.filter(m => !(m.isError && m.retryMessage === retryText)));
+    handleSend(retryText);
+  };
 
-    // Build conversation history for context
-    const conversationHistory = history.slice(-10).map(m => ({
-      role: m.role,
-      content: m.content,
-    }));
+  // AI Chat via Appwrite Functions (server-side proxy to Windmill)
+  // The Windmill token is stored server-side in the Appwrite Function environment,
+  // never exposed to the client app binary.
+  const callWindmillChat = async (userMessage: string, history: Message[], retryCount = 0): Promise<string> => {
+    // On retry, reduce history to avoid payload size issues
+    const historyLimit = retryCount > 0 ? 4 : 10;
+    const conversationHistory = history
+      .filter(m => !m.isError)
+      .slice(-historyLimit)
+      .map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
 
-    const systemPrompt = `You are MarketBot, an expert AI marketing assistant for MarketingTool.pro.
+    const systemPrompt = `You are an expert AI marketing assistant for MarketingTool.pro.
 You help users with:
 - Writing ad copy (Google Ads, Facebook, Instagram)
 - Marketing strategies and campaigns
@@ -361,31 +325,50 @@ You help users with:
 Be helpful, specific, and provide actionable advice. Use formatting with bullet points and sections when appropriate.`;
 
     try {
-      const response = await fetch(
-        `${WINDMILL_BASE}/api/w/${WINDMILL_WORKSPACE}/jobs/run_wait_result/p/f/mobile/chat_ai`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${WINDMILL_TOKEN}`,
-          },
-          body: JSON.stringify({
-            system_prompt: systemPrompt,
-            user_message: userMessage,
-            conversation_history: conversationHistory,
-          }),
+      // Validate session is still active before making the call
+      if (retryCount === 0) {
+        try {
+          await account.get();
+        } catch (sessionError) {
+          console.log('Session validation failed - attempting chat anyway');
         }
-      );
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
       }
 
-      const result = await response.json();
-      return result.response || result.content || result;
+      const execution = await functions.createExecution(
+        'chat-ai',
+        JSON.stringify({
+          system_prompt: systemPrompt,
+          user_message: userMessage,
+          conversation_history: conversationHistory,
+        }),
+        false,
+        '/',
+        ExecutionMethod.POST
+      );
+
+      // Check execution status before parsing
+      if (execution.status === 'failed' || execution.responseStatusCode >= 400) {
+        throw new Error(`Function failed with status: ${execution.responseStatusCode}`);
+      }
+
+      if (!execution.responseBody || execution.responseBody.trim() === '') {
+        throw new Error('Empty response from AI service');
+      }
+
+      const result = JSON.parse(execution.responseBody);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      return result.response || result.content || 'I could not generate a response.';
     } catch (error) {
-      if (__DEV__) console.error('[Chat] Windmill error:', error);
-      // Fallback to helpful response
+      // Retry once with reduced history (handles payload size / timeout issues)
+      if (retryCount < 1) {
+        console.log('Chat call failed, retrying with reduced history...');
+        return callWindmillChat(userMessage, history, retryCount + 1);
+      }
+      // Second retry failed — use fallback
       return generateFallbackResponse(userMessage);
     }
   };
@@ -428,15 +411,30 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
           isUser ? styles.userMessageContainer : styles.assistantMessageContainer,
         ]}
       >
+        {!isUser && (
+          <View style={styles.messageAvatarContainer}>
+            <BotAvatar size={32} />
+          </View>
+        )}
         <View
           style={[
             styles.messageBubble,
             isUser ? styles.userBubble : styles.assistantBubble,
+            message.isError && styles.errorBubble,
           ]}
         >
           <Text style={[styles.messageText, isUser && styles.userMessageText]}>
             {message.content}
           </Text>
+          {message.isError && message.retryMessage && (
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={() => handleRetry(message.retryMessage!)}
+            >
+              <Feather name="refresh-cw" size={14} color={Colors.white} />
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          )}
           <Text style={styles.timestamp}>
             {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
@@ -450,11 +448,15 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Feather name="arrow-left" size={22} color={Colors.white} />
+          </TouchableOpacity>
+          <BotAvatar size={40} />
           <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle}>MarketBot</Text>
+            <Text style={styles.headerTitle}>AI MarketingTool</Text>
             <View style={styles.onlineStatus}>
               <View style={styles.onlineDot} />
-              <Text style={styles.onlineText}>Online</Text>
+              <Text style={styles.onlineText}>Ready</Text>
             </View>
           </View>
         </View>
@@ -466,7 +468,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
           )}
           <View style={styles.creditsContainer}>
             <Feather name="zap" size={14} color={Colors.gold} />
-            <Text style={styles.creditsText}>400</Text>
+            <Text style={styles.creditsText}>{profile?.generationsCount || 10}</Text>
           </View>
         </View>
       </View>
@@ -490,129 +492,159 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                 <View style={styles.botImageContainer}>
                   <Image source={ChatBotImage} style={styles.botImage} resizeMode="cover" />
                   <LinearGradient
-                    colors={['transparent', 'rgba(175, 21, 195, 0.3)']}
+                    colors={['transparent', 'rgba(124, 58, 237, 0.3)']}
                     style={styles.botImageOverlay}
                   />
                 </View>
               </View>
 
-              <Text style={styles.emptyTitle}>Hi, I'm MarketBot!</Text>
-              <Text style={styles.emptySubtitle}>Your AI Marketing Assistant powered by Claude</Text>
+              <Text style={styles.emptyTitle}>Hi, I'm Marketing AI!</Text>
+              <Text style={styles.emptySubtitle}>Your AI Marketing Assistant</Text>
 
-              {/* Tab Navigation */}
-              <View style={styles.tabNav}>
+              {/* Chat / Tools / History Tabs */}
+              <View style={styles.tabBar}>
                 <TouchableOpacity
                   style={[styles.tabItem, activeTab === 'chat' && styles.tabItemActive]}
                   onPress={() => setActiveTab('chat')}
                 >
-                  <Feather name="message-circle" size={18} color={activeTab === 'chat' ? Colors.white : Colors.textSecondary} />
+                  <Feather name="message-circle" size={16} color={activeTab === 'chat' ? Colors.white : Colors.textSecondary} />
                   <Text style={[styles.tabText, activeTab === 'chat' && styles.tabTextActive]}>Chat</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.tabItem, activeTab === 'capabilities' && styles.tabItemActive]}
-                  onPress={() => setActiveTab('capabilities')}
+                  style={[styles.tabItem, activeTab === 'tools' && styles.tabItemActive]}
+                  onPress={() => setActiveTab('tools')}
                 >
-                  <Feather name="grid" size={18} color={activeTab === 'capabilities' ? Colors.white : Colors.textSecondary} />
-                  <Text style={[styles.tabText, activeTab === 'capabilities' && styles.tabTextActive]}>Tools</Text>
+                  <Feather name="grid" size={16} color={activeTab === 'tools' ? Colors.white : Colors.textSecondary} />
+                  <Text style={[styles.tabText, activeTab === 'tools' && styles.tabTextActive]}>Tools</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.tabItem, activeTab === 'history' && styles.tabItemActive]}
                   onPress={() => setActiveTab('history')}
                 >
-                  <Feather name="clock" size={18} color={activeTab === 'history' ? Colors.white : Colors.textSecondary} />
+                  <Feather name="clock" size={16} color={activeTab === 'history' ? Colors.white : Colors.textSecondary} />
                   <Text style={[styles.tabText, activeTab === 'history' && styles.tabTextActive]}>History</Text>
                 </TouchableOpacity>
               </View>
 
+              {/* Tab Content */}
               {activeTab === 'chat' && (
-                <>
-                  {/* Input with gradient border */}
-                  <Animated.View style={[styles.inputPreview, { transform: [{ scale: pulseAnim }] }]}>
-                    <LinearGradient
-                      colors={['#C44569', '#6441A5']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.inputPreviewGradient}
+                <View style={styles.promptsGrid}>
+                  {suggestedPrompts.map((prompt, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.promptCard}
+                      onPress={() => handlePromptPress(prompt.prompt)}
+                      activeOpacity={0.7}
                     >
-                      <View style={styles.inputPreviewInner}>
-                        <Text style={styles.inputPreviewText}>Ask about marketing...</Text>
-                        <View style={styles.inputPreviewSend}>
-                          <Feather name="send" size={18} color={Colors.textSecondary} />
-                        </View>
+                      <View style={[styles.promptIcon, { backgroundColor: prompt.color + '20' }]}>
+                        <Image
+                          source={getToolIcon(prompt.iconSlug)}
+                          style={{ width: 32, height: 32 }}
+                          resizeMode="contain"
+                        />
                       </View>
-                    </LinearGradient>
-                  </Animated.View>
-
-                  {/* Quick Prompts */}
-                  <View style={styles.promptsGrid}>
-                    {suggestedPrompts.map((prompt, index) => (
-                      <TouchableOpacity
-                        key={index}
-                        style={styles.promptCard}
-                        onPress={() => handlePromptPress(prompt.prompt)}
-                        activeOpacity={0.7}
-                      >
-                        <View style={[styles.promptIcon, { backgroundColor: prompt.color + '20' }]}>
-                          <Feather name={prompt.icon as any} size={20} color={prompt.color} />
-                        </View>
-                        <View style={styles.promptTextContainer}>
-                          <Text style={styles.promptTitle}>{prompt.title}</Text>
-                          <Text style={styles.promptDescription}>{prompt.description}</Text>
-                        </View>
-                        <Text style={[styles.promptArrow, { color: prompt.color }]}>›</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </>
+                      <View style={styles.promptTextContainer}>
+                        <Text style={styles.promptTitle}>{prompt.title}</Text>
+                        <Text style={styles.promptDescription}>{prompt.description}</Text>
+                      </View>
+                      <Text style={[styles.promptArrow, { color: prompt.color }]}>›</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               )}
 
-              {activeTab === 'capabilities' && (
-                <View style={styles.capabilitiesGrid}>
-                  {chatCapabilities.map((cap, index) => (
-                    <TouchableOpacity
-                      key={cap.id}
-                      style={styles.capabilityCard}
-                      onPress={() => handlePromptPress(`Help me with ${cap.name.toLowerCase()}: ${cap.features[0]}`)}
-                      activeOpacity={0.8}
-                    >
-                      <LinearGradient
-                        colors={[cap.color + '30', cap.color + '10']}
-                        style={styles.capabilityGradient}
+              {activeTab === 'tools' && (
+                <View style={styles.toolsTabContent}>
+                  {/* Info Banner */}
+                  <View style={styles.infoBanner}>
+                    <Feather name="check-circle" size={18} color={Colors.success} />
+                    <Text style={styles.infoBannerText}>
+                      Same tools as web • Same AI • Same backend • Full execution
+                    </Text>
+                  </View>
+
+                  {/* Category Filters */}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                    {['All', ...categories].map((cat) => (
+                      <TouchableOpacity
+                        key={cat}
+                        style={[styles.categoryChip, activeCategory === cat && styles.categoryChipActive]}
+                        onPress={() => setActiveCategory(cat)}
                       >
-                        <View style={[styles.capabilityIconContainer, { backgroundColor: cap.color + '25' }]}>
-                          <Feather name={cap.icon as any} size={24} color={cap.color} />
-                        </View>
-                        <Text style={styles.capabilityName}>{cap.name}</Text>
-                        <Text style={styles.capabilityDesc}>{cap.description}</Text>
-                        <View style={styles.capabilityFeatures}>
-                          {cap.features.slice(0, 3).map((feat, i) => (
-                            <View key={i} style={[styles.featureTag, { borderColor: cap.color + '40' }]}>
-                              <Text style={[styles.featureText, { color: cap.color }]}>{feat}</Text>
+                        <Text style={[styles.categoryChipText, activeCategory === cat && styles.categoryChipTextActive]}>
+                          {cat}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+
+                  <Text style={styles.toolsCount}>
+                    {activeCategory === 'All'
+                      ? `${tools.length} AI Marketing Tools`
+                      : `${tools.filter(t => t.category === activeCategory).length} tools`}
+                  </Text>
+
+                  {/* Tools List */}
+                  {(activeCategory === 'All' ? tools : tools.filter(t => t.category === activeCategory)).map((tool) => (
+                    <TouchableOpacity
+                      key={tool.$id}
+                      style={styles.toolListCard}
+                      onPress={() => navigation.navigate('ToolDetail', { toolSlug: tool.slug })}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.toolListIcon}>
+                        <Image
+                          source={getToolIcon(tool.slug)}
+                          style={{ width: 36, height: 36 }}
+                          resizeMode="contain"
+                        />
+                      </View>
+                      <View style={styles.toolListInfo}>
+                        <View style={styles.toolListNameRow}>
+                          <Text style={styles.toolListName} numberOfLines={1}>{tool.name}</Text>
+                          {tool.isPro && (
+                            <View style={styles.proBadge}>
+                              <Text style={styles.proBadgeText}>PRO</Text>
                             </View>
-                          ))}
+                          )}
                         </View>
-                      </LinearGradient>
+                        <Text style={styles.toolListDesc} numberOfLines={1}>{tool.shortDescription}</Text>
+                        <View style={styles.toolListMeta}>
+                          <Feather name="star" size={12} color={Colors.gold} />
+                          <Text style={styles.toolListRating}>{tool.rating.toFixed(1)}</Text>
+                          <Text style={styles.toolListUses}>{tool.usageCount} uses</Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.runButton}
+                        onPress={() => navigation.navigate('ToolDetail', { toolSlug: tool.slug })}
+                      >
+                        <Feather name="play" size={14} color={Colors.white} />
+                        <Text style={styles.runButtonText}>Run</Text>
+                      </TouchableOpacity>
                     </TouchableOpacity>
                   ))}
                 </View>
               )}
 
               {activeTab === 'history' && (
-                <View style={styles.historySection}>
-                  <View style={styles.historyEmpty}>
-                    <Feather name="message-square" size={48} color={Colors.textTertiary} />
-                    <Text style={styles.historyEmptyText}>No chat history yet</Text>
-                    <Text style={styles.historyEmptySubtext}>Start a conversation to see your history</Text>
-                    <TouchableOpacity style={styles.startChatBtn} onPress={() => setActiveTab('chat')}>
-                      <Text style={styles.startChatBtnText}>Start Chatting</Text>
-                    </TouchableOpacity>
-                  </View>
+                <View style={styles.historyTabContent}>
+                  {messages.length === 0 ? (
+                    <View style={styles.emptyHistory}>
+                      <Feather name="clock" size={48} color={Colors.textTertiary} />
+                      <Text style={styles.emptyHistoryText}>No chat history yet</Text>
+                      <Text style={styles.emptyHistorySubtext}>Start a conversation to see your history here</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.emptyHistorySubtext}>Previous conversations will appear here</Text>
+                  )}
                 </View>
               )}
             </View>
           ) : (
             <>
               {messages.map(renderMessage)}
+              {/* Typing dots removed - direct reply */}
             </>
           )}
           <View style={{ height: 120 }} />
@@ -621,7 +653,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
         {/* Input Area */}
         <View style={styles.inputContainer}>
           <LinearGradient
-            colors={['#C44569', '#6441A5']}
+            colors={['#7C3AED', '#8B5CF6']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.inputGradientBorder}
@@ -674,6 +706,15 @@ const styles = StyleSheet.create({
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.sm,
   },
   headerInfo: {
     marginLeft: Spacing.md,
@@ -758,8 +799,8 @@ const styles = StyleSheet.create({
     borderRadius: 70,
     overflow: 'hidden',
     borderWidth: 3,
-    borderColor: '#C44569',
-    shadowColor: '#C44569',
+    borderColor: '#7C3AED',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
     shadowRadius: 20,
@@ -776,22 +817,11 @@ const styles = StyleSheet.create({
     right: 0,
     height: '50%',
   },
-  botIcon: {
+  botAvatarContainer: {
+    backgroundColor: '#0D0F1C',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#C44569',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  botEyesContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  botEye: {
-    backgroundColor: Colors.white,
-    borderRadius: 100,
+    overflow: 'hidden',
   },
   emptyTitle: {
     fontSize: 28,
@@ -802,7 +832,176 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     fontSize: 18,
     color: Colors.textSecondary,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    marginBottom: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  tabItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.surface,
+    gap: 6,
+  },
+  tabItemActive: {
+    backgroundColor: Colors.secondary,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  tabTextActive: {
+    color: Colors.white,
+  },
+  toolsTabContent: {
+    width: '100%',
+  },
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  infoBannerText: {
+    fontSize: 13,
+    color: Colors.success,
+    fontWeight: '500',
+    flex: 1,
+  },
+  categoryScroll: {
+    marginBottom: Spacing.sm,
+  },
+  categoryChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.surface,
+    marginRight: Spacing.sm,
+  },
+  categoryChipActive: {
+    backgroundColor: Colors.secondary,
+  },
+  categoryChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+  },
+  categoryChipTextActive: {
+    color: Colors.white,
+  },
+  toolsCount: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  toolListCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.card,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  toolListIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toolListInfo: {
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
+  toolListNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  toolListName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.white,
+    flexShrink: 1,
+  },
+  proBadge: {
+    backgroundColor: Colors.gold,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  proBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#000',
+  },
+  toolListDesc: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  toolListMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 4,
+  },
+  toolListRating: {
+    fontSize: 12,
+    color: Colors.gold,
+    fontWeight: '600',
+  },
+  toolListUses: {
+    fontSize: 12,
+    color: Colors.textTertiary,
+    marginLeft: 4,
+  },
+  runButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.secondary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.full,
+    gap: 4,
+  },
+  runButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.white,
+  },
+  historyTabContent: {
+    width: '100%',
+    paddingVertical: Spacing.xl,
+  },
+  emptyHistory: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
+  },
+  emptyHistoryText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    marginTop: Spacing.md,
+  },
+  emptyHistorySubtext: {
+    fontSize: 14,
+    color: Colors.textTertiary,
+    marginTop: Spacing.xs,
+    textAlign: 'center',
   },
   inputPreview: {
     width: width - 48,
@@ -892,8 +1091,31 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   assistantBubble: {
-    backgroundColor: Colors.card,
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  errorBubble: {
+    backgroundColor: '#3D1F1F',
+    borderWidth: 1,
+    borderColor: '#FF6B6B40',
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.secondary,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    marginTop: 8,
+    gap: 6,
+  },
+  retryButtonText: {
+    color: Colors.white,
+    fontSize: 13,
+    fontWeight: '600',
   },
   messageText: {
     fontSize: 16,
@@ -927,19 +1149,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: Colors.textSecondary,
   },
-  floatingBot: {
-    position: 'absolute',
-    bottom: 100,
-    alignSelf: 'center',
-    shadowColor: '#C44569',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-  },
   inputContainer: {
     padding: Spacing.md,
-    paddingBottom: 34,
+    paddingBottom: 8,
     backgroundColor: Colors.background,
   },
   inputGradientBorder: {
@@ -973,119 +1185,6 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: Colors.secondary + '50',
-  },
-  // Tab Navigation Styles
-  tabNav: {
-    flexDirection: 'row',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: 4,
-    marginBottom: Spacing.lg,
-    width: width - 48,
-  },
-  tabItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: BorderRadius.md,
-    gap: 6,
-  },
-  tabItemActive: {
-    backgroundColor: Colors.secondary,
-  },
-  tabText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  tabTextActive: {
-    color: Colors.white,
-  },
-  // Capabilities Grid
-  capabilitiesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    width: width - 48,
-    gap: Spacing.md,
-  },
-  capabilityCard: {
-    width: (width - 48 - Spacing.md) / 2,
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-    marginBottom: Spacing.xs,
-  },
-  capabilityGradient: {
-    padding: Spacing.md,
-    minHeight: 160,
-  },
-  capabilityIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  capabilityName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.white,
-    marginBottom: 4,
-  },
-  capabilityDesc: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.sm,
-  },
-  capabilityFeatures: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-  },
-  featureTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-  },
-  featureText: {
-    fontSize: 10,
-    fontWeight: '500',
-  },
-  // History Section
-  historySection: {
-    width: width - 48,
-    paddingVertical: Spacing.xl,
-  },
-  historyEmpty: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xxl,
-  },
-  historyEmptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.white,
-    marginTop: Spacing.md,
-  },
-  historyEmptySubtext: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginTop: Spacing.xs,
-  },
-  startChatBtn: {
-    marginTop: Spacing.lg,
-    backgroundColor: Colors.secondary,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.full,
-  },
-  startChatBtnText: {
-    color: Colors.white,
-    fontSize: 15,
-    fontWeight: '600',
   },
 });
 

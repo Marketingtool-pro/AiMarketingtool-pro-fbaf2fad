@@ -62,7 +62,7 @@ const ForgotPasswordScreen = () => {
         </TouchableOpacity>
 
         <View style={styles.header}>
-          <Feather name="key" size={60} color={Colors.primary} style={styles.icon} />
+          <Feather name="key" size={60} color={Colors.secondary} style={styles.icon} />
           <Text style={styles.title}>Forgot Password?</Text>
           <Text style={styles.subtitle}>
             Enter your email and we'll send you a link to reset your password
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   backToLoginText: {
-    color: Colors.primary,
+    color: Colors.secondary,
     fontSize: 16,
     fontWeight: '600',
   },

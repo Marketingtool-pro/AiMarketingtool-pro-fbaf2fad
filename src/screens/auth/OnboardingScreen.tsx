@@ -1,72 +1,67 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   Dimensions,
   FlatList,
   TouchableOpacity,
-  Animated,
-  Image,
+  Platform,
+  ImageSourcePropType,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/AppNavigator';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Gradients } from '../../constants/theme';
+import AnimatedBackground from '../../components/common/AnimatedBackground';
+import * as Haptics from 'expo-haptics';
 
-const { width, height } = Dimensions.get('window');
-
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+const { width } = Dimensions.get('window');
+const CARD_SIZE = width * 0.52;
+const ICON_SIZE = CARD_SIZE * 0.55;
 
 interface OnboardingItem {
   id: string;
   title: string;
   description: string;
-  icon: keyof typeof Feather.glyphMap;
-  gradient: string[];
+  icon: ImageSourcePropType;
 }
 
-const onboardingData: OnboardingItem[] = [
+const ONBOARDING_DATA: OnboardingItem[] = [
   {
     id: '1',
-    title: '206+ AI Marketing Tools',
+    title: 'AI Marketing Tools',
     description: 'Access the most comprehensive suite of AI-powered marketing tools. From ad copy to blog posts, we\'ve got you covered.',
-    icon: 'zap',
-    gradient: ['#6C5CE7', '#A29BFE'],
+    icon: require('../../assets/images/tool-icons-v2/bot.png'),
   },
   {
     id: '2',
     title: 'Create Content Instantly',
     description: 'Generate high-converting ads, engaging social posts, and SEO-optimized content in seconds with Claude AI.',
-    icon: 'edit-3',
-    gradient: ['#00D9FF', '#6C5CE7'],
+    icon: require('../../assets/images/tool-icons-v2/copywriting.png'),
   },
   {
     id: '3',
     title: 'Boost Your ROI',
     description: 'Our AI analyzes top-performing content to help you create marketing materials that convert.',
-    icon: 'trending-up',
-    gradient: ['#FF6B9D', '#6C5CE7'],
+    icon: require('../../assets/images/tool-icons-v2/growth-chart.png'),
   },
   {
     id: '4',
     title: '7-Day Free Trial',
     description: 'Start creating amazing marketing content today. No credit card required to get started.',
-    icon: 'gift',
-    gradient: ['#00D68F', '#00B894'],
+    icon: require('../../assets/images/tool-icons-v2/marketing-target.png'),
   },
 ];
 
 const OnboardingScreen = () => {
-  const navigation = useNavigation<NavigationProp>();
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const navigation = useNavigation<any>();
   const flatListRef = useRef<FlatList>(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const handleNext = () => {
-    if (currentIndex < onboardingData.length - 1) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (currentIndex < ONBOARDING_DATA.length - 1) {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
       setCurrentIndex(currentIndex + 1);
     } else {
@@ -74,197 +69,154 @@ const OnboardingScreen = () => {
     }
   };
 
-  const handleSkip = () => {
-    navigation.navigate('Auth');
-  };
-
-  const renderItem = ({ item, index }: { item: OnboardingItem; index: number }) => {
-    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-
-    const scale = scrollX.interpolate({
-      inputRange,
-      outputRange: [0.8, 1, 0.8],
-      extrapolate: 'clamp',
-    });
-
-    const opacity = scrollX.interpolate({
-      inputRange,
-      outputRange: [0.5, 1, 0.5],
-      extrapolate: 'clamp',
-    });
-
-    return (
-      <View style={styles.slide}>
-        <Animated.View style={[styles.iconContainer, { transform: [{ scale }], opacity }]}>
-          <LinearGradient
-            colors={item.gradient as [string, string]}
-            style={styles.iconGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Feather name={item.icon} size={80} color={Colors.white} />
-          </LinearGradient>
-        </Animated.View>
-        <Animated.Text style={[styles.title, { opacity }]}>{item.title}</Animated.Text>
-        <Animated.Text style={[styles.description, { opacity }]}>{item.description}</Animated.Text>
+  const renderItem = ({ item }: { item: OnboardingItem }) => (
+    <View style={styles.slide}>
+      <View style={styles.cardShadow}>
+        <View style={styles.glassCard}>
+          <View style={styles.iconGlow} />
+          <Image source={item.icon} style={styles.icon3d} resizeMode="contain" />
+        </View>
       </View>
-    );
-  };
 
-  const renderPagination = () => (
-    <View style={styles.pagination}>
-      {onboardingData.map((_, index) => {
-        const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-
-        const dotWidth = scrollX.interpolate({
-          inputRange,
-          outputRange: [8, 24, 8],
-          extrapolate: 'clamp',
-        });
-
-        const opacity = scrollX.interpolate({
-          inputRange,
-          outputRange: [0.3, 1, 0.3],
-          extrapolate: 'clamp',
-        });
-
-        return (
-          <Animated.View
-            key={index}
-            style={[styles.dot, { width: dotWidth, opacity }]}
-          />
-        );
-      })}
+      <View style={styles.textContainer}>
+        <Text style={styles.title}>{item.title}</Text>
+        <Text style={styles.description}>{item.description}</Text>
+      </View>
     </View>
   );
 
   return (
-    <LinearGradient colors={Gradients.dark} style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
+    <AnimatedBackground variant="default" showParticles={false}>
+      <View style={styles.container}>
+        <TouchableOpacity
+          style={styles.skipBtn}
+          onPress={() => navigation.navigate('Auth')}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
+
+        <FlatList
+          ref={flatListRef}
+          data={ONBOARDING_DATA}
+          renderItem={renderItem}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={(e) => {
+            setCurrentIndex(Math.round(e.nativeEvent.contentOffset.x / width));
+          }}
+          keyExtractor={(item) => item.id}
+        />
+
+        <View style={styles.footer}>
+          <View style={styles.pagination}>
+            {ONBOARDING_DATA.map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.dot,
+                  currentIndex === i ? styles.activeDot : null,
+                ]}
+              />
+            ))}
+          </View>
+
+          <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
+            <LinearGradient colors={Gradients.button} style={styles.nextGradient}>
+              <Text style={styles.nextText}>
+                {currentIndex === ONBOARDING_DATA.length - 1 ? 'Get Started  \u2192' : 'Next  \u2192'}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
       </View>
-
-      <Animated.FlatList
-        ref={flatListRef}
-        data={onboardingData}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: false }
-        )}
-        onMomentumScrollEnd={(event) => {
-          const index = Math.round(event.nativeEvent.contentOffset.x / width);
-          setCurrentIndex(index);
-        }}
-        scrollEventThrottle={16}
-      />
-
-      {renderPagination()}
-
-      <View style={styles.footer}>
-        <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
-          <LinearGradient
-            colors={Gradients.primary}
-            style={styles.nextButtonGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-          >
-            <Text style={styles.nextButtonText}>
-              {currentIndex === onboardingData.length - 1 ? 'Get Started' : 'Next'}
-            </Text>
-            <Feather name="arrow-right" size={20} color={Colors.white} />
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
-    </LinearGradient>
+    </AnimatedBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  skipBtn: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    right: 20,
+    zIndex: 10,
   },
-  header: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: 60,
-    alignItems: 'flex-end',
-  },
-  skipButton: {
-    padding: Spacing.sm,
-  },
-  skipText: {
-    color: Colors.textSecondary,
-    fontSize: 16,
-  },
+  skipText: { color: Colors.textSecondary, fontSize: 16, fontWeight: '500' },
   slide: {
     width,
-    paddingHorizontal: Spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+  },
+  cardShadow: {
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 28,
+    elevation: 12,
+    marginBottom: 40,
+  },
+  glassCard: {
+    width: CARD_SIZE,
+    height: CARD_SIZE,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(22,24,36,0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  iconContainer: {
-    marginBottom: Spacing.xxl,
+  iconGlow: {
+    position: 'absolute',
+    width: ICON_SIZE + 20,
+    height: ICON_SIZE + 20,
+    borderRadius: (ICON_SIZE + 20) / 2,
+    backgroundColor: 'rgba(124,58,237,0.15)',
+    shadowColor: '#9D4EDD',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    elevation: 8,
   },
-  iconGradient: {
-    width: 180,
-    height: 180,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
+  icon3d: {
+    width: ICON_SIZE,
+    height: ICON_SIZE,
   },
+  textContainer: { alignItems: 'center' },
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: 'bold',
     color: Colors.white,
     textAlign: 'center',
-    marginBottom: Spacing.md,
+    marginBottom: 16,
   },
   description: {
     fontSize: 16,
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
-    paddingHorizontal: Spacing.md,
+  },
+  footer: {
+    paddingHorizontal: 40,
+    paddingBottom: Platform.OS === 'ios' ? 60 : 40,
   },
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: Spacing.xl,
+    gap: 8,
+    marginBottom: 32,
   },
   dot: {
+    width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.primary,
-    marginHorizontal: 4,
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
-  footer: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: 50,
-  },
-  nextButton: {
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-  },
-  nextButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: Spacing.xl,
-    gap: 8,
-  },
-  nextButtonText: {
-    color: Colors.white,
-    fontSize: 18,
-    fontWeight: '600',
-  },
+  activeDot: { width: 24, backgroundColor: Colors.secondary },
+  nextBtn: { width: '100%', height: 56, borderRadius: 28, overflow: 'hidden' },
+  nextGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  nextText: { color: Colors.white, fontSize: 18, fontWeight: 'bold' },
 });
 
 export default OnboardingScreen;

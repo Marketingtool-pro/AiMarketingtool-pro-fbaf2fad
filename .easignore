@@ -1,15 +1,48 @@
+# Dependencies
 node_modules/
-.expo/
+
+# Native folders
+ios/
+android/
+
+# Build artifacts
 dist/
+build/
 web-build/
-.metro-health-check*
+
+# Expo / Debug
+.expo/
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# SECURE: BLOCK ALL CREDENTIALS
+credentials/
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
 *.pem
+*.json
+!app.json
+!package.json
+!package-lock.json
+!google-services.json
+!GoogleService-Info.plist
+!src/**/*.json
+
+# IDE / System
+.vscode/
+.idea/
 .DS_Store
-npm-debug.*
-/ios
-/android
+**/.git/
+
+# Massive asset folders
+/src/assets/images/tool-icons/
+
+# Ensure plugins and src are ALWAYS included
+!plugins/
+!src/
+!assets/

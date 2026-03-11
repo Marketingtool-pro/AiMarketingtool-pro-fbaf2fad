@@ -25,7 +25,7 @@ import * as Sharing from 'expo-sharing';
 import ViewShot from 'react-native-view-shot';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
-import AnimatedBackground from '../../components/common/AnimatedBackground';
+
 
 const { width, height } = Dimensions.get('window');
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -116,7 +116,7 @@ const MemeGeneratorScreen = () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        allowsEditing: false,
         aspect: [1, 1],
         quality: 1,
       });
@@ -136,7 +136,7 @@ const MemeGeneratorScreen = () => {
 
     try {
       const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
+        allowsEditing: false,
         aspect: [1, 1],
         quality: 1,
       });
@@ -172,7 +172,7 @@ const MemeGeneratorScreen = () => {
         Alert.alert('Success! 🎉', 'Meme saved to your gallery', [{ text: 'OK' }]);
       }
     } catch (error) {
-      if (__DEV__) console.error('Save error:', error);
+      console.error('Save error:', error);
       Alert.alert('Error', 'Failed to save meme');
     } finally {
       setIsLoading(false);
@@ -201,7 +201,7 @@ const MemeGeneratorScreen = () => {
         }
       }
     } catch (error) {
-      if (__DEV__) console.error('Share error:', error);
+      console.error('Share error:', error);
       Alert.alert('Error', 'Failed to share meme');
     } finally {
       setIsLoading(false);
@@ -303,7 +303,7 @@ const MemeGeneratorScreen = () => {
   );
 
   return (
-    <AnimatedBackground variant="tools" showParticles={true}>
+    <View style={styles.screenContainer}>
       {/* Header */}
       <LinearGradient colors={Gradients.dark} style={styles.header}>
         <View style={styles.headerTop}>
@@ -602,11 +602,15 @@ const MemeGeneratorScreen = () => {
           </View>
         </View>
       </Modal>
-    </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#0D0F1C',
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -757,7 +761,7 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   textInputActive: {
-    borderColor: Colors.primary,
+    borderColor: Colors.secondary,
   },
   settingsPanel: {
     backgroundColor: Colors.card,
@@ -783,7 +787,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: BorderRadius.md,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -801,8 +805,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   optionSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.secondary,
+    borderColor: Colors.secondary,
   },
   fontOptionText: {
     fontSize: 14,
@@ -822,7 +826,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   colorOptionSelected: {
-    borderColor: Colors.primary,
+    borderColor: Colors.secondary,
     borderWidth: 3,
   },
   noStrokeOption: {

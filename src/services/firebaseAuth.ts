@@ -1,33 +1,34 @@
-// Firebase Phone Auth Service (uses MSG91 via Firebase Extension)
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+// Firebase Phone Auth Service - Safe lazy loading
+let auth: any = null;
 
-// Store verification ID for OTP verification
+function getAuth() {
+  if (!auth) {
+    try {
+      auth = require('@react-native-firebase/auth').default;
+    } catch (e) {
+      console.warn('[FirebaseAuth] Native module not available:', e);
+      return null;
+    }
+  }
+  return auth;
+}
+
 let verificationId: string | null = null;
 
-// Firebase Phone Auth Configuration
-const FIREBASE_CONFIG = {
-  // Firebase project: marketingtool-e4930
-  // Phone auth enabled with MSG91 extension
-  testPhoneNumber: '+919999999999',
-  testCode: '123456',
-};
-
-/**
- * Send OTP to phone number via Firebase (MSG91)
- */
 export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: boolean; error?: string }> {
   try {
-    // Normalize phone number to E.164 format
+    const firebaseAuth = getAuth();
+    if (!firebaseAuth) {
+      return { success: false, error: 'Firebase Auth not available on this platform' };
+    }
+
     const normalizedPhone = phoneNumber.startsWith('+')
       ? phoneNumber
       : `+91${phoneNumber.replace(/\D/g, '')}`;
 
     if (__DEV__) console.log('[FirebaseAuth] Sending OTP to:', normalizedPhone);
 
-    // Request OTP via Firebase Phone Auth
-    const confirmation = await auth().signInWithPhoneNumber(normalizedPhone);
-
-    // Store verification ID for later
+    const confirmation = await firebaseAuth().signInWithPhoneNumber(normalizedPhone);
     verificationId = confirmation.verificationId;
 
     if (__DEV__) console.log('[FirebaseAuth] OTP sent successfully');
@@ -35,7 +36,6 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
   } catch (error: any) {
     if (__DEV__) console.error('[FirebaseAuth] Send OTP error:', error);
 
-    // Handle specific Firebase errors
     if (error.code === 'auth/invalid-phone-number') {
       return { success: false, error: 'Invalid phone number format' };
     }
@@ -50,37 +50,29 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
   }
 }
 
-/**
- * Verify OTP code and sign in
- */
 export async function verifyPhoneOTP(code: string): Promise<{
   success: boolean;
-  user?: FirebaseAuthTypes.User;
+  user?: any;
   error?: string
 }> {
   try {
-    if (!verificationId) {
+    const firebaseAuth = getAuth();
+    if (!firebaseAuth || !verificationId) {
       return { success: false, error: 'No pending verification. Please request OTP first.' };
     }
 
     if (__DEV__) console.log('[FirebaseAuth] Verifying OTP...');
 
-    // Create credential with verification ID and code
-    const credential = auth.PhoneAuthProvider.credential(verificationId, code);
-
-    // Sign in with credential
-    const userCredential = await auth().signInWithCredential(credential);
+    const credential = firebaseAuth.PhoneAuthProvider.credential(verificationId, code);
+    const userCredential = await firebaseAuth().signInWithCredential(credential);
 
     if (__DEV__) console.log('[FirebaseAuth] OTP verified successfully');
-
-    // Clear verification ID
     verificationId = null;
 
     return { success: true, user: userCredential.user };
   } catch (error: any) {
     if (__DEV__) console.error('[FirebaseAuth] Verify OTP error:', error);
 
-    // Handle specific Firebase errors
     if (error.code === 'auth/invalid-verification-code') {
       return { success: false, error: 'Invalid OTP code. Please try again.' };
     }
@@ -92,32 +84,27 @@ export async function verifyPhoneOTP(code: string): Promise<{
   }
 }
 
-/**
- * Get current Firebase user
- */
-export function getCurrentFirebaseUser(): FirebaseAuthTypes.User | null {
-  return auth().currentUser;
+export function getCurrentFirebaseUser(): any | null {
+  const firebaseAuth = getAuth();
+  return firebaseAuth ? firebaseAuth().currentUser : null;
 }
 
-/**
- * Sign out from Firebase
- */
 export async function signOutFirebase(): Promise<void> {
   try {
-    await auth().signOut();
+    const firebaseAuth = getAuth();
+    if (firebaseAuth) await firebaseAuth().signOut();
     verificationId = null;
   } catch (error) {
     if (__DEV__) console.error('[FirebaseAuth] Sign out error:', error);
   }
 }
 
-/**
- * Listen to Firebase auth state changes
- */
 export function onAuthStateChanged(
-  callback: (user: FirebaseAuthTypes.User | null) => void
+  callback: (user: any | null) => void
 ): () => void {
-  return auth().onAuthStateChanged(callback);
+  const firebaseAuth = getAuth();
+  if (!firebaseAuth) return () => {};
+  return firebaseAuth().onAuthStateChanged(callback);
 }
 
 export default {

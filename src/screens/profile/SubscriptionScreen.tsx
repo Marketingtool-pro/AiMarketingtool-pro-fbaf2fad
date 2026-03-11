@@ -7,632 +7,399 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Image,
+  ImageBackground,
   Dimensions,
+  Linking,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
-import AnimatedBackground from '../../components/common/AnimatedBackground';
+import { Colors, Gradients } from '../../constants/theme';
+import { functions } from '../../services/appwrite';
+import { ExecutionMethod } from 'react-native-appwrite';
+import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
-
-// Pricing hero image
-const PricingHeroImage = require('../../assets/images/screens/pricing-hero.jpg');
-
-interface PlanFeature {
-  text: string;
-  included: boolean;
-}
 
 interface Plan {
   id: string;
   name: string;
   monthlyPrice: number;
   yearlyPrice: number;
+  yearlyTotal: number;
   description: string;
-  features: PlanFeature[];
+  features: { text: string; included: boolean }[];
+  savingsPerYear?: number;
   popular?: boolean;
-  trialDays?: number;
-  isLifetime?: boolean;
 }
 
 const SubscriptionScreen = () => {
   const navigation = useNavigation();
-  const { profile, updateProfile } = useAuthStore();
+  const { profile } = useAuthStore();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
-  const [selectedPlan, setSelectedPlan] = useState<string>('pro');
+  const [selectedPlan, setSelectedPlan] = useState<string>('free');
   const [isLoading, setIsLoading] = useState(false);
 
   const plans: Plan[] = [
     {
       id: 'free',
       name: 'Free Trial',
-      monthlyPrice: 0,
-      yearlyPrice: 0,
-      description: '7-day free trial',
-      trialDays: 7,
+      monthlyPrice: 0, yearlyPrice: 0, yearlyTotal: 0,
+      description: '7 days \u2022 Full platform visible',
       features: [
         { text: '7-day full access trial', included: true },
-        { text: '10 AI generations', included: true },
-        { text: 'Basic tools preview', included: true },
-        { text: 'Full platform access', included: false },
+        { text: '3 generations per day', included: true },
+        { text: 'Simulation mode', included: true },
+        { text: 'No credit card required', included: true },
         { text: 'Priority support', included: false },
-        { text: 'All 3 platforms', included: false },
+        { text: 'Full analytics', included: false },
       ],
     },
     {
       id: 'starter',
-      name: 'Single Tool',
-      monthlyPrice: 3,
-      yearlyPrice: 49,
-      description: '1 Platform • 1 Tool Type',
+      name: 'Starter',
+      monthlyPrice: 29, yearlyPrice: 17, yearlyTotal: 199,
+      description: '200 generations/month',
+      savingsPerYear: 149,
       features: [
-        { text: '1 tool category (20+ tools)', included: true },
-        { text: 'Google OR Meta OR Shopify', included: true },
-        { text: 'Unlimited generations', included: true },
-        { text: 'Email support', included: true },
-        { text: 'Full platform access', included: false },
-        { text: 'All 3 platforms', included: false },
+        { text: 'Full web platform access', included: true },
+        { text: 'All 7 platforms', included: true },
+        { text: '200 generations/month', included: true },
+        { text: 'Standard support', included: true },
+        { text: 'Basic analytics', included: true },
       ],
     },
     {
       id: 'pro',
-      name: 'Full Platform',
-      monthlyPrice: 9,
-      yearlyPrice: 99,
-      description: '1 Platform • All Tools',
+      name: 'Professional',
+      monthlyPrice: 49, yearlyPrice: 33, yearlyTotal: 399,
+      description: '500 generations/month',
+      savingsPerYear: 189,
       popular: true,
       features: [
-        { text: 'Full 1 platform (70+ tools)', included: true },
-        { text: 'Google OR Meta OR Shopify', included: true },
-        { text: 'Unlimited generations', included: true },
+        { text: '500 generations/month', included: true },
+        { text: 'Advanced automation engine', included: true },
         { text: 'Priority support', included: true },
-        { text: 'Advanced analytics', included: true },
-        { text: 'All 3 platforms', included: false },
+        { text: 'Full analytics', included: true },
+        { text: 'Custom templates', included: true },
       ],
     },
     {
-      id: 'enterprise',
-      name: 'All Platforms',
-      monthlyPrice: 16,
-      yearlyPrice: 499,
-      description: 'All 3 Platforms • 206+ Tools',
-      isLifetime: true,
+      id: 'growth',
+      name: 'Agency',
+      monthlyPrice: 99, yearlyPrice: 75, yearlyTotal: 899,
+      description: '1,500+ generations/month',
+      savingsPerYear: 289,
       features: [
-        { text: 'All 206+ AI marketing tools', included: true },
-        { text: 'Google + Meta + Shopify', included: true },
-        { text: 'Unlimited generations', included: true },
-        { text: 'Dedicated support', included: true },
-        { text: 'AI Marketing Agents', included: true },
-        { text: 'White-label option', included: true },
+        { text: '1,500+ generations/month', included: true },
+        { text: 'Full automation', included: true },
+        { text: 'Executive dashboards', included: true },
+        { text: 'Team collaboration', included: true },
+        { text: 'White-label reports', included: true },
       ],
     },
   ];
 
   const handleSubscribe = async () => {
-    if (selectedPlan === 'free') {
-      navigation.goBack();
-      return;
-    }
-
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    if (selectedPlan === 'free') { navigation.goBack(); return; }
+    const plan = plans.find(p => p.id === selectedPlan);
+    if (!plan) return;
     setIsLoading(true);
-
     try {
-      // TODO: PRODUCTION PAYMENT INTEGRATION REQUIRED
-      // This is a placeholder - real payment processing must be implemented before production release
-      // Recommended: Use Stripe or RevenueCat for in-app purchases
-      // 
-      // For Stripe: npm install @stripe/stripe-react-native
-      // For RevenueCat: npm install react-native-purchases
-      //
-      // Implementation steps:
-      // 1. Initialize payment SDK (Stripe/RevenueCat)
-      // 2. Create payment intent on backend
-      // 3. Present payment sheet to user
-      // 4. Confirm payment
-      // 5. Update subscription in Appwrite database
-      // 6. Grant user access to features
-      
-      // TEMPORARY SIMULATION - REMOVE IN PRODUCTION
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      Alert.alert(
-        '⚠️ Demo Mode',
-        'Payment integration not yet implemented. In production, this would process a real payment via Stripe or RevenueCat.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // For demo purposes only - DO NOT USE IN PRODUCTION
-              updateProfile({ subscription: selectedPlan as 'free' | 'starter' | 'pro' | 'enterprise' });
-              navigation.goBack();
-            },
-          },
-        ]
+      const execution = await functions.createExecution(
+        'stripe-checkout',
+        JSON.stringify({ planId: selectedPlan, billingPeriod, price: billingPeriod === 'yearly' ? plan.yearlyTotal : plan.monthlyPrice }),
+        false, '/', ExecutionMethod.POST
       );
-    } catch (error) {
-      Alert.alert('Error', 'Failed to process subscription. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getPrice = (plan: Plan) => {
-    if (billingPeriod === 'yearly') {
-      return plan.yearlyPrice;
-    }
-    return plan.monthlyPrice;
-  };
-
-  const getSavings = (plan: Plan) => {
-    if (plan.isLifetime) {
-      return 0;
-    }
-    if (billingPeriod === 'yearly' && plan.monthlyPrice > 0) {
-      const yearlySavings = (plan.monthlyPrice * 12) - plan.yearlyPrice;
-      return yearlySavings > 0 ? yearlySavings : 0;
-    }
-    return 0;
+      const result = JSON.parse(execution.responseBody);
+      if (result.url) { await Linking.openURL(result.url); }
+      else { Alert.alert('Error', 'Could not create checkout session.'); }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Could not open checkout.');
+    } finally { setIsLoading(false); }
   };
 
   return (
-    <AnimatedBackground variant="profile" showParticles={true}>
-      {/* Hero Header with Image */}
-      <View style={styles.heroContainer}>
-        <Image source={PricingHeroImage} style={styles.heroImage} resizeMode="cover" />
-        <LinearGradient
-          colors={['rgba(13, 15, 28, 0.3)', 'rgba(13, 15, 28, 0.8)', 'rgba(13, 15, 28, 1)']}
-          style={styles.heroGradient}
+    <View style={styles.container}>
+      {/* Close button */}
+      <TouchableOpacity style={styles.closeBtn} onPress={() => navigation.goBack()}>
+        <View style={styles.closeBtnBg}>
+          <Feather name="x" size={22} color="#FFF" />
+        </View>
+      </TouchableOpacity>
+
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        {/* Hero header with background image */}
+        <ImageBackground
+          source={require('../../assets/images/screens/pricing-hero.jpg')}
+          style={styles.heroSection}
+          resizeMode="cover"
         >
-          <View style={styles.headerTop}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Feather name="x" size={24} color={Colors.white} />
+          <LinearGradient
+            colors={['rgba(13,15,28,0.1)', 'rgba(13,15,28,0.85)', 'rgba(13,15,28,1)']}
+            style={styles.heroOverlay}
+          >
+            <View style={styles.trialBadge}>
+              <Feather name="star" size={12} color="#F59E0B" />
+              <Text style={styles.trialBadgeText}>7-Day Free Trial</Text>
+            </View>
+            <Text style={styles.heroTitle}>Choose Your Plan</Text>
+            <Text style={styles.heroSub}>Unlock all AI marketing tools. Cancel anytime.</Text>
+          </LinearGradient>
+        </ImageBackground>
+
+        {/* Billing Toggle - Glass Card */}
+        <View style={styles.billingWrap}>
+          <View style={styles.billingToggle}>
+            <TouchableOpacity
+              style={[styles.billingOpt, billingPeriod === 'monthly' && styles.billingOptActive]}
+              onPress={() => { Haptics.selectionAsync(); setBillingPeriod('monthly'); }}
+            >
+              <Text style={[styles.billingText, billingPeriod === 'monthly' && styles.billingTextActive]}>Monthly</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.billingOpt, billingPeriod === 'yearly' && styles.billingOptActive]}
+              onPress={() => { Haptics.selectionAsync(); setBillingPeriod('yearly'); }}
+            >
+              <Text style={[styles.billingText, billingPeriod === 'yearly' && styles.billingTextActive]}>Yearly</Text>
+              <View style={styles.saveBadge}><Text style={styles.saveBadgeText}>Save up to 44%</Text></View>
             </TouchableOpacity>
           </View>
-
-          <View style={styles.headerContent}>
-            <View style={styles.pricingBadge}>
-              <Feather name="star" size={14} color={Colors.gold} />
-              <Text style={styles.pricingBadgeText}>7-Day Free Trial</Text>
-            </View>
-            <Text style={styles.headerTitle}>Choose Your Plan</Text>
-            <Text style={styles.headerSubtitle}>
-              Unlock all 206+ AI marketing tools. Cancel anytime.
-            </Text>
-          </View>
-        </LinearGradient>
-      </View>
-
-      {/* Header Billing Toggle */}
-      <View style={styles.header}>
-
-        {/* Billing Toggle */}
-        <View style={styles.billingToggle}>
-          <TouchableOpacity
-            style={[styles.billingOption, billingPeriod === 'monthly' && styles.billingOptionActive]}
-            onPress={() => setBillingPeriod('monthly')}
-          >
-            <Text style={[styles.billingText, billingPeriod === 'monthly' && styles.billingTextActive]}>
-              Monthly
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.billingOption, billingPeriod === 'yearly' && styles.billingOptionActive]}
-            onPress={() => setBillingPeriod('yearly')}
-          >
-            <Text style={[styles.billingText, billingPeriod === 'yearly' && styles.billingTextActive]}>
-              Yearly
-            </Text>
-            <View style={styles.saveBadge}>
-              <Text style={styles.saveBadgeText}>Save 40%</Text>
-            </View>
-          </TouchableOpacity>
         </View>
-      </View>
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Plans */}
-        {plans.map((plan) => (
-          <TouchableOpacity
-            key={plan.id}
-            style={[
-              styles.planCard,
-              selectedPlan === plan.id && styles.planCardSelected,
-              plan.popular && styles.planCardPopular,
-            ]}
-            onPress={() => setSelectedPlan(plan.id)}
-          >
-            {plan.popular && (
-              <View style={styles.popularBadge}>
-                <Text style={styles.popularBadgeText}>MOST POPULAR</Text>
-              </View>
-            )}
-            {plan.isLifetime && billingPeriod === 'yearly' && (
-              <View style={[styles.popularBadge, styles.lifetimeBadge]}>
-                <Text style={styles.popularBadgeText}>LIFETIME ACCESS</Text>
-              </View>
-            )}
-
-            <View style={styles.planHeader}>
-              <View>
-                <Text style={styles.planName}>{plan.name}</Text>
-                <Text style={styles.planDescription}>{plan.description}</Text>
-              </View>
-              <View style={styles.planPricing}>
-                <Text style={styles.planPrice}>
-                  ${getPrice(plan)}
-                </Text>
-                <Text style={styles.planPeriod}>
-                  /{billingPeriod === 'yearly'
-                    ? (plan.isLifetime ? 'lifetime' : 'year')
-                    : 'month'}
-                </Text>
-              </View>
-            </View>
-
-            {getSavings(plan) > 0 && (
-              <View style={styles.savingsTag}>
-                <Feather name="tag" size={14} color={Colors.success} />
-                <Text style={styles.savingsText}>Save ${getSavings(plan)}/year</Text>
-              </View>
-            )}
-
-            <View style={styles.planFeatures}>
-              {plan.features.map((feature, index) => (
-                <View key={index} style={styles.featureItem}>
-                  <Feather
-                    name={feature.included ? 'check-circle' : 'x-circle'}
-                    size={18}
-                    color={feature.included ? Colors.success : Colors.textTertiary}
-                  />
-                  <Text style={[
-                    styles.featureText,
-                    !feature.included && styles.featureTextDisabled
-                  ]}>
-                    {feature.text}
-                  </Text>
+        {/* Plan Cards - Glass Style */}
+        <View style={styles.plansWrap}>
+          {plans.map((plan) => {
+            const selected = selectedPlan === plan.id;
+            const price = billingPeriod === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice;
+            return (
+              <TouchableOpacity
+                key={plan.id}
+                style={[styles.planCard, selected && styles.planCardSelected]}
+                activeOpacity={0.85}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setSelectedPlan(plan.id); }}
+              >
+                {/* Popular badge */}
+                {plan.popular && (
+                  <View style={styles.popularBadge}>
+                    <Feather name="award" size={10} color="#FFF" />
+                    <Text style={styles.popularText}>Most Popular</Text>
+                  </View>
+                )}
+                <View style={styles.planTop}>
+                  <View style={[styles.radio, selected && styles.radioSelected]}>
+                    {selected && <View style={styles.radioInner} />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.planName}>{plan.name}</Text>
+                    <Text style={styles.planDesc}>{plan.description}</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.planPrice}>${price}{plan.id === 'free' ? '' : '/mo'}</Text>
+                    {plan.id === 'free' && <Text style={styles.planPriceSub}>/free</Text>}
+                    {billingPeriod === 'yearly' && plan.yearlyTotal > 0 && (
+                      <Text style={styles.planPriceSub}>${plan.yearlyTotal}/year</Text>
+                    )}
+                  </View>
                 </View>
-              ))}
-            </View>
-
-            {/* Selection indicator */}
-            <View style={styles.selectionIndicator}>
-              <View style={[
-                styles.radioOuter,
-                selectedPlan === plan.id && styles.radioOuterSelected
-              ]}>
-                {selectedPlan === plan.id && <View style={styles.radioInner} />}
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-
-        {/* Guarantee */}
-        <View style={styles.guarantee}>
-          <Feather name="shield" size={24} color={Colors.success} />
-          <View style={styles.guaranteeText}>
-            <Text style={styles.guaranteeTitle}>30-Day Money Back Guarantee</Text>
-            <Text style={styles.guaranteeSubtitle}>
-              Not satisfied? Get a full refund within 30 days.
-            </Text>
-          </View>
+                {billingPeriod === 'yearly' && plan.savingsPerYear && (
+                  <View style={styles.savingsRow}>
+                    <Feather name="tag" size={12} color="#22C55E" />
+                    <Text style={styles.savingsText}>Save ${plan.savingsPerYear}/year</Text>
+                  </View>
+                )}
+                <View style={styles.featList}>
+                  {plan.features.map((f, i) => (
+                    <View key={i} style={styles.featRow}>
+                      <View style={[styles.featIcon, { backgroundColor: f.included ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)' }]}>
+                        <Feather
+                          name={f.included ? 'check' : 'x'}
+                          size={12}
+                          color={f.included ? '#22C55E' : Colors.textTertiary}
+                        />
+                      </View>
+                      <Text style={[styles.featText, !f.included && styles.featDisabled]}>{f.text}</Text>
+                    </View>
+                  ))}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
-
-        <View style={{ height: 120 }} />
+        <View style={{ height: 140 }} />
       </ScrollView>
 
-      {/* Subscribe Button */}
-      <View style={styles.subscribeContainer}>
-        <TouchableOpacity
-          onPress={handleSubscribe}
-          disabled={isLoading}
-          style={styles.subscribeButton}
-        >
-          <LinearGradient colors={Gradients.primary} style={styles.subscribeGradient}>
-            {isLoading ? (
-              <ActivityIndicator color={Colors.white} />
-            ) : (
-              <Text style={styles.subscribeText}>
-                {selectedPlan === 'free'
-                  ? 'Continue with Free'
-                  : `Start 7-Day Free Trial`}
-              </Text>
+      {/* Bottom Subscribe - Glass Bar */}
+      <View style={styles.bottomBar}>
+        <TouchableOpacity style={styles.subBtn} onPress={handleSubscribe} disabled={isLoading}>
+          <LinearGradient colors={Gradients.secondary} style={styles.subBtnGrad}>
+            {isLoading ? <ActivityIndicator color="#FFF" /> : (
+              <View style={styles.subBtnContent}>
+                <Feather name="zap" size={18} color="#FFF" />
+                <Text style={styles.subBtnText}>Subscribe Now</Text>
+              </View>
             )}
           </LinearGradient>
         </TouchableOpacity>
-        <Text style={styles.subscribeNote}>
-          No credit card required for trial
-        </Text>
+        <TouchableOpacity onPress={() => Linking.openURL('https://marketingtool.pro/pricing/')}>
+          <Text style={styles.secureText}>Secure payment via Stripe  ·  View Plans Online</Text>
+        </TouchableOpacity>
       </View>
-    </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#0D0F1C',
   },
-  heroContainer: {
-    height: 220,
-    position: 'relative',
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
+  closeBtn: {
     position: 'absolute',
+    top: Platform.OS === 'ios' ? 56 : 36,
+    right: 20,
+    zIndex: 10,
   },
-  heroGradient: {
-    flex: 1,
-    justifyContent: 'space-between',
-    paddingTop: 50,
-    paddingBottom: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-  },
-  header: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+  closeBtnBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerContent: {
+  heroSection: { width: '100%', height: 240 },
+  heroOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingBottom: 24,
     alignItems: 'center',
   },
-  pricingBadge: {
+  trialBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(253, 151, 7, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.full,
     gap: 6,
-    marginBottom: Spacing.sm,
+    backgroundColor: 'rgba(245,158,11,0.15)',
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(245,158,11,0.2)',
   },
-  pricingBadgeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.gold,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: Colors.white,
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    fontSize: 15,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
+  trialBadgeText: { fontSize: 13, fontWeight: '600', color: '#F59E0B' },
+  heroTitle: { fontSize: 28, fontWeight: 'bold', color: '#FFF', marginBottom: 6 },
+  heroSub: { fontSize: 14, color: Colors.textSecondary },
+  billingWrap: { alignItems: 'center', paddingVertical: 16 },
   billingToggle: {
     flexDirection: 'row',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: 4,
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    padding: 3,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  billingOption: {
-    flex: 1,
+  billingOpt: {
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 11,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: BorderRadius.md,
-    gap: 8,
-  },
-  billingOptionActive: {
-    backgroundColor: Colors.primary,
-  },
-  billingText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  billingTextActive: {
-    color: Colors.white,
-  },
-  saveBadge: {
-    backgroundColor: Colors.success,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-  },
-  saveBadgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: Colors.white,
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: Spacing.lg,
-  },
-  planCard: {
-    backgroundColor: Colors.card,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    marginBottom: Spacing.md,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    position: 'relative',
-  },
-  planCardSelected: {
-    borderColor: Colors.primary,
-  },
-  planCardPopular: {
-    borderColor: Colors.primary,
-  },
-  popularBadge: {
-    position: 'absolute',
-    top: -12,
-    left: '50%',
-    marginLeft: -60,
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: BorderRadius.sm,
-  },
-  popularBadgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: Colors.white,
-  },
-  lifetimeBadge: {
-    backgroundColor: Colors.secondary,
-  },
-  planHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.md,
-  },
-  planName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: Colors.white,
-  },
-  planDescription: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  planPricing: {
-    alignItems: 'flex-end',
-  },
-  planPrice: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: Colors.white,
-  },
-  planPeriod: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-  },
-  savingsTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.success + '20',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: BorderRadius.sm,
-    marginBottom: Spacing.md,
     gap: 6,
   },
-  savingsText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.success,
+  billingOptActive: { backgroundColor: Colors.secondary },
+  billingText: { color: Colors.textSecondary, fontWeight: '600', fontSize: 14 },
+  billingTextActive: { color: '#FFF' },
+  saveBadge: {
+    backgroundColor: 'rgba(34,197,94,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
-  planFeatures: {
-    gap: Spacing.sm,
+  saveBadgeText: { fontSize: 10, color: '#22C55E', fontWeight: 'bold' },
+  plansWrap: { paddingHorizontal: 20, gap: 12 },
+  planCard: {
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  featureItem: {
+  planCardSelected: {
+    borderColor: Colors.secondary,
+    backgroundColor: 'rgba(124,58,237,0.08)',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  popularBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: 4,
+    backgroundColor: Colors.secondary,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 10,
   },
-  featureText: {
-    fontSize: 14,
-    color: Colors.white,
-  },
-  featureTextDisabled: {
-    color: Colors.textTertiary,
-    textDecorationLine: 'line-through',
-  },
-  selectionIndicator: {
-    position: 'absolute',
-    top: Spacing.lg,
-    right: Spacing.lg,
-  },
-  radioOuter: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  popularText: { fontSize: 10, fontWeight: 'bold', color: '#FFF' },
+  planTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 2,
-    borderColor: Colors.border,
+    borderColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  radioOuterSelected: {
-    borderColor: Colors.primary,
+  radioSelected: {
+    borderColor: Colors.secondary,
   },
-  radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: Colors.primary,
-  },
-  guarantee: {
-    flexDirection: 'row',
+  radioInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: Colors.secondary },
+  planName: { fontSize: 17, fontWeight: 'bold', color: '#FFF' },
+  planDesc: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
+  planPrice: { fontSize: 22, fontWeight: 'bold', color: '#FFF', textAlign: 'right' },
+  planPriceSub: { fontSize: 11, color: Colors.textTertiary, textAlign: 'right' },
+  savingsRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 34, marginTop: 6 },
+  savingsText: { fontSize: 12, fontWeight: '600', color: '#22C55E' },
+  featList: { marginTop: 14, gap: 8 },
+  featRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  featIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.success + '15',
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    marginTop: Spacing.md,
-    gap: Spacing.md,
   },
-  guaranteeText: {
-    flex: 1,
-  },
-  guaranteeTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.white,
-  },
-  guaranteeSubtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  subscribeContainer: {
+  featText: { fontSize: 13, color: '#FFF' },
+  featDisabled: { color: Colors.textTertiary, textDecorationLine: 'line-through' },
+  bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: Spacing.lg,
-    paddingBottom: 34,
-    backgroundColor: Colors.background,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 38 : 20,
+    paddingTop: 14,
+    backgroundColor: 'rgba(13,15,28,0.97)',
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
-  subscribeButton: {
-    borderRadius: BorderRadius.md,
-    overflow: 'hidden',
-  },
-  subscribeGradient: {
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  subscribeText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.white,
-  },
-  subscribeNote: {
-    fontSize: 12,
-    color: Colors.textTertiary,
-    textAlign: 'center',
-    marginTop: Spacing.sm,
-  },
+  subBtn: { borderRadius: 16, overflow: 'hidden', height: 52 },
+  subBtnGrad: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  subBtnContent: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  subBtnText: { fontSize: 17, fontWeight: 'bold', color: '#FFF' },
+  secureText: { textAlign: 'center', marginTop: 10, fontSize: 12, color: Colors.textTertiary },
 });
 
 export default SubscriptionScreen;

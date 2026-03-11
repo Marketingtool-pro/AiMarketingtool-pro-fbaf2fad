@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
+  SectionList,
   TouchableOpacity,
   TextInput,
   Alert,
@@ -16,8 +17,10 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Clipboard from 'expo-clipboard';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import { useToolsStore, Generation } from '../../store/toolsStore';
+import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
-import AnimatedBackground from '../../components/common/AnimatedBackground';
+
 
 const { width } = Dimensions.get('window');
 
@@ -26,92 +29,103 @@ const HistoryHeroImage = require('../../assets/images/screens/history-hero.jpg')
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-interface HistoryItem {
-  id: string;
-  toolName: string;
-  toolIcon: string;
-  content: string;
-  createdAt: Date;
-  category: string;
-  liked: boolean;
+interface Section {
+  title: string;
+  data: Generation[];
 }
+
+// Map tool category to display filter
+const getCategoryDisplay = (category: string): string => {
+  if (category.includes('ads') || category.includes('ppc')) return 'Ads';
+  if (category.includes('content') || category.includes('blog') || category.includes('seo')) return 'Content';
+  if (category.includes('email')) return 'Email';
+  if (category.includes('social') || category.includes('instagram')) return 'Social';
+  if (category.includes('shopify') || category.includes('product') || category.includes('commerce')) return 'E-commerce';
+  return 'Content';
+};
+
+// Group generations by date
+const groupByDate = (items: Generation[]): Section[] => {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterdayStart = new Date(todayStart);
+  yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+
+  const today: Generation[] = [];
+  const yesterday: Generation[] = [];
+  const earlier: Generation[] = [];
+
+  items.forEach(item => {
+    const date = new Date(item.createdAt);
+    if (date >= todayStart) today.push(item);
+    else if (date >= yesterdayStart) yesterday.push(item);
+    else earlier.push(item);
+  });
+
+  const sections: Section[] = [];
+  if (today.length) sections.push({ title: 'Today', data: today });
+  if (yesterday.length) sections.push({ title: 'Yesterday', data: yesterday });
+  if (earlier.length) sections.push({ title: 'Earlier', data: earlier });
+  return sections;
+};
 
 const HistoryScreen = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { tools, generations, fetchGenerations, toggleFavorite, deleteGeneration } = useToolsStore();
+  const { user } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Sample history data
-  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([
-    {
-      id: '1',
-      toolName: 'AI Ad Generator',
-      toolIcon: 'zap',
-      content: 'Transform your fitness journey with our AI-powered workout app. Join 500K+ users today!',
-      createdAt: new Date(Date.now() - 1000 * 60 * 30),
-      category: 'Ads',
-      liked: true,
-    },
-    {
-      id: '2',
-      toolName: 'Blog Writer',
-      toolIcon: 'file-text',
-      content: 'The future of digital marketing lies in AI-powered personalization. Here are 10 trends to watch in 2024...',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
-      category: 'Content',
-      liked: false,
-    },
-    {
-      id: '3',
-      toolName: 'Email Subject',
-      toolIcon: 'mail',
-      content: '🚀 Your exclusive early access is here - Don\'t miss out!',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5),
-      category: 'Email',
-      liked: true,
-    },
-    {
-      id: '4',
-      toolName: 'Social Caption',
-      toolIcon: 'instagram',
-      content: 'When Monday hits but you remember you\'ve got this 💪 #Motivation #MondayVibes #Success',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
-      category: 'Social',
-      liked: false,
-    },
-    {
-      id: '5',
-      toolName: 'Product Description',
-      toolIcon: 'shopping-bag',
-      content: 'Introducing our premium wireless earbuds - crystal clear audio, 40hr battery life, and seamless connectivity.',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48),
-      category: 'E-commerce',
-      liked: true,
-    },
-  ]);
-
   const filters = ['All', 'Ads', 'Content', 'Email', 'Social', 'E-commerce'];
 
-  const filteredItems = useMemo(() => {
-    let items = historyItems;
+  // Fetch real generations on mount
+  useEffect(() => {
+    if (user?.$id) {
+      fetchGenerations(user.$id);
+    }
+  }, [user?.$id]);
+
+  // Look up tool info for icon/category
+  const getToolInfo = useCallback((toolId: string) => {
+    const tool = tools.find(t => t.$id === toolId);
+    return {
+      icon: tool?.icon || 'zap',
+      category: tool?.category ? getCategoryDisplay(tool.category) : 'Content',
+    };
+  }, [tools]);
+
+  // Filter and group
+  const sections = useMemo(() => {
+    let items = [...generations];
 
     if (searchQuery) {
+      const q = searchQuery.toLowerCase();
       items = items.filter(
         item =>
-          item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.toolName.toLowerCase().includes(searchQuery.toLowerCase())
+          item.output.toLowerCase().includes(q) ||
+          item.toolName.toLowerCase().includes(q)
       );
     }
 
     if (selectedFilter && selectedFilter !== 'All') {
-      items = items.filter(item => item.category === selectedFilter);
+      items = items.filter(item => {
+        const info = getToolInfo(item.toolId);
+        return info.category === selectedFilter;
+      });
     }
 
-    return items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }, [historyItems, searchQuery, selectedFilter]);
+    // Sort newest first
+    items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const formatDate = (date: Date) => {
+    return groupByDate(items);
+  }, [generations, searchQuery, selectedFilter, getToolInfo]);
+
+  const totalCount = generations.length;
+  const likedCount = generations.filter(g => g.isFavorite).length;
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
@@ -131,11 +145,7 @@ const HistoryScreen = () => {
   };
 
   const handleLike = (id: string) => {
-    setHistoryItems(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, liked: !item.liked } : item
-      )
-    );
+    toggleFavorite(id);
   };
 
   const handleDelete = (id: string) => {
@@ -147,80 +157,96 @@ const HistoryScreen = () => {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            setHistoryItems(prev => prev.filter(item => item.id !== id));
-          },
+          onPress: () => deleteGeneration(id),
         },
       ]
     );
   };
 
-  const renderItem = ({ item }: { item: HistoryItem }) => (
-    <View style={styles.historyCard}>
-      <View style={styles.cardHeader}>
-        <View style={styles.toolInfo}>
-          <View style={[styles.toolIcon, { backgroundColor: Colors.primary + '20' }]}>
-            <Feather name={item.toolIcon as any} size={18} color={Colors.primary} />
-          </View>
-          <View>
-            <Text style={styles.toolName}>{item.toolName}</Text>
-            <Text style={styles.timeAgo}>{formatDate(item.createdAt)}</Text>
-          </View>
-        </View>
-        <View style={styles.categoryBadge}>
-          <Text style={styles.categoryText}>{item.category}</Text>
-        </View>
-      </View>
-
-      <Text style={styles.contentText} numberOfLines={3}>
-        {item.content}
-      </Text>
-
-      <View style={styles.cardActions}>
-        <TouchableOpacity
-          style={styles.actionBtn}
-          onPress={() => handleCopy(item.content, item.id)}
-        >
-          <Feather
-            name={copiedId === item.id ? 'check' : 'copy'}
-            size={18}
-            color={copiedId === item.id ? Colors.success : Colors.textSecondary}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionBtn}
-          onPress={() => handleLike(item.id)}
-        >
-          <Feather
-            name="heart"
-            size={18}
-            color={item.liked ? Colors.error : Colors.textSecondary}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionBtn}
-          onPress={() => handleDelete(item.id)}
-        >
-          <Feather name="trash-2" size={18} color={Colors.textSecondary} />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.expandBtn}>
-          <Text style={styles.expandText}>View Full</Text>
-          <Feather name="chevron-right" size={16} color={Colors.primary} />
-        </TouchableOpacity>
-      </View>
+  const renderSectionHeader = ({ section }: { section: Section }) => (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>{section.title}</Text>
+      <Text style={styles.sectionCount}>{section.data.length}</Text>
     </View>
   );
 
+  const renderItem = ({ item }: { item: Generation }) => {
+    const toolInfo = getToolInfo(item.toolId);
+    return (
+      <View style={styles.historyCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.toolInfo}>
+            <View style={[styles.toolIcon, { backgroundColor: Colors.secondary + '20' }]}>
+              <Feather name={toolInfo.icon as any} size={18} color={Colors.secondary} />
+            </View>
+            <View>
+              <Text style={styles.toolName}>{item.toolName}</Text>
+              <Text style={styles.timeAgo}>{formatDate(item.createdAt)}</Text>
+            </View>
+          </View>
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryText}>{toolInfo.category}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.contentText} numberOfLines={3}>
+          {item.output}
+        </Text>
+
+        <View style={styles.cardActions}>
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() => handleCopy(item.output, item.$id)}
+          >
+            <Feather
+              name={copiedId === item.$id ? 'check' : 'copy'}
+              size={18}
+              color={copiedId === item.$id ? Colors.success : Colors.textSecondary}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() => handleLike(item.$id)}
+          >
+            <Feather
+              name="heart"
+              size={18}
+              color={item.isFavorite ? Colors.error : Colors.textSecondary}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() => handleDelete(item.$id)}
+          >
+            <Feather name="trash-2" size={18} color={Colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.expandBtn}
+            onPress={() => {
+              navigation.navigate('ToolResult', {
+                result: item.output,
+                toolSlug: item.toolId,
+              } as any);
+            }}
+          >
+            <Text style={styles.expandText}>View Full</Text>
+            <Feather name="chevron-right" size={16} color={Colors.secondary} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
   return (
-    <AnimatedBackground variant="dashboard" showParticles={true}>
+    <View style={styles.screenContainer}>
       {/* Hero Banner */}
       <View style={styles.heroBanner}>
         <Image source={HistoryHeroImage} style={styles.heroImage} resizeMode="cover" />
         <LinearGradient
-          colors={['transparent', 'rgba(13, 15, 28, 0.8)', 'rgba(13, 15, 28, 0.98)']}
+          colors={['transparent', 'rgba(6, 11, 40, 0.8)', 'rgba(6, 11, 40, 0.98)']}
           style={styles.heroGradient}
         >
           <View style={styles.heroContent}>
@@ -228,12 +254,12 @@ const HistoryScreen = () => {
             <View style={styles.heroStats}>
               <View style={styles.heroStatItem}>
                 <Feather name="layers" size={16} color={Colors.secondary} />
-                <Text style={styles.heroStatText}>{historyItems.length} Saved</Text>
+                <Text style={styles.heroStatText}>{totalCount} Saved</Text>
               </View>
               <View style={styles.heroStatDivider} />
               <View style={styles.heroStatItem}>
                 <Feather name="heart" size={16} color={Colors.error} />
-                <Text style={styles.heroStatText}>{historyItems.filter(i => i.liked).length} Liked</Text>
+                <Text style={styles.heroStatText}>{likedCount} Liked</Text>
               </View>
             </View>
           </View>
@@ -288,13 +314,15 @@ const HistoryScreen = () => {
         />
       </View>
 
-      {/* History List */}
-      <FlatList
-        data={filteredItems}
+      {/* History List with Today/Yesterday/Earlier sections */}
+      <SectionList
+        sections={sections}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        renderSectionHeader={renderSectionHeader}
+        keyExtractor={(item) => item.$id}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
+        stickySectionHeadersEnabled={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Feather name="clock" size={48} color={Colors.textTertiary} />
@@ -313,11 +341,15 @@ const HistoryScreen = () => {
           </View>
         }
       />
-    </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#0D0F1C',
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -404,7 +436,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.sm,
   },
   filterChipActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
   },
   filterText: {
     fontSize: 14,
@@ -413,6 +445,27 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: Colors.white,
     fontWeight: '600',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  sectionCount: {
+    fontSize: 13,
+    color: Colors.textTertiary,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+    overflow: 'hidden',
   },
   listContainer: {
     padding: Spacing.lg,
@@ -453,14 +506,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   categoryBadge: {
-    backgroundColor: Colors.primary + '20',
+    backgroundColor: Colors.secondary + '20',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: BorderRadius.sm,
   },
   categoryText: {
     fontSize: 12,
-    color: Colors.primary,
+    color: Colors.secondary,
     fontWeight: '600',
   },
   contentText: {
@@ -493,7 +546,7 @@ const styles = StyleSheet.create({
   },
   expandText: {
     fontSize: 14,
-    color: Colors.primary,
+    color: Colors.secondary,
     fontWeight: '600',
   },
   emptyState: {
