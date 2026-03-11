@@ -247,12 +247,12 @@ const DashboardScreen = () => {
                   style={styles.avatarGradient}
                 >
                   <Text style={styles.avatarText}>
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    {user?.name && !/^\+?\d+$/.test(user.name) ? user.name.charAt(0).toUpperCase() : 'U'}
                   </Text>
                 </LinearGradient>
               </View>
               <View>
-                <Text style={styles.greeting}>Hi, {user?.name?.split(' ')[0] || 'User'}</Text>
+                <Text style={styles.greeting}>Hi, {user?.name && !/^\+?\d+$/.test(user.name) ? user.name.split(' ')[0] : 'User'}</Text>
                 <Text style={styles.subGreeting}>Welcome back</Text>
               </View>
             </View>
