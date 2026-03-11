@@ -1,6 +1,7 @@
 // Firebase Phone Auth Service - Safe lazy loading
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import * as SecureStore from 'expo-secure-store';
 
 let auth: any = null;
 let apnsRegistered = false;
@@ -55,6 +56,10 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
 
     const confirmation = await firebaseAuth().signInWithPhoneNumber(normalizedPhone);
     verificationId = confirmation.verificationId;
+    // Persist verificationId so it survives app restart from reCAPTCHA
+    if (verificationId) {
+      await SecureStore.setItemAsync('firebaseVerificationId', verificationId);
+    }
 
     if (__DEV__) console.log('[FirebaseAuth] OTP sent successfully');
     return { success: true };
@@ -82,6 +87,10 @@ export async function verifyPhoneOTP(code: string): Promise<{
 }> {
   try {
     const firebaseAuth = getAuth();
+    // Restore verificationId from SecureStore if lost (app restart from reCAPTCHA)
+    if (!verificationId) {
+      verificationId = await SecureStore.getItemAsync('firebaseVerificationId');
+    }
     if (!firebaseAuth || !verificationId) {
       return { success: false, error: 'No pending verification. Please request OTP first.' };
     }
@@ -93,6 +102,7 @@ export async function verifyPhoneOTP(code: string): Promise<{
 
     if (__DEV__) console.log('[FirebaseAuth] OTP verified successfully');
     verificationId = null;
+    await SecureStore.deleteItemAsync('firebaseVerificationId');
 
     return { success: true, user: userCredential.user };
   } catch (error: any) {

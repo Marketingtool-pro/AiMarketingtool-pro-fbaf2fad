@@ -16,6 +16,7 @@ import {
   Image,
   Modal,
   FlatList,
+  AppState,
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -64,23 +65,36 @@ const LoginScreen = () => {
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
 
-  // Restore pending OTP state on mount (survives app restart from reCAPTCHA redirect)
+  // Restore pending OTP state — on mount AND when app returns from background
+  // (reCAPTCHA opens Chrome, app goes to background, then comes back)
+  const restorePendingOTP = async () => {
+    try {
+      const pending = await SecureStore.getItemAsync('pendingOTP');
+      if (pending && !showOtpModal) {
+        const { phone, countryCode, userId } = JSON.parse(pending);
+        setPhoneNumber(phone);
+        setOtpUserId(userId || 'pending_firebase_verification');
+        setOtpSent(true);
+        setShowOtpModal(true);
+        const country = COUNTRIES.find(c => c.code === countryCode);
+        if (country) setSelectedCountry(country);
+      }
+    } catch {}
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        const pending = await SecureStore.getItemAsync('pendingOTP');
-        if (pending) {
-          const { phone, countryCode, userId } = JSON.parse(pending);
-          setPhoneNumber(phone);
-          setOtpUserId(userId || 'pending_firebase_verification');
-          setOtpSent(true);
-          setShowOtpModal(true);
-          const country = COUNTRIES.find(c => c.code === countryCode);
-          if (country) setSelectedCountry(country);
-        }
-      } catch {}
-    })();
+    restorePendingOTP();
   }, []);
+
+  // When app comes back from Chrome reCAPTCHA, show OTP modal
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        restorePendingOTP();
+      }
+    });
+    return () => subscription.remove();
+  }, [showOtpModal]);
 
   const handleLogin = async () => {
     try {
