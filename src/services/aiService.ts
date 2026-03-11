@@ -2,11 +2,10 @@
 // Routes through Appwrite Function "tool-executor" → Windmill → Claude
 // NO direct Windmill calls — clients never talk to Windmill directly
 
-import { functions, account } from './appwrite';
+import { functions } from './appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 
 const TOOL_EXECUTOR_FUNCTION_ID = 'tool-executor';
-const NEXTJS_API_BASE = 'https://app.marketingtool.pro';
 
 export interface AIGenerationRequest {
   toolSlug: string;
@@ -66,69 +65,9 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
       }
     }
 
-    if (__DEV__) console.log(`[AI] Function returned status ${execution.responseStatusCode}, trying fallback`);
+    if (__DEV__) console.log(`[AI] Function returned status ${execution.responseStatusCode}`);
   } catch (error: any) {
-    if (__DEV__) console.log(`[AI] Function error: ${error.message}, trying fallback`);
-  }
-
-  // Fallback: Call Next.js API directly (middleware supports Bearer auth)
-  try {
-    if (__DEV__) console.log(`[AI] Fallback: calling Next.js API for ${toolSlug}`);
-
-    const jwt = await account.createJWT();
-
-    const response = await fetch(`${NEXTJS_API_BASE}/api/tools/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${jwt.jwt}`,
-      },
-      body: JSON.stringify({
-        tool: toolSlug,
-        input: userPrompt,
-        options: { tone: tone || 'professional', language: language || 'English' },
-      }),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.success && data.output) {
-        if (__DEV__) console.log(`[AI] API fallback success`);
-        return {
-          outputs: splitOutputs(data.output, outputCount),
-          success: true,
-          model: 'claude',
-        };
-      }
-    }
-
-    // Try the simpler /api/generate endpoint
-    const response2 = await fetch(`${NEXTJS_API_BASE}/api/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${jwt.jwt}`,
-      },
-      body: JSON.stringify({
-        tool: toolSlug,
-        input: userPrompt,
-        tone: tone || 'Professional',
-        language: language || 'English',
-      }),
-    });
-
-    if (response2.ok) {
-      const data2 = await response2.json();
-      if (data2.result) {
-        return {
-          outputs: splitOutputs(data2.result, outputCount),
-          success: true,
-          model: data2.model || 'claude',
-        };
-      }
-    }
-  } catch (fallbackError: any) {
-    if (__DEV__) console.error('[AI] Fallback also failed:', fallbackError.message);
+    if (__DEV__) console.log(`[AI] Function error: ${error.message}`);
   }
 
   return {
@@ -228,13 +167,7 @@ function splitOutputs(content: string, count: number): string[] {
 
 // Check if AI service is available
 export async function checkAIAvailability(): Promise<{ available: boolean; method: string }> {
-  try {
-    // Check Appwrite Function health by verifying current user session
-    await account.get();
-    return { available: true, method: 'appwrite-function' };
-  } catch {
-    return { available: false, method: 'none' };
-  }
+  return { available: true, method: 'appwrite-function' };
 }
 
 export default generateAIContent;
