@@ -17,8 +17,9 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AppNavigator';
@@ -47,7 +48,7 @@ type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const {
-    login, loginWithGoogle, loginWithApple,
+    login, loginWithGoogle, loginWithApple, loginWithFacebook,
     sendPhoneOTP, verifyPhoneOTP, isLoading, clearError,
   } = useAuthStore();
 
@@ -55,13 +56,31 @@ const LoginScreen = () => {
   const [password, setPassword] = useState('');
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[1]); // Default to India as per image
+  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[1]);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpUserId, setOtpUserId] = useState('');
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
+
+  // Restore pending OTP state on mount (survives app restart from reCAPTCHA redirect)
+  useEffect(() => {
+    (async () => {
+      try {
+        const pending = await SecureStore.getItemAsync('pendingOTP');
+        if (pending) {
+          const { phone, countryCode, userId } = JSON.parse(pending);
+          setPhoneNumber(phone);
+          setOtpUserId(userId || 'pending_firebase_verification');
+          setOtpSent(true);
+          setShowOtpModal(true);
+          const country = COUNTRIES.find(c => c.code === countryCode);
+          if (country) setSelectedCountry(country);
+        }
+      } catch {}
+    })();
+  }, []);
 
   const handleLogin = async () => {
     try {
@@ -78,11 +97,19 @@ const LoginScreen = () => {
     }
     try {
       const formattedPhone = `${selectedCountry.code}${phoneNumber}`;
+      // Save OTP state BEFORE calling Firebase (survives reCAPTCHA app restart)
+      await SecureStore.setItemAsync('pendingOTP', JSON.stringify({
+        phone: phoneNumber,
+        countryCode: selectedCountry.code,
+        userId: 'pending_firebase_verification',
+      }));
       const userId = await sendPhoneOTP(formattedPhone);
       setOtpUserId(userId);
       setOtpSent(true);
       setShowOtpModal(true);
     } catch (err: any) {
+      // Clear pending state on failure
+      await SecureStore.deleteItemAsync('pendingOTP');
       Alert.alert('OTP Failed', err.message || 'Failed to send OTP');
     }
   };
@@ -90,6 +117,8 @@ const LoginScreen = () => {
   const handleVerifyOTP = async () => {
     try {
       await verifyPhoneOTP(otpUserId, otpCode);
+      // Clear pending OTP state on successful verification
+      await SecureStore.deleteItemAsync('pendingOTP');
       setShowOtpModal(false);
     } catch (err: any) {
       Alert.alert('Verification Failed', err.message || 'Invalid OTP');
@@ -170,14 +199,17 @@ const LoginScreen = () => {
 
           <View style={styles.socialRow}>
              <TouchableOpacity style={styles.socialBtn} onPress={loginWithGoogle}>
-                <Feather name="search" size={22} color="#FFFFFF" />
+                <Text style={styles.googleG}>G</Text>
+             </TouchableOpacity>
+             <TouchableOpacity style={styles.socialBtn} onPress={loginWithFacebook}>
+                <Feather name="facebook" size={22} color="#1877F2" />
              </TouchableOpacity>
              <TouchableOpacity style={styles.socialBtn} onPress={() => setShowEmailModal(true)}>
                 <Feather name="mail" size={22} color="#FFFFFF" />
              </TouchableOpacity>
              {Platform.OS === 'ios' && (
-               <TouchableOpacity style={styles.socialBtn} onPress={loginWithApple}>
-                  <Feather name="apple" size={22} color="#FFFFFF" />
+               <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#000000' }]} onPress={loginWithApple}>
+                  <Ionicons name="logo-apple" size={24} color="#FFFFFF" />
                </TouchableOpacity>
              )}
           </View>
@@ -488,6 +520,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#161824',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  googleG: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#4285F4',
   },
   footer: {
     flexDirection: 'row',
