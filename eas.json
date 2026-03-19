@@ -23,10 +23,7 @@
       "autoIncrement": true,
       "node": "22.14.0",
       "ios": {
-        "image": "macos-sonoma-14.6-xcode-16.1"
-      },
-      "env": {
-        "EAS_BUILD_AUTODETECT_XCODE_VERSION": "0"
+        "image": "sdk-55"
       },
       "android": {
         "buildType": "app-bundle"
