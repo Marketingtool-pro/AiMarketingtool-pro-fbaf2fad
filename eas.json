@@ -23,7 +23,7 @@
       "autoIncrement": true,
       "node": "22.14.0",
       "ios": {
-        "image": "macos-sequoia-15.5-xcode-26.0"
+        "image": "sdk-55"
       },
       "android": {
         "buildType": "app-bundle"
