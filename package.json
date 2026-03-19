@@ -58,7 +58,6 @@
     "react-native": "0.83.2",
     "react-native-appwrite": "0.25.0",
     "react-native-gesture-handler": "2.30.0",
-    "react-native-iap": "^14.7.17",
     "react-native-mmkv": "^4.2.0",
     "react-native-nitro-modules": "^0.35.1",
     "react-native-reanimated": "4.2.1",
