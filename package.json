@@ -91,7 +91,9 @@
     "expo-web-browser": "$expo-web-browser"
   },
   "expo": {
-    "autolinking": {},
+    "autolinking": {
+      "exclude": ["react-native-iap"]
+    },
     "install": {
       "exclude": [
         "expo-build-properties",
