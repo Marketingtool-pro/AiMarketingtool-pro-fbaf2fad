@@ -25,6 +25,9 @@
       "ios": {
         "image": "sdk-55"
       },
+      "env": {
+        "EXPO_DOCTOR_ENABLE_DUPLICATE_DEPENDENCY_CHECK": "0"
+      },
       "android": {
         "buildType": "app-bundle"
       }
