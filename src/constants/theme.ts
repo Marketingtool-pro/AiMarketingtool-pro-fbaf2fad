@@ -28,8 +28,8 @@ export const Colors = {
   background: '#0D0F1C',
   backgroundSecondary: '#0f1535',
   backgroundTertiary: '#131538',
-  card: 'rgba(22, 24, 36, 0.8)',
-  cardHover: 'rgba(22, 24, 36, 0.7)',
+  card: 'rgba(22, 24, 36, 0.55)',
+  cardHover: 'rgba(22, 24, 36, 0.6)',
 
   // Surface Colors
   surface: 'rgba(22, 24, 36, 0.55)',

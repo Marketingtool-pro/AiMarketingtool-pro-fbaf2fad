@@ -116,13 +116,23 @@ export const authService = {
 
         // Check if it's a success callback
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          // Parse the URL for session tokens
-          const urlParams = new URL(result.url);
-          const secret = urlParams.searchParams.get('secret');
-          const userId = urlParams.searchParams.get('userId');
+          // Parse the URL for session tokens (try/catch for custom scheme URLs)
+          let secret: string | null = null;
+          let userId: string | null = null;
+          try {
+            const urlParams = new URL(result.url);
+            secret = urlParams.searchParams.get('secret');
+            userId = urlParams.searchParams.get('userId');
+          } catch {
+            const secretMatch = result.url.match(/[?&]secret=([^&]+)/);
+            const userIdMatch = result.url.match(/[?&]userId=([^&]+)/);
+            secret = secretMatch ? decodeURIComponent(secretMatch[1]) : null;
+            userId = userIdMatch ? decodeURIComponent(userIdMatch[1]) : null;
+          }
 
           if (secret && userId) {
             if (__DEV__) console.log('[OAuth] Creating session with token...');
+            try { await account.deleteSession('current'); } catch (_e) {}
             const session = await account.createSession(userId, secret);
             await saveSession(session.$id);
             return session;
@@ -180,9 +190,18 @@ export const authService = {
 
       if (result.type === 'success' && result.url) {
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          const urlParams = new URL(result.url);
-          const secret = urlParams.searchParams.get('secret');
-          const userId = urlParams.searchParams.get('userId');
+          let secret: string | null = null;
+          let userId: string | null = null;
+          try {
+            const urlParams = new URL(result.url);
+            secret = urlParams.searchParams.get('secret');
+            userId = urlParams.searchParams.get('userId');
+          } catch {
+            const secretMatch = result.url.match(/[?&]secret=([^&]+)/);
+            const userIdMatch = result.url.match(/[?&]userId=([^&]+)/);
+            secret = secretMatch ? decodeURIComponent(secretMatch[1]) : null;
+            userId = userIdMatch ? decodeURIComponent(userIdMatch[1]) : null;
+          }
 
           if (secret && userId) {
             const session = await account.createSession(userId, secret);
@@ -224,7 +243,8 @@ export const authService = {
       const oauthUrl = account.createOAuth2Token(
         OAuthProvider.Facebook,
         successUrl,
-        failureUrl
+        failureUrl,
+        ['email', 'ads_read', 'ads_management', 'public_profile'] // Real Data Scopes
       );
 
       if (!oauthUrl) throw new Error('Failed to generate OAuth URL');
@@ -235,9 +255,18 @@ export const authService = {
 
       if (result.type === 'success' && result.url) {
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          const urlParams = new URL(result.url);
-          const secret = urlParams.searchParams.get('secret');
-          const userId = urlParams.searchParams.get('userId');
+          let secret: string | null = null;
+          let userId: string | null = null;
+          try {
+            const urlParams = new URL(result.url);
+            secret = urlParams.searchParams.get('secret');
+            userId = urlParams.searchParams.get('userId');
+          } catch {
+            const secretMatch = result.url.match(/[?&]secret=([^&]+)/);
+            const userIdMatch = result.url.match(/[?&]userId=([^&]+)/);
+            secret = secretMatch ? decodeURIComponent(secretMatch[1]) : null;
+            userId = userIdMatch ? decodeURIComponent(userIdMatch[1]) : null;
+          }
 
           if (secret && userId) {
             const session = await account.createSession(userId, secret);
@@ -284,7 +313,7 @@ export const authService = {
       if (__DEV__) console.log('[AuthService] Verifying OTP via Firebase...');
       const result = await verifyPhoneOTP(otp);
       if (result.success) {
-        return { success: true, ...result };
+        return result;
       }
       return { success: false, message: result.error || 'Invalid OTP' };
     } catch (error) {
@@ -347,6 +376,39 @@ export const authService = {
       return await account.createVerification(
         'https://app.marketingtool.pro/verify-email'
       );
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // 2FA (TOTP) Functions
+  async createTOTP(): Promise<any> {
+    try {
+      return await (account as any).createMFAAuthenticator('totp');
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  async update2FA(enabled: boolean): Promise<any> {
+    try {
+      return await (account as any).updateMFA(enabled);
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  async verify2FA(otp: string, challengeId?: string): Promise<any> {
+    try {
+      return await (account as any).updateMfaChallenge(challengeId || '', otp);
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  async listMfaFactors(): Promise<any> {
+    try {
+      return await account.listMfaFactors();
     } catch (error) {
       throw error;
     }

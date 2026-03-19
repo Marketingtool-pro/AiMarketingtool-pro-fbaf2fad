@@ -448,7 +448,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => { if (messages.length > 0) { clearChat(); } }} style={styles.backButton}>
             <Feather name="arrow-left" size={22} color={Colors.white} />
           </TouchableOpacity>
           <BotAvatar size={40} />

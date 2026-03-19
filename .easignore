@@ -10,15 +10,11 @@ dist/
 build/
 web-build/
 
-# Expo / Debug
-.expo/
-*.log
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# SECURE: BLOCK ALL CREDENTIALS
+# SECURE: BLOCK ALL CREDENTIALS & WORK TRACKS
 credentials/
+conductor/
+path/
+gemini-cli/
 *.jks
 *.p8
 *.p12
@@ -40,10 +36,18 @@ credentials/
 .DS_Store
 **/.git/
 
-# Massive asset folders
-/src/assets/images/tool-icons/
+# REDUNDANT MASSIVE ASSETS
+src/assets/images/tool-icons/
+src/assets/images/backgrounds/
 
-# Ensure plugins and src are ALWAYS included
+# REQUIRED ASSETS (Must be included for bundling)
+!src/assets/images/tool-icons-v2/
+!src/assets/images/screens/
+!src/assets/images/banners/
+!src/assets/images/dashboard/
+!src/assets/images/categories/
+!assets/
+
+# Ensure essential code is included
 !plugins/
 !src/
-!assets/

@@ -27,6 +27,7 @@ import { AuthStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
+import { biometricService, BiometricType } from '../../services/biometric';
 
 const { width } = Dimensions.get('window');
 
@@ -50,7 +51,8 @@ const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const {
     login, loginWithGoogle, loginWithApple, loginWithFacebook,
-    sendPhoneOTP, verifyPhoneOTP, isLoading, clearError,
+    sendPhoneOTP, verifyPhoneOTP, verifyTOTP, authenticateWithBiometric, isLoading, 
+    mfaPending, clearError,
   } = useAuthStore();
 
   const [email, setEmail] = useState('');
@@ -60,40 +62,111 @@ const LoginScreen = () => {
   const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[1]);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [totpCode, setTotpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpUserId, setOtpUserId] = useState('');
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [totpError, setTotpError] = useState('');
+  const [otpSending, setOtpSending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Restore pending OTP state — on mount AND when app returns from background
-  // (reCAPTCHA opens Chrome, app goes to background, then comes back)
-  const restorePendingOTP = async () => {
-    try {
-      const pending = await SecureStore.getItemAsync('pendingOTP');
-      if (pending && !showOtpModal) {
-        const { phone, countryCode, userId } = JSON.parse(pending);
-        setPhoneNumber(phone);
-        setOtpUserId(userId || 'pending_firebase_verification');
-        setOtpSent(true);
-        setShowOtpModal(true);
-        const country = COUNTRIES.find(c => c.code === countryCode);
-        if (country) setSelectedCountry(country);
+  const [isBioAvailable, setIsBioAvailable] = useState(false);
+  const [bioType, setBioType] = useState<BiometricType>('none');
+  const [isBioEnabled, setIsBioEnabled] = useState(false);
+
+  useEffect(() => {
+    const checkBio = async () => {
+      const available = await biometricService.isBiometricAvailable();
+      const enabled = await biometricService.isBiometricEnabled();
+      const type = await biometricService.getBiometricType();
+      setIsBioAvailable(available);
+      setIsBioEnabled(enabled);
+      setBioType(type);
+    };
+    checkBio();
+  }, []);
+
+  const handleBiometricLogin = async () => {
+    const success = await authenticateWithBiometric();
+    if (!success) {
+      const { error } = useAuthStore.getState();
+      if (error === 'no_session') {
+        Alert.alert(
+          'Session Expired',
+          'Please login with phone, email, or social account first. Biometric login will work on your next visit.',
+        );
+        useAuthStore.setState({ error: null });
+      } else {
+        Alert.alert('Authentication Failed', 'Could not authenticate biometrically.');
       }
-    } catch {}
+    }
+  };
+
+  const handleVerifyTOTP = async () => {
+    setTotpError('');
+    try {
+      await verifyTOTP(totpCode);
+    } catch (err: any) {
+      setTotpError(err.message || 'Invalid 2FA code');
+    }
+  };
+
+  // Cooldown timer for resend button (60 seconds)
+  const startCooldown = () => {
+    setResendCooldown(60);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown(prev => {
+        if (prev <= 1) {
+          if (cooldownRef.current) clearInterval(cooldownRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   };
 
   useEffect(() => {
-    restorePendingOTP();
+    return () => { if (cooldownRef.current) clearInterval(cooldownRef.current); };
   }, []);
 
-  // When app comes back from Chrome reCAPTCHA, show OTP modal
+  // Restore OTP modal when app returns from Chrome reCAPTCHA (Firebase opens Chrome on iOS)
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (nextAppState === 'active') {
-        restorePendingOTP();
+    SecureStore.getItemAsync('pendingOTP').then(pending => {
+      if (pending) {
+        try {
+          const { phone, countryCode } = JSON.parse(pending);
+          setPhoneNumber(phone);
+          setOtpSent(true);
+          setShowOtpModal(true);
+          const country = COUNTRIES.find(c => c.code === countryCode);
+          if (country) setSelectedCountry(country);
+        } catch {}
       }
     });
-    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && !showOtpModal) {
+        SecureStore.getItemAsync('pendingOTP').then(pending => {
+          if (pending) {
+            try {
+              const { phone, countryCode } = JSON.parse(pending);
+              setPhoneNumber(phone);
+              setOtpSent(true);
+              setShowOtpModal(true);
+              const country = COUNTRIES.find(c => c.code === countryCode);
+              if (country) setSelectedCountry(country);
+            } catch {}
+          }
+        });
+      }
+    });
+    return () => sub.remove();
   }, [showOtpModal]);
 
   const handleLogin = async () => {
@@ -109,34 +182,51 @@ const LoginScreen = () => {
       Alert.alert('Invalid Number', 'Please enter a phone number');
       return;
     }
+    if (resendCooldown > 0) return;
+
+    const formattedPhone = `${selectedCountry.code}${phoneNumber}`;
+    setOtpError('');
+    setOtpCode('');
+    setOtpSending(true);
+
+    // Save BEFORE Firebase call — survives Chrome reCAPTCHA redirect on iOS
+    await SecureStore.setItemAsync('pendingOTP', JSON.stringify({
+      phone: phoneNumber,
+      countryCode: selectedCountry.code,
+    }));
+
     try {
-      const formattedPhone = `${selectedCountry.code}${phoneNumber}`;
-      // Save OTP state BEFORE calling Firebase (survives reCAPTCHA app restart)
-      await SecureStore.setItemAsync('pendingOTP', JSON.stringify({
-        phone: phoneNumber,
-        countryCode: selectedCountry.code,
-        userId: 'pending_firebase_verification',
-      }));
+      // Firebase Phone Auth — may open Chrome for reCAPTCHA on iOS
       const userId = await sendPhoneOTP(formattedPhone);
       setOtpUserId(userId);
       setOtpSent(true);
       setShowOtpModal(true);
+      setOtpSending(false);
+      startCooldown();
     } catch (err: any) {
-      // Clear pending state on failure
+      setOtpSending(false);
       await SecureStore.deleteItemAsync('pendingOTP');
-      Alert.alert('OTP Failed', err.message || 'Failed to send OTP');
+      Alert.alert('OTP Failed', err.message || 'Failed to send OTP. Please try again.');
     }
   };
 
   const handleVerifyOTP = async () => {
+    setOtpError('');
     try {
       await verifyPhoneOTP(otpUserId, otpCode);
-      // Clear pending OTP state on successful verification
       await SecureStore.deleteItemAsync('pendingOTP');
       setShowOtpModal(false);
     } catch (err: any) {
-      Alert.alert('Verification Failed', err.message || 'Invalid OTP');
+      setOtpError(err.message || 'Invalid OTP. Please check and try again.');
     }
+  };
+
+  const handleCloseOtpModal = async () => {
+    setShowOtpModal(false);
+    setOtpSent(false);
+    setOtpCode('');
+    setOtpError('');
+    await SecureStore.deleteItemAsync('pendingOTP');
   };
 
   const filteredCountries = countrySearch
@@ -169,12 +259,12 @@ const LoginScreen = () => {
           {/* Quick Login */}
           <View style={styles.quickLoginContainer}>
             <View style={styles.quickLoginHeader}>
-              <Feather name="phone" size={16} color="#9D4EDD" />
-              <Text style={styles.quickLoginText}>Quick Login</Text>
+              <Feather name="message-circle" size={16} color="#25D366" />
+              <Text style={styles.quickLoginText}>Phone Login</Text>
             </View>
-            
+
             <View style={styles.phoneRow}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.countrySelector}
                 onPress={() => setShowCountryPicker(true)}
               >
@@ -190,25 +280,124 @@ const LoginScreen = () => {
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
                 keyboardType="phone-pad"
+                editable={!otpSent}
               />
 
-              <TouchableOpacity 
-                style={styles.arrowBtn}
-                onPress={handleSendOTP}
-              >
-                <LinearGradient
-                  colors={['#3D2914', '#16132B']} // Subtle dark gradient for the button background
-                  style={StyleSheet.absoluteFill}
-                />
-                <View style={styles.arrowCircle}>
-                   <Feather name="arrow-right" size={20} color="#FFFFFF" />
-                </View>
-              </TouchableOpacity>
+              {!otpSent ? (
+                <TouchableOpacity
+                  style={[styles.arrowBtn, otpSending && { opacity: 0.5 }]}
+                  onPress={handleSendOTP}
+                  disabled={otpSending}
+                >
+                  <LinearGradient
+                    colors={['#3D2914', '#16132B']}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={styles.arrowCircle}>
+                    {otpSending ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <Feather name="arrow-right" size={20} color="#FFFFFF" />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.arrowBtn}
+                  onPress={() => { setOtpSent(false); setOtpCode(''); setOtpError(''); }}
+                >
+                  <LinearGradient
+                    colors={['#3D2914', '#16132B']}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={[styles.arrowCircle, { backgroundColor: '#4A5568' }]}>
+                    <Feather name="edit-2" size={16} color="#FFFFFF" />
+                  </View>
+                </TouchableOpacity>
+              )}
             </View>
+
+            {/* OTP Section - Inline */}
+            {otpSent && (
+              <View style={styles.otpSection}>
+                <Text style={styles.otpSentText}>
+                  Enter the 6-digit code sent via WhatsApp to {selectedCountry.code} {phoneNumber}
+                </Text>
+
+                {!!otpError && (
+                  <View style={styles.errorBox}>
+                    <Feather name="alert-circle" size={16} color="#FF6B6B" />
+                    <Text style={styles.errorText}>{otpError}</Text>
+                  </View>
+                )}
+
+                <View style={styles.otpRow}>
+                  <TextInput
+                    style={[styles.otpInputInline, { letterSpacing: 8 }]}
+                    placeholder="000000"
+                    placeholderTextColor="#4A5568"
+                    value={otpCode}
+                    onChangeText={(text) => { setOtpCode(text); setOtpError(''); }}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    autoFocus
+                  />
+                  <TouchableOpacity
+                    style={[styles.verifyBtn, otpCode.length < 6 && { opacity: 0.5 }]}
+                    onPress={handleVerifyOTP}
+                    disabled={isLoading || otpCode.length < 6}
+                  >
+                    <LinearGradient
+                      colors={['#9D4EDD', '#7B2CBF']}
+                      style={styles.verifyBtnGrad}
+                    >
+                      {isLoading ? (
+                        <ActivityIndicator color="#FFFFFF" size="small" />
+                      ) : (
+                        <Feather name="check" size={20} color="#FFFFFF" />
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  onPress={handleSendOTP}
+                  disabled={isLoading || resendCooldown > 0}
+                  style={{ alignSelf: 'center', marginTop: 12 }}
+                >
+                  <Text style={[styles.resendInlineText, resendCooldown > 0 && { opacity: 0.5 }]}>
+                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Didn't get code? Resend"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
+          {isBioEnabled && isBioAvailable && (
+            <TouchableOpacity 
+              style={styles.biometricBtn} 
+              onPress={handleBiometricLogin}
+            >
+              <LinearGradient
+                colors={['rgba(157, 78, 221, 0.1)', 'rgba(157, 78, 221, 0.05)']}
+                style={styles.biometricBtnGrad}
+              >
+                <Ionicons 
+                  name={bioType === 'face' ? 'scan' : 'finger-print'} 
+                  size={32} 
+                  color="#9D4EDD" 
+                />
+                <Text style={styles.biometricText}>
+                  Quick Login with {bioType === 'face' ? 'Face ID' : 'Touch ID'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+
           <View style={styles.orContainer}>
+            <View style={styles.orLine} />
             <Text style={styles.orText}>OR CONTINUE WITH</Text>
+            <View style={styles.orLine} />
           </View>
 
           <View style={styles.socialRow}>
@@ -298,42 +487,47 @@ const LoginScreen = () => {
         </View>
       </Modal>
 
-      {/* OTP Entry Modal */}
+      {/* 2FA TOTP Modal */}
       <Modal
-        visible={showOtpModal}
+        visible={mfaPending}
         animationType="slide"
         transparent={true}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Verify OTP</Text>
-              <TouchableOpacity onPress={() => setShowOtpModal(false)}>
+              <Text style={styles.modalTitle}>Two-Factor Auth</Text>
+              <TouchableOpacity onPress={() => useAuthStore.setState({ mfaPending: false })}>
                 <Feather name="x" size={24} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
             
             <Text style={styles.modalSubtitle}>
-              Enter the 6-digit code sent to {selectedCountry.code} {phoneNumber}
+              Enter the 6-digit code from your authenticator app to continue.
             </Text>
 
-            <View style={styles.otpContainer}>
-              <TextInput
-                style={styles.otpInput}
-                placeholder="000000"
-                placeholderTextColor="#4A5568"
-                value={otpCode}
-                onChangeText={setOtpCode}
-                keyboardType="number-pad"
-                maxLength={6}
-                letterSpacing={10}
-              />
-            </View>
+            {!!totpError && (
+              <View style={styles.errorBox}>
+                <Feather name="alert-circle" size={16} color="#FF6B6B" />
+                <Text style={styles.errorText}>{totpError}</Text>
+              </View>
+            )}
+
+            <TextInput
+              style={styles.otpInput}
+              placeholder="000000"
+              placeholderTextColor="#4A5568"
+              value={totpCode}
+              onChangeText={(text) => { setTotpCode(text); setTotpError(''); }}
+              keyboardType="number-pad"
+              maxLength={6}
+              autoFocus
+            />
 
             <TouchableOpacity 
               style={styles.primaryBtn}
-              onPress={handleVerifyOTP}
-              disabled={isLoading}
+              onPress={handleVerifyTOTP}
+              disabled={isLoading || totpCode.length < 6}
             >
               <LinearGradient
                 colors={['#9D4EDD', '#7B2CBF']}
@@ -345,14 +539,6 @@ const LoginScreen = () => {
                   <Text style={styles.btnText}>Verify & Login</Text>
                 )}
               </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.resendBtn}
-              onPress={handleSendOTP}
-              disabled={isLoading}
-            >
-              <Text style={styles.resendText}>Didn't receive code? Resend</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -417,42 +603,51 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 100,
+    paddingTop: 80,
     alignItems: 'center',
   },
   logoSection: {
     alignItems: 'center',
-    marginBottom: 60,
+    marginBottom: 48,
   },
   logoIconBg: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(157, 78, 221, 0.1)',
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: 'rgba(124, 58, 237, 0.12)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(124, 58, 237, 0.2)',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 8,
   },
   logoImage: {
-    width: 80,
-    height: 80,
+    width: 70,
+    height: 70,
   },
   title: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#A0AEC0',
-    marginTop: 8,
+    fontSize: 13,
+    color: '#718096',
+    marginTop: 6,
+    letterSpacing: 0.3,
   },
   quickLoginContainer: {
     width: '100%',
-    backgroundColor: Colors.card,
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderRadius: 24,
     padding: 24,
-    marginBottom: 40,
+    marginBottom: 32,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
@@ -463,23 +658,26 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   quickLoginText: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#A0AEC0',
     fontWeight: '600',
+    letterSpacing: 0.3,
   },
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   countrySelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0A0A0A',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     paddingHorizontal: 12,
-    height: 56,
-    borderRadius: 16,
+    height: 54,
+    borderRadius: 14,
     gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   flagText: {
     fontSize: 20,
@@ -491,17 +689,19 @@ const styles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
-    height: 56,
-    borderRadius: 16,
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    height: 54,
+    borderRadius: 14,
     paddingHorizontal: 16,
     fontSize: 16,
     color: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   arrowBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 54,
+    height: 54,
+    borderRadius: 14,
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
@@ -516,24 +716,37 @@ const styles = StyleSheet.create({
   },
   orContainer: {
     marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 8,
   },
   orText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#4A5568',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
+    fontWeight: '600',
+    marginHorizontal: 16,
+  },
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   socialRow: {
     flexDirection: 'row',
-    gap: 20,
-    marginBottom: 60,
+    gap: 16,
+    marginBottom: 48,
   },
   socialBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: '#161824',
+    width: 58,
+    height: 58,
+    borderRadius: 18,
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   googleG: {
     fontSize: 24,
@@ -542,13 +755,16 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: 'row',
+    marginBottom: 40,
   },
   footerText: {
-    color: '#A0AEC0',
+    color: '#718096',
+    fontSize: 14,
   },
   signupText: {
     color: '#9D4EDD',
     fontWeight: 'bold',
+    fontSize: 14,
   },
   modalOverlay: {
     flex: 1,
@@ -679,6 +895,86 @@ const styles = StyleSheet.create({
     color: '#9D4EDD',
     fontSize: 14,
     fontWeight: '500',
+  },
+  otpSection: {
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.06)',
+    paddingTop: 16,
+  },
+  otpSentText: {
+    fontSize: 13,
+    color: '#A0AEC0',
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  otpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  otpInputInline: {
+    flex: 1,
+    backgroundColor: '#0A0A0A',
+    height: 56,
+    borderRadius: 16,
+    textAlign: 'center',
+    fontSize: 24,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    borderWidth: 1,
+    borderColor: '#9D4EDD',
+  },
+  verifyBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  verifyBtnGrad: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  resendInlineText: {
+    color: '#9D4EDD',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 13,
+    flex: 1,
+    lineHeight: 18,
+  },
+  biometricBtn: {
+    width: '100%',
+    marginBottom: 24,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(157, 78, 221, 0.2)',
+  },
+  biometricBtnGrad: {
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  biometricText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

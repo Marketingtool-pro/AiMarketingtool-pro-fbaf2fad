@@ -79,6 +79,15 @@ const toolSlugMap: Record<string, string> = {
   'google-keyword-ai': 'keyword',
   'google-ads-budget-calculator': 'online-payment',
   'ads-grader-pro': 'analytics',
+  'negative-keywords': 'keyword',
+  'ad-group-builder': 'campaign',
+  'google-video-script': 'video-player',
+  'landing-page-copy': 'landing-page',
+  'quality-score-booster': 'growth-chart',
+  'call-only-ads': 'ads',
+  'discovery-ads': 'advertisement',
+  'remarketing-copy': 'online-ads',
+  'app-install-ads': 'ads',
 
   // GOOGLE SEO
   'seo-meta-title': 'seo',
@@ -86,68 +95,138 @@ const toolSlugMap: Record<string, string> = {
   'seo-blog-writer': 'optimized-content',
   'schema-markup': 'sitemap',
   'internal-links': 'link-building',
+  'backlink-outreach': 'email',
+  'content-brief': 'optimized-content',
+  'faq-generator': 'optimized-content',
+  'alt-text-writer': 'seo',
+  'url-slug-optimizer': 'link-building',
+  'competitor-analysis': 'analytics',
+  'local-seo-content': 'seo',
+  'heading-structure': 'seo',
 
   // GOOGLE ANALYTICS
   'ga4-reports': 'web-report',
   'ads-grader': 'analytics',
   'ga4-grader': 'growth-chart',
+  'conversion-tracker': 'conversion-rate',
+  'utm-builder': 'link-building',
+  'website-speed-report': 'web-report',
 
-  // INSTAGRAM
-  'instagram-captions': 'instagram',
-  'instagram-reels': 'video-player',
-  'instagram-stories': 'instagram',
-  'instagram-hashtags': 'instagram',
-  'instagram-bio': 'instagram',
+  // GOOGLE CONTENT
+  'blog-post-outline': 'copywriting',
+  'article-rewriter': 'copywriting',
+  'press-release': 'optimized-content',
+  'gbp-post': 'marketing-strategy',
+  'newsletter-writer': 'email',
 
-  // FACEBOOK
+  // FACEBOOK ADS
   'facebook-ad-copy': 'facebook',
+  'facebook-ads-performance-grader': 'facebook',
+  'fb-carousel-ads': 'facebook',
+  'fb-lead-ad': 'marketing-target',
+  'fb-video-script': 'video-player',
+  'fb-retargeting': 'facebook',
+  'fb-audience-builder': 'marketing-target',
+  'messenger-ad-copy': 'messenger',
   'facebook-carousel': 'facebook',
   'facebook-lead-forms': 'marketing-target',
   'facebook-video-script': 'video-player',
-  'facebook-retargeting': 'online-promotion',
+  'facebook-retargeting': 'online-ads',
   'facebook-dynamic': 'online-ads',
 
-  // TIKTOK
-  'tiktok-ad-creator': 'tiktok',
-  'tiktok-ecommerce-ad-creator': 'online-store',
+  // INSTAGRAM
+  'instagram-caption': 'instagram',
+  'instagram-captions': 'instagram',
+  'instagram-hashtags': 'instagram',
+  'reels-script': 'video-player',
+  'instagram-reels': 'video-player',
+  'story-ideas': 'instagram',
+  'instagram-stories': 'instagram',
+  'instagram-bio': 'instagram',
+  'instagram-bio-optimizer': 'instagram',
+  'instagram-hashtag-strategy': 'instagram',
+  'instagram-carousel-designer': 'instagram',
+  'instagram-ad-creative-generator': 'instagram',
 
-  // YOUTUBE
-  'youtube-title-generator': 'youtube',
-  'youtube-description-generator': 'youtube',
-
-  // TWITTER/X
-  'viral-tweets': 'x-twitter',
-  'twitter-thread-generator': 'x-twitter',
-
-  // LINKEDIN
-  'linkedin-posts': 'linkedin',
-  'linkedin-ad-copy-generator': 'linkedin',
-
-  // PINTEREST
-  'pinterest-ad-generator': 'pinterest',
-
-  // SOCIAL MEDIA GENERIC
+  // SOCIAL MEDIA
   'social-calendar': 'marketing-strategy',
+  'social-post': 'meta',
+  'engagement-replies': 'meta',
+  'poll-quiz': 'meta',
   'hashtag-generator': 'meta',
   'social-media-post-generator': 'meta',
   'caption-creator': 'copywriting',
 
-  // PRODUCT & E-COMMERCE
+  // META CONTENT
+  'ad-creative-brief': 'copywriting',
+  'meme-caption': 'optimized-content',
+
+  // TIKTOK
+  'tiktok-script': 'tiktok',
+  'tiktok-ad-copy': 'tiktok',
+  'tiktok-hashtags': 'tiktok',
+  'tiktok-ad-creator': 'tiktok',
+  'tiktok-ecommerce-ad-creator': 'online-store',
+
+  // YOUTUBE
+  'youtube-title': 'youtube',
+  'youtube-description': 'youtube',
+  'youtube-script': 'youtube',
+  'youtube-tags': 'youtube',
+  'youtube-title-generator': 'youtube',
+  'youtube-description-generator': 'youtube',
+
+  // LINKEDIN
+  'linkedin-post': 'linkedin',
+  'linkedin-ad-copy': 'linkedin',
+  'linkedin-bio': 'linkedin',
+  'linkedin-posts': 'linkedin',
+  'linkedin-ad-copy-generator': 'linkedin',
+
+  // TWITTER/X
+  'tweet-generator': 'x-twitter',
+  'twitter-thread': 'x-twitter',
+  'x-ads-copy': 'x-twitter',
+  'viral-tweets': 'x-twitter',
+  'twitter-thread-generator': 'x-twitter',
+
+  // PINTEREST
+  'pinterest-description': 'pinterest',
+  'pinterest-boards': 'pinterest',
+  'pinterest-ad-generator': 'pinterest',
+
+  // SHOPIFY PRODUCTS
+  'product-title-optimizer': 'online-store',
+  'product-description': 'product-trolley',
+  'product-bullets': 'product-trolley',
+  'collection-description': 'online-store',
+  'review-response': 'online-store',
+  'product-comparison': 'product-trolley',
   'product-descriptions': 'product-trolley',
   'product-feed-optimizer': 'online-store',
+  'product-description-writer': 'product-trolley',
+  'shopify-titles': 'online-store',
+  'shopify-collections': 'online-store',
+  'amazon-listings': 'online-store',
+  'shopify-seo-optimizer': 'seo',
+  'shopify-product-page-enhancer': 'landing-page',
+  'shopify-store-audit': 'online-store',
+
+  // SHOPPING ADS
+  'shopping-title': 'product-trolley',
+  'shopping-titles': 'product-trolley',
+  'fb-shop-ads': 'facebook',
+  'sale-promo-ads': 'online-ads',
+  'abandoned-cart-ads': 'conversion-rate',
   'dynamic-product-ads': 'online-ads',
   'cart-recovery-ads': 'conversion-rate',
 
-  // SHOPIFY
-  'shopify-titles': 'online-store',
-  'shopify-collections': 'online-store',
-  'product-bullets': 'product-trolley',
-  'amazon-listings': 'online-store',
-  'shopping-titles': 'product-trolley',
-  'shopify-seo-optimizer': 'seo',
-  'shopify-product-page-enhancer': 'landing-page',
-
-  // EMAIL
+  // EMAIL MARKETING
+  'welcome-email-series': 'email',
+  'abandoned-cart-email': 'email',
+  'email-subject-lines': 'email',
+  'product-launch-email': 'email',
+  'win-back-email': 'email',
   'abandoned-cart': 'email',
   'welcome-emails': 'email',
   'launch-emails': 'email',
@@ -155,6 +234,24 @@ const toolSlugMap: Record<string, string> = {
   'cold-outreach-email': 'email',
   'email-writer': 'email',
   'product-launch-email-sequence': 'email',
+  'backlink-outreach-email-generator': 'email',
+
+  // E-COMMERCE SEO
+  'product-page-seo': 'seo',
+  'store-blog': 'optimized-content',
+  'category-seo': 'seo',
+  'product-schema': 'sitemap',
+
+  // AI AGENTS
+  'ai-campaign-optimizer': 'bot',
+  'ai-content-planner': 'bot',
+  'ai-budget-allocator': 'bot',
+  'ai-ab-test': 'bot',
+  'ai-trend-detector': 'bot',
+  'ai-chatbot': 'bot',
+  'ai-analyzer': 'bot',
+  'ai-budget': 'bot',
+  'ai-campaign-manager': 'bot',
 
   // BLOG & CONTENT
   'blog-post-ideas': 'optimized-content',
@@ -167,13 +264,6 @@ const toolSlugMap: Record<string, string> = {
   'keyword-cluster-generator': 'search-volume',
   'long-tail-keyword-generator': 'search-engine',
 
-  // AI AGENTS
-  'ai-campaign-optimizer': 'bot',
-  'ai-content-planner': 'bot',
-  'ai-chatbot': 'bot',
-  'ai-analyzer': 'bot',
-  'ai-budget': 'bot',
-
   // CONTENT CREATION
   'meme-generator': 'optimized-content',
   'ai-image-caption': 'optimized-content',
@@ -181,9 +271,8 @@ const toolSlugMap: Record<string, string> = {
   'thumbnail-generator': 'video-player',
   'story-templates': 'instagram',
 
-  // COPYWRITING & CONTENT (new)
+  // COPYWRITING & CONTENT
   'content-rewriter': 'copywriting',
-  'article-rewriter': 'copywriting',
   'article-summarizer': 'copywriting',
   'cta-writer': 'conversion-rate',
   'sales-page-copy-writer': 'landing-page',
@@ -192,10 +281,9 @@ const toolSlugMap: Record<string, string> = {
   'paragraph-rewriter': 'copywriting',
   'testimonial-generator': 'marketing-target',
   'case-study-writer': 'optimized-content',
-  'faq-generator': 'optimized-content',
   'press-release-generator': 'optimized-content',
 
-  // SEO EXTENDED (new)
+  // SEO EXTENDED
   'seo-audit-tool': 'seo',
   'on-page-seo-checker': 'seo',
   'content-gap-finder': 'search-volume',
@@ -205,47 +293,31 @@ const toolSlugMap: Record<string, string> = {
   'faq-schema-writer': 'sitemap',
   'landing-page-audit': 'landing-page',
 
-  // LEAD GEN & BUSINESS (new)
+  // LEAD GEN & BUSINESS
   'lead-magnet-creator': 'marketing-target',
   'roi-calculator': 'growth-chart',
 
-  // INSTAGRAM EXTENDED (new)
-  'instagram-bio-optimizer': 'instagram',
-  'instagram-hashtag-strategy': 'instagram',
-  'instagram-carousel-designer': 'instagram',
-  'instagram-ad-creative-generator': 'instagram',
-
-  // GOOGLE ADS EXTENDED (new)
+  // GOOGLE ADS EXTENDED
   'google-ads-quality-score': 'ads',
   'google-ads-performance-grader': 'analytics',
   'negative-keywords-tool': 'keyword',
 
-  // META EXTENDED (new)
-  'facebook-ads-performance-grader': 'facebook',
+  // META EXTENDED
   'meta-audience-builder': 'marketing-target',
 
-  // SHOPIFY EXTENDED (new)
-  'shopify-store-audit': 'online-store',
-  'product-description-writer': 'product-trolley',
-
-  // MARKETING STRATEGY (new)
+  // MARKETING STRATEGY
   'marketing-calendar': 'marketing-strategy',
   'marketing-budget-planner': 'marketing-budget',
   'marketing-proposal-generator': 'optimized-content',
 
-  // EMAIL EXTENDED (new)
-  'backlink-outreach-email-generator': 'email',
-
-  // PODCAST & WEBINAR (new)
+  // PODCAST & WEBINAR
   'webinar-script-writer': 'video-player',
   'podcast-script-writer': 'video-player',
 
-  // PLAY STORE VISIBLE TOOLS (new)
-  'newsletter-writer': 'email',
+  // OTHER
   'comparison-chart-creator': 'optimized-content',
   'market-research-summary': 'marketing-strategy',
   'affiliate-marketing-copy': 'conversion-rate',
-  'ai-campaign-manager': 'bot',
   'copy-generator': 'copywriting',
   'engagement-calculator': 'analytics',
 };
