@@ -127,7 +127,7 @@
       "./plugins/withKotlinKspFix.js",
       "expo-notifications",
       "react-native-iap",
-      "@stripe/stripe-react-native",
+      ["@stripe/stripe-react-native", { "merchantIdentifier": "merchant.pro.marketingtool.app", "enableGooglePay": true }],
       "./plugins/withEasPodfileFix.js",
       "./plugins/withIosFirebaseSwiftFix.js",
       "expo-secure-store",
