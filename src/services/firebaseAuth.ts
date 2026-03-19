@@ -37,6 +37,31 @@ async function ensureAPNsRegistered() {
 
 let verificationId: string | null = null;
 
+// Track OTP attempts per phone number to prevent hitting Firebase rate limits
+const otpAttempts: Record<string, { count: number; firstAttempt: number }> = {};
+const MAX_OTP_ATTEMPTS = 3;
+const OTP_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
+function checkRateLimit(phone: string): string | null {
+  const now = Date.now();
+  const record = otpAttempts[phone];
+  if (record) {
+    // Reset window if expired
+    if (now - record.firstAttempt > OTP_WINDOW_MS) {
+      otpAttempts[phone] = { count: 1, firstAttempt: now };
+      return null;
+    }
+    if (record.count >= MAX_OTP_ATTEMPTS) {
+      const remainingMin = Math.ceil((OTP_WINDOW_MS - (now - record.firstAttempt)) / 60000);
+      return `Too many OTP requests. Please wait ${remainingMin} minutes before trying again.`;
+    }
+    record.count++;
+  } else {
+    otpAttempts[phone] = { count: 1, firstAttempt: now };
+  }
+  return null;
+}
+
 export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: boolean; error?: string }> {
   try {
     const firebaseAuth = getAuth();
@@ -48,6 +73,12 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
     const normalizedPhone = phoneNumber.startsWith('+')
       ? `+${cleaned}`
       : `+91${cleaned}`;
+
+    // Check app-side rate limit before hitting Firebase
+    const rateLimitError = checkRateLimit(normalizedPhone);
+    if (rateLimitError) {
+      return { success: false, error: rateLimitError };
+    }
 
     if (__DEV__) console.log('[FirebaseAuth] Sending OTP to:', normalizedPhone);
 
@@ -70,7 +101,7 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
       return { success: false, error: 'Invalid phone number format' };
     }
     if (error.code === 'auth/too-many-requests') {
-      return { success: false, error: 'Too many attempts. Please try again later.' };
+      return { success: false, error: 'Too many attempts. Number temporarily blocked by Firebase (1-4 hours). Try a different number or wait.' };
     }
     if (error.code === 'auth/quota-exceeded') {
       return { success: false, error: 'SMS quota exceeded. Please try again later.' };

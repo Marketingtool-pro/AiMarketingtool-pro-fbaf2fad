@@ -57,7 +57,13 @@ const PrivacyScreen = () => {
             {'\u2022'} Google Sign-In, Apple Sign-In, Facebook Login: Authentication via OAuth.{'\n'}
             {'\u2022'} MSG91: SMS delivery for phone number verification.{'\n'}
             {'\u2022'} Firebase: Phone authentication and push notifications.{'\n'}
+            {'\u2022'} Google Cloud / Vertex AI: Powering advanced AI features and analysis.{'\n'}
             {'\u2022'} Anthropic (Claude AI): Processing your content generation requests (inputs are not stored by the AI provider).
+          </Text>
+
+          <Text style={styles.heading}>Biometric Data</Text>
+          <Text style={styles.paragraph}>
+            If you choose to enable Biometric Login (Face ID or Touch ID), please be aware that MarketingTool does not collect, store, or transmit your biometric data. Authentication is handled entirely and securely on your device using the native operating system's keychain.
           </Text>
 
           <Text style={styles.heading}>Data Security</Text>

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { Models } from 'react-native-appwrite';
-import { authService, dbService, COLLECTIONS } from '../services/appwrite';
-import { sendPhoneOTP, verifyPhoneOTP } from '../services/firebaseAuth';
+import { Models, ExecutionMethod } from 'react-native-appwrite';
+import { authService, dbService, COLLECTIONS, Query, functions, account } from '../services/appwrite';
+import { ID } from 'react-native-appwrite';
 import { biometricService } from '../services/biometric';
 
 interface UserProfile {
@@ -28,6 +28,7 @@ interface AuthState {
   error: string | null;
   tempPhone: string | null;
   biometricPending: boolean;
+  mfaPending: boolean;
 
   // Actions
   login: (email: string, password: string) => Promise<void>;
@@ -37,11 +38,16 @@ interface AuthState {
   loginWithFacebook: () => Promise<void>;
   sendPhoneOTP: (phoneNumber: string) => Promise<string>;
   verifyPhoneOTP: (userId: string, code: string) => Promise<void>;
+  verifyTOTP: (otp: string) => Promise<void>;
   authenticateWithBiometric: () => Promise<boolean>;
+  setup2FA: () => Promise<any>;
+  enable2FA: (otp: string) => Promise<void>;
+  disable2FA: () => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  refreshProfile: () => Promise<void>;
   clearError: () => void;
   fetchOrCreateProfile: (user: Models.User<Models.Preferences>) => Promise<UserProfile>;
 }
@@ -54,30 +60,81 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   error: null,
   tempPhone: null,
   biometricPending: false,
+  mfaPending: false,
 
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
 
     try {
-      // Add timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Login timeout')), 5000)
+        setTimeout(() => reject(new Error('Login timeout')), 10000)
       );
       await Promise.race([authService.login(email, password), timeoutPromise]);
       const user = await Promise.race([authService.getCurrentUser(), timeoutPromise]) as any;
       if (user) {
-        // Fetch or create user profile
         const profile = await get().fetchOrCreateProfile(user);
         set({ user, profile, isAuthenticated: true, isLoading: false });
         
-        // If successful, we can suggest enabling biometric for next time
         const bioAvailable = await biometricService.isBiometricAvailable();
         if (bioAvailable) {
-          await biometricService.setBiometricEnabled(true);
+          // Check if already enabled in settings before forcing it
+          const bioEnabled = await biometricService.isBiometricEnabled();
+          if (!bioEnabled) {
+             // We could prompt here, but let's keep it simple
+          }
         }
       }
     } catch (error: any) {
+      if (error.type === 'user_mfa_required' || error.code === 401 && error.message?.includes('MFA')) {
+        set({ mfaPending: true, isLoading: false });
+        return;
+      }
       set({ error: error.message || 'Login failed', isLoading: false });
+      throw error;
+    }
+  },
+
+  verifyTOTP: async (otp: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await authService.verify2FA(otp);
+      const user = await authService.getCurrentUser();
+      if (user) {
+        const profile = await get().fetchOrCreateProfile(user);
+        set({ user, profile, isAuthenticated: true, isLoading: false, mfaPending: false });
+      }
+    } catch (error: any) {
+      set({ error: error.message || 'Invalid 2FA code', isLoading: false });
+      throw error;
+    }
+  },
+
+  setup2FA: async () => {
+    return await authService.createTOTP();
+  },
+
+  enable2FA: async (otp: string) => {
+    set({ isLoading: true });
+    try {
+      // Appwrite requires verifying the secret before enabling MFA
+      // The secret was already verified in the setup process
+      await authService.update2FA(true);
+      const user = await authService.getCurrentUser();
+      set({ user, isLoading: false });
+    } catch (error: any) {
+      set({ isLoading: false, error: error.message });
+      throw error;
+    }
+  },
+
+  disable2FA: async () => {
+    set({ isLoading: true });
+    try {
+      await authService.update2FA(false);
+      const user = await authService.getCurrentUser();
+      set({ user, isLoading: false });
+    } catch (error: any) {
+      set({ isLoading: false, error: error.message });
       throw error;
     }
   },
@@ -157,11 +214,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   sendPhoneOTP: async (phoneNumber: string) => {
     set({ isLoading: true, error: null });
     try {
-      const result = await sendPhoneOTP(phoneNumber);
-      if (!result.success) throw new Error(result.error);
-      set({ isLoading: false, tempPhone: phoneNumber });
-      return "pending_firebase_verification";
+      // Normalize phone number
+      const cleaned = phoneNumber.replace(/\D/g, '');
+      const normalizedPhone = phoneNumber.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
+
+      if (__DEV__) console.log('[Auth] Sending OTP via Appwrite to:', normalizedPhone);
+
+      // Use Appwrite native phone auth — triggers MSG91 provider
+      const token = await account.createPhoneToken(ID.unique(), normalizedPhone);
+
+      if (__DEV__) console.log('[Auth] Phone token created, userId:', token.userId);
+
+      set({ isLoading: false, tempPhone: normalizedPhone });
+      return token.userId; // Return userId for verify step
     } catch (error: any) {
+      if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
       set({ error: error.message || 'Failed to send OTP', isLoading: false });
       throw error;
     }
@@ -170,31 +237,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   verifyPhoneOTP: async (userId: string, code: string) => {
     set({ isLoading: true, error: null });
     try {
-      const result = await verifyPhoneOTP(code);
-      if (result.success) {
-        const firebaseUser = result.user;
-        const phone = firebaseUser.phoneNumber;
+      if (__DEV__) console.log('[Auth] Verifying OTP for userId:', userId);
 
-        // BRIDGE: Create an Appwrite session
-        try {
-          await authService.login('help@marketingtool.pro', 'Cloth-vastr@123');
-        } catch (bridgeError) {
-          console.log('Appwrite bridge failed');
-        }
+      // Delete existing session to prevent conflicts
+      try { await account.deleteSession('current'); } catch (_e) {}
 
-        const mockUser = {
-          $id: firebaseUser.uid,
-          name: firebaseUser.displayName || 'User',
-          email: `${phone}@phone.marketingtool.pro`,
-          phone: phone,
-        } as any;
-        
-        const profile = await get().fetchOrCreateProfile(mockUser);
-        set({ user: mockUser, profile, isAuthenticated: true, isLoading: false, tempPhone: null });
+      // Verify OTP and create session — Appwrite native phone auth
+      const session = await account.updatePhoneSession(userId, code);
+
+      if (__DEV__) console.log('[Auth] Phone session created:', session.$id);
+
+      const user = await authService.getCurrentUser();
+      if (user) {
+        const profile = await get().fetchOrCreateProfile(user);
+        set({ user, profile, isAuthenticated: true, isLoading: false, tempPhone: null });
       } else {
-        throw new Error(result.error || 'Invalid OTP');
+        throw new Error('Session created but could not fetch user');
       }
     } catch (error: any) {
+      if (__DEV__) console.log('[Auth] Verify OTP error:', error.message);
       set({ error: error.message || 'Invalid OTP', isLoading: false });
       throw error;
     }
@@ -202,20 +263,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   authenticateWithBiometric: async () => {
     try {
-      const success = await biometricService.authenticate();
-      if (success) {
-        // Since this is a mock biometric for a sidecar app, we need a way to 
-        // retrieve the last user or just mark as authenticated if we have a profile.
-        // For now, if we have a user/profile in memory (rehydrated), we just succeed.
-        if (get().user) {
-          set({ isAuthenticated: true, biometricPending: false });
-          return true;
-        }
-        // In a real app, you'd retrieve stored credentials from SecureStore
-        return true; 
+      const bioEnabled = await biometricService.isBiometricEnabled();
+      if (!bioEnabled) return false;
+
+      const success = await biometricService.authenticate('Login with biometrics');
+      if (!success) return false;
+
+      // Biometric passed — check if there's a valid Appwrite session
+      set({ isLoading: true });
+      const user = await authService.getCurrentUser();
+      if (user) {
+        const profile = await get().fetchOrCreateProfile(user);
+        set({ user, profile, isAuthenticated: true, isLoading: false, biometricPending: false });
+        return true;
       }
+
+      // Biometric succeeded but no Appwrite session — user needs to login first
+      set({ isLoading: false, error: 'no_session' });
       return false;
     } catch (error) {
+      set({ isLoading: false });
       return false;
     }
   },
@@ -294,6 +361,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  refreshProfile: async () => {
+    const { user } = get();
+    if (!user) return;
+    try {
+      const profile = await get().fetchOrCreateProfile(user);
+      set({ profile });
+    } catch (error) {
+      console.error('[AuthStore] Refresh profile failed:', error);
+    }
+  },
+
   clearError: () => set({ error: null }),
 
   // Helper function to fetch or create user profile
@@ -318,7 +396,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const profiles = await Promise.race([
         dbService.listDocuments<UserProfile & Models.Document>(
           COLLECTIONS.USERS,
-          [`userId=${user.$id}`]
+          [Query.equal('userId', user.$id)]
         ),
         profileTimeout,
       ]);

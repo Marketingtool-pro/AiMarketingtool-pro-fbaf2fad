@@ -51,3 +51,4 @@ yarn-error.*
 .gemini/
 gha-creds-*.json
 asc-api-key.p8
+google-play-service-account.json

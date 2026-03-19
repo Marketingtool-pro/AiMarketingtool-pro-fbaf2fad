@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import { Colors, Gradients } from '../../constants/theme';
 import { functions } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 import * as Haptics from 'expo-haptics';
+import { billingService } from '../../services/billingService';
 
 const { width } = Dimensions.get('window');
 
@@ -37,24 +38,38 @@ interface Plan {
 
 const SubscriptionScreen = () => {
   const navigation = useNavigation();
-  const { profile } = useAuthStore();
+  const { profile, refreshProfile } = useAuthStore();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [selectedPlan, setSelectedPlan] = useState<string>('free');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Initialize Billing Service on mount
+    if (Platform.OS !== 'web') {
+      billingService.initialize().catch(err => {
+        console.error('[Billing] Init failed:', err);
+      });
+    }
+    return () => {
+      if (Platform.OS !== 'web') {
+        billingService.end().catch(() => {});
+      }
+    };
+  }, []);
 
   const plans: Plan[] = [
     {
       id: 'free',
       name: 'Free Trial',
       monthlyPrice: 0, yearlyPrice: 0, yearlyTotal: 0,
-      description: '7 days \u2022 Full platform visible',
+      description: '7-day trial, 3 generations/day',
       features: [
         { text: '7-day full access trial', included: true },
         { text: '3 generations per day', included: true },
-        { text: 'Simulation mode', included: true },
-        { text: 'No credit card required', included: true },
+        { text: 'Explore all 7 platforms', included: true },
+        { text: 'Simulation mode enabled', included: true },
         { text: 'Priority support', included: false },
-        { text: 'Full analytics', included: false },
+        { text: 'Real account connect', included: false },
       ],
     },
     {
@@ -64,40 +79,40 @@ const SubscriptionScreen = () => {
       description: '200 generations/month',
       savingsPerYear: 149,
       features: [
-        { text: 'Full web platform access', included: true },
-        { text: 'All 7 platforms', included: true },
         { text: '200 generations/month', included: true },
-        { text: 'Standard support', included: true },
-        { text: 'Basic analytics', included: true },
+        { text: 'All AI marketing tools', included: true },
+        { text: 'All 7 platforms included', included: true },
+        { text: 'Standard reports', included: true },
+        { text: 'Real account connect', included: true },
       ],
     },
     {
       id: 'pro',
       name: 'Professional',
-      monthlyPrice: 49, yearlyPrice: 33, yearlyTotal: 399,
+      monthlyPrice: 59, yearlyPrice: 42, yearlyTotal: 499,
       description: '500 generations/month',
-      savingsPerYear: 189,
+      savingsPerYear: 209,
       popular: true,
       features: [
         { text: '500 generations/month', included: true },
         { text: 'Advanced automation engine', included: true },
+        { text: 'Cross-platform intelligence', included: true },
+        { text: 'Performance forecasting', included: true },
         { text: 'Priority support', included: true },
-        { text: 'Full analytics', included: true },
-        { text: 'Custom templates', included: true },
       ],
     },
     {
       id: 'growth',
-      name: 'Agency',
-      monthlyPrice: 99, yearlyPrice: 75, yearlyTotal: 899,
+      name: 'Growth',
+      monthlyPrice: 99, yearlyPrice: 83, yearlyTotal: 999,
       description: '1,500+ generations/month',
-      savingsPerYear: 289,
+      savingsPerYear: 189,
       features: [
         { text: '1,500+ generations/month', included: true },
-        { text: 'Full automation', included: true },
+        { text: 'Full automation (auto-rules)', included: true },
+        { text: 'Predictive scaling AI', included: true },
         { text: 'Executive dashboards', included: true },
-        { text: 'Team collaboration', included: true },
-        { text: 'White-label reports', included: true },
+        { text: 'Priority support', included: true },
       ],
     },
   ];
@@ -107,18 +122,91 @@ const SubscriptionScreen = () => {
     if (selectedPlan === 'free') { navigation.goBack(); return; }
     const plan = plans.find(p => p.id === selectedPlan);
     if (!plan) return;
+
     setIsLoading(true);
+    const userId = profile?.userId || profile?.$id;
+
     try {
-      const execution = await functions.createExecution(
-        'stripe-checkout',
-        JSON.stringify({ planId: selectedPlan, billingPeriod, price: billingPeriod === 'yearly' ? plan.yearlyTotal : plan.monthlyPrice }),
-        false, '/', ExecutionMethod.POST
-      );
-      const result = JSON.parse(execution.responseBody);
-      if (result.url) { await Linking.openURL(result.url); }
-      else { Alert.alert('Error', 'Could not create checkout session.'); }
+      if (Platform.OS !== 'web') {
+        // Use Native IAP — check if billing is available first
+        const serverPlanId = selectedPlan === 'pro' ? 'professional' : selectedPlan === 'growth' ? 'alltools' : selectedPlan;
+        const sku = selectedPlan === 'tokens-100' ? 'tokens-100' : `pro_${serverPlanId}_${billingPeriod}`;
+
+        let result: { success: boolean; error?: string };
+        try {
+          result = await billingService.requestPurchase(sku, userId!);
+        } catch (iapError: any) {
+          // IAP not available (dev build, Expo Go, or store not configured)
+          // Fallback to Stripe Checkout via Appwrite function
+          try {
+            const execution = await functions.createExecution(
+              'stripe-checkout',
+              JSON.stringify({
+                planId: serverPlanId,
+                billingPeriod,
+                userId,
+                userEmail: profile?.email,
+              }),
+              false, '/', ExecutionMethod.POST
+            );
+            const stripeResult = JSON.parse(execution.responseBody);
+            if (stripeResult.url) {
+              await Linking.openURL(stripeResult.url);
+              setIsLoading(false);
+              return;
+            }
+          } catch (_stripeErr) {
+            // Stripe fallback also failed
+          }
+          Alert.alert('Purchase Unavailable', 'In-app purchases are not available in this build. Please subscribe at marketingtool.pro/pricing');
+          setIsLoading(false);
+          return;
+        }
+
+        if (result.success) {
+          Alert.alert('Success', 'Subscription activated successfully!', [
+            { text: 'OK', onPress: () => { refreshProfile(); navigation.goBack(); } }
+          ]);
+        } else {
+          Alert.alert('Purchase Failed', result.error || 'Could not complete purchase.');
+        }
+      } else {
+        // Fallback to Stripe Checkout for Web
+        const serverPlanId = selectedPlan === 'pro' ? 'professional' : selectedPlan === 'growth' ? 'alltools' : selectedPlan;
+        const execution = await functions.createExecution(
+          'stripe-checkout',
+          JSON.stringify({
+            planId: serverPlanId,
+            billingPeriod,
+            userId,
+            userEmail: profile?.email,
+          }),
+          false, '/', ExecutionMethod.POST
+        );
+        const result = JSON.parse(execution.responseBody);
+        if (result.url) { await Linking.openURL(result.url); }
+        else { Alert.alert('Error', 'Could not create checkout session.'); }
+      }
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Could not open checkout.');
+    } finally { setIsLoading(false); }
+  };
+
+  const handleRestore = async () => {
+    if (Platform.OS === 'web') return;
+    setIsLoading(true);
+    const userId = profile?.userId || profile?.$id;
+    try {
+      const result = await billingService.restorePurchases(userId!);
+      if (result.success) {
+        Alert.alert('Success', `Restored ${result.count} purchases successfully!`, [
+          { text: 'OK', onPress: () => { refreshProfile(); navigation.goBack(); } }
+        ]);
+      } else {
+        Alert.alert('Restore Failed', result.error || 'No active subscriptions found.');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Could not restore purchases.');
     } finally { setIsLoading(false); }
   };
 
@@ -144,7 +232,7 @@ const SubscriptionScreen = () => {
           >
             <View style={styles.trialBadge}>
               <Feather name="star" size={12} color="#F59E0B" />
-              <Text style={styles.trialBadgeText}>7-Day Free Trial</Text>
+              <Text style={styles.trialBadgeText}>7-Day Free Trial Available</Text>
             </View>
             <Text style={styles.heroTitle}>Choose Your Plan</Text>
             <Text style={styles.heroSub}>Unlock all AI marketing tools. Cancel anytime.</Text>
@@ -229,6 +317,38 @@ const SubscriptionScreen = () => {
             );
           })}
         </View>
+
+        {/* Extra Tokens Section */}
+        <View style={styles.tokensSection}>
+          <Text style={styles.tokensTitle}>Need More Generations?</Text>
+          <Text style={styles.tokensSub}>Buy extra tokens anytime when you reach your monthly limit.</Text>
+          
+          <TouchableOpacity 
+            style={[styles.tokenCard, selectedPlan === 'tokens-100' && styles.planCardSelected]}
+            onPress={() => {
+              setSelectedPlan('tokens-100');
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            }}
+          >
+            <View style={styles.tokenCardInner}>
+              <View style={[styles.radio, selectedPlan === 'tokens-100' && styles.radioSelected]}>
+                {selectedPlan === 'tokens-100' && <View style={styles.radioInner} />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.tokenName}>100 Extra Generations</Text>
+                <Text style={styles.tokenDesc}>Added instantly to your account</Text>
+              </View>
+              <Text style={styles.tokenPrice}>$3</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {Platform.OS !== 'web' && (
+          <TouchableOpacity style={styles.restoreBtn} onPress={handleRestore}>
+            <Text style={styles.restoreText}>Restore Purchases</Text>
+          </TouchableOpacity>
+        )}
+
         <View style={{ height: 140 }} />
       </ScrollView>
 
@@ -245,7 +365,9 @@ const SubscriptionScreen = () => {
           </LinearGradient>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => Linking.openURL('https://marketingtool.pro/pricing/')}>
-          <Text style={styles.secureText}>Secure payment via Stripe  ·  View Plans Online</Text>
+          <Text style={styles.secureText}>
+            {Platform.OS === 'web' ? 'Secure payment via Stripe' : 'Secure payment via Store'}  ·  View Plans Online
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -383,6 +505,22 @@ const styles = StyleSheet.create({
   },
   featText: { fontSize: 13, color: '#FFF' },
   featDisabled: { color: Colors.textTertiary, textDecorationLine: 'line-through' },
+  restoreBtn: { marginTop: 20, alignItems: 'center' },
+  restoreText: { color: Colors.textSecondary, fontSize: 13, textDecorationLine: 'underline' },
+  tokensSection: { paddingHorizontal: 20, marginTop: 32 },
+  tokensTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF', marginBottom: 4 },
+  tokensSub: { fontSize: 13, color: Colors.textSecondary, marginBottom: 16 },
+  tokenCard: {
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  tokenCardInner: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  tokenName: { fontSize: 16, fontWeight: 'bold', color: '#FFF' },
+  tokenDesc: { fontSize: 12, color: Colors.textTertiary, marginTop: 2 },
+  tokenPrice: { fontSize: 20, fontWeight: 'bold', color: Colors.secondary },
   bottomBar: {
     position: 'absolute',
     bottom: 0,

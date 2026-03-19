@@ -163,7 +163,7 @@ const ToolsScreen = () => {
             >
               <View style={styles.iconLiquid}>
                 <View style={styles.iconGlow} />
-                <Image source={getToolIcon(tool.slug)} style={styles.cardIcon} resizeMode="contain" />
+                <Image source={getToolIcon(tool.slug, tool.category)} style={styles.cardIcon} resizeMode="contain" />
               </View>
               <View style={styles.badgeRow}>
                 {tool.isPro && (

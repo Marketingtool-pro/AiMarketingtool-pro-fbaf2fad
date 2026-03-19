@@ -8,6 +8,7 @@ import {
   Share,
   Alert,
   Linking,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -18,6 +19,7 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { getToolIcon } from '../../constants/toolIcons';
 
 
 // Desktop-preferred tool categories (big/complex tools — show preview on mobile)
@@ -72,6 +74,7 @@ const ToolResultScreen = () => {
     const autoSave = async () => {
       if (result?.outputs?.length && user && tool && !isSaved) {
         try {
+          if (__DEV__) console.log('[ToolResult] Auto-saving to history:', tool.name, 'user:', user.$id);
           await addGeneration({
             userId: user.$id,
             toolId: tool.$id,
@@ -83,8 +86,9 @@ const ToolResultScreen = () => {
             isFavorite: false,
           });
           setIsSaved(true);
-        } catch (e) {
-          // Silent fail — user can manually save
+          if (__DEV__) console.log('[ToolResult] Saved to history successfully');
+        } catch (e: any) {
+          if (__DEV__) console.log('[ToolResult] Auto-save failed:', e?.message || e);
         }
       }
     };

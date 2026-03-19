@@ -221,12 +221,12 @@ const DashboardScreen = () => {
   ];
 
   const popularTools = [
-    { name: 'Instagram Caption', slug: 'instagram-captions', category: 'Social', trending: true, color: '#E4405F' },
+    { name: 'Instagram Caption', slug: 'instagram-caption', category: 'Social', trending: true, color: '#E4405F' },
     { name: 'Facebook Ad Copy', slug: 'facebook-ad-copy', category: 'Ads', trending: true, color: '#1877F2' },
-    { name: 'Product Description', slug: 'product-descriptions', category: 'E-commerce', trending: true, color: '#96BF48' },
-    { name: 'Instagram Reels Script', slug: 'instagram-reels', category: 'Video', trending: true, color: '#C13584' },
-    { name: 'Shopify Product Title', slug: 'shopify-titles', category: 'E-commerce', trending: false, color: '#96BF48' },
-    { name: 'Email Subject Lines', slug: 'email-subjects', category: 'Email', trending: false, color: '#EF4444' },
+    { name: 'Product Description', slug: 'product-description', category: 'E-commerce', trending: true, color: '#96BF48' },
+    { name: 'Instagram Reels Script', slug: 'reels-script', category: 'Video', trending: true, color: '#C13584' },
+    { name: 'Product Title Optimizer', slug: 'product-title-optimizer', category: 'E-commerce', trending: false, color: '#96BF48' },
+    { name: 'Email Subject Lines', slug: 'email-subject-lines', category: 'Email', trending: false, color: '#EF4444' },
     { name: 'Google Ads Headline', slug: 'google-ads-headline', category: 'Ads', trending: true, color: '#4285F4' },
     { name: 'Meme Generator', slug: 'meme-generator', category: 'Creative', trending: true, color: '#EC4899' },
   ];
