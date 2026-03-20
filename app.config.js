@@ -96,7 +96,7 @@ module.exports = ({ config }) => ({
       "expo-build-properties",
       {
         "ios": {
-          "useFrameworks": "static",
+          "useFrameworks": "dynamic",
           "deploymentTarget": "16.0"
         },
         "android": {
