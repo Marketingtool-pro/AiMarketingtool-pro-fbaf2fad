@@ -126,7 +126,6 @@ module.exports = ({ config }) => ({
       }
     ],
     "@react-native-firebase/app",
-    "@react-native-firebase/app-check",
     "@react-native-firebase/auth",
     "expo-secure-store",
     "expo-font",
