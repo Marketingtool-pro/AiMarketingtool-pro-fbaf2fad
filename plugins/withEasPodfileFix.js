@@ -55,9 +55,18 @@ module.exports = function withEasPodfileFix(config) {
         bc.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -Xfrontend -strict-concurrency=minimal'
         bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
 
-        # Firebase + RNFB header search paths
+        # Firebase + RNFB header search paths + Xcode 26 module fix
         if target.name.start_with?('RNFB') || target.name.start_with?('Firebase') || target.name.start_with?('RNIap') || target.name.start_with?('NitroIap') || target.name.start_with?('Nitro') || target.name == 'RNFBApp'
           bc.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) "$(PODS_ROOT)/Headers/Public/React-Core" "$(PODS_ROOT)/Headers/Public/React-RCTBridge" "$(PODS_CONFIGURATION_BUILD_DIR)/FirebaseFirestore/FirebaseFirestore.framework/Headers" "$(PODS_ROOT)/Headers/Public/FirebaseCore" "$(PODS_ROOT)/Headers/Public/FirebaseAuth" "$(PODS_ROOT)/Headers/Public/FirebaseAppCheck" "$(PODS_ROOT)/Headers/Public/React-bridging"'
+        end
+
+        # Xcode 26 fix: disable explicit modules for RNFB to prevent
+        # "declaration of RCTBridgeModule must be imported from module" and
+        # "redefinition of RCT_EXPORT_METHOD" errors
+        if target.name.start_with?('RNFB')
+          bc.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
+          bc.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'
+          bc.build_settings['DEFINES_MODULE'] = 'NO'
         end
 
         # react-native-iap (NitroIap) StoreKit 2 fix
