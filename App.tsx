@@ -10,7 +10,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { useAuthStore } from './src/store/authStore';
 import { Colors } from './src/constants/theme';
 import { matomo } from './src/services/matomo';
-// App Check removed — not needed with Appwrite native phone auth
+import { initializeAppCheck } from './src/services/firebaseAppCheck';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -22,7 +22,8 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       try {
-        // App Check disabled — using Appwrite native phone auth
+        // Initialize App Check
+        await initializeAppCheck();
 
         // Initialize Matomo early but don't block
         matomo.init().catch(e => console.warn('Matomo init error', e));
