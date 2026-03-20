@@ -1,0 +1,16 @@
+diff --git a/node_modules/@react-native-firebase/app-check/ios/RNFBAppCheck/RNFBAppCheckModule.h b/node_modules/@react-native-firebase/app-check/ios/RNFBAppCheck/RNFBAppCheckModule.h
+index 999f403..89d401b 100644
+--- a/node_modules/@react-native-firebase/app-check/ios/RNFBAppCheck/RNFBAppCheckModule.h
++++ b/node_modules/@react-native-firebase/app-check/ios/RNFBAppCheck/RNFBAppCheckModule.h
+@@ -17,7 +17,11 @@
+ 
+ #import <Foundation/Foundation.h>
+ 
++#if __has_include(<React/RCTBridgeModule.h>)
+ #import <React/RCTBridgeModule.h>
++#else
++@import React;
++#endif
+ 
+ #import "RNFBAppCheckProviderFactory.h"
+ 
