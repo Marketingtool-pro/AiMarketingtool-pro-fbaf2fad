@@ -10,7 +10,9 @@
     "visionos": "expo run:ios --device \"Apple Vision Pro\"",
     "web": "expo start --web",
     "eas-build-post-install": "echo 'Post-install complete'",
-    "postinstall": "npx patch-package"
+    "eas-build-pre-install": "npm config set fund false",
+    "postinstall": "npx patch-package",
+    "expo-doctor": "echo 'skip'"
   },
   "dependencies": {
     "@expo/vector-icons": "15.0.3",
@@ -28,9 +30,9 @@
     "expo-blur": "~55.0.10",
     "expo-build-properties": "^55.0.9",
     "expo-clipboard": "^55.0.8",
-    "expo-constants": "^55.0.7",
+    "expo-constants": "^55.0.9",
     "expo-contacts": "^55.0.8",
-    "expo-crypto": "^55.0.9",
+    "expo-crypto": "^55.0.10",
     "expo-dev-client": "^55.0.16",
     "expo-device": "^55.0.9",
     "expo-file-system": "^55.0.10",
@@ -39,7 +41,7 @@
     "expo-haptics": "^55.0.8",
     "expo-image-picker": "^55.0.12",
     "expo-linear-gradient": "^55.0.8",
-    "expo-linking": "^55.0.7",
+    "expo-linking": "^55.0.8",
     "expo-local-authentication": "^55.0.8",
     "expo-location": "^55.1.2",
     "expo-media-library": "^55.0.9",
@@ -51,7 +53,7 @@
     "expo-status-bar": "55.0.4",
     "expo-symbols": "55.0.5",
     "expo-updates": "^55.0.13",
-    "expo-web-browser": "^55.0.9",
+    "expo-web-browser": "^55.0.10",
     "lottie-react-native": "7.3.4",
     "react": "19.2.0",
     "react-dom": "19.2.0",
@@ -86,7 +88,8 @@
     "expo-constants": "$expo-constants",
     "expo-crypto": "$expo-crypto",
     "expo-linking": "$expo-linking",
-    "expo-web-browser": "$expo-web-browser"
+    "expo-web-browser": "$expo-web-browser",
+    "expo-file-system": "$expo-file-system"
   },
   "expo": {
     "autolinking": {
