@@ -31,7 +31,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "244",
+      "buildNumber": "245",
       "googleServicesFile": "GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -98,6 +98,10 @@
             "deploymentTarget": "16.0",
             "firebaseSDKVersion": "11.8.0",
             "storeKitVersion": "2",
+            "forceStaticLinking": [
+              "RNFBApp",
+              "RNFBAuth"
+            ],
             "extraCCFlags": [
               "-Wno-error=implicit-function-declaration",
               "-Wno-error=implicit-int",
