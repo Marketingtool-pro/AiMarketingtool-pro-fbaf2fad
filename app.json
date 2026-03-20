@@ -31,7 +31,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "253",
+      "buildNumber": "254",
       "googleServicesFile": "GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -126,9 +126,7 @@
         }
       ],
       "@react-native-firebase/app",
-      "@react-native-firebase/app-check",
       "@react-native-firebase/auth",
-      "react-native-iap",
       "./plugins/withAndroid16KBAlignment.js",
       "./plugins/withAndroid15EdgeToEdge.js",
       "./plugins/withKotlinKspFix.js",
