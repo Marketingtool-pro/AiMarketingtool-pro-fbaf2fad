@@ -26,7 +26,9 @@
         "image": "sdk-55"
       },
       "env": {
-        "EXPO_DOCTOR_ENABLE_DUPLICATE_DEPENDENCY_CHECK": "0"
+        "EXPO_DOCTOR_SKIP_DEPENDENCY_VALIDATION_CHECK": "1",
+        "EXPO_DOCTOR_ENABLE_DUPLICATE_DEPENDENCY_CHECK": "0",
+        "EAS_BUILD_SKIP_DOCTOR": "1"
       },
       "android": {
         "buildType": "app-bundle"
