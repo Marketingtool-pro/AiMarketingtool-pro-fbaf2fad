@@ -59,7 +59,7 @@ const withEasPodfileFix = (config) => {
         bc.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
         bc.build_settings['SWIFT_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
         bc.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
-        bc.build_settings['SWIFT_VERSION'] = '5.0'
+        // SWIFT_VERSION left at default — 5.0 breaks @MainActor
         bc.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -Xfrontend -strict-concurrency=minimal'
         bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-implicit-int -Wno-implicit-function-declaration -Wno-non-modular-include-in-framework-module -Wno-everything -ferror-limit=0'
         bc.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
