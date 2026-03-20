@@ -17,7 +17,6 @@
   "dependencies": {
     "@expo/vector-icons": "15.0.3",
     "@react-native-firebase/app": "^23.8.8",
-    "@react-native-firebase/app-check": "^23.8.8",
     "@react-native-firebase/auth": "^23.8.6",
     "@react-navigation/bottom-tabs": "7.10.1",
     "@react-navigation/native": "7.1.28",
@@ -95,6 +94,7 @@
   },
   "expo": {
     "autolinking": {
+      "exclude": ["react-native-iap"]
     },
     "install": {
       "exclude": [
