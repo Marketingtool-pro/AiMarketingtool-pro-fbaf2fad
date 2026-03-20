@@ -23,7 +23,7 @@
       "autoIncrement": true,
       "node": "22.14.0",
       "ios": {
-        "image": "sdk-55"
+        "image": "macos-sonoma-14.6-xcode-16.1"
       },
       "env": {
         "EXPO_DOCTOR_SKIP_DEPENDENCY_VALIDATION_CHECK": "1",
