@@ -29,7 +29,7 @@ const ToolDetailScreen = () => {
   const route = useRoute<RouteType>();
   const { toolSlug, prefillInputs } = route.params;
   const { tools, generateContent, isGenerating } = useToolsStore();
-  const { profile } = useAuthStore();
+  const { user, profile } = useAuthStore();
 
   const [tool, setTool] = useState<Tool | null>(null);
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
@@ -73,14 +73,38 @@ const ToolDetailScreen = () => {
   const handleGenerate = async () => {
     if (!validateInputs() || !tool || isGenerating) return;
 
-    // Check if user has credits (for free users)
-    if (profile?.subscription === 'free' && (profile?.credits || 0) <= 0) {
+    // Block PRO tools for free users
+    if (tool.isPro && (!profile?.subscription || profile.subscription === 'free')) {
       Alert.alert(
-        'No Credits',
-        'You have no credits remaining. Upgrade your plan for more AI generations.',
+        'Pro Tool',
+        'This tool requires a paid plan. Upgrade to unlock all Pro tools.',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Upgrade', onPress: () => navigation.navigate('Subscription') },
+        ]
+      );
+      return;
+    }
+
+    // Check daily credit limit for free users (3 per day)
+    const dailyLimit = profile?.subscription === 'free' ? 3 :
+                       profile?.subscription === 'starter' ? 200 :
+                       profile?.subscription === 'pro' ? 500 : 1500;
+    const todayUsed = profile?.generationsUsed || 0;
+
+    if (todayUsed >= dailyLimit) {
+      Alert.alert(
+        'Daily Limit Reached',
+        `You've used ${todayUsed}/${dailyLimit} generations today. ${
+          profile?.subscription === 'free'
+            ? 'Upgrade for more generations.'
+            : 'Your limit resets tomorrow.'
+        }`,
+        [
+          { text: 'OK', style: 'cancel' },
+          ...(profile?.subscription === 'free'
+            ? [{ text: 'Upgrade', onPress: () => navigation.navigate('Subscription') }]
+            : []),
         ]
       );
       return;
@@ -98,6 +122,7 @@ const ToolDetailScreen = () => {
         tone: selectedTone,
         language: selectedLanguage,
         outputCount,
+        userId: user?.$id || '',
       });
 
       navigation.navigate('ToolResult', {

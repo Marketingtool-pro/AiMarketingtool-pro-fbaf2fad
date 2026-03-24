@@ -1,9 +1,9 @@
 // MarketingTool Theme - Dark Mode (Vision UI Pro inspired)
 export const Colors = {
-  // Primary Brand Colors (Deep Navy)
-  primary: '#0f1535',
-  primaryLight: '#131538',
-  primaryDark: '#0D0F1C',
+  // Primary Brand Colors (True Dark)
+  primary: '#0D0F1C',
+  primaryLight: '#12141F',
+  primaryDark: '#0A0C15',
 
   // Secondary Colors (Purple - CTAs & accents)
   secondary: '#7C3AED',
@@ -24,10 +24,10 @@ export const Colors = {
   warningLight: '#FBC04C',
   info: '#0075FF',
 
-  // Background Colors (Vision UI Dark)
+  // Background Colors (True Dark)
   background: '#0D0F1C',
-  backgroundSecondary: '#0f1535',
-  backgroundTertiary: '#131538',
+  backgroundSecondary: '#0D0F1C',
+  backgroundTertiary: '#12141F',
   card: 'rgba(22, 24, 36, 0.55)',
   cardHover: 'rgba(22, 24, 36, 0.6)',
 
@@ -50,7 +50,7 @@ export const Colors = {
 
   // Gradient Colors
   gradientStart: '#0D0F1C',
-  gradientEnd: '#131538',
+  gradientEnd: '#0D0F1C',
 
   // Overlay
   overlay: 'rgba(0, 0, 0, 0.7)',
@@ -80,14 +80,14 @@ export const Colors = {
 };
 
 export const Gradients: Record<string, readonly [string, string, ...string[]]> = {
-  primary: ['#0f1535', '#060b28'] as const,
+  primary: ['#0D0F1C', '#0A0C15'] as const,
   secondary: ['#7C3AED', '#6D28D9'] as const,
   accent: ['#7C3AED', '#A78BFA'] as const,
   card: ['rgba(22, 24, 36, 0.55)', 'rgba(22, 24, 36, 0.4)'] as const,
   button: ['#7C3AED', '#8B5CF6'] as const,
   success: ['#01B574', '#34D399'] as const,
-  dark: ['#060b28', '#0f1535'] as const,
-  premium: ['#131538', '#0f1535'] as const,
+  dark: ['#0A0C15', '#0D0F1C'] as const,
+  premium: ['#12141F', '#0D0F1C'] as const,
   gold: ['#FFB547', '#F39C12'] as const,
   purple: ['#7C3AED', '#A78BFA'] as const,
 };
