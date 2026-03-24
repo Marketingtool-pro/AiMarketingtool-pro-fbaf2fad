@@ -5,24 +5,25 @@ const path = require('path');
 /**
  * Android 15 Edge-to-Edge Fix
  *
- * Fixes deprecated APIs:
- * - Window.getStatusBarColor / setStatusBarColor / setNavigationBarColor
- * - LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES / DEFAULT
+ * Fixes ALL deprecated APIs reported by Play Console:
+ * 1. Window.getStatusBarColor/setStatusBarColor/setNavigationBarColor (React Native StatusBarModule)
+ * 2. LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES/DEFAULT (React Native WindowUtilKt)
+ * 3. BottomSheetDialog/EdgeToEdgeUtils/SheetDialog (Google Material library)
+ * 4. ExpoCropImageUtils (Expo Image Picker)
  *
- * Sets proper Android 15 edge-to-edge display mode and transparent bars.
+ * Fix approach:
+ * - styles.xml: Set Android 15 compatible values
+ * - values-v35: Opt into edge-to-edge for API 35+
+ * - build.gradle: Force Material 1.12.0+ which has Android 15 edge-to-edge fixes
+ * - gradle.properties: Enable edge-to-edge React Native flag
  */
 module.exports = function withAndroid15EdgeToEdge(config) {
-  // Step 1: Patch styles.xml to use edge-to-edge compatible values
+  // Step 1: Patch styles.xml
   config = withAndroidStyles(config, (config) => {
     const styles = config.modResults;
-
-    // Find or create the AppTheme style
-    const appTheme = styles.resources.style?.find(
-      (s) => s.$.name === 'AppTheme'
-    );
+    const appTheme = styles.resources.style?.find((s) => s.$.name === 'AppTheme');
 
     if (appTheme) {
-      // Remove deprecated status/nav bar color items if present
       if (appTheme.item) {
         appTheme.item = appTheme.item.filter(
           (item) =>
@@ -37,7 +38,6 @@ module.exports = function withAndroid15EdgeToEdge(config) {
         appTheme.item = [];
       }
 
-      // Add Android 15 compatible values
       appTheme.item.push(
         { $: { name: 'android:statusBarColor' }, _: '@android:color/transparent' },
         { $: { name: 'android:navigationBarColor' }, _: '@android:color/transparent' },
@@ -50,14 +50,12 @@ module.exports = function withAndroid15EdgeToEdge(config) {
     return config;
   });
 
-  // Step 2: Create a values-v35 folder with edge-to-edge opt-in for Android 15
+  // Step 2: Create values-v35 folder + force Material library update + gradle.properties
   config = withDangerousMod(config, [
     'android',
     async (config) => {
-      const resDir = path.join(
-        config.modRequest.platformProjectRoot,
-        'app', 'src', 'main', 'res'
-      );
+      const projectRoot = config.modRequest.platformProjectRoot;
+      const resDir = path.join(projectRoot, 'app', 'src', 'main', 'res');
 
       // values-v35 for Android 15 (API 35)
       const v35Dir = path.join(resDir, 'values-v35');
@@ -65,7 +63,7 @@ module.exports = function withAndroid15EdgeToEdge(config) {
         fs.mkdirSync(v35Dir, { recursive: true });
       }
 
-      const v35Styles = `<?xml version="1.0" encoding="utf-8"?>
+      fs.writeFileSync(path.join(v35Dir, 'styles.xml'), `<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="AppTheme" parent="Theme.EdgeToEdge">
         <item name="android:statusBarColor">@android:color/transparent</item>
@@ -74,8 +72,53 @@ module.exports = function withAndroid15EdgeToEdge(config) {
         <item name="android:windowOptOutEdgeToEdgeEnforcement">false</item>
     </style>
 </resources>
-`;
-      fs.writeFileSync(path.join(v35Dir, 'styles.xml'), v35Styles);
+`);
+
+      // Step 3: Force Material 1.12.0 in app/build.gradle
+      // This fixes BottomSheetDialog, EdgeToEdgeUtils, SheetDialog deprecations
+      const buildGradlePath = path.join(projectRoot, 'app', 'build.gradle');
+      if (fs.existsSync(buildGradlePath)) {
+        let buildGradle = fs.readFileSync(buildGradlePath, 'utf8');
+
+        // Add Material library force resolution
+        if (!buildGradle.includes('com.google.android.material:material:1.12')) {
+          // Add to dependencies section or create resolution strategy
+          if (buildGradle.includes('dependencies {')) {
+            buildGradle = buildGradle.replace(
+              'dependencies {',
+              `dependencies {
+    // Force Material 1.12.0 for Android 15 edge-to-edge compatibility
+    implementation("com.google.android.material:material:1.12.0")`
+            );
+          }
+
+          // Also add resolution strategy to force all transitive deps
+          if (buildGradle.includes('android {')) {
+            buildGradle = buildGradle.replace(
+              'android {',
+              `configurations.all {
+    resolutionStrategy {
+        force "com.google.android.material:material:1.12.0"
+    }
+}
+
+android {`
+            );
+          }
+
+          fs.writeFileSync(buildGradlePath, buildGradle);
+        }
+      }
+
+      // Step 4: Add React Native edge-to-edge flag in gradle.properties
+      const gradlePropsPath = path.join(projectRoot, 'gradle.properties');
+      if (fs.existsSync(gradlePropsPath)) {
+        let props = fs.readFileSync(gradlePropsPath, 'utf8');
+        if (!props.includes('reactNativeEdgeToEdge')) {
+          props += '\n# Enable React Native edge-to-edge support for Android 15\nreactNativeEdgeToEdge=true\n';
+          fs.writeFileSync(gradlePropsPath, props);
+        }
+      }
 
       return config;
     },

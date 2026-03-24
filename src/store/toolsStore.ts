@@ -5,6 +5,10 @@ import { generateAIContent } from '../services/aiService';
 import { googleAdsDirect } from '../services/googleAdsDirect';
 import { metaAdsDirect } from '../services/metaAdsDirect';
 import { googleAnalyticsDirect } from '../services/googleAnalyticsDirect';
+import { loadAllTools } from '../data/toolsLoader';
+
+// Load all 314 tools from web app data
+const ALL_TOOLS = loadAllTools();
 
 export interface Tool {
   $id: string;
@@ -252,9 +256,9 @@ const TOOLS: Tool[] = [
 ];
 
 export const useToolsStore = create<ToolsState>((set, get) => ({
-  tools: TOOLS,
+  tools: ALL_TOOLS as Tool[],
   categories: TOOL_CATEGORIES.map(c => c.id),
-  featuredTools: TOOLS.filter(t => t.isTrending),
+  featuredTools: (ALL_TOOLS as Tool[]).slice(0, 20),
   recentTools: [],
   favoriteTools: [],
   generations: [],
@@ -266,7 +270,7 @@ export const useToolsStore = create<ToolsState>((set, get) => ({
   fetchTools: async () => {
     set({ isLoading: true });
     try {
-      set({ tools: TOOLS, isLoading: false });
+      set({ tools: ALL_TOOLS as Tool[], isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }
@@ -404,6 +408,23 @@ export const useToolsStore = create<ToolsState>((set, get) => ({
       }
 
       set({ isGenerating: false });
+
+      // Save generation to history (Appwrite database)
+      const outputText = result.outputs.map((o: any) => typeof o === 'string' ? o : JSON.stringify(o)).join('\n\n---\n\n');
+      try {
+        await get().addGeneration({
+          userId: inputs.userId || '',
+          toolId,
+          toolName: tool.name,
+          input: inputs,
+          output: outputText,
+          outputType: tool.outputType,
+          createdAt: new Date().toISOString(),
+          isFavorite: false,
+        });
+      } catch (saveErr) {
+        console.warn('[ToolsStore] Failed to save generation to history:', saveErr);
+      }
 
       return {
         toolId,

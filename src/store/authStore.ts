@@ -212,40 +212,82 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   sendPhoneOTP: async (phoneNumber: string) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
-      // Normalize phone number
       const cleaned = phoneNumber.replace(/\D/g, '');
       const normalizedPhone = phoneNumber.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
+      const mobile = cleaned;
 
-      if (__DEV__) console.log('[Auth] Sending OTP via Appwrite to:', normalizedPhone);
+      if (__DEV__) console.log('[Auth] Sending WhatsApp OTP via MSG91 Widget:', mobile);
 
-      // Use Appwrite native phone auth — triggers MSG91 provider
-      const token = await account.createPhoneToken(ID.unique(), normalizedPhone);
+      // Call Appwrite msg91-proxy function (uses MSG91 Widget API — WhatsApp + SMS fallback)
+      const execution = await functions.createExecution(
+        'msg91-proxy',
+        JSON.stringify({ action: 'sendOtp', identifier: mobile }),
+        false, '/', 'POST',
+        { 'Content-Type': 'application/json' }
+      );
 
-      if (__DEV__) console.log('[Auth] Phone token created, userId:', token.userId);
+      const responseBody = JSON.parse(execution.responseBody || '{}');
+      if (responseBody.type !== 'success') {
+        throw new Error(responseBody.message || 'Failed to send OTP');
+      }
 
-      set({ isLoading: false, tempPhone: normalizedPhone });
-      return token.userId; // Return userId for verify step
+      if (__DEV__) console.log('[Auth] WhatsApp OTP sent');
+
+      set({ tempPhone: mobile });
+      return mobile;
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
-      set({ error: error.message || 'Failed to send OTP', isLoading: false });
+      set({ error: error.message || 'Failed to send OTP' });
       throw error;
     }
   },
 
   verifyPhoneOTP: async (userId: string, code: string) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
-      if (__DEV__) console.log('[Auth] Verifying OTP for userId:', userId);
+      const phone = get().tempPhone || userId;
+      if (__DEV__) console.log('[Auth] Verifying WhatsApp OTP for:', phone);
 
-      // Delete existing session to prevent conflicts
+      // Step 1: Verify OTP via Appwrite msg91-proxy (MSG91 Widget API)
+      const verifyExec = await functions.createExecution(
+        'msg91-proxy',
+        JSON.stringify({ action: 'verifyOtp', identifier: phone, otp: code }),
+        false, '/', 'POST',
+        { 'Content-Type': 'application/json' }
+      );
+
+      const verifyResult = JSON.parse(verifyExec.responseBody || '{}');
+      if (!verifyResult.success) {
+        throw new Error(verifyResult.message || 'Invalid OTP');
+      }
+
+      if (__DEV__) console.log('[Auth] OTP verified, creating Appwrite session...');
+
+      // Step 2: Create Appwrite session via phone-session function
+      const execution = await functions.createExecution(
+        'phone-session',
+        JSON.stringify({
+          firebaseUid: 'wa_' + phone.replace(/\D/g, ''),
+          phone: phone,
+          displayName: '',
+        }),
+        false, '/', 'POST',
+        { 'Content-Type': 'application/json' }
+      );
+
+      const responseBody = JSON.parse(execution.responseBody || '{}');
+
+      if (!responseBody.success || !responseBody.userId || !responseBody.secret) {
+        throw new Error(responseBody.error || 'Failed to create session');
+      }
+
+      // Step 3: Create Appwrite session with the token
       try { await account.deleteSession('current'); } catch (_e) {}
+      const session = await account.createSession(responseBody.userId, responseBody.secret);
 
-      // Verify OTP and create session — Appwrite native phone auth
-      const session = await account.updatePhoneSession(userId, code);
-
-      if (__DEV__) console.log('[Auth] Phone session created:', session.$id);
+      if (__DEV__) console.log('[Auth] Appwrite session created:', session.$id);
 
       const user = await authService.getCurrentUser();
       if (user) {
@@ -256,7 +298,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Verify OTP error:', error.message);
-      set({ error: error.message || 'Invalid OTP', isLoading: false });
+      set({ error: error.message || 'Invalid OTP' });
       throw error;
     }
   },

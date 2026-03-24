@@ -246,7 +246,7 @@ const HistoryScreen = () => {
       <View style={styles.heroBanner}>
         <Image source={HistoryHeroImage} style={styles.heroImage} resizeMode="cover" />
         <LinearGradient
-          colors={['transparent', 'rgba(6, 11, 40, 0.8)', 'rgba(6, 11, 40, 0.98)']}
+          colors={['transparent', 'rgba(13, 15, 28, 0.8)', 'rgba(13, 15, 28, 0.98)']}
           style={styles.heroGradient}
         >
           <View style={styles.heroContent}>

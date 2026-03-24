@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Easing,
   Platform,
 } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 // Skia removed - using cross-platform LinearGradient instead for iOS compatibility
@@ -166,14 +167,16 @@ const DashboardScreen = () => {
   const { tools, featuredTools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
   const [refreshing, setRefreshing] = React.useState(false);
   const [campaignsCount, setCampaignsCount] = React.useState<number>(0);
+  const [notifCount, setNotifCount] = useState(0);
   const [generationsCount, setGenerationsCount] = React.useState<number>(0);
 
   useEffect(() => {
     fetchTools();
-    // Fetch user generations when logged in
     if (user?.$id) {
       fetchGenerations(user.$id);
     }
+    // Check real notification count
+    Notifications.getPresentedNotificationsAsync().then(n => setNotifCount(n.length));
   }, [user?.$id]);
 
   // Update counts when generations change
@@ -198,7 +201,7 @@ const DashboardScreen = () => {
   };
 
   const stats = [
-    { label: 'AI Tools', value: 'All', icon: 'zap', color: Colors.secondary, badge: 'New', screen: 'Tools' },
+    { label: 'Explore All', value: 'AI Tools', icon: 'zap', color: Colors.secondary, badge: 'New', screen: 'Tools' },
     { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
     { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
     { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },
@@ -206,11 +209,11 @@ const DashboardScreen = () => {
 
   // Horizontal banner data
   const bannerSlides = [
-    { id: 1, image: BannerImages.banner1, title: 'AI Marketing Pro', subtitle: 'Create stunning ads in seconds', color: '#6C5CE7' },
-    { id: 2, image: BannerImages.banner2, title: 'Smart Content', subtitle: 'AI-powered writing assistant', color: '#00B894' },
-    { id: 3, image: BannerImages.banner3, title: 'ROI Boost', subtitle: 'Data-driven strategies', color: '#E17055' },
-    { id: 4, image: BannerImages.banner4, title: 'Digital Growth', subtitle: 'Scale your business faster', color: '#0984E3' },
-    { id: 5, image: BannerImages.banner5, title: 'Marketing Suite', subtitle: 'All tools in one place', color: '#A29BFE' },
+    { id: 1, image: BannerImages.banner1, title: 'AI Marketing Pro', subtitle: 'Create stunning ads in seconds' },
+    { id: 2, image: BannerImages.banner2, title: 'Smart Content', subtitle: 'AI-powered writing assistant' },
+    { id: 3, image: BannerImages.banner3, title: 'ROI Boost', subtitle: 'Data-driven strategies' },
+    { id: 4, image: BannerImages.banner4, title: 'Digital Growth', subtitle: 'Scale your business faster' },
+    { id: 5, image: BannerImages.banner5, title: 'Marketing Suite', subtitle: 'All tools in one place' },
   ];
 
   const quickActions = [
@@ -261,7 +264,7 @@ const DashboardScreen = () => {
               onPress={() => navigation.navigate('Notifications')}
             >
               <Feather name="bell" size={22} color={Colors.white} />
-              <View style={styles.notificationDot} />
+              {notifCount > 0 && <View style={styles.notificationDot} />}
             </TouchableOpacity>
           </View>
         </View>
@@ -287,7 +290,7 @@ const DashboardScreen = () => {
             />
           </View>
           <LinearGradient
-            colors={['transparent', 'rgba(6, 11, 40, 0.8)', 'rgba(6, 11, 40, 0.95)']}
+            colors={['transparent', 'rgba(13, 15, 28, 0.8)', 'rgba(13, 15, 28, 0.95)']}
             style={styles.heroGradient}
           >
             <View style={styles.heroContent}>
@@ -359,7 +362,7 @@ const DashboardScreen = () => {
               >
                 <Image source={slide.image} style={styles.bannerImage} resizeMode="cover" />
                 <LinearGradient
-                  colors={['transparent', `${slide.color}CC`, slide.color]}
+                  colors={['transparent', 'rgba(13,15,28,0.6)', 'rgba(13,15,28,0.95)']}
                   style={styles.bannerGradient}
                 >
                   <Text style={styles.bannerTitle}>{slide.title}</Text>
@@ -780,7 +783,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
     color: Colors.white,
   },
@@ -807,7 +810,7 @@ const styles = StyleSheet.create({
   },
   bannerSlide: {
     width: width - 48,
-    height: 160,
+    height: 200,
     marginRight: Spacing.md,
     borderRadius: BorderRadius.xl,
     overflow: 'hidden',
@@ -838,13 +841,15 @@ const styles = StyleSheet.create({
   bannerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(124,58,237,0.6)',
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginTop: 8,
-    gap: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginTop: 10,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   bannerButtonText: {
     fontSize: 12,

@@ -210,14 +210,19 @@ const LoginScreen = () => {
     }
   };
 
+  const [otpVerifying, setOtpVerifying] = useState(false);
+
   const handleVerifyOTP = async () => {
     setOtpError('');
+    setOtpVerifying(true);
     try {
       await verifyPhoneOTP(otpUserId, otpCode);
       await SecureStore.deleteItemAsync('pendingOTP');
       setShowOtpModal(false);
     } catch (err: any) {
       setOtpError(err.message || 'Invalid OTP. Please check and try again.');
+    } finally {
+      setOtpVerifying(false);
     }
   };
 
@@ -321,7 +326,7 @@ const LoginScreen = () => {
             {otpSent && (
               <View style={styles.otpSection}>
                 <Text style={styles.otpSentText}>
-                  Enter the 6-digit code sent via WhatsApp to {selectedCountry.code} {phoneNumber}
+                  Enter the 6-digit code sent to {selectedCountry.code} {phoneNumber}
                 </Text>
 
                 {!!otpError && (
@@ -345,13 +350,13 @@ const LoginScreen = () => {
                   <TouchableOpacity
                     style={[styles.verifyBtn, otpCode.length < 6 && { opacity: 0.5 }]}
                     onPress={handleVerifyOTP}
-                    disabled={isLoading || otpCode.length < 6}
+                    disabled={otpVerifying || otpCode.length < 6}
                   >
                     <LinearGradient
                       colors={['#9D4EDD', '#7B2CBF']}
                       style={styles.verifyBtnGrad}
                     >
-                      {isLoading ? (
+                      {otpVerifying ? (
                         <ActivityIndicator color="#FFFFFF" size="small" />
                       ) : (
                         <Feather name="check" size={20} color="#FFFFFF" />
@@ -362,7 +367,7 @@ const LoginScreen = () => {
 
                 <TouchableOpacity
                   onPress={handleSendOTP}
-                  disabled={isLoading || resendCooldown > 0}
+                  disabled={otpSending || resendCooldown > 0}
                   style={{ alignSelf: 'center', marginTop: 12 }}
                 >
                   <Text style={[styles.resendInlineText, resendCooldown > 0 && { opacity: 0.5 }]}>
@@ -401,11 +406,11 @@ const LoginScreen = () => {
           </View>
 
           <View style={styles.socialRow}>
-             <TouchableOpacity style={styles.socialBtn} onPress={loginWithGoogle}>
-                <Text style={styles.googleG}>G</Text>
+             <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#FFFFFF' }]} onPress={loginWithGoogle}>
+                <Ionicons name="logo-google" size={22} color="#4285F4" />
              </TouchableOpacity>
-             <TouchableOpacity style={styles.socialBtn} onPress={loginWithFacebook}>
-                <Feather name="facebook" size={22} color="#1877F2" />
+             <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#1877F2' }]} onPress={loginWithFacebook}>
+                <Ionicons name="logo-facebook" size={24} color="#FFFFFF" />
              </TouchableOpacity>
              <TouchableOpacity style={styles.socialBtn} onPress={() => setShowEmailModal(true)}>
                 <Feather name="mail" size={22} color="#FFFFFF" />

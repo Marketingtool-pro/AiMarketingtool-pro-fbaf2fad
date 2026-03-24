@@ -11,6 +11,7 @@ import {
   ImageSourcePropType,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import { Colors, Gradients } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
@@ -59,13 +60,18 @@ const OnboardingScreen = () => {
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  const completeOnboarding = async () => {
+    await SecureStore.setItemAsync('hasSeenOnboarding', 'true');
+    navigation.navigate('Auth');
+  };
+
   const handleNext = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (currentIndex < ONBOARDING_DATA.length - 1) {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
       setCurrentIndex(currentIndex + 1);
     } else {
-      navigation.navigate('Auth');
+      completeOnboarding();
     }
   };
 
@@ -90,7 +96,7 @@ const OnboardingScreen = () => {
       <View style={styles.container}>
         <TouchableOpacity
           style={styles.skipBtn}
-          onPress={() => navigation.navigate('Auth')}
+          onPress={completeOnboarding}
         >
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
