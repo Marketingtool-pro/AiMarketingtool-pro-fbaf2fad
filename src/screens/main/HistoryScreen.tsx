@@ -20,6 +20,7 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore, Generation } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import LiquidButton from '../../components/common/LiquidButton';
 
 
 const { width } = Dimensions.get('window');
@@ -330,14 +331,13 @@ const HistoryScreen = () => {
             <Text style={styles.emptySubtitle}>
               Your generated content will appear here
             </Text>
-            <TouchableOpacity
-              style={styles.emptyButton}
+            <LiquidButton
+              title="Start Creating"
+              icon={<Feather name="zap" size={18} color="#FFF" />}
               onPress={() => navigation.navigate('Main' as any)}
-            >
-              <LinearGradient colors={Gradients.primary} style={styles.emptyButtonGradient}>
-                <Text style={styles.emptyButtonText}>Start Creating</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+              variant="primary"
+              size="md"
+            />
           </View>
         }
       />

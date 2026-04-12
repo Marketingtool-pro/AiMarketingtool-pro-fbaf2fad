@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
+import { ALL_PLATFORMS } from '../../constants/socialIcons';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 
 const { width } = Dimensions.get('window');
@@ -196,6 +197,23 @@ const ProfileScreen = () => {
           </GlassCard>
         </View>
 
+        {/* Connected Platforms — Glassify Icons */}
+        <View style={styles.socialSection}>
+          <Text style={styles.socialSectionTitle}>Social Platforms</Text>
+          <View style={styles.socialIconsGrid}>
+            {ALL_PLATFORMS.slice(0, 12).map((platform) => (
+              <View key={platform.id} style={styles.socialIconCard}>
+                <Image
+                  source={platform.icon}
+                  style={styles.socialIconImg}
+                  resizeMode="contain"
+                />
+                <Text style={styles.socialIconLabel} numberOfLines={1}>{platform.name}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
         {/* Upgrade Banner */}
         {profile?.subscription === 'free' && (
           <TouchableOpacity
@@ -272,7 +290,7 @@ const ProfileScreen = () => {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.versionText}>MarketingTool v1.3.3</Text>
+          <Text style={styles.versionText}>MarketingTool v1.4.1</Text>
           <View style={styles.footerLinks}>
             <TouchableOpacity onPress={() => navigation.navigate('Terms' as any)}>
               <Text style={styles.footerLink}>Terms</Text>
@@ -378,6 +396,45 @@ const styles = StyleSheet.create({
   statBox: { flex: 1, alignItems: 'center' },
   statValue: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   statLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 10, marginTop: 2 },
+  socialSection: {
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  socialSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: Spacing.sm,
+    marginLeft: Spacing.xs,
+  },
+  socialIconsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: Spacing.sm,
+    gap: 4,
+  },
+  socialIconCard: {
+    width: (width - Spacing.lg * 2 - Spacing.sm * 2 - 4 * 5) / 6,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  socialIconImg: {
+    width: 36,
+    height: 36,
+    marginBottom: 4,
+  },
+  socialIconLabel: {
+    fontSize: 9,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
   upgradeBanner: { marginHorizontal: Spacing.lg, marginBottom: Spacing.lg, borderRadius: BorderRadius.lg, overflow: 'hidden' },
   upgradeGradient: { flexDirection: 'row', alignItems: 'center', padding: Spacing.lg },
   upgradeIconWrap: {

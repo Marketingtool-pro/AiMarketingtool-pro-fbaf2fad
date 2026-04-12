@@ -406,18 +406,18 @@ const LoginScreen = () => {
           </View>
 
           <View style={styles.socialRow}>
-             <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#FFFFFF' }]} onPress={loginWithGoogle}>
-                <Ionicons name="logo-google" size={22} color="#4285F4" />
+             <TouchableOpacity style={styles.socialBtn} onPress={loginWithGoogle}>
+                <Ionicons name="logo-google" size={22} color={Colors.secondary} />
              </TouchableOpacity>
-             <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#1877F2' }]} onPress={loginWithFacebook}>
-                <Ionicons name="logo-facebook" size={24} color="#FFFFFF" />
+             <TouchableOpacity style={styles.socialBtn} onPress={loginWithFacebook}>
+                <Ionicons name="logo-facebook" size={24} color={Colors.secondary} />
              </TouchableOpacity>
              <TouchableOpacity style={styles.socialBtn} onPress={() => setShowEmailModal(true)}>
-                <Feather name="mail" size={22} color="#FFFFFF" />
+                <Feather name="mail" size={22} color={Colors.secondary} />
              </TouchableOpacity>
              {Platform.OS === 'ios' && (
-               <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#000000' }]} onPress={loginWithApple}>
-                  <Ionicons name="logo-apple" size={24} color="#FFFFFF" />
+               <TouchableOpacity style={styles.socialBtn} onPress={loginWithApple}>
+                  <Ionicons name="logo-apple" size={24} color={Colors.secondary} />
                </TouchableOpacity>
              )}
           </View>

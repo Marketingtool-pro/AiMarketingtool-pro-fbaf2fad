@@ -15,6 +15,7 @@ import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import { Colors, Gradients } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
+import LiquidButton from '../../components/common/LiquidButton';
 import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
@@ -33,25 +34,25 @@ const ONBOARDING_DATA: OnboardingItem[] = [
     id: '1',
     title: 'AI Marketing Tools',
     description: 'Access the most comprehensive suite of AI-powered marketing tools. From ad copy to blog posts, we\'ve got you covered.',
-    icon: require('../../assets/images/tool-icons-v2/bot.png'),
+    icon: require('../../assets/images/tool-icons-v2/bot.webp'),
   },
   {
     id: '2',
     title: 'Create Content Instantly',
     description: 'Generate high-converting ads, engaging social posts, and SEO-optimized content in seconds with Claude AI.',
-    icon: require('../../assets/images/tool-icons-v2/copywriting.png'),
+    icon: require('../../assets/images/tool-icons-v2/7-copywriting.webp'),
   },
   {
     id: '3',
     title: 'Boost Your ROI',
     description: 'Our AI analyzes top-performing content to help you create marketing materials that convert.',
-    icon: require('../../assets/images/tool-icons-v2/growth-chart.png'),
+    icon: require('../../assets/images/tool-icons-v2/9-growth-chart.webp'),
   },
   {
     id: '4',
     title: '7-Day Free Trial',
     description: 'Start creating amazing marketing content today. No credit card required to get started.',
-    icon: require('../../assets/images/tool-icons-v2/marketing-target.png'),
+    icon: require('../../assets/images/tool-icons-v2/10-marketing-target.webp'),
   },
 ];
 
@@ -127,13 +128,12 @@ const OnboardingScreen = () => {
             ))}
           </View>
 
-          <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-            <LinearGradient colors={Gradients.button} style={styles.nextGradient}>
-              <Text style={styles.nextText}>
-                {currentIndex === ONBOARDING_DATA.length - 1 ? 'Get Started  \u2192' : 'Next  \u2192'}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
+          <LiquidButton
+            title={currentIndex === ONBOARDING_DATA.length - 1 ? 'Get Started  \u2192' : 'Next  \u2192'}
+            onPress={handleNext}
+            variant="primary"
+            size="lg"
+          />
         </View>
       </View>
     </AnimatedBackground>
