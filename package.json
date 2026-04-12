@@ -89,5 +89,11 @@
     "babel-preset-expo": "~55.0.11",
     "typescript": "5.9.2"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "expo-file-system": "$expo-file-system"
+  },
+  "resolutions": {
+    "expo-file-system": "~55.0.10"
+  }
 }
