@@ -28,7 +28,10 @@ module.exports = function withEasPodfileFix(config) {
       ];
       patterns.forEach(p => contents = contents.replace(p, ''));
 
-      // 2. Set the global static framework flag to TRUE (Standard for RNFB)
+      // 2. Remove SWIFT_VERSION = '5.0' from project-level settings (breaks @MainActor)
+      contents = contents.replace(/bc\.build_settings\['SWIFT_VERSION'\]\s*=\s*'5\.0'/g, "# REMOVED: SWIFT_VERSION 5.0 breaks @MainActor");
+
+      // 3. Set the global static framework flag to TRUE (Standard for RNFB)
       contents = '$RNFirebaseAsStaticFramework = true\n' + contents;
 
       // 3. Apply the "Robust Modular" patch
