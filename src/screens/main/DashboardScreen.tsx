@@ -32,8 +32,10 @@ import { useAuthStore } from '../../store/authStore';
 import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
+import { HOME_PLATFORMS } from '../../constants/socialIcons';
 import LottieView from 'lottie-react-native';
 import Glass3DLogo from '../../components/common/Glass3DLogo';
+import LiquidButton from '../../components/common/LiquidButton';
 
 const { width } = Dimensions.get('window');
 
@@ -305,16 +307,13 @@ const DashboardScreen = () => {
               <Text style={styles.heroSubtitle}>
                 Create ads, blogs, emails & more with AI tools
               </Text>
-              <View style={styles.heroButton}>
-                <LottieView
-                  source={Animations.pulseGlow}
-                  autoPlay
-                  loop
-                  style={styles.buttonGlow}
-                />
-                <Text style={styles.heroButtonText}>Start Creating</Text>
-                <Feather name="arrow-right" size={16} color={Colors.white} />
-              </View>
+              <LiquidButton
+                title="Start Creating"
+                icon={<Feather name="arrow-right" size={16} color="#FFF" />}
+                onPress={() => navigation.navigate('Main', { screen: 'Chat' } as any)}
+                variant="primary"
+                size="md"
+              />
             </View>
           </LinearGradient>
         </TouchableOpacity>
@@ -411,6 +410,55 @@ const DashboardScreen = () => {
                 <Text style={styles.quickActionLabel}>{action.label}</Text>
               </TouchableOpacity>
             ))}
+          </View>
+        </View>
+
+        {/* Social Media Platforms — Glassify Icons */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Social Platforms</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Main', { screen: 'Tools' } as any)}>
+              <Text style={styles.seeAll}>See all</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.socialGrid}>
+            {HOME_PLATFORMS.map((platform) => {
+              const isLocked = platform.isPro && profile?.subscription === 'free';
+              return (
+                <TouchableOpacity
+                  key={platform.id}
+                  style={styles.socialCard}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    if (isLocked) {
+                      navigation.navigate('Subscription');
+                    } else if (platform.toolSlug) {
+                      navigation.navigate('ToolDetail', { toolSlug: platform.toolSlug });
+                    }
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <LinearGradient
+                    colors={[platform.color + '18', 'rgba(22, 24, 36, 0.6)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.socialCardGradient}
+                  >
+                    <Image
+                      source={platform.icon}
+                      style={[styles.socialIcon, isLocked && { opacity: 0.4 }]}
+                      resizeMode="contain"
+                    />
+                    {isLocked && (
+                      <View style={styles.socialLockBadge}>
+                        <Feather name="lock" size={10} color={Colors.gold} />
+                      </View>
+                    )}
+                    <Text style={styles.socialName} numberOfLines={1}>{platform.name}</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
@@ -896,6 +944,48 @@ const styles = StyleSheet.create({
   quickActionLabel: {
     fontSize: 12,
     color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+  socialGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  socialCard: {
+    width: (width - Spacing.lg * 2 - Spacing.sm * 3) / 4,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  socialCardGradient: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  socialIcon: {
+    width: 44,
+    height: 44,
+    marginBottom: 6,
+  },
+  socialLockBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.gold + '40',
+  },
+  socialName: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.white,
     textAlign: 'center',
   },
   categoriesScroll: {
