@@ -42,6 +42,8 @@ module.exports = function withEasPodfileFix(config) {
     pod 'FirebaseAppCheck', :modular_headers => true
     pod 'GoogleUtilities', :modular_headers => true
     pod 'FirebaseCoreInternal', :modular_headers => true
+    pod 'FirebaseAnalytics', :modular_headers => true
+    pod 'GoogleAppMeasurement', :modular_headers => true
 
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |bc|
