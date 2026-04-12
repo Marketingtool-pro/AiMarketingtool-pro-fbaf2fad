@@ -45,6 +45,11 @@ module.exports = function withEasPodfileFix(config) {
     pod 'FirebaseAnalytics', :modular_headers => true
     pod 'GoogleAppMeasurement', :modular_headers => true
 
+    # Fix project-level SWIFT_VERSION — 5.0 breaks @MainActor
+    installer.pods_project.build_configurations.each do |bc|
+      bc.build_settings.delete('SWIFT_VERSION')
+    end
+
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |bc|
         # Allow mixing headers across all targets
