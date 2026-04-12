@@ -50,6 +50,8 @@ module.exports = function withEasPodfileFix(config) {
         # Allow mixing headers across all targets
         bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
         bc.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+        bc.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
+        bc.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'
         bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-implicit-int -Wno-implicit-function-declaration -Wno-non-modular-include-in-framework-module -Wno-everything -Wno-return-type -ferror-limit=0'
         bc.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
         bc.build_settings['SWIFT_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
