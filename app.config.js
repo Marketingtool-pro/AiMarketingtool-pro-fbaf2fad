@@ -59,11 +59,16 @@ const withEasPodfileFix = (config) => {
         bc.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
         bc.build_settings['SWIFT_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
         bc.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
-        # expo-modules-core requires Swift 6.0 (uses @MainActor protocol conformance syntax)
-        bc.build_settings['SWIFT_VERSION'] = '6.0'
+        # Default to Swift 5 for all pods (safe for Lottie, Epoxy, etc.)
+        bc.build_settings['SWIFT_VERSION'] = '5'
         bc.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -Xfrontend -strict-concurrency=minimal'
         bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-implicit-int -Wno-implicit-function-declaration -Wno-non-modular-include-in-framework-module -Wno-everything -ferror-limit=0'
         bc.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+
+        # expo-modules-core/JSI require Swift 6.0 for @MainActor conformance syntax
+        if target.name == 'ExpoModulesCore' || target.name == 'ExpoModulesJSI'
+          bc.build_settings['SWIFT_VERSION'] = '6.0'
+        end
       end
     end
 
@@ -72,7 +77,7 @@ const withEasPodfileFix = (config) => {
       bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
       bc.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
       bc.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
-      bc.build_settings['SWIFT_VERSION'] = '6.0'
+      bc.build_settings['SWIFT_VERSION'] = '5'
       bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-everything -ferror-limit=0'
     end`;
 
