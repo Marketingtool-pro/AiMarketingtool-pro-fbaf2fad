@@ -3,8 +3,6 @@ import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { makeRedirectUri } from 'expo-auth-session';
-import { sendPhoneOTP, verifyPhoneOTP } from './firebaseAuth';
-
 // Ensure web browser closes properly after OAuth
 WebBrowser.maybeCompleteAuthSession();
 

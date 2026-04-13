@@ -10,7 +10,7 @@ interface UserProfile {
   name: string;
   email: string;
   avatar?: string;
-  subscription: 'free' | 'starter' | 'pro' | 'enterprise';
+  subscription: 'free' | 'starter' | 'pro' | 'alltools' | 'enterprise' | 'agency';
   generationsUsed: number;
   generationsLimit: number;
   credits?: number;
@@ -216,27 +216,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const cleaned = phoneNumber.replace(/\D/g, '');
       const normalizedPhone = phoneNumber.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
-      const mobile = cleaned;
 
-      if (__DEV__) console.log('[Auth] Sending WhatsApp OTP via MSG91 Widget:', mobile);
+      if (__DEV__) console.log('[Auth] Sending OTP via MSG91:', normalizedPhone);
 
-      // Call Appwrite msg91-proxy function (uses MSG91 Widget API — WhatsApp + SMS fallback)
       const execution = await functions.createExecution(
         'msg91-proxy',
-        JSON.stringify({ action: 'sendOtp', identifier: mobile }),
-        false, '/', 'POST',
+        JSON.stringify({ action: 'sendOtp', identifier: normalizedPhone }),
+        false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
 
       const responseBody = JSON.parse(execution.responseBody || '{}');
+      if (__DEV__) console.log('[Auth] MSG91 sendOtp response:', JSON.stringify(responseBody));
+
       if (responseBody.type !== 'success') {
         throw new Error(responseBody.message || 'Failed to send OTP');
       }
 
-      if (__DEV__) console.log('[Auth] WhatsApp OTP sent');
-
-      set({ tempPhone: mobile });
-      return mobile;
+      set({ tempPhone: normalizedPhone });
+      return normalizedPhone;
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
       set({ error: error.message || 'Failed to send OTP' });
@@ -248,22 +246,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ error: null });
     try {
       const phone = get().tempPhone || userId;
-      if (__DEV__) console.log('[Auth] Verifying WhatsApp OTP for:', phone);
+      if (!code || code.trim().length < 6) {
+        throw new Error('Please enter the 6-digit OTP code');
+      }
+      if (__DEV__) console.log('[Auth] Verifying OTP for:', phone, 'code:', code);
 
       // Step 1: Verify OTP via Appwrite msg91-proxy (MSG91 Widget API)
       const verifyExec = await functions.createExecution(
         'msg91-proxy',
         JSON.stringify({ action: 'verifyOtp', identifier: phone, otp: code }),
-        false, '/', 'POST',
+        false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
 
       const verifyResult = JSON.parse(verifyExec.responseBody || '{}');
+      if (__DEV__) console.log('[Auth] MSG91 verifyOtp response:', JSON.stringify(verifyResult));
       if (!verifyResult.success) {
         throw new Error(verifyResult.message || 'Invalid OTP');
       }
-
-      if (__DEV__) console.log('[Auth] OTP verified, creating Appwrite session...');
 
       // Step 2: Create Appwrite session via phone-session function
       const execution = await functions.createExecution(
@@ -273,7 +273,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           phone: phone,
           displayName: '',
         }),
-        false, '/', 'POST',
+        false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
 
@@ -363,13 +363,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         timeoutPromise
       ]) as any;
       if (user) {
-        const profile = await get().fetchOrCreateProfile(user);
-        set({ user, profile, isAuthenticated: true, isLoading: false });
+        try {
+          const profile = await get().fetchOrCreateProfile(user);
+          set({ user, profile, isAuthenticated: true, isLoading: false });
+        } catch (profileErr) {
+          if (__DEV__) console.warn('[Auth] Profile fetch failed:', profileErr);
+          set({ user, isAuthenticated: true, isLoading: false });
+        }
       } else {
         set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
       }
     } catch (error) {
-      // On error or timeout, proceed as not authenticated
+      if (__DEV__) console.log('[Auth] checkAuth error:', error);
       set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
     }
   },
