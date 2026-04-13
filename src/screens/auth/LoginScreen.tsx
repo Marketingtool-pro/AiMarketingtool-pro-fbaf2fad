@@ -206,17 +206,21 @@ const LoginScreen = () => {
     } catch (err: any) {
       setOtpSending(false);
       await SecureStore.deleteItemAsync('pendingOTP');
-      Alert.alert('OTP Failed', err.message || 'Failed to send OTP. Please try again.');
+      setOtpError(err.message || 'Failed to send OTP. Please try again.');
     }
   };
 
   const [otpVerifying, setOtpVerifying] = useState(false);
 
   const handleVerifyOTP = async () => {
+    if (!otpCode || otpCode.trim().length < 6) {
+      setOtpError('Please enter the 6-digit code');
+      return;
+    }
     setOtpError('');
     setOtpVerifying(true);
     try {
-      await verifyPhoneOTP(otpUserId, otpCode);
+      await verifyPhoneOTP(otpUserId, otpCode.trim());
       await SecureStore.deleteItemAsync('pendingOTP');
       setShowOtpModal(false);
     } catch (err: any) {
