@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useToolsStore, Tool } from '../../store/toolsStore';
+import { useAuthStore } from '../../store/authStore';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 import { PLATFORMS_CONFIG } from '../../data/platforms';
@@ -26,6 +27,7 @@ const CARD_WIDTH = (width - 48 - 12) / 3;
 const ToolsScreen = () => {
   const navigation = useNavigation<any>();
   const { tools } = useToolsStore();
+  const { profile } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [activePlatform, setActivePlatform] = useState('all');
 
@@ -73,28 +75,42 @@ const ToolsScreen = () => {
     return { sections, allTools: [] };
   }, [tools, activePlatform, searchQuery]);
 
-  const renderToolCard = (tool: Tool) => (
-    <TouchableOpacity
-      key={tool.$id}
-      style={styles.card}
-      activeOpacity={0.75}
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        navigation.navigate('ToolDetail', { toolSlug: tool.slug });
-      }}
-    >
-      <View style={styles.iconLiquid}>
-        <View style={styles.iconGlow} />
-        <Image source={getToolIcon(tool.slug, tool.category)} style={styles.cardIcon} resizeMode="contain" />
-        {tool.isPro && (
-          <View style={styles.proBadge}>
-            <Feather name="lock" size={8} color="#FFB547" />
-          </View>
-        )}
-      </View>
-      <Text style={styles.cardName} numberOfLines={2}>{tool.name}</Text>
-    </TouchableOpacity>
-  );
+  const renderToolCard = (tool: Tool) => {
+    const userSub = profile?.subscription || 'free';
+    const hasAccess = !tool.isPro || ['pro', 'alltools', 'enterprise', 'agency'].includes(userSub);
+
+    return (
+      <TouchableOpacity
+        key={tool.$id}
+        style={[styles.card, !hasAccess && styles.cardLocked]}
+        activeOpacity={0.75}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          if (hasAccess) {
+            navigation.navigate('ToolDetail', { toolSlug: tool.slug });
+          } else {
+            navigation.navigate('Subscription' as any);
+          }
+        }}
+      >
+        <View style={styles.iconLiquid}>
+          <View style={styles.iconGlow} />
+          <Image source={getToolIcon(tool.slug, tool.category)} style={styles.cardIcon} resizeMode="contain" />
+          {tool.isPro && !hasAccess && (
+            <View style={styles.proBadge}>
+              <Feather name="lock" size={10} color="#FFB547" />
+            </View>
+          )}
+          {tool.isPro && hasAccess && (
+            <View style={[styles.proBadge, { backgroundColor: 'rgba(157, 78, 221, 0.9)' }]}>
+              <Feather name="star" size={8} color="#FFFFFF" />
+            </View>
+          )}
+        </View>
+        <Text style={styles.cardName} numberOfLines={2}>{tool.name}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.screenContainer}>
@@ -367,14 +383,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -2,
     right: -2,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: 'rgba(255, 181, 71, 0.2)',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 181, 71, 0.25)',
     borderWidth: 1,
     borderColor: '#FFB547',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  cardLocked: {
+    opacity: 0.6,
   },
   cardName: {
     fontSize: 11,
