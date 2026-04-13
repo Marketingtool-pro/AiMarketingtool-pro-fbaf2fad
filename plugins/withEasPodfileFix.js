@@ -67,10 +67,11 @@ module.exports = function withEasPodfileFix(config) {
         bc.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -Xfrontend -strict-concurrency=minimal'
         bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
 
-        # Force Swift 5 language mode for ALL pods (fixes "unknown attribute MainActor")
-        # Xcode 16.x ships Swift 6 compiler - pods with SWIFT_VERSION=5.0 from podspecs
-        # disable concurrency features. Setting '5' = latest Swift 5 mode, enables @MainActor.
-        bc.build_settings['SWIFT_VERSION'] = '5'
+        # Force Swift 6.0 language mode for ALL pods
+        # expo-modules-core uses Swift 6 syntax: "extension UIView: @MainActor Protocol"
+        # This conformance syntax only exists in Swift 6 mode. Combined with
+        # SWIFT_STRICT_CONCURRENCY=minimal above, violations become warnings not errors.
+        bc.build_settings['SWIFT_VERSION'] = '6.0'
 
         # Firebase + RNFB header search paths + Xcode 26 module fix
         if target.name.start_with?('RNFB') || target.name.start_with?('Firebase') || target.name.start_with?('RNIap') || target.name.start_with?('NitroIap') || target.name.start_with?('Nitro') || target.name == 'RNFBApp'
