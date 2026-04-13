@@ -27,6 +27,8 @@ interface AuthState {
   isAuthenticated: boolean;
   error: string | null;
   tempPhone: string | null;
+  tempVerificationId: string | null;
+  tempUserId: string | null;
   biometricPending: boolean;
   mfaPending: boolean;
 
@@ -59,6 +61,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   error: null,
   tempPhone: null,
+  tempVerificationId: null,
+  tempUserId: null,
   biometricPending: false,
   mfaPending: false,
 
@@ -217,23 +221,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const cleaned = phoneNumber.replace(/\D/g, '');
       const normalizedPhone = phoneNumber.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
 
-      if (__DEV__) console.log('[Auth] Sending OTP via MSG91:', normalizedPhone);
+      if (__DEV__) console.log('[Auth] Sending OTP via Bird:', normalizedPhone);
 
       const execution = await functions.createExecution(
         'msg91-proxy',
-        JSON.stringify({ action: 'sendOtp', identifier: normalizedPhone }),
+        JSON.stringify({ action: 'sendOtp', phone: normalizedPhone, identifier: normalizedPhone }),
         false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
 
       const responseBody = JSON.parse(execution.responseBody || '{}');
-      if (__DEV__) console.log('[Auth] MSG91 sendOtp response:', JSON.stringify(responseBody));
+      if (__DEV__) console.log('[Auth] Bird sendOtp response:', JSON.stringify(responseBody));
 
-      if (responseBody.type !== 'success') {
+      if (!responseBody.success && responseBody.type !== 'success') {
         throw new Error(responseBody.message || 'Failed to send OTP');
       }
 
-      set({ tempPhone: normalizedPhone });
+      // Store verificationId from Bird — REQUIRED for verify step
+      const verificationId = responseBody.verificationId || responseBody.reqId || '';
+      const userId = responseBody.userId || '';
+
+      set({ tempPhone: normalizedPhone, tempVerificationId: verificationId, tempUserId: userId });
       return normalizedPhone;
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
@@ -246,48 +254,58 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ error: null });
     try {
       const phone = get().tempPhone || userId;
+      const verificationId = (get() as any).tempVerificationId || '';
+      const storedUserId = (get() as any).tempUserId || '';
+
       if (!code || code.trim().length < 6) {
         throw new Error('Please enter the 6-digit OTP code');
       }
-      if (__DEV__) console.log('[Auth] Verifying OTP for:', phone, 'code:', code);
+      if (__DEV__) console.log('[Auth] Verifying OTP for:', phone, 'vid:', verificationId);
 
-      // Step 1: Verify OTP via Appwrite msg91-proxy (MSG91 Widget API)
+      // Verify OTP via Bird (msg91-proxy function) — MUST include verificationId
       const verifyExec = await functions.createExecution(
         'msg91-proxy',
-        JSON.stringify({ action: 'verifyOtp', identifier: phone, otp: code }),
-        false, '/', ExecutionMethod.POST,
-        { 'Content-Type': 'application/json' }
-      );
-
-      const verifyResult = JSON.parse(verifyExec.responseBody || '{}');
-      if (__DEV__) console.log('[Auth] MSG91 verifyOtp response:', JSON.stringify(verifyResult));
-      if (!verifyResult.success) {
-        throw new Error(verifyResult.message || 'Invalid OTP');
-      }
-
-      // Step 2: Create Appwrite session via phone-session function
-      const execution = await functions.createExecution(
-        'phone-session',
         JSON.stringify({
-          firebaseUid: 'wa_' + phone.replace(/\D/g, ''),
-          phone: phone,
-          displayName: '',
+          action: 'verifyOtp',
+          phone, identifier: phone,
+          otp: code, code,
+          verificationId, reqId: verificationId,
+          userId: storedUserId,
         }),
         false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
 
-      const responseBody = JSON.parse(execution.responseBody || '{}');
+      const verifyResult = JSON.parse(verifyExec.responseBody || '{}');
+      if (__DEV__) console.log('[Auth] Bird verifyOtp response:', JSON.stringify(verifyResult));
 
-      if (!responseBody.success || !responseBody.userId || !responseBody.secret) {
-        throw new Error(responseBody.error || 'Failed to create session');
+      if (!verifyResult.success) {
+        throw new Error(verifyResult.message || 'Invalid OTP');
       }
 
-      // Step 3: Create Appwrite session with the token
-      try { await account.deleteSession('current'); } catch (_e) {}
-      const session = await account.createSession(responseBody.userId, responseBody.secret);
+      // Bird returns { userId, secret } directly when token creation succeeds
+      const sessionUserId = verifyResult.userId || storedUserId;
+      const sessionSecret = verifyResult.secret;
 
-      if (__DEV__) console.log('[Auth] Appwrite session created:', session.$id);
+      if (sessionSecret && sessionUserId) {
+        try { await account.deleteSession('current'); } catch (_e) {}
+        const session = await account.createSession(sessionUserId, sessionSecret);
+        if (__DEV__) console.log('[Auth] Appwrite session created:', session.$id);
+      } else {
+        // Fallback: use phone-session function
+        const execution = await functions.createExecution(
+          'phone-session',
+          JSON.stringify({ firebaseUid: 'bird_' + phone.replace(/\D/g, ''), phone, displayName: '' }),
+          false, '/', ExecutionMethod.POST,
+          { 'Content-Type': 'application/json' }
+        );
+        const responseBody = JSON.parse(execution.responseBody || '{}');
+        if (!responseBody.success || !responseBody.userId || !responseBody.secret) {
+          throw new Error(responseBody.error || 'Failed to create session');
+        }
+        try { await account.deleteSession('current'); } catch (_e) {}
+        await account.createSession(responseBody.userId, responseBody.secret);
+      }
 
       const user = await authService.getCurrentUser();
       if (user) {
