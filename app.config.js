@@ -129,8 +129,15 @@ module.exports = ({ config }) => ({
       "expo-build-properties",
       {
         "ios": {
-          "useFrameworks": "dynamic",
-          "deploymentTarget": "16.0"
+          "useFrameworks": "static",
+          "deploymentTarget": "16.0",
+          "forceStaticLinking": [
+            "RNFBApp",
+            "RNFBAuth",
+            "RNFBCrashlytics",
+            "RNFBFirestore",
+            "RNFBMessaging"
+          ]
         },
         "android": {
           "compileSdkVersion": 36,
