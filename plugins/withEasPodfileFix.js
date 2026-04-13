@@ -67,6 +67,11 @@ module.exports = function withEasPodfileFix(config) {
         bc.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -Xfrontend -strict-concurrency=minimal'
         bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
 
+        # Force Swift 5 language mode for ALL pods (fixes "unknown attribute MainActor")
+        # Xcode 16.x ships Swift 6 compiler - pods with SWIFT_VERSION=5.0 from podspecs
+        # disable concurrency features. Setting '5' = latest Swift 5 mode, enables @MainActor.
+        bc.build_settings['SWIFT_VERSION'] = '5'
+
         # Firebase + RNFB header search paths + Xcode 26 module fix
         if target.name.start_with?('RNFB') || target.name.start_with?('Firebase') || target.name.start_with?('RNIap') || target.name.start_with?('NitroIap') || target.name.start_with?('Nitro') || target.name == 'RNFBApp'
           bc.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) "$(PODS_ROOT)/Headers/Public/React-Core" "$(PODS_ROOT)/Headers/Public/React-RCTBridge" "$(PODS_CONFIGURATION_BUILD_DIR)/FirebaseFirestore/FirebaseFirestore.framework/Headers" "$(PODS_ROOT)/Headers/Public/FirebaseCore" "$(PODS_ROOT)/Headers/Public/FirebaseAuth" "$(PODS_ROOT)/Headers/Public/FirebaseAppCheck" "$(PODS_ROOT)/Headers/Public/React-bridging"'
@@ -83,7 +88,6 @@ module.exports = function withEasPodfileFix(config) {
 
         # react-native-iap (NitroIap) StoreKit 2 fix
         if target.name == 'RNIap' || target.name == 'NitroIap' || target.name.start_with?('NitroIap') || target.name.start_with?('NitroModules')
-          bc.build_settings['SWIFT_VERSION'] = '5.0'
           bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-everything -Wno-error=implicit-int -Wno-error=implicit-function-declaration'
           bc.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
         end
@@ -96,7 +100,11 @@ module.exports = function withEasPodfileFix(config) {
       end
     end`;
 
-      if (contents.includes('post_install do |installer|')) {
+      // Inject AFTER react_native_post_install so our build settings override RN's defaults
+      const rnpiRegex = /react_native_post_install\([\s\S]*?\)\s*\n/;
+      if (rnpiRegex.test(contents)) {
+        contents = contents.replace(rnpiRegex, (match) => match + '\n' + snippet + '\n');
+      } else if (contents.includes('post_install do |installer|')) {
         contents = contents.replace(
           'post_install do |installer|',
           'post_install do |installer|\n' + snippet
