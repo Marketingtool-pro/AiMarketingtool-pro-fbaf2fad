@@ -95,7 +95,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
           [Query.equal('userId', userId), Query.limit(1)]
         );
         if (subResult.documents.length > 0) {
-          const tier = subResult.documents[0].tier || 'free';
+          const tier = (subResult.documents[0] as any).tier || 'free';
           const tierNames: Record<string, string> = {
             free: 'Free Trial', starter: 'Starter', pro: 'Professional',
             alltools: 'Growth', enterprise: 'Enterprise', agency: 'Agency'

@@ -75,9 +75,11 @@ const ToolsScreen = () => {
     return { sections, allTools: [] };
   }, [tools, activePlatform, searchQuery]);
 
+  const userSub = profile?.subscription || 'free';
+  const userHasProAccess = ['pro', 'alltools', 'enterprise', 'agency'].includes(userSub);
+
   const renderToolCard = (tool: Tool) => {
-    const userSub = profile?.subscription || 'free';
-    const hasAccess = !tool.isPro || ['pro', 'alltools', 'enterprise', 'agency'].includes(userSub);
+    const hasAccess = !tool.isPro || userHasProAccess;
 
     return (
       <TouchableOpacity

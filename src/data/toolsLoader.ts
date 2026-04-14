@@ -98,7 +98,7 @@ export function loadAllTools(): PhoneTool[] {
     shortDescription: tool.description.substring(0, 80),
     icon: BADGE_ICONS[tool.badge] || 'zap',
     category: tool.badge,
-    isPro: false,
+    isPro: tool.badge === 'Audit' || tool.badge === 'Grader' || tool.badge === 'AI Agent' || tool.slug.includes('grader') || tool.slug.includes('audit'),
     isNew: false,
     isTrending: false,
     usageCount: 0,
