@@ -956,10 +956,10 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   toolListIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.surface,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#1E1B4B',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1013,10 +1013,10 @@ const styles = StyleSheet.create({
   runButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.secondary,
+    backgroundColor: '#8B5CF6',
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: BorderRadius.full,
+    borderRadius: 20,
     gap: 4,
   },
   runButtonText: {
