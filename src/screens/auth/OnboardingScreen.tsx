@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,62 +9,95 @@ import {
   TouchableOpacity,
   Platform,
   ImageSourcePropType,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
+import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 import LiquidButton from '../../components/common/LiquidButton';
 import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
-const CARD_SIZE = width * 0.52;
-const ICON_SIZE = CARD_SIZE * 0.55;
+const CARD_SIZE = width * 0.65;
+const ICON_SIZE = CARD_SIZE * 0.7;
 
 interface OnboardingItem {
   id: string;
   title: string;
   description: string;
   icon: ImageSourcePropType;
+  gradient: string[];
 }
 
 const ONBOARDING_DATA: OnboardingItem[] = [
   {
     id: '1',
-    title: 'AI Marketing Tools',
-    description: 'Access the most comprehensive suite of AI-powered marketing tools. From ad copy to blog posts, we\'ve got you covered.',
-    icon: require('../../assets/images/tool-icons-v2/bot.webp'),
+    title: 'Professional AI Tools',
+    description: 'Unlock 314+ premium AI tools designed for Meta, Google, and Shopify marketers.',
+    icon: require('../../assets/images/tool-icons-v2/onboarding-1.png'),
+    gradient: ['#7C3AED', '#9D4EDD'],
   },
   {
     id: '2',
-    title: 'Create Content Instantly',
-    description: 'Generate high-converting ads, engaging social posts, and SEO-optimized content in seconds with Claude AI.',
-    icon: require('../../assets/images/tool-icons-v2/7-copywriting.webp'),
+    title: 'Connect Real Data',
+    description: 'Skip the demo. Connect real Google Ads & Meta accounts for live performance analysis.',
+    icon: require('../../assets/images/tool-icons-v2/onboarding-2.png'),
+    gradient: ['#10B981', '#34D399'],
   },
   {
     id: '3',
-    title: 'Boost Your ROI',
-    description: 'Our AI analyzes top-performing content to help you create marketing materials that convert.',
-    icon: require('../../assets/images/tool-icons-v2/9-growth-chart.webp'),
+    title: 'Scale Your Growth',
+    description: 'Our specialized Windmill AI engine helps you generate high-ROAS marketing content.',
+    icon: require('../../assets/images/tool-icons-v2/onboarding-3.png'),
+    gradient: ['#F59E0B', '#FCD34D'],
   },
   {
     id: '4',
-    title: '7-Day Free Trial',
-    description: 'Start creating amazing marketing content today. No credit card required to get started.',
-    icon: require('../../assets/images/tool-icons-v2/10-marketing-target.webp'),
+    title: 'Start 7-Day Trial',
+    description: 'Get full access to all Pro features for 7 days. No credit card required.',
+    icon: require('../../assets/images/tool-icons-v2/onboarding-4.png'),
+    gradient: ['#EC4899', '#F472B6'],
   },
 ];
 
 const OnboardingScreen = () => {
   const navigation = useNavigation<any>();
+  const { checkAuth, isAuthenticated, isLoading } = useAuthStore();
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    // Initial Auth Check (Firebase/Appwrite Data Check)
+    const init = async () => {
+      await checkAuth();
+      const hasSeen = await SecureStore.getItemAsync('hasSeenOnboarding');
+      
+      if (isAuthenticated) {
+        navigation.replace('Main');
+      } else if (hasSeen === 'true') {
+        navigation.navigate('Auth');
+      }
+      setChecking(false);
+    };
+    init();
+  }, [isAuthenticated]);
 
   const completeOnboarding = async () => {
     await SecureStore.setItemAsync('hasSeenOnboarding', 'true');
     navigation.navigate('Auth');
   };
+
+  if (checking) {
+    return (
+      <View style={[styles.container, { backgroundColor: '#0D0F1C', justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={Colors.secondary} />
+      </View>
+    );
+  }
 
   const handleNext = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -80,7 +113,13 @@ const OnboardingScreen = () => {
     <View style={styles.slide}>
       <View style={styles.cardShadow}>
         <View style={styles.glassCard}>
-          <View style={styles.iconGlow} />
+          <LinearGradient
+            colors={[item.gradient[0] + '20', 'transparent']}
+            style={StyleSheet.absoluteFill}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          />
+          <View style={[styles.iconGlow, { backgroundColor: item.gradient[0] + '15', shadowColor: item.gradient[0] }]} />
           <Image source={item.icon} style={styles.icon3d} resizeMode="contain" />
         </View>
       </View>

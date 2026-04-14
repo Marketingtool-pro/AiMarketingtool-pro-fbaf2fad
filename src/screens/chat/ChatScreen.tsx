@@ -26,13 +26,14 @@ import { ExecutionMethod } from 'react-native-appwrite';
 import { getToolIcon } from '../../constants/toolIcons';
 import { CHAT_PLATFORMS } from '../../constants/socialIcons';
 import { useToolsStore, Tool } from '../../store/toolsStore';
+import { generateChatResponse } from '../../services/aiService';
 
 const { width } = Dimensions.get('window');
 
 // Chat bot image
-const ChatBotImage = require('../../assets/images/screens/chat-bot.jpg');
-const AiAssistantImage = require('../../assets/images/screens/ai-assistant.jpg');
-const LogoImage = require('../../assets/images/logo.jpeg');
+const ChatBotImage = require('../../assets/images/tool-icons-v2/ai-3d.png');
+const AiAssistantImage = require('../../assets/images/tool-icons-v2/chatbot.png');
+const LogoImage = require('../../assets/images/tool-icons-v2/ai-3d.png');
 
 interface Message {
   id: string;
@@ -117,14 +118,14 @@ const AnimatedRipple = () => {
   );
 };
 
-// Bot avatar icon - uses real logo with dark background
+// Bot avatar icon - uses 3D AI icon
 const BotAvatar = ({ size = 32 }: { size?: number }) => {
   return (
     <View style={[styles.botAvatarContainer, { width: size, height: size, borderRadius: size / 2 }]}>
       <Image
-        source={LogoImage}
-        style={{ width: size, height: size, borderRadius: size / 2 }}
-        resizeMode="cover"
+        source={require('../../assets/images/tool-icons-v2/ai-3d.png')}
+        style={{ width: size * 0.8, height: size * 0.8 }}
+        resizeMode="contain"
       />
     </View>
   );
@@ -149,14 +150,14 @@ const ChatScreen = () => {
 
   const suggestedPrompts: SuggestedPrompt[] = [
     {
-      iconSlug: 'facebook-ad-copy',
+      iconSlug: 'facebook-ads-manager',
       title: 'Write Ad Copy',
       description: 'Create compelling ads',
       prompt: 'Write a compelling Facebook ad copy for a fitness app',
       color: Colors.gold,
     },
     {
-      iconSlug: 'strategy',
+      iconSlug: 'marketing-strategy-3d',
       title: 'Marketing Strategy',
       description: 'Get expert advice',
       prompt: 'Give me a marketing strategy for launching a new product',
@@ -170,7 +171,7 @@ const ChatScreen = () => {
       color: Colors.secondary,
     },
     {
-      iconSlug: 'instagram-captions',
+      iconSlug: 'instagram-caption-generator',
       title: 'Social Content',
       description: 'Create viral posts',
       prompt: 'Create an engaging Instagram caption for a travel photo',
@@ -184,7 +185,7 @@ const ChatScreen = () => {
       color: Colors.success,
     },
     {
-      iconSlug: 'blog-post-ideas',
+      iconSlug: 'blog-content-generator',
       title: 'Blog Content',
       description: 'Write blog posts',
       prompt: 'Give me 10 blog post ideas for a SaaS company',
@@ -249,7 +250,7 @@ const ChatScreen = () => {
 
   const handleSend = async (text?: string) => {
     const messageText = text || inputText.trim();
-    if (!messageText) return;
+    if (!messageText || isTyping) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -264,7 +265,12 @@ const ChatScreen = () => {
     scrollToBottom();
 
     try {
-      const response = await callWindmillChat(messageText, messages);
+      // Direct connection to VPS 1 via generateChatResponse
+      const response = await generateChatResponse(
+        messageText,
+        messages.map(m => ({ role: m.role, content: m.content })),
+        profile?.$id
+      );
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),

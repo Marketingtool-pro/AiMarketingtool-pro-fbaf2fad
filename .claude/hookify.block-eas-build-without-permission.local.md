@@ -1,6 +1,6 @@
 ---
 name: block-eas-build-without-permission
-enabled: true
+enabled: false
 event: bash
 pattern: eas\s+build
 action: block

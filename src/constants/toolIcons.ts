@@ -316,6 +316,11 @@ const ToolIconImages: Record<string, any> = {
   'youtube-ad-script-writer': require('../assets/images/tool-icons-v2/05_youtube.png'),
   'youtube-description-generator': require('../assets/images/tool-icons-v2/paint.png'),
   'youtube-title-generator': require('../assets/images/tool-icons-v2/superfast-train.png'),
+  
+  // Platform & UI Overrides
+  'code': require('../assets/images/tool-icons-v2/automation-3d.png'),
+  'developer': require('../assets/images/tool-icons-v2/14-binary-code.png'),
+  'automation': require('../assets/images/tool-icons-v2/automation-testing.png'),
 };
 
 const DEFAULT_ICON = require('../assets/images/tool-icons-v2/marketing-strategy-3d.png');
