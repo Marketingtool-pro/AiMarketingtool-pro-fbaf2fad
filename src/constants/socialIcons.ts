@@ -60,7 +60,7 @@ export const HOME_PLATFORMS: SocialPlatform[] = [
   { id: 'snapchat', name: 'Snapchat', icon: SocialIconImages.snapchat, color: '#FFFC00', toolSlug: 'snapchat-ad', category: 'Social Media', isPro: true },
 ];
 
-// Chat page quick platform icons
+// Chat page quick platform icons — 7 platforms
 export const CHAT_PLATFORMS: SocialPlatform[] = [
   { id: 'facebook', name: 'Facebook', icon: SocialIconImages.facebook, color: '#1877F2', toolSlug: 'facebook-ad-copy', isPro: false },
   { id: 'instagram', name: 'Instagram', icon: SocialIconImages.instagram, color: '#E4405F', toolSlug: 'instagram-caption', isPro: false },
@@ -69,7 +69,6 @@ export const CHAT_PLATFORMS: SocialPlatform[] = [
   { id: 'tiktok', name: 'TikTok', icon: SocialIconImages.tiktok, color: '#000000', toolSlug: 'tiktok-video-script', isPro: true },
   { id: 'linkedin', name: 'LinkedIn', icon: SocialIconImages.linkedin, color: '#0A66C2', toolSlug: 'linkedin-post', isPro: true },
   { id: 'x', name: 'X', icon: SocialIconImages.x, color: '#000000', toolSlug: 'tweet-generator', isPro: true },
-  { id: 'whatsapp', name: 'WhatsApp', icon: SocialIconImages.whatsapp, color: '#25D366', toolSlug: 'whatsapp-message', isPro: true },
 ];
 
 // All platforms (for profile or settings)

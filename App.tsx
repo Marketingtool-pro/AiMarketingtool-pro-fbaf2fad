@@ -11,6 +11,7 @@ import { useAuthStore } from './src/store/authStore';
 import { Colors } from './src/constants/theme';
 import { matomo } from './src/services/matomo';
 import { initializeAppCheck } from './src/services/firebaseAppCheck';
+import crashlytics from '@react-native-firebase/crashlytics';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -24,6 +25,14 @@ export default function App() {
       try {
         // Initialize App Check
         await initializeAppCheck();
+
+        // Initialize Crashlytics — auto-capture crashes to Firebase
+        try {
+          await crashlytics().setCrashlyticsCollectionEnabled(true);
+          crashlytics().log('App started');
+        } catch (e) {
+          console.warn('Crashlytics init error:', e);
+        }
 
         // Initialize Matomo early but don't block
         matomo.init().catch(e => console.warn('Matomo init error', e));
