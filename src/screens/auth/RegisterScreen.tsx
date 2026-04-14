@@ -19,7 +19,6 @@ import { AuthStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
-import LiquidButton from '../../components/common/LiquidButton';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
@@ -169,14 +168,15 @@ const RegisterScreen = () => {
             </TouchableOpacity>
             {errors.terms ? <Text style={styles.errorText}>{errors.terms}</Text> : null}
 
-            <LiquidButton
-              title={isLoading ? 'Creating...' : 'Create Account'}
-              onPress={handleRegister}
-              variant="primary"
-              size="lg"
-              disabled={isLoading}
-              style={{ marginBottom: Spacing.lg }}
-            />
+            <TouchableOpacity onPress={handleRegister} disabled={isLoading} style={styles.registerButton}>
+              <LinearGradient colors={Gradients.primary} style={styles.registerButtonGradient}>
+                {isLoading ? (
+                  <ActivityIndicator color={Colors.white} />
+                ) : (
+                  <Text style={styles.registerButtonText}>Create Account</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
 
             {/* Features */}
             <View style={styles.features}>

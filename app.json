@@ -31,7 +31,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "428",
+      "buildNumber": "429",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,

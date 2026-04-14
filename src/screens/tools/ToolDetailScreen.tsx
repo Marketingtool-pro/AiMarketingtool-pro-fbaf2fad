@@ -10,7 +10,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -30,7 +29,7 @@ const ToolDetailScreen = () => {
   const route = useRoute<RouteType>();
   const { toolSlug, prefillInputs } = route.params;
   const { tools, generateContent, isGenerating } = useToolsStore();
-  const { user, profile } = useAuthStore();
+  const { profile } = useAuthStore();
 
   const [tool, setTool] = useState<Tool | null>(null);
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
@@ -74,38 +73,14 @@ const ToolDetailScreen = () => {
   const handleGenerate = async () => {
     if (!validateInputs() || !tool || isGenerating) return;
 
-    // Block PRO tools for free users
-    if (tool.isPro && (!profile?.subscription || profile.subscription === 'free')) {
+    // Check if user has credits (for free users)
+    if (profile?.subscription === 'free' && (profile?.credits || 0) <= 0) {
       Alert.alert(
-        'Pro Tool',
-        'This tool requires a paid plan. Upgrade to unlock all Pro tools.',
+        'No Credits',
+        'You have no credits remaining. Upgrade your plan for more AI generations.',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Upgrade', onPress: () => navigation.navigate('Subscription') },
-        ]
-      );
-      return;
-    }
-
-    // Check daily credit limit for free users (3 per day)
-    const dailyLimit = profile?.subscription === 'free' ? 3 :
-                       profile?.subscription === 'starter' ? 200 :
-                       profile?.subscription === 'pro' ? 500 : 1500;
-    const todayUsed = profile?.generationsUsed || 0;
-
-    if (todayUsed >= dailyLimit) {
-      Alert.alert(
-        'Daily Limit Reached',
-        `You've used ${todayUsed}/${dailyLimit} generations today. ${
-          profile?.subscription === 'free'
-            ? 'Upgrade for more generations.'
-            : 'Your limit resets tomorrow.'
-        }`,
-        [
-          { text: 'OK', style: 'cancel' },
-          ...(profile?.subscription === 'free'
-            ? [{ text: 'Upgrade', onPress: () => navigation.navigate('Subscription') }]
-            : []),
         ]
       );
       return;
@@ -123,7 +98,6 @@ const ToolDetailScreen = () => {
         tone: selectedTone,
         language: selectedLanguage,
         outputCount,
-        userId: user?.$id || '',
       });
 
       navigation.navigate('ToolResult', {
@@ -248,11 +222,7 @@ const ToolDetailScreen = () => {
 
           <View style={styles.toolInfo}>
             <View style={[styles.toolIcon, { backgroundColor: Colors.secondary + '20' }]}>
-              <Image 
-                source={getToolIcon(tool.slug, tool.category)} 
-                style={{ width: 44, height: 44 }} 
-                resizeMode="contain" 
-              />
+              <Feather name={tool.icon as any} size={32} color={Colors.secondary} />
             </View>
             <View style={styles.toolMeta}>
               <View style={styles.toolBadges}>
@@ -471,15 +441,13 @@ const styles = StyleSheet.create({
   toolInfo: {
     flexDirection: 'row',
     marginBottom: Spacing.lg,
+  },
   toolIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
+    width: 64,
+    height: 64,
+    borderRadius: BorderRadius.lg,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-  },
     marginRight: Spacing.md,
   },
   toolMeta: {

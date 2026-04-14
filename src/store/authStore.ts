@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { Models, ExecutionMethod } from 'react-native-appwrite';
-import { authService, dbService, COLLECTIONS, Query, functions, account } from '../services/appwrite';
-import { ID } from 'react-native-appwrite';
+import { Models } from 'react-native-appwrite';
+import { authService, dbService, COLLECTIONS, Query } from '../services/appwrite';
+import { sendPhoneOTP as firebaseSendOTP, verifyPhoneOTP as firebaseVerifyOTP } from '../services/firebaseAuth';
 import { biometricService } from '../services/biometric';
 
 interface UserProfile {
@@ -10,7 +10,7 @@ interface UserProfile {
   name: string;
   email: string;
   avatar?: string;
-  subscription: 'free' | 'starter' | 'pro' | 'alltools' | 'enterprise' | 'agency';
+  subscription: 'free' | 'starter' | 'pro' | 'enterprise';
   generationsUsed: number;
   generationsLimit: number;
   credits?: number;
@@ -27,8 +27,6 @@ interface AuthState {
   isAuthenticated: boolean;
   error: string | null;
   tempPhone: string | null;
-  tempVerificationId: string | null;
-  tempUserId: string | null;
   biometricPending: boolean;
   mfaPending: boolean;
 
@@ -61,8 +59,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   error: null,
   tempPhone: null,
-  tempVerificationId: null,
-  tempUserId: null,
   biometricPending: false,
   mfaPending: false,
 
@@ -216,107 +212,65 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   sendPhoneOTP: async (phoneNumber: string) => {
-    set({ error: null });
+    set({ isLoading: true, error: null });
     try {
-      const cleaned = phoneNumber.replace(/\D/g, '');
-      const normalizedPhone = phoneNumber.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
-
-      if (__DEV__) console.log('[Auth] Sending OTP via Bird:', normalizedPhone);
-
-      const execution = await functions.createExecution(
-        'msg91-proxy',
-        JSON.stringify({ action: 'sendOtp', phone: normalizedPhone, identifier: normalizedPhone }),
-        false, '/', ExecutionMethod.POST,
-        { 'Content-Type': 'application/json' }
-      );
-
-      const responseBody = JSON.parse(execution.responseBody || '{}');
-      if (__DEV__) console.log('[Auth] Bird sendOtp response:', JSON.stringify(responseBody));
-
-      if (!responseBody.success && responseBody.type !== 'success') {
-        throw new Error(responseBody.message || 'Failed to send OTP');
-      }
-
-      // Store verificationId from Bird — REQUIRED for verify step
-      const verificationId = responseBody.verificationId || responseBody.reqId || '';
-      const userId = responseBody.userId || '';
-
-      set({ tempPhone: normalizedPhone, tempVerificationId: verificationId, tempUserId: userId });
-      return normalizedPhone;
+      const result = await firebaseSendOTP(phoneNumber);
+      if (!result.success) throw new Error(result.error);
+      set({ isLoading: false, tempPhone: phoneNumber });
+      return phoneNumber;
     } catch (error: any) {
-      if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
-      set({ error: error.message || 'Failed to send OTP' });
+      set({ error: error.message || 'Failed to send OTP', isLoading: false });
       throw error;
     }
   },
 
-  verifyPhoneOTP: async (userId: string, code: string) => {
-    set({ error: null });
+  verifyPhoneOTP: async (_userId: string, code: string) => {
+    set({ isLoading: true, error: null });
     try {
-      const phone = get().tempPhone || userId;
-      const verificationId = get().tempVerificationId || '';
-      const storedUserId = get().tempUserId || '';
+      const result = await firebaseVerifyOTP(code);
+      if (!result.success) throw new Error(result.error || 'Invalid OTP');
 
-      if (!code || code.trim().length < 6) {
-        throw new Error('Please enter the 6-digit OTP code');
-      }
-      if (__DEV__) console.log('[Auth] Verifying OTP for:', phone, 'vid:', verificationId);
+      const firebaseUser = result.user;
+      const phone = firebaseUser.phoneNumber;
 
-      // Verify OTP via Bird (msg91-proxy function) — MUST include verificationId
-      const verifyExec = await functions.createExecution(
-        'msg91-proxy',
-        JSON.stringify({
-          action: 'verifyOtp',
-          phone, identifier: phone,
-          otp: code, code,
-          verificationId, reqId: verificationId,
-          userId: storedUserId,
-        }),
-        false, '/', ExecutionMethod.POST,
-        { 'Content-Type': 'application/json' }
-      );
-
-      const verifyResult = JSON.parse(verifyExec.responseBody || '{}');
-      if (__DEV__) console.log('[Auth] Bird verifyOtp response:', JSON.stringify(verifyResult));
-
-      if (!verifyResult.success) {
-        throw new Error(verifyResult.message || 'Invalid OTP');
-      }
-
-      // Bird returns { userId, secret } directly when token creation succeeds
-      const sessionUserId = verifyResult.userId || storedUserId;
-      const sessionSecret = verifyResult.secret;
-
-      if (sessionSecret && sessionUserId) {
-        try { await account.deleteSession('current'); } catch (_e) {}
-        const session = await account.createSession(sessionUserId, sessionSecret);
-        if (__DEV__) console.log('[Auth] Appwrite session created:', session.$id);
-      } else {
-        // Fallback: use phone-session function
+      // Create Appwrite session via server-side function (no hardcoded password)
+      try {
+        const { functions } = require('../services/appwrite');
+        const { ExecutionMethod } = require('react-native-appwrite');
         const execution = await functions.createExecution(
           'phone-session',
-          JSON.stringify({ firebaseUid: 'bird_' + phone.replace(/\D/g, ''), phone, displayName: '' }),
+          JSON.stringify({
+            firebaseUid: firebaseUser.uid,
+            phone: phone,
+            displayName: firebaseUser.displayName || 'User',
+          }),
           false, '/', ExecutionMethod.POST,
-          { 'Content-Type': 'application/json' }
         );
-        const responseBody = JSON.parse(execution.responseBody || '{}');
-        if (!responseBody.success || !responseBody.userId || !responseBody.secret) {
-          throw new Error(responseBody.error || 'Failed to create session');
+        const sessionResult = JSON.parse(execution.responseBody);
+        if (sessionResult.success && sessionResult.userId && sessionResult.secret) {
+          const { account } = require('../services/appwrite');
+          await account.createSession(sessionResult.userId, sessionResult.secret);
+          if (__DEV__) console.log('[Auth] Appwrite session created for phone user');
         }
-        try { await account.deleteSession('current'); } catch (_e) {}
-        await account.createSession(responseBody.userId, responseBody.secret);
+      } catch (sessionError: any) {
+        if (__DEV__) console.log('[Auth] Server session failed:', sessionError.message);
       }
 
-      const user = await authService.getCurrentUser();
-      if (user) {
-        const profile = await get().fetchOrCreateProfile(user);
-        set({ user, profile, isAuthenticated: true, isLoading: false, tempPhone: null, tempVerificationId: null, tempUserId: null });
-      } else {
-        throw new Error('Session created but could not fetch user');
+      // Get Appwrite user or use Firebase data as fallback
+      let user = await authService.getCurrentUser();
+      if (!user) {
+        user = {
+          $id: firebaseUser.uid,
+          name: firebaseUser.displayName || 'User',
+          email: `${phone?.replace(/\D/g, '')}@phone.marketingtool.pro`,
+          phone: phone,
+        } as any;
       }
+
+      const profile = await get().fetchOrCreateProfile(user);
+      set({ user, profile, isAuthenticated: true, isLoading: false, tempPhone: null });
     } catch (error: any) {
-      if (__DEV__) console.log('[Auth] Verify OTP error:', error.message);
-      set({ error: error.message || 'Invalid OTP' });
+      set({ error: error.message || 'Invalid OTP', isLoading: false });
       throw error;
     }
   },
@@ -327,19 +281,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!bioEnabled) return false;
 
       const success = await biometricService.authenticate('Login with biometrics');
-      if (!success) return false;
-
-      // Biometric passed — check if there's a valid Appwrite session
-      set({ isLoading: true });
-      const user = await authService.getCurrentUser();
-      if (user) {
-        const profile = await get().fetchOrCreateProfile(user);
-        set({ user, profile, isAuthenticated: true, isLoading: false, biometricPending: false });
-        return true;
+      if (success) {
+        // Appwrite session is already managed by the SDK and SecureStore in appwrite.ts
+        // We just need to check if we can get the current user
+        set({ isLoading: true });
+        const user = await authService.getCurrentUser();
+        if (user) {
+          const profile = await get().fetchOrCreateProfile(user);
+          set({ user, profile, isAuthenticated: true, isLoading: false, biometricPending: false });
+          return true;
+        }
+        set({ isLoading: false });
       }
-
-      // Biometric succeeded but no Appwrite session — user needs to login first
-      set({ isLoading: false, error: 'no_session' });
       return false;
     } catch (error) {
       set({ isLoading: false });
@@ -381,18 +334,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         timeoutPromise
       ]) as any;
       if (user) {
-        try {
-          const profile = await get().fetchOrCreateProfile(user);
-          set({ user, profile, isAuthenticated: true, isLoading: false });
-        } catch (profileErr) {
-          if (__DEV__) console.warn('[Auth] Profile fetch failed:', profileErr);
-          set({ user, isAuthenticated: true, isLoading: false });
-        }
+        const profile = await get().fetchOrCreateProfile(user);
+        set({ user, profile, isAuthenticated: true, isLoading: false });
       } else {
         set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
       }
     } catch (error) {
-      if (__DEV__) console.log('[Auth] checkAuth error:', error);
+      // On error or timeout, proceed as not authenticated
       set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
     }
   },

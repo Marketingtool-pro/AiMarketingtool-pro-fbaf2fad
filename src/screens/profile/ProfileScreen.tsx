@@ -17,15 +17,35 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
-import { Colors } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 
 const { width } = Dimensions.get('window');
+
+// Glass Card matching Play Store style
+const GlassCard = ({ children }: { children: React.ReactNode }) => (
+  <View style={styles.glassCardOuter}>
+    <LinearGradient
+      colors={['rgba(126, 34, 206, 0.25)', 'rgba(22, 24, 36, 0.55)']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.glassCardGradient}
+    >
+      <View style={styles.glassCardBorder}>
+        <View style={styles.glassCardContent}>
+          {children}
+        </View>
+      </View>
+    </LinearGradient>
+  </View>
+);
+
+const ProfileHeroImage = require('../../assets/images/screens/profile-hero.jpg');
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const StatItem = ({ label, value, iconName }: { label: string; value: string | number; iconName: string }) => (
   <View style={styles.statBox}>
-    <Feather name={iconName as any} size={20} color="#8B5CF6" style={{ marginBottom: 8 }} />
+    <Feather name={iconName as any} size={18} color={Colors.secondary} style={{ marginBottom: 4 }} />
     <Text style={styles.statValue}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
   </View>
@@ -53,6 +73,7 @@ const ProfileScreen = () => {
     url?: string;
     action?: () => void;
     badge?: string | null;
+    color?: string;
   };
 
   type MenuSection = {
@@ -62,7 +83,7 @@ const ProfileScreen = () => {
 
   const menuItems: MenuSection[] = [
     {
-      title: 'ACCOUNT',
+      title: 'Account',
       items: [
         { iconName: 'user', label: 'Edit Profile', screen: 'Settings' },
         { iconName: 'mail', label: 'Email Preferences', screen: 'Settings' },
@@ -71,22 +92,22 @@ const ProfileScreen = () => {
       ],
     },
     {
-      title: 'SUBSCRIPTION',
+      title: 'Subscription',
       items: [
         { iconName: 'star', label: 'Manage Plan', screen: 'Subscription', badge: profile?.subscription === 'free' ? 'Upgrade' : null },
-        { iconName: 'credit-card', label: 'Payment & Billing', screen: 'Subscription' as keyof RootStackParamList },
+        { iconName: 'credit-card', label: 'Payment & Billing', url: 'https://billing.stripe.com/p/login/4gw5oe3PY0hW0qk000' },
       ],
     },
     {
-      title: 'SUPPORT',
+      title: 'Support',
       items: [
-        { iconName: 'help-circle', label: 'Help Center', screen: 'HelpCenter' },
-        { iconName: 'message-circle', label: 'Contact Support', screen: 'Contact' },
-        { iconName: 'book', label: 'Tutorials', screen: 'Tutorials' },
+        { iconName: 'help-circle', label: 'Help Center', url: 'https://marketingtool.pro/help/' },
+        { iconName: 'message-circle', label: 'Contact Support', url: 'https://marketingtool.pro/contact/' },
+        { iconName: 'book', label: 'Tutorials', url: 'https://marketingtool.pro/blog/' },
       ],
     },
     {
-      title: 'APP',
+      title: 'App',
       items: [
         { iconName: 'settings', label: 'Settings', screen: 'Settings' },
         { iconName: 'bell', label: 'Notifications', screen: 'Notifications' },
@@ -97,59 +118,87 @@ const ProfileScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Background elements to match the "Ad Campaign" glow */}
-      <View style={styles.bgGlow1} />
-      <View style={styles.bgGlow2} />
-      
+      <LinearGradient
+        colors={['#0D0F1C', '#131538', '#0D0F1C']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.headerTop}>
-          <Text style={styles.headerTitle}>Profile</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-            <Feather name="settings" size={24} color="#FFF" />
-          </TouchableOpacity>
+        {/* Hero Background */}
+        <View style={styles.heroSection}>
+          <Image source={ProfileHeroImage} style={styles.heroImage} resizeMode="cover" />
+          <LinearGradient
+            colors={['transparent', 'rgba(13, 15, 28, 0.7)', 'rgba(13, 15, 28, 1)']}
+            style={styles.heroGradient}
+          />
+          <View style={styles.headerTop}>
+            <Text style={styles.headerTitle}>Profile</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Settings')}
+              style={styles.settingsButton}
+            >
+              <Feather name="settings" size={22} color={Colors.white} />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Main Profile Card */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatarSection}>
-            <View style={styles.avatarWrap}>
-              {profile?.avatar ? (
-                <Image source={{ uri: profile.avatar }} style={styles.avatarImg} />
-              ) : (
-                <Text style={styles.avatarText}>
-                  {user?.name && !/^\+?\d+$/.test(user.name) ? user.name.charAt(0).toUpperCase() : 'L'}
+        {/* Glass Profile Card */}
+        <View style={styles.header}>
+          <GlassCard>
+            <View style={styles.profileHeader}>
+              <View style={styles.avatarWrapper}>
+                <View style={styles.avatarContainer}>
+                  {profile?.avatar ? (
+                    <Image source={{ uri: profile.avatar }} style={styles.avatarImg} />
+                  ) : (
+                    <Text style={styles.avatarText}>
+                      {user?.name && !/^\+?\d+$/.test(user.name) ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.editAvatarBtn}>
+                  <Feather name="camera" size={12} color={Colors.white} />
+                </View>
+              </View>
+
+              <Text style={styles.userName}>
+                {user?.name && !/^\+?\d+$/.test(user.name) ? user.name : 'User'}
+              </Text>
+              <Text style={styles.email}>{user?.email || 'help@marketingtool.pro'}</Text>
+
+              <View style={[
+                styles.planBadge,
+                { backgroundColor: profile?.subscription === 'pro' ? '#f59e0b' : 'rgba(255,255,255,0.1)' }
+              ]}>
+                <Feather name="user" size={12} color="#fff" style={{ marginRight: 4 }} />
+                <Text style={styles.planText}>
+                  {profile?.subscription === 'pro' ? 'Pro Member' : 'Free Plan'}
                 </Text>
-              )}
+              </View>
             </View>
-            <View style={styles.cameraIconWrap}>
-              <Feather name="camera" size={12} color="#FFF" />
+
+            {/* Stats Section */}
+            <View style={styles.statsRow}>
+              <StatItem label="Generations" value={profile?.generationsUsed || 0} iconName="zap" />
+              <StatItem label="Saved" value={profile?.savedCount || 0} iconName="bookmark" />
+              <StatItem label="Tools Used" value={profile?.toolsUsed || 0} iconName="grid" />
             </View>
-          </View>
-
-          <Text style={styles.userName}>
-            {user?.name && !/^\+?\d+$/.test(user.name) ? user.name.toUpperCase() : 'LOKENDRA SINGH SAINGAR'}
-          </Text>
-          <Text style={styles.userEmail}>{user?.email || 'madav6310@gmail.com'}</Text>
-          
-          <View style={styles.planBadge}>
-            <Feather name="user" size={12} color="#FFF" style={{ marginRight: 6 }} />
-            <Text style={styles.planText}>
-              {profile?.subscription !== 'free' ? 'Pro Plan' : 'Free Plan'}
-            </Text>
-          </View>
-
-          <View style={styles.statsRow}>
-            <StatItem label="Generations" value={profile?.generationsUsed || 0} iconName="zap" />
-            <StatItem label="Saved" value={profile?.savedCount || 0} iconName="bookmark" />
-            <StatItem label="Tools Used" value={profile?.toolsUsed || 0} iconName="grid" />
-          </View>
+          </GlassCard>
         </View>
 
         {/* Upgrade Banner */}
         {profile?.subscription === 'free' && (
-          <TouchableOpacity style={styles.upgradeBanner} onPress={() => navigation.navigate('Subscription')} activeOpacity={0.9}>
-            <LinearGradient colors={['#F59E0B', '#B45309']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.upgradeGradient}>
+          <TouchableOpacity
+            style={styles.upgradeBanner}
+            onPress={() => navigation.navigate('Subscription')}
+          >
+            <LinearGradient
+              colors={['#f59e0b', '#78350f']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.upgradeGradient}
+            >
               <View style={styles.upgradeIconWrap}>
                 <Feather name="star" size={20} color="#FFF" />
               </View>
@@ -157,8 +206,8 @@ const ProfileScreen = () => {
                 <Text style={styles.upgradeTitle}>Upgrade to Pro</Text>
                 <Text style={styles.upgradeSubtitle}>Unlimited generations & premium features</Text>
               </View>
-              <View style={styles.upgradeArrowWrap}>
-                <Feather name="chevron-right" size={20} color="#FFF" />
+              <View style={styles.upgradeBtnIcon}>
+                <Feather name="chevron-right" size={20} color={Colors.white} />
               </View>
             </LinearGradient>
           </TouchableOpacity>
@@ -173,7 +222,10 @@ const ProfileScreen = () => {
                 {section.items.map((item, itemIdx) => (
                   <TouchableOpacity
                     key={itemIdx}
-                    style={[styles.menuItem, itemIdx === section.items.length - 1 && { borderBottomWidth: 0 }]}
+                    style={[
+                      styles.menuItem,
+                      itemIdx === section.items.length - 1 && styles.noBorder
+                    ]}
                     onPress={() => {
                       if (item.action) item.action();
                       else if (item.screen) navigation.navigate(item.screen as any);
@@ -181,10 +233,10 @@ const ProfileScreen = () => {
                     }}
                   >
                     <View style={styles.menuItemLeft}>
-                      <View style={styles.menuIconWrap}>
-                        <Feather name={item.iconName as any} size={18} color="#8B5CF6" />
+                      <View style={[styles.menuIcon, { backgroundColor: (item.color || Colors.secondary) + '15' }]}>
+                        <Feather name={item.iconName as any} size={20} color={item.color || Colors.secondary} />
                       </View>
-                      <Text style={styles.menuLabel}>{item.label}</Text>
+                      <Text style={[styles.menuLabel, item.color && { color: item.color }]}>{item.label}</Text>
                     </View>
                     <View style={styles.menuItemRight}>
                       {item.badge && (
@@ -192,7 +244,7 @@ const ProfileScreen = () => {
                           <Text style={styles.badgeText}>{item.badge}</Text>
                         </View>
                       )}
-                      <Feather name="chevron-right" size={20} color="#605E5C" />
+                      <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
                     </View>
                   </TouchableOpacity>
                 ))}
@@ -201,15 +253,17 @@ const ProfileScreen = () => {
           ))}
         </View>
 
-        {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Feather name="log-out" size={20} color="#EF4444" />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+        {/* Logout Button - Separate red button like Play Store */}
+        <View style={styles.logoutContainer}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Feather name="log-out" size={20} color={Colors.error} />
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.versionText}>MarketingTool v1.4.1</Text>
+          <Text style={styles.versionText}>MarketingTool v1.3.3</Text>
           <View style={styles.footerLinks}>
             <TouchableOpacity onPress={() => navigation.navigate('Terms' as any)}>
               <Text style={styles.footerLink}>Terms</Text>
@@ -220,7 +274,6 @@ const ProfileScreen = () => {
             </TouchableOpacity>
           </View>
         </View>
-
         <View style={{ height: 100 }} />
       </ScrollView>
     </View>
@@ -228,148 +281,96 @@ const ProfileScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0D0F1C',
+  container: { flex: 1, backgroundColor: Colors.background },
+  glassCardOuter: {
+    width: width - 32,
+    alignSelf: 'center',
+    borderRadius: 28,
+    overflow: 'hidden',
+    shadowColor: '#7e22ce',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 12,
   },
-  bgGlow1: {
-    position: 'absolute',
-    top: -100,
-    left: -100,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: 'rgba(124, 58, 237, 0.15)',
-    filter: 'blur(40px)' as any,
+  glassCardGradient: {
+    borderRadius: 28,
+    padding: 1.5,
   },
-  bgGlow2: {
-    position: 'absolute',
-    top: 50,
-    right: -100,
-    width: 250,
-    height: 250,
-    borderRadius: 125,
-    backgroundColor: 'rgba(236, 72, 153, 0.1)',
-    filter: 'blur(40px)' as any,
+  glassCardBorder: {
+    borderRadius: 27,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(13, 15, 28, 0.85)',
   },
+  glassCardContent: {
+    padding: 24,
+    paddingTop: 28,
+  },
+  heroSection: { height: 260, width: '100%' },
+  heroImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  heroGradient: { ...StyleSheet.absoluteFillObject },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    marginBottom: 20,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 56 : 40,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
-  profileCard: {
-    marginHorizontal: 16,
-    backgroundColor: '#161824',
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    marginBottom: 20,
-  },
-  avatarSection: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  avatarWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#7C3AED',
+  headerTitle: { fontSize: 28, fontWeight: 'bold', color: Colors.white },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarImg: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+  header: { paddingHorizontal: 0, marginTop: -80, marginBottom: Spacing.lg },
+  profileHeader: { alignItems: 'center' },
+  avatarWrapper: { position: 'relative' },
+  avatarContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#7e22ce',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 3,
+    borderColor: 'rgba(126, 34, 206, 0.6)',
   },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
-  cameraIconWrap: {
+  avatarImg: { width: '100%', height: '100%' },
+  avatarText: { color: '#fff', fontSize: 32, fontWeight: 'bold' },
+  editAvatarBtn: {
     position: 'absolute',
     bottom: 0,
-    right: -4,
+    right: 0,
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#8B5CF6',
+    backgroundColor: Colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#161824',
+    borderColor: 'rgba(13, 15, 28, 0.55)',
   },
-  userName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFF',
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 13,
-    color: '#A1A1AA',
-    marginBottom: 12,
-  },
-  planBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    marginBottom: 24,
-  },
-  planText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFF',
-  },
+  userName: { color: '#fff', fontSize: 22, fontWeight: '700', marginTop: 10 },
+  email: { color: 'rgba(255,255,255,0.6)', fontSize: 14, marginBottom: 8 },
+  planBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
+  planText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
-    paddingTop: 20,
+    marginTop: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    paddingTop: 16,
   },
-  statBox: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
-  statLabel: {
-    fontSize: 11,
-    color: '#A1A1AA',
-    marginTop: 4,
-  },
-  upgradeBanner: {
-    marginHorizontal: 16,
-    marginBottom: 24,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  upgradeGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
+  statBox: { flex: 1, alignItems: 'center' },
+  statValue: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  statLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 2 },
+  upgradeBanner: { marginHorizontal: Spacing.lg, marginBottom: Spacing.lg, borderRadius: BorderRadius.lg, overflow: 'hidden' },
+  upgradeGradient: { flexDirection: 'row', alignItems: 'center', padding: Spacing.lg },
   upgradeIconWrap: {
     width: 40,
     height: 40,
@@ -377,130 +378,48 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: Spacing.md,
   },
-  upgradeInfo: {
-    flex: 1,
-  },
-  upgradeTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFF',
-    marginBottom: 2,
-  },
-  upgradeSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  upgradeArrowWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  menuContainer: {
-    paddingHorizontal: 16,
-  },
-  menuSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#A1A1AA',
-    marginBottom: 12,
-    marginLeft: 8,
-    letterSpacing: 1,
-  },
+  upgradeInfo: { flex: 1 },
+  upgradeTitle: { fontSize: 18, fontWeight: 'bold', color: Colors.white, marginBottom: 4 },
+  upgradeSubtitle: { fontSize: 13, color: 'rgba(255, 255, 255, 0.8)' },
+  upgradeBtnIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255, 255, 255, 0.2)', justifyContent: 'center', alignItems: 'center' },
+  menuContainer: { paddingHorizontal: Spacing.lg },
+  menuSection: { marginBottom: Spacing.lg },
+  sectionTitle: { fontSize: 14, fontWeight: '600', color: Colors.textTertiary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: Spacing.sm, marginLeft: Spacing.xs },
   menuCard: {
-    backgroundColor: '#161824',
-    borderRadius: 16,
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  menuIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(124, 58, 237, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  menuLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#FFF',
-  },
-  menuItemRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  badge: {
-    backgroundColor: '#8B5CF6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 12,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
+  menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: Spacing.md, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.05)' },
+  noBorder: { borderBottomWidth: 0 },
+  menuItemLeft: { flexDirection: 'row', alignItems: 'center' },
+  menuIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: Spacing.md },
+  menuLabel: { fontSize: 16, color: Colors.white },
+  menuItemRight: { flexDirection: 'row', alignItems: 'center' },
+  badge: { backgroundColor: Colors.accent, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, marginRight: Spacing.sm },
+  badgeText: { fontSize: 10, fontWeight: 'bold', color: Colors.white },
+  logoutContainer: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.lg },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 16,
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: 'rgba(227, 26, 26, 0.1)',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
-    marginBottom: 32,
+    borderColor: 'rgba(227, 26, 26, 0.2)',
+    gap: 8,
   },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#EF4444',
-    marginLeft: 8,
-  },
-  footer: {
-    alignItems: 'center',
-  },
-  versionText: {
-    fontSize: 13,
-    color: '#A1A1AA',
-    marginBottom: 8,
-  },
-  footerLinks: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  footerLink: {
-    fontSize: 13,
-    color: '#8B5CF6',
-  },
-  footerDivider: {
-    fontSize: 13,
-    color: '#A1A1AA',
-    marginHorizontal: 8,
-  },
+  logoutText: { fontSize: 16, fontWeight: '600', color: Colors.error },
+  footer: { alignItems: 'center', paddingVertical: Spacing.xl },
+  versionText: { fontSize: 13, color: Colors.textTertiary, marginBottom: Spacing.sm },
+  footerLinks: { flexDirection: 'row', alignItems: 'center' },
+  footerLink: { fontSize: 13, color: Colors.secondary },
+  footerDivider: { fontSize: 13, color: Colors.textTertiary, marginHorizontal: Spacing.sm },
 });
 
 export default ProfileScreen;

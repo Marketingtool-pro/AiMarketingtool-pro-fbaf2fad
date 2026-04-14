@@ -20,13 +20,12 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore, Generation } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
-import LiquidButton from '../../components/common/LiquidButton';
 
 
 const { width } = Dimensions.get('window');
 
 // History hero image
-const HistoryHeroImage = require('../../assets/images/tool-icons-v2/growth-chart-3d.png');
+const HistoryHeroImage = require('../../assets/images/screens/history-hero.jpg');
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -89,9 +88,9 @@ const HistoryScreen = () => {
 
   // Look up tool info for icon/category
   const getToolInfo = useCallback((toolId: string) => {
-    const tool = tools.find(t => t.$id === toolId || t.slug === toolId);
+    const tool = tools.find(t => t.$id === toolId);
     return {
-      slug: tool?.slug || toolId,
+      icon: tool?.icon || 'zap',
       category: tool?.category ? getCategoryDisplay(tool.category) : 'Content',
     };
   }, [tools]);
@@ -178,11 +177,7 @@ const HistoryScreen = () => {
         <View style={styles.cardHeader}>
           <View style={styles.toolInfo}>
             <View style={[styles.toolIcon, { backgroundColor: Colors.secondary + '20' }]}>
-              <Image 
-                source={getToolIcon(toolInfo.slug)} 
-                style={{ width: 24, height: 24 }} 
-                resizeMode="contain" 
-              />
+              <Feather name={toolInfo.icon as any} size={18} color={Colors.secondary} />
             </View>
             <View>
               <Text style={styles.toolName}>{item.toolName}</Text>
@@ -251,7 +246,7 @@ const HistoryScreen = () => {
       <View style={styles.heroBanner}>
         <Image source={HistoryHeroImage} style={styles.heroImage} resizeMode="cover" />
         <LinearGradient
-          colors={['transparent', 'rgba(13, 15, 28, 0.8)', 'rgba(13, 15, 28, 0.98)']}
+          colors={['transparent', 'rgba(6, 11, 40, 0.8)', 'rgba(6, 11, 40, 0.98)']}
           style={styles.heroGradient}
         >
           <View style={styles.heroContent}>
@@ -335,13 +330,14 @@ const HistoryScreen = () => {
             <Text style={styles.emptySubtitle}>
               Your generated content will appear here
             </Text>
-            <LiquidButton
-              title="Start Creating"
-              icon={<Feather name="zap" size={18} color="#FFF" />}
+            <TouchableOpacity
+              style={styles.emptyButton}
               onPress={() => navigation.navigate('Main' as any)}
-              variant="primary"
-              size="md"
-            />
+            >
+              <LinearGradient colors={Gradients.primary} style={styles.emptyButtonGradient}>
+                <Text style={styles.emptyButtonText}>Start Creating</Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
         }
       />

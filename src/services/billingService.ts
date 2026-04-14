@@ -1,11 +1,9 @@
 import { Platform } from 'react-native';
-import * as IapExports from 'react-native-iap';
-const IAP = IapExports as any;
+import * as IAP from 'react-native-iap';
 import { functions } from './appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 
 // Native Product IDs (matching App Store & Google Play)
-// Both 'pro_growth_*' and 'pro_alltools_*' are listed for backwards compatibility
 const productSkus = Platform.select({
   ios: [
     'pro_starter_monthly',
@@ -14,8 +12,6 @@ const productSkus = Platform.select({
     'pro_professional_yearly',
     'pro_growth_monthly',
     'pro_growth_yearly',
-    'pro_alltools_monthly',
-    'pro_alltools_yearly',
     'tokens_100',
   ],
   android: [
@@ -25,40 +21,18 @@ const productSkus = Platform.select({
     'pro_professional_yearly',
     'pro_growth_monthly',
     'pro_growth_yearly',
-    'pro_alltools_monthly',
-    'pro_alltools_yearly',
     'tokens_100',
   ],
 }) || [];
-
-// Map product IDs to subscription tiers (must match backend stripe-checkout/main.js)
-const productToTier: Record<string, string> = {
-  'pro_starter_monthly': 'starter',
-  'pro_starter_yearly': 'starter',
-  'pro_professional_monthly': 'pro',
-  'pro_professional_yearly': 'pro',
-  'pro_growth_monthly': 'alltools',
-  'pro_growth_yearly': 'alltools',
-  'pro_alltools_monthly': 'alltools',
-  'pro_alltools_yearly': 'alltools',
-  'tokens_100': 'tokens',
-};
-
-let iapReady = false;
 
 export const billingService = {
   // Initialize connection to store
   async initialize() {
     try {
-      if (typeof IAP.initConnection !== 'function') {
-        console.warn('[Billing] IAP module not available (dev build or Expo Go)');
-        return false;
-      }
       await IAP.initConnection();
       if (Platform.OS === 'android') {
         await IAP.flushFailedPurchasesCachedAsPendingAndroid();
       }
-      iapReady = true;
       return true;
     } catch (err) {
       console.error('[Billing] Init error:', err);
@@ -66,13 +40,11 @@ export const billingService = {
     }
   },
 
-  // Fetch products from store (uses queryProductDetailsAsync internally in react-native-iap 14+)
+  // Fetch products from store
   async getProducts() {
     try {
-      const subSkus = productSkus.filter(s => s.includes('monthly') || s.includes('yearly'));
-      const prodSkus = productSkus.filter(s => !s.includes('monthly') && !s.includes('yearly'));
-      const subscriptions = await IAP.getSubscriptions({ skus: subSkus });
-      const products = prodSkus.length > 0 ? await IAP.getProducts({ skus: prodSkus }) : [];
+      const products = await IAP.getProducts({ skus: productSkus });
+      const subscriptions = await IAP.getSubscriptions({ skus: productSkus });
       return [...products, ...subscriptions];
     } catch (err) {
       console.error('[Billing] Fetch products error:', err);
@@ -80,39 +52,20 @@ export const billingService = {
     }
   },
 
-  // Start purchase flow (uses ProductDetails API / queryProductDetailsAsync on Android)
+  // Start purchase flow
   async requestPurchase(sku: string, userId: string) {
-    if (!iapReady || typeof IAP.requestSubscription !== 'function') {
-      throw new Error('In-app purchases not available');
-    }
     try {
       let purchase;
       if (sku.includes('monthly') || sku.includes('yearly')) {
-        // Handle Subscription — react-native-iap 14+ requires subscriptionOffers on Android
-        if (Platform.OS === 'android') {
-          // Fetch subscription details to get offerToken (required by BillingClient 5+)
-          const subs = await IAP.getSubscriptions({ skus: [sku] });
-          const sub = subs.find((s: any) => s.productId === sku);
-          if (sub?.subscriptionOfferDetails?.length > 0) {
-            const offerToken = sub.subscriptionOfferDetails[0].offerToken;
-            purchase = await IAP.requestSubscription({
-              subscriptionOffers: [{ sku, offerToken }],
-            });
-          } else {
-            // Fallback if no offer details available
-            purchase = await IAP.requestSubscription({ sku });
-          }
-        } else {
-          // iOS uses StoreKit 2 — sku-based API works fine
-          purchase = await IAP.requestSubscription({ sku });
-        }
+        // Handle Subscription
+        purchase = await IAP.requestSubscription({ sku });
       } else {
-        // Handle One-time Purchase (tokens)
+        // Handle One-time Purchase
         purchase = await IAP.requestPurchase({ sku });
       }
-
+      
       if (Array.isArray(purchase)) purchase = purchase[0];
-
+      
       if (purchase) {
         // Verify with backend
         return await this.verifyPurchase(purchase, userId);
@@ -125,7 +78,7 @@ export const billingService = {
   },
 
   // Verify purchase with Appwrite backend
-  async verifyPurchase(purchase: any, userId: string) {
+  async verifyPurchase(purchase: IAP.Purchase, userId: string) {
     try {
       const payload: any = {
         userId,
