@@ -254,8 +254,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ error: null });
     try {
       const phone = get().tempPhone || userId;
-      const verificationId = (get() as any).tempVerificationId || '';
-      const storedUserId = (get() as any).tempUserId || '';
+      const verificationId = get().tempVerificationId || '';
+      const storedUserId = get().tempUserId || '';
 
       if (!code || code.trim().length < 6) {
         throw new Error('Please enter the 6-digit OTP code');
@@ -310,7 +310,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = await authService.getCurrentUser();
       if (user) {
         const profile = await get().fetchOrCreateProfile(user);
-        set({ user, profile, isAuthenticated: true, isLoading: false, tempPhone: null });
+        set({ user, profile, isAuthenticated: true, isLoading: false, tempPhone: null, tempVerificationId: null, tempUserId: null });
       } else {
         throw new Error('Session created but could not fetch user');
       }
