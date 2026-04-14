@@ -26,7 +26,7 @@ import LiquidButton from '../../components/common/LiquidButton';
 const { width } = Dimensions.get('window');
 
 // History hero image
-const HistoryHeroImage = require('../../assets/images/screens/history-hero.jpg');
+const HistoryHeroImage = require('../../assets/images/tool-icons-v2/growth-chart-3d.png');
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -89,9 +89,9 @@ const HistoryScreen = () => {
 
   // Look up tool info for icon/category
   const getToolInfo = useCallback((toolId: string) => {
-    const tool = tools.find(t => t.$id === toolId);
+    const tool = tools.find(t => t.$id === toolId || t.slug === toolId);
     return {
-      icon: tool?.icon || 'zap',
+      slug: tool?.slug || toolId,
       category: tool?.category ? getCategoryDisplay(tool.category) : 'Content',
     };
   }, [tools]);
@@ -178,7 +178,11 @@ const HistoryScreen = () => {
         <View style={styles.cardHeader}>
           <View style={styles.toolInfo}>
             <View style={[styles.toolIcon, { backgroundColor: Colors.secondary + '20' }]}>
-              <Feather name={toolInfo.icon as any} size={18} color={Colors.secondary} />
+              <Image 
+                source={getToolIcon(toolInfo.slug)} 
+                style={{ width: 24, height: 24 }} 
+                resizeMode="contain" 
+              />
             </View>
             <View>
               <Text style={styles.toolName}>{item.toolName}</Text>

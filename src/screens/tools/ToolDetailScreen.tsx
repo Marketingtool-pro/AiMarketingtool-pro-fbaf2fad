@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -247,7 +248,11 @@ const ToolDetailScreen = () => {
 
           <View style={styles.toolInfo}>
             <View style={[styles.toolIcon, { backgroundColor: Colors.secondary + '20' }]}>
-              <Feather name={tool.icon as any} size={32} color={Colors.secondary} />
+              <Image 
+                source={getToolIcon(tool.slug, tool.category)} 
+                style={{ width: 44, height: 44 }} 
+                resizeMode="contain" 
+              />
             </View>
             <View style={styles.toolMeta}>
               <View style={styles.toolBadges}>
@@ -466,13 +471,15 @@ const styles = StyleSheet.create({
   toolInfo: {
     flexDirection: 'row',
     marginBottom: Spacing.lg,
-  },
   toolIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: BorderRadius.lg,
+    width: 72,
+    height: 72,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
     marginRight: Spacing.md,
   },
   toolMeta: {

@@ -57,20 +57,20 @@ const DashboardImages = {
 };
 
 const CategoryImageAssets = {
-  'google-ads': require('../../assets/images/categories/google-ads.jpg'),
-  'google-seo': require('../../assets/images/categories/google-seo.jpg'),
-  'google-analytics': require('../../assets/images/categories/google-analytics.jpg'),
-  'google-content': require('../../assets/images/categories/google-content.jpg'),
-  'facebook-ads': require('../../assets/images/categories/facebook-ads.jpg'),
-  'instagram': require('../../assets/images/categories/instagram.jpg'),
-  'social-media': require('../../assets/images/categories/social-media.jpg'),
-  'meta-content': require('../../assets/images/categories/meta-content.jpg'),
-  'shopify-products': require('../../assets/images/categories/shopify-products.jpg'),
-  'shopify-ads': require('../../assets/images/categories/shopify-ads.jpg'),
-  'email-marketing': require('../../assets/images/categories/email-marketing.jpg'),
-  'ecommerce-seo': require('../../assets/images/categories/ecommerce-seo.jpg'),
-  'ai-agents': require('../../assets/images/categories/ai-agents.jpg'),
-  'content-creation': require('../../assets/images/categories/content-creation.jpg'),
+  'google-ads': require('../../assets/images/tool-icons-v2/ads-3d.png'),
+  'google-seo': require('../../assets/images/tool-icons-v2/seo-3d.png'),
+  'google-analytics': require('../../assets/images/tool-icons-v2/analytics-3d.png'),
+  'google-content': require('../../assets/images/tool-icons-v2/content-marketing-3d.png'),
+  'facebook-ads': require('../../assets/images/tool-icons-v2/facebook-3d.png'),
+  'instagram': require('../../assets/images/tool-icons-v2/instagram-3d.png'),
+  'social-media': require('../../assets/images/tool-icons-v2/social-media-3d.png'),
+  'meta-content': require('../../assets/images/tool-icons-v2/content-creator-3d.png'),
+  'shopify-products': require('../../assets/images/tool-icons-v2/product-trolley-3d.png'),
+  'shopify-ads': require('../../assets/images/tool-icons-v2/shopify-3d.png'),
+  'email-marketing': require('../../assets/images/tool-icons-v2/email-marketing-3d.png'),
+  'ecommerce-seo': require('../../assets/images/tool-icons-v2/seo-3d.png'),
+  'ai-agents': require('../../assets/images/tool-icons-v2/strategy-3d.png'),
+  'content-creation': require('../../assets/images/tool-icons-v2/content-creator-3d.png'),
 };
 
 const BannerImages = {
@@ -584,6 +584,39 @@ const DashboardScreen = () => {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* High-Conversion Floating Nudge (Only for Free users) */}
+      {(!profile?.subscription || profile.subscription === 'free') && (
+        <TouchableOpacity
+          style={styles.proFloatingNudge}
+          activeOpacity={0.9}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            navigation.navigate('Subscription');
+          }}
+        >
+          <LinearGradient
+            colors={['#FFD700', '#F59E0B']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.proNudgeGradient}
+          >
+            <View style={styles.proNudgeContent}>
+              <View style={styles.proNudgeIconWrap}>
+                <Image 
+                  source={require('../../assets/images/tool-icons-v2/trophy.png')} 
+                  style={styles.proNudgeIcon} 
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.proNudgeTitle}>Start 7-Day Free Trial</Text>
+                <Text style={styles.proNudgeSub}>Unlock Pro & Real-Time Ad Data</Text>
+              </View>
+              <Feather name="arrow-right" size={20} color="#000" style={styles.proNudgeArrow} />
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -1118,6 +1151,55 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textSecondary,
     marginTop: 2,
+  },
+  proFloatingNudge: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 110 : 90,
+    left: 16,
+    right: 16,
+    borderRadius: 20,
+    shadowColor: Colors.gold,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  proNudgeGradient: {
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  proNudgeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  proNudgeIconWrap: {
+    width: 48,
+    height: 48,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  proNudgeIcon: {
+    width: 40,
+    height: 40,
+  },
+  proNudgeTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#000',
+  },
+  proNudgeSub: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(0,0,0,0.6)',
+    marginTop: 2,
+  },
+  proNudgeArrow: {
+    marginLeft: 'auto',
   },
 });
 

@@ -33,8 +33,14 @@ const ToolsScreen = () => {
 
   // Platform tabs including All
   const platformTabs = [
-    { id: 'all', name: 'All', icon: 'grid', color: Colors.secondary },
-    ...PLATFORMS_CONFIG.map(p => ({ id: p.id, name: p.title, icon: p.icon, color: p.color })),
+    { id: 'all', name: 'All', icon: require('../../assets/images/tool-icons-v2/onboarding-3.png'), color: Colors.secondary },
+    { id: 'google', name: 'Google Ads', icon: require('../../assets/images/tool-icons-v2/google-3d.png'), color: '#4285F4' },
+    { id: 'meta', name: 'Meta / Facebook', icon: require('../../assets/images/tool-icons-v2/meta-3d.png'), color: '#1877F2' },
+    { id: 'social-media', name: 'Social Media', icon: require('../../assets/images/tool-icons-v2/social-media-3d.png'), color: '#E4405F' },
+    { id: 'seo', name: 'SEO & Content', icon: require('../../assets/images/tool-icons-v2/seo-3d.png'), color: '#34A853' },
+    { id: 'analytics', name: 'Analytics', icon: require('../../assets/images/tool-icons-v2/analytics-3d.png'), color: '#F9AB00' },
+    { id: 'ecommerce', name: 'E-commerce', icon: require('../../assets/images/tool-icons-v2/ecommerce-3d.png'), color: '#96BF48' },
+    { id: 'ai-tools', name: 'AI Tools', icon: require('../../assets/images/tool-icons-v2/ai-3d.png'), color: '#7C3AED' },
   ];
 
   // Filter tools based on platform and search
@@ -118,25 +124,30 @@ const ToolsScreen = () => {
     <View style={styles.screenContainer}>
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         {/* Hero Banner */}
-        <ImageBackground
-          source={require('../../assets/images/screens/tools-hero.jpg')}
-          style={styles.heroBanner}
-          resizeMode="cover"
-        >
+        <View style={styles.heroBannerContainer}>
           <LinearGradient
-            colors={['rgba(13,15,28,0.3)', 'rgba(13,15,28,0.85)']}
-            style={styles.heroOverlay}
+            colors={['rgba(124, 58, 237, 0.15)', 'rgba(13, 15, 28, 0)']}
+            style={styles.heroGradient}
           >
             <View style={styles.heroContent}>
-              <View style={styles.aiBadge}>
-                <Feather name="zap" size={12} color="#F59E0B" />
-                <Text style={styles.aiBadgeText}>AI Tools</Text>
+              <View style={styles.heroLeft}>
+                <View style={styles.aiBadge}>
+                  <Feather name="zap" size={12} color="#F59E0B" />
+                  <Text style={styles.aiBadgeText}>AI Tools</Text>
+                </View>
+                <Text style={styles.heroTitle}>Marketing AI Tools</Text>
+                <Text style={styles.heroSubtitle}>Google  ·  Meta  ·  Shopify</Text>
               </View>
-              <Text style={styles.heroTitle}>Marketing AI Tools</Text>
-              <Text style={styles.heroSubtitle}>Google  ·  Meta  ·  Shopify</Text>
+              <View style={styles.heroRight}>
+                <Image 
+                  source={require('../../assets/images/tool-icons-v2/online-promotion-3d.png')} 
+                  style={styles.heroIcon} 
+                  resizeMode="contain" 
+                />
+              </View>
             </View>
           </LinearGradient>
-        </ImageBackground>
+        </View>
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
@@ -172,7 +183,11 @@ const ToolsScreen = () => {
                 setActivePlatform(tab.id);
               }}
             >
-              <Feather name={tab.icon as any} size={14} color={activePlatform === tab.id ? '#FFF' : Colors.textSecondary} />
+              <Image 
+                source={tab.icon} 
+                style={[styles.platformIcon, { opacity: activePlatform === tab.id ? 1 : 0.7 }]} 
+                resizeMode="contain"
+              />
               <Text style={[styles.platformText, activePlatform === tab.id && styles.platformTextActive]}>{tab.name}</Text>
             </TouchableOpacity>
           ))}
@@ -226,25 +241,47 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0D0F1C',
   },
-  heroBanner: {
-    width: '100%',
-    height: 200,
-    marginTop: Platform.OS === 'ios' ? 44 : 0,
+  heroBannerContainer: {
+    height: 180,
+    backgroundColor: '#0D0F1C',
+    marginHorizontal: 16,
+    marginTop: Platform.OS === 'ios' ? 60 : 20,
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
-  heroOverlay: {
+  heroGradient: {
     flex: 1,
-    justifyContent: 'flex-end',
-    padding: 20,
+    padding: 24,
+    justifyContent: 'center',
   },
-  heroContent: {},
+  heroContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  heroLeft: {
+    flex: 1,
+  },
+  heroRight: {
+    width: 100,
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heroIcon: {
+    width: 120,
+    height: 120,
+  },
   aiBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 8,
     alignSelf: 'flex-start',
     marginBottom: 8,
   },
@@ -298,6 +335,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(22, 24, 36, 0.55)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
+  },
+  platformIcon: {
+    width: 18,
+    height: 18,
+    marginRight: 2,
   },
   platformText: {
     color: Colors.textSecondary,

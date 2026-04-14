@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   ImageBackground,
+  Image,
   Dimensions,
   Linking,
   Platform,
@@ -90,14 +91,13 @@ const SubscriptionScreen = () => {
       id: 'pro',
       name: 'Professional',
       monthlyPrice: 59, yearlyPrice: 42, yearlyTotal: 499,
-      description: '500 generations/month',
-      savingsPerYear: 209,
+      description: 'Connect Real Google & Meta Ads Data',
       popular: true,
       features: [
         { text: '500 generations/month', included: true },
-        { text: 'Advanced automation engine', included: true },
-        { text: 'Cross-platform intelligence', included: true },
-        { text: 'Performance forecasting', included: true },
+        { text: 'Real Google/Meta Connection', included: true },
+        { text: 'Performance Forecasting', included: true },
+        { text: 'Advanced Automation', included: true },
         { text: 'Priority support', included: true },
       ],
     },
@@ -105,14 +105,13 @@ const SubscriptionScreen = () => {
       id: 'growth',
       name: 'Growth',
       monthlyPrice: 99, yearlyPrice: 83, yearlyTotal: 999,
-      description: '1,500+ generations/month',
-      savingsPerYear: 189,
+      description: 'For Agencies & Large Advertisers',
       features: [
         { text: '1,500+ generations/month', included: true },
-        { text: 'Full automation (auto-rules)', included: true },
-        { text: 'Predictive scaling AI', included: true },
-        { text: 'Executive dashboards', included: true },
-        { text: 'Priority support', included: true },
+        { text: 'Real-time scaling AI', included: true },
+        { text: 'Full Agency Dashboard', included: true },
+        { text: 'Executive Reporting', included: true },
+        { text: '24/7 Priority Support', included: true },
       ],
     },
   ];
@@ -221,23 +220,48 @@ const SubscriptionScreen = () => {
 
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         {/* Hero header with background image */}
-        <ImageBackground
-          source={require('../../assets/images/screens/pricing-hero.jpg')}
-          style={styles.heroSection}
-          resizeMode="cover"
-        >
+        <View style={styles.heroSection}>
           <LinearGradient
-            colors={['rgba(13,15,28,0.1)', 'rgba(13,15,28,0.85)', 'rgba(13,15,28,1)']}
-            style={styles.heroOverlay}
+            colors={['rgba(124, 58, 237, 0.2)', 'rgba(13, 15, 28, 0)']}
+            style={styles.heroGradient}
           >
-            <View style={styles.trialBadge}>
-              <Feather name="star" size={12} color="#F59E0B" />
-              <Text style={styles.trialBadgeText}>7-Day Free Trial Available</Text>
+            <View style={styles.heroContent}>
+              <View style={styles.heroLeft}>
+                <View style={styles.trialBadge}>
+                  <Feather name="zap" size={12} color="#F59E0B" />
+                  <Text style={styles.trialBadgeText}>7-Day Free Trial Available</Text>
+                </View>
+                <Text style={styles.heroTitle}>Scale Your Marketing with AI</Text>
+                <Text style={styles.heroSub}>Join 12,000+ marketers using real-time data to drive ROAS.</Text>
+              </View>
+              <View style={styles.heroRight}>
+                <Image 
+                  source={require('../../assets/images/tool-icons-v2/trophy.png')} 
+                  style={styles.heroIcon} 
+                  resizeMode="contain" 
+                />
+              </View>
             </View>
-            <Text style={styles.heroTitle}>Choose Your Plan</Text>
-            <Text style={styles.heroSub}>Unlock all AI marketing tools. Cancel anytime.</Text>
           </LinearGradient>
-        </ImageBackground>
+        </View>
+
+        {/* Trust Stats Bar */}
+        <View style={styles.trustStatsBar}>
+          <View style={styles.trustStat}>
+            <Text style={styles.trustStatValue}>314+</Text>
+            <Text style={styles.trustStatLabel}>AI Tools</Text>
+          </View>
+          <View style={styles.trustDivider} />
+          <View style={styles.trustStat}>
+            <Text style={styles.trustStatValue}>$2.4M+</Text>
+            <Text style={styles.trustStatLabel}>Ad Spend</Text>
+          </View>
+          <View style={styles.trustDivider} />
+          <View style={styles.trustStat}>
+            <Text style={styles.trustStatValue}>4.9/5</Text>
+            <Text style={styles.trustStatLabel}>Rating</Text>
+          </View>
+        </View>
 
         {/* Billing Toggle - Glass Card */}
         <View style={styles.billingWrap}>
@@ -395,30 +419,98 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  heroSection: { width: '100%', height: 240 },
-  heroOverlay: {
+  heroSection: {
+    height: 240,
+    backgroundColor: '#0D0F1C',
+  },
+  heroGradient: {
     flex: 1,
-    justifyContent: 'flex-end',
-    paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+    paddingTop: 40,
+  },
+  heroContent: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  heroLeft: {
+    flex: 1,
+  },
+  heroRight: {
+    width: 100,
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heroIcon: {
+    width: 120,
+    height: 120,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    lineHeight: 32,
+  },
+  heroSub: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.6)',
+    lineHeight: 20,
+  },
+  trustStatsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(22, 24, 36, 0.7)',
+    marginHorizontal: 20,
+    marginTop: -24,
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  trustStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  trustStatValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  trustStatLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.textTertiary,
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  trustDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   trialBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     backgroundColor: 'rgba(245,158,11,0.15)',
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
     marginBottom: 12,
+    alignSelf: 'flex-start',
     borderWidth: 1,
     borderColor: 'rgba(245,158,11,0.2)',
   },
-  trialBadgeText: { fontSize: 13, fontWeight: '600', color: '#F59E0B' },
-  heroTitle: { fontSize: 28, fontWeight: 'bold', color: '#FFF', marginBottom: 6 },
-  heroSub: { fontSize: 14, color: Colors.textSecondary },
-  billingWrap: { alignItems: 'center', paddingVertical: 16 },
+  trialBadgeText: { fontSize: 11, fontWeight: '700', color: '#F59E0B', textTransform: 'uppercase' },
+  billingWrap: { alignItems: 'center', paddingTop: 40, paddingBottom: 16 },
   billingToggle: {
     flexDirection: 'row',
     backgroundColor: 'rgba(22, 24, 36, 0.55)',
