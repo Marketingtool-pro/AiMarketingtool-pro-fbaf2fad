@@ -1,12 +1,26 @@
 // AI Service for Marketing Tool Content Generation
-// Routes through Appwrite Function "tool-executor" → Windmill → Claude
-// NO direct Windmill calls — clients never talk to Windmill directly
+// PRIMARY: Firebase Functions (Genkit + Gemini + Firestore history)
+// FALLBACK: Appwrite Function "tool-executor" → Windmill → Claude
 
 import { functions, account } from './appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
+import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 
 const TOOL_EXECUTOR_FUNCTION_ID = 'tool-executor';
 const NEXTJS_API_BASE = 'https://app.marketingtool.pro';
+
+// Firebase Functions instance
+let _firebaseFunctions: any = null;
+function getFirebaseFunctions() {
+  if (!_firebaseFunctions) {
+    try {
+      _firebaseFunctions = getFunctions();
+    } catch (e) {
+      if (__DEV__) console.log('[AI] Firebase Functions not available');
+    }
+  }
+  return _firebaseFunctions;
+}
 
 export interface AIGenerationRequest {
   toolSlug: string;
@@ -38,9 +52,37 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
 
   const userPrompt = `${toolName}\n\n${inputsText}\n\nTone: ${tone || 'professional'}\nLanguage: ${language || 'English'}`;
 
-  // Primary: Appwrite Function (tool-executor → Windmill → Claude)
+  // PRIMARY: Firebase Functions + Genkit + Gemini (auto-saves to Firestore history)
   try {
-    if (__DEV__) console.log(`[AI] Executing tool-executor for: ${toolSlug}`);
+    const fb = getFirebaseFunctions();
+    if (fb) {
+      if (__DEV__) console.log(`[AI] Firebase Genkit for: ${toolSlug}`);
+      const callable = httpsCallable(fb, 'toolExecutor');
+      const result: any = await callable({
+        toolSlug,
+        toolName,
+        inputs: { ...inputs, tone: tone || 'professional', language: language || 'English' },
+        input: userPrompt,
+        outputCount,
+        userId,
+      });
+      if (result.data?.success && result.data?.outputs?.length > 0) {
+        if (__DEV__) console.log(`[AI] Genkit success: ${result.data.outputs.length} outputs (${result.data.model})`);
+        return {
+          outputs: result.data.outputs,
+          success: true,
+          model: result.data.model,
+          tokensUsed: result.data.tokensUsed,
+        };
+      }
+    }
+  } catch (error: any) {
+    if (__DEV__) console.log(`[AI] Genkit error: ${error.message}, trying Appwrite fallback`);
+  }
+
+  // FALLBACK 1: Appwrite Function (tool-executor → Windmill → Claude)
+  try {
+    if (__DEV__) console.log(`[AI] Appwrite fallback for: ${toolSlug}`);
 
     const execution = await functions.createExecution(
       TOOL_EXECUTOR_FUNCTION_ID,
@@ -53,22 +95,18 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         user_id: userId,
         options: { tone: tone || 'professional', language: language || 'English' },
       }),
-      false,  // async = false (wait for result)
-      '/',    // path
-      ExecutionMethod.POST, // method
+      false, '/', ExecutionMethod.POST,
     );
 
     if (execution.responseStatusCode >= 200 && execution.responseStatusCode < 300) {
       const result = parseExecutionResponse(execution.responseBody, outputCount);
       if (result.success && result.outputs.length > 0) {
-        if (__DEV__) console.log(`[AI] Function success: ${result.outputs.length} outputs`);
+        if (__DEV__) console.log(`[AI] Appwrite success: ${result.outputs.length} outputs`);
         return result;
       }
     }
-
-    if (__DEV__) console.log(`[AI] Function returned status ${execution.responseStatusCode}, trying fallback`);
   } catch (error: any) {
-    if (__DEV__) console.log(`[AI] Function error: ${error.message}, trying fallback`);
+    if (__DEV__) console.log(`[AI] Appwrite error: ${error.message}`);
   }
 
   // Fallback: Call Next.js API directly (middleware supports Bearer auth)
