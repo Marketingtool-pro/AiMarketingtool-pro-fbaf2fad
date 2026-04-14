@@ -310,6 +310,14 @@ const ToolResultScreen = () => {
               </View>
             )}
 
+            {/* AI governance disclosure */}
+            <View style={styles.aiNotice}>
+              <Feather name="info" size={14} color={Colors.textTertiary} />
+              <Text style={styles.aiNoticeText}>
+                AI-generated content. Review before publishing. Follow platform guidelines (Meta, Google, TikTok) and applicable ad policies.
+              </Text>
+            </View>
+
             {/* Action Buttons */}
             <View style={styles.outputActions}>
               <TouchableOpacity
@@ -611,6 +619,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: Colors.secondary,
+  },
+  aiNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 10,
+    borderLeftWidth: 2,
+    borderLeftColor: Colors.secondary,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  aiNoticeText: {
+    flex: 1,
+    fontSize: 11,
+    color: Colors.textTertiary,
+    lineHeight: 16,
   },
   outputActions: {
     flexDirection: 'row',

@@ -12,6 +12,8 @@ import { Colors } from './src/constants/theme';
 import { matomo } from './src/services/matomo';
 import { initializeAppCheck } from './src/services/firebaseAppCheck';
 import crashlytics from '@react-native-firebase/crashlytics';
+import analytics from '@react-native-firebase/analytics';
+import messaging from '@react-native-firebase/messaging';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -32,6 +34,30 @@ export default function App() {
           crashlytics().log('App started');
         } catch (e) {
           console.warn('Crashlytics init error:', e);
+        }
+
+        // Initialize Firebase Analytics — track events to Firebase dashboard
+        try {
+          await analytics().setAnalyticsCollectionEnabled(true);
+          await analytics().logAppOpen();
+        } catch (e) {
+          console.warn('Analytics init error:', e);
+        }
+
+        // Initialize FCM — request push permission + get token
+        try {
+          const authStatus = await messaging().requestPermission();
+          if (authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+              authStatus === messaging.AuthorizationStatus.PROVISIONAL) {
+            const token = await messaging().getToken();
+            if (__DEV__) console.log('[FCM] Token:', token?.substring(0, 20) + '...');
+            // Foreground message handler
+            messaging().onMessage(async (msg) => {
+              if (__DEV__) console.log('[FCM] Foreground:', msg.notification?.title);
+            });
+          }
+        } catch (e) {
+          console.warn('FCM init error:', e);
         }
 
         // Initialize Matomo early but don't block
