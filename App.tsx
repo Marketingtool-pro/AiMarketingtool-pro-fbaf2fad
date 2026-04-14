@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import '@tamagui/native/setup-zeego';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
