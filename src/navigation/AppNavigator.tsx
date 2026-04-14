@@ -23,6 +23,7 @@ import NotificationsScreen from '../screens/profile/NotificationsScreen';
 import TermsScreen from '../screens/profile/TermsScreen';
 import PrivacyScreen from '../screens/profile/PrivacyScreen';
 import ContactScreen from '../screens/profile/ContactScreen';
+import HelpCenterScreen from '../screens/profile/HelpCenterScreen';
 import HistoryScreen from '../screens/main/HistoryScreen';
 
 import { useAuthStore } from '../store/authStore';
@@ -41,6 +42,7 @@ export type RootStackParamList = {
   Terms: undefined;
   Privacy: undefined;
   Contact: undefined;
+  HelpCenter: undefined;
 };
 
 export type AuthStackParamList = {
@@ -193,6 +195,7 @@ const AppNavigator = () => {
             <Stack.Screen name="Terms" component={TermsScreen} />
             <Stack.Screen name="Privacy" component={PrivacyScreen} />
             <Stack.Screen name="Contact" component={ContactScreen} />
+            <Stack.Screen name="HelpCenter" component={HelpCenterScreen} />
           </>
         )}
       </Stack.Navigator>

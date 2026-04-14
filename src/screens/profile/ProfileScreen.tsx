@@ -102,9 +102,9 @@ const ProfileScreen = () => {
     {
       title: 'Support',
       items: [
-        { iconName: 'help-circle', label: 'Help Center', url: 'https://www.marketingtool.pro/help/' },
-        { iconName: 'message-circle', label: 'Contact Support', url: 'https://www.marketingtool.pro/contact/' },
-        { iconName: 'book', label: 'Tutorials', url: 'https://www.marketingtool.pro/blog/' },
+        { iconName: 'help-circle', label: 'Help Center', screen: 'HelpCenter' },
+        { iconName: 'message-circle', label: 'Contact Support', screen: 'Contact' },
+        { iconName: 'book', label: 'Tutorials', url: 'https://marketingtool.pro/blog/' },
       ],
     },
     {
