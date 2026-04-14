@@ -614,8 +614,8 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                       : `${tools.filter(t => t.category === activeCategory).length} tools`}
                   </Text>
 
-                  {/* Tools List */}
-                  {(activeCategory === 'All' ? tools : tools.filter(t => t.category === activeCategory)).map((tool) => (
+                  {/* Tools List — limit to 20 initially to avoid rendering 314 */}
+                  {(activeCategory === 'All' ? tools.slice(0, 20) : tools.filter(t => t.category === activeCategory).slice(0, 30)).map((tool) => (
                     <TouchableOpacity
                       key={tool.$id}
                       style={styles.toolListCard}
@@ -654,6 +654,15 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                       </TouchableOpacity>
                     </TouchableOpacity>
                   ))}
+                  {activeCategory === 'All' && tools.length > 20 && (
+                    <TouchableOpacity
+                      style={styles.seeAllButton}
+                      onPress={() => navigation.navigate('Main' as any, { screen: 'Tools' })}
+                    >
+                      <Text style={styles.seeAllText}>See all {tools.length} tools</Text>
+                      <Feather name="arrow-right" size={16} color={Colors.secondary} />
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
 
@@ -1066,6 +1075,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
     gap: 10,
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.md,
+    backgroundColor: 'rgba(157, 78, 221, 0.1)',
+    borderRadius: 14,
+    marginTop: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  seeAllText: {
+    color: Colors.secondary,
+    fontWeight: '600',
+    fontSize: 14,
   },
   socialChip: {
     alignItems: 'center',
