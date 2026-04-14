@@ -80,11 +80,11 @@ const DashboardScreen = () => {
   };
 
   const topPlatforms = [
-    { id: 'google', icon: require('../../assets/images/tool-icons-v2/google-3d.png'), name: 'Google' },
-    { id: 'meta', icon: require('../../assets/images/tool-icons-v2/meta-3d.png'), name: 'Meta' },
-    { id: 'insta', icon: require('../../assets/images/social-icons/02_Instagram.png'), name: 'Insta' },
-    { id: 'tiktok', icon: require('../../assets/images/social-icons/11_TikTok.png'), name: 'TikTok' },
-    { id: 'snap', icon: require('../../assets/images/social-icons/09_Snapchat.png'), name: 'Snap' },
+    { id: 'google', icon: require('../../../assets/images/tool-icons-v2/sem.png'), name: 'Google' },
+    { id: 'meta', icon: require('../../../assets/images/tool-icons-v2/advertisement.png'), name: 'Meta' },
+    { id: 'insta', icon: require('../../../assets/images/social-icons/02_instagram.png'), name: 'Insta' },
+    { id: 'tiktok', icon: require('../../../assets/images/social-icons/11_tiktok.png'), name: 'TikTok' },
+    { id: 'snap', icon: require('../../../assets/images/social-icons/09_snapchat.png'), name: 'Snap' },
   ];
 
   return (
@@ -107,7 +107,7 @@ const DashboardScreen = () => {
               <View style={styles.statusDot} />
               <Text style={styles.statusText}>Live</Text>
             </View>
-            <TouchableOpacity style={styles.profileBtn} onPress={() => navigation.navigate('Profile')}>
+            <TouchableOpacity style={styles.profileBtn} onPress={() => navigation.navigate('Main', { screen: 'Profile' } as any)}>
               <Text style={styles.profileText}>{user?.name?.charAt(0).toUpperCase() || 'L'}</Text>
             </TouchableOpacity>
           </View>
@@ -129,7 +129,7 @@ const DashboardScreen = () => {
                     <Feather name="arrow-right" size={14} color="#FFF" />
                   </TouchableOpacity>
                 </View>
-                <Image source={require('../../assets/images/tool-icons-v2/ai-3d.png')} style={styles.heroIcon} />
+                <Image source={require('../../../assets/images/tool-icons-v2/ai-3d.png')} style={styles.heroIcon} />
               </View>
             </BentoCard>
           </TouchableOpacity>
@@ -169,7 +169,7 @@ const DashboardScreen = () => {
           {/* Featured Bento (1x1 each) */}
           <TouchableOpacity style={styles.statCard} onPress={() => navigation.navigate('Main', { screen: 'Tools', params: { platform: 'google-ads' } } as any)}>
             <BentoCard height={140}>
-              <Image source={require('../../assets/images/tool-icons-v2/google-3d.png')} style={styles.bentoIconSmall} />
+              <Image source={require('../../../assets/images/tool-icons-v2/google-3d.png')} style={styles.bentoIconSmall} />
               <Text style={styles.bentoCardTitle}>Google Ads</Text>
               <Feather name="chevron-right" size={14} color="rgba(255,255,255,0.3)" style={styles.bentoArrow} />
             </BentoCard>
@@ -177,7 +177,7 @@ const DashboardScreen = () => {
 
           <TouchableOpacity style={styles.statCard} onPress={() => navigation.navigate('Main', { screen: 'Tools', params: { platform: 'meta' } } as any)}>
             <BentoCard height={140}>
-              <Image source={require('../../assets/images/tool-icons-v2/meta-3d.png')} style={styles.bentoIconSmall} />
+              <Image source={require('../../../assets/images/tool-icons-v2/meta-3d.png')} style={styles.bentoIconSmall} />
               <Text style={styles.bentoCardTitle}>Meta Ads</Text>
               <Feather name="chevron-right" size={14} color="rgba(255,255,255,0.3)" style={styles.bentoArrow} />
             </BentoCard>
@@ -192,7 +192,7 @@ const DashboardScreen = () => {
             onPress={() => navigation.navigate('Subscription')}
           >
             <LinearGradient colors={['#F59E0B', '#B45309']} start={{x:0, y:0}} end={{x:1, y:0}} style={styles.proNudgeGradient}>
-              <Image source={require('../../assets/images/tool-icons-v2/trophy.png')} style={styles.nudgeIcon} />
+              <Image source={require('../../../assets/images/tool-icons-v2/trophy.png')} style={styles.nudgeIcon} />
               <View style={{flex: 1}}>
                 <Text style={styles.nudgeTitle}>Unlock Pro Results</Text>
                 <Text style={styles.nudgeSub}>Access Real-Time Google & Meta Data</Text>
@@ -244,6 +244,7 @@ const styles = StyleSheet.create({
   profileText: { color: '#FFF', fontWeight: '800', fontSize: 18 },
   bentoGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: BENTO_SPACING },
   col2: { width: '100%', marginBottom: BENTO_SPACING },
+  statCard: { width: '48%' },
   bentoCard: { backgroundColor: 'rgba(40, 40, 40, 0.7)', borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
   bentoCardContent: { flex: 1, padding: 20 },
   heroCard: { borderLeftWidth: 4, borderLeftColor: '#7C3AED' },
