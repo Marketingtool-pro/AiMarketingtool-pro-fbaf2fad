@@ -12,28 +12,65 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import AnimatedRN, { 
+  useAnimatedStyle, 
+  useSharedValue, 
+  withRepeat, 
+  withTiming, 
+  withSequence,
+  Easing as EasingRN
+} from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
-import { useToolsStore } from '../../store/toolsStore';
+import { useToolsStore, Tool } from '../../store/toolsStore';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { getToolIcon } from '../../constants/toolIcons';
 
 const { width } = Dimensions.get('window');
+const BENTO_SPACING = 12;
+const CARD_WIDTH = (width - 40 - BENTO_SPACING) / 2;
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+// Master Bento Card Component (SimpleSocial & Bento v4 logic)
+const BentoCard = ({ children, style, height = 120, colSpan = 1 }: { children: React.ReactNode, style?: any, height?: number, colSpan?: number }) => (
+  <View style={[
+    styles.bentoCard, 
+    { height, width: colSpan === 2 ? width - 40 : CARD_WIDTH },
+    style
+  ]}>
+    <LinearGradient
+      colors={['rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.02)']}
+      style={StyleSheet.absoluteFill}
+    />
+    <View style={styles.bentoCardContent}>
+      {children}
+    </View>
+  </View>
+);
 
 const DashboardScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user, profile } = useAuthStore();
   const { tools, fetchTools, generations, fetchGenerations } = useToolsStore();
   const [refreshing, setRefreshing] = useState(false);
+  const [counts, setCounts] = useState({ generated: 0, campaigns: 0 });
 
   useEffect(() => {
     fetchTools();
     if (user?.$id) fetchGenerations(user.$id);
   }, [user?.$id]);
+
+  useEffect(() => {
+    if (user?.$id && generations.length > 0) {
+      const userGens = generations.filter(g => g.userId === user.$id);
+      const uniqueTools = new Set(userGens.map(g => g.toolId));
+      setCounts({ generated: userGens.length, campaigns: uniqueTools.size });
+    }
+  }, [generations, user]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -43,128 +80,147 @@ const DashboardScreen = () => {
   };
 
   const topPlatforms = [
-    { id: 'whatsapp', name: 'WhatsApp', icon: require('../../assets/images/social-icons/06_WhatsApp.png') },
-    { id: 'reddit', name: 'Reddit', icon: require('../../assets/images/social-icons/07_Reddit.png') },
-    { id: 'telegram', name: 'Telegram', icon: require('../../assets/images/social-icons/24_Telegram.png') },
-    { id: 'snapchat', name: 'Snapchat', icon: require('../../assets/images/social-icons/09_Snapchat.png') },
+    { id: 'google', icon: require('../../assets/images/tool-icons-v2/google-3d.png'), name: 'Google' },
+    { id: 'meta', icon: require('../../assets/images/tool-icons-v2/meta-3d.png'), name: 'Meta' },
+    { id: 'insta', icon: require('../../assets/images/social-icons/02_Instagram.png'), name: 'Insta' },
+    { id: 'tiktok', icon: require('../../assets/images/social-icons/11_TikTok.png'), name: 'TikTok' },
+    { id: 'snap', icon: require('../../assets/images/social-icons/09_Snapchat.png'), name: 'Snap' },
   ];
 
   return (
     <View style={styles.screenContainer}>
+      <View style={styles.bgGlow} />
+      
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.secondary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />}
       >
-        {/* Top Row: Social Icons with Locks (Match Screenshot 1:31) */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.topPlatformsRow} contentContainerStyle={styles.topPlatformsContent}>
-          {topPlatforms.map((p) => (
-            <TouchableOpacity key={p.id} style={styles.topPlatformCard} onPress={() => navigation.navigate('Subscription')}>
-              <LinearGradient colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.02)']} style={styles.topPlatformGlass}>
-                <Image source={p.icon} style={styles.topPlatformIcon} resizeMode="contain" />
-                <View style={styles.lockBadge}>
-                  <Feather name="lock" size={10} color="#F59E0B" />
-                </View>
-              </LinearGradient>
-              <Text style={styles.topPlatformName}>{p.name}</Text>
+        {/* Header - SimpleSocial Style */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>Hi, {user?.name?.split(' ')[0].toUpperCase() || 'LOKENDRA'}</Text>
+            <Text style={styles.subGreeting}>Welcome to Pro Dashboard</Text>
+          </View>
+          <View style={styles.headerRight}>
+            <View style={styles.statusBadge}>
+              <View style={styles.statusDot} />
+              <Text style={styles.statusText}>Live</Text>
+            </View>
+            <TouchableOpacity style={styles.profileBtn} onPress={() => navigation.navigate('Profile')}>
+              <Text style={styles.profileText}>{user?.name?.charAt(0).toUpperCase() || 'L'}</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Categories Section (Tall Rich Cards) */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Categories</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Tools')}><Text style={styles.seeAll}>See all</Text></TouchableOpacity>
+          </View>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesContent}>
-          <TouchableOpacity style={styles.tallCategoryCard} onPress={() => navigation.navigate('Tools', { platform: 'instagram' })}>
-            <LinearGradient colors={['#E4405F40', '#0D0F1C']} style={styles.tallCardGradient}>
-              <Image source={require('../../assets/images/tool-icons-v2/instagram-3d.png')} style={styles.tallCardIcon} />
-              <View style={styles.tallCardContent}>
-                <View style={styles.categoryInfoRow}>
-                  <Feather name="instagram" size={16} color="#FFF" />
-                  <Text style={styles.tallCardTitle}>Instagram</Text>
+        {/* Master Bento Grid */}
+        <View style={styles.bentoGrid}>
+          
+          {/* Main AI Bento (2x1) */}
+          <TouchableOpacity style={styles.col2} activeOpacity={0.9} onPress={() => navigation.navigate('Main', { screen: 'Chat' } as any)}>
+            <BentoCard height={180} colSpan={2} style={styles.heroCard}>
+              <LinearGradient colors={['rgba(124, 58, 237, 0.3)', 'transparent']} style={StyleSheet.absoluteFill} />
+              <View style={styles.heroContent}>
+                <View style={styles.heroText}>
+                  <View style={styles.aiLabel}><Text style={styles.aiLabelText}>SPECIALIZED AI</Text></View>
+                  <Text style={styles.heroTitle}>Marketing{"\n"}Assistant</Text>
+                  <TouchableOpacity style={styles.heroBtn}>
+                    <Text style={styles.heroBtnText}>Start Creating</Text>
+                    <Feather name="arrow-right" size={14} color="#FFF" />
+                  </TouchableOpacity>
                 </View>
-                <View style={styles.tallCardCircle}>
-                  <Feather name="chevron-right" size={14} color="#FFF" />
-                </View>
+                <Image source={require('../../assets/images/tool-icons-v2/ai-3d.png')} style={styles.heroIcon} />
               </View>
-            </LinearGradient>
+            </BentoCard>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tallCategoryCard} onPress={() => navigation.navigate('Tools', { platform: 'social-media' })}>
-            <LinearGradient colors={['#7C3AED40', '#0D0F1C']} style={styles.tallCardGradient}>
-              <Image source={require('../../assets/images/tool-icons-v2/social-media-3d.png')} style={styles.tallCardIcon} />
-              <View style={styles.tallCardContent}>
-                <View style={styles.categoryInfoRow}>
-                  <Feather name="share-2" size={16} color="#FFF" />
-                  <Text style={styles.tallCardTitle}>Social Media</Text>
-                </View>
-                <View style={styles.tallCardCircle}>
-                  <Feather name="chevron-right" size={14} color="#FFF" />
-                </View>
+          {/* Stats Bento (1x1 each) */}
+          <BentoCard height={140} style={styles.statCard}>
+            <View style={[styles.statIcon, {backgroundColor: 'rgba(52, 211, 153, 0.1)'}]}>
+              <Feather name="layers" size={20} color="#34D399" />
+            </View>
+            <Text style={styles.statValue}>{counts.generated}</Text>
+            <Text style={styles.statLabel}>Generated</Text>
+          </BentoCard>
+
+          <BentoCard height={140} style={styles.statCard}>
+            <View style={[styles.statIcon, {backgroundColor: 'rgba(167, 139, 250, 0.1)'}]}>
+              <Feather name="target" size={20} color="#A78BFA" />
+            </View>
+            <Text style={styles.statValue}>{counts.campaigns}</Text>
+            <Text style={styles.statLabel}>Tools Used</Text>
+          </BentoCard>
+
+          {/* Platform Bento (2x1) */}
+          <View style={styles.col2}>
+            <BentoCard height={100} colSpan={2}>
+              <Text style={styles.bentoSectionTitle}>AD PLATFORMS</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.platformRow}>
+                {topPlatforms.map(p => (
+                  <TouchableOpacity key={p.id} style={styles.platformItem}>
+                    <Image source={p.icon} style={styles.platformIcon} resizeMode="contain" />
+                    <View style={styles.lockBadge}><Feather name="lock" size={8} color="#F59E0B" /></View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </BentoCard>
+          </View>
+
+          {/* Featured Bento (1x1 each) */}
+          <TouchableOpacity style={styles.statCard} onPress={() => navigation.navigate('Main', { screen: 'Tools', params: { platform: 'google-ads' } } as any)}>
+            <BentoCard height={140}>
+              <Image source={require('../../assets/images/tool-icons-v2/google-3d.png')} style={styles.bentoIconSmall} />
+              <Text style={styles.bentoCardTitle}>Google Ads</Text>
+              <Feather name="chevron-right" size={14} color="rgba(255,255,255,0.3)" style={styles.bentoArrow} />
+            </BentoCard>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.statCard} onPress={() => navigation.navigate('Main', { screen: 'Tools', params: { platform: 'meta' } } as any)}>
+            <BentoCard height={140}>
+              <Image source={require('../../assets/images/tool-icons-v2/meta-3d.png')} style={styles.bentoIconSmall} />
+              <Text style={styles.bentoCardTitle}>Meta Ads</Text>
+              <Feather name="chevron-right" size={14} color="rgba(255,255,255,0.3)" style={styles.bentoArrow} />
+            </BentoCard>
+          </TouchableOpacity>
+
+        </View>
+
+        {/* Pro High-Conversion Gold Nudge */}
+        {(!profile?.subscription || profile.subscription === 'free') && (
+          <TouchableOpacity 
+            style={styles.proNudge}
+            onPress={() => navigation.navigate('Subscription')}
+          >
+            <LinearGradient colors={['#F59E0B', '#B45309']} start={{x:0, y:0}} end={{x:1, y:0}} style={styles.proNudgeGradient}>
+              <Image source={require('../../assets/images/tool-icons-v2/trophy.png')} style={styles.nudgeIcon} />
+              <View style={{flex: 1}}>
+                <Text style={styles.nudgeTitle}>Unlock Pro Results</Text>
+                <Text style={styles.nudgeSub}>Access Real-Time Google & Meta Data</Text>
               </View>
+              <Feather name="arrow-right" size={20} color="#FFF" />
             </LinearGradient>
           </TouchableOpacity>
-        </ScrollView>
+        )}
 
-        {/* Popular Tools Section (Match Screenshot 1:31) */}
-        <View style={styles.sectionHeader}>
+        {/* Popular List - Rich Style */}
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Popular Tools</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Tools')}><Text style={styles.seeAll}>See all</Text></TouchableOpacity>
-        </View>
-
-        <View style={styles.richToolList}>
-          {/* Tool Item 1 */}
-          <TouchableOpacity style={styles.richToolItem}>
-            <View style={styles.richToolLeft}>
-              <View style={styles.richToolIconWrap}>
-                <Image source={require('../../assets/images/tool-icons-v2/marketing-strategy-3d.png')} style={styles.richToolIcon} />
-              </View>
-              <View>
-                <View style={styles.richToolNameRow}>
-                  <Text style={styles.richToolName}>Instagram Caption</Text>
-                  <Feather name="trending-up" size={12} color="#10B981" style={{marginLeft: 6}} />
+          <View style={styles.popularList}>
+            {tools.slice(0, 3).map((tool, idx) => (
+              <TouchableOpacity key={tool.slug} style={[styles.popularItem, idx === 2 && {borderBottomWidth: 0}]} onPress={() => navigation.navigate('ToolDetail', { toolSlug: tool.slug })}>
+                <View style={styles.popularIconWrap}>
+                  <Image source={getToolIcon(tool.slug)} style={styles.popularIcon} />
                 </View>
-                <Text style={styles.richToolSub}>Social</Text>
-              </View>
-            </View>
-            <Feather name="chevron-right" size={20} color="#605E5C" />
-          </TouchableOpacity>
-
-          {/* Premium Trial Nudge (MATCH SCREENSHOT) */}
-          {(!profile?.subscription || profile.subscription === 'free') && (
-            <TouchableOpacity style={styles.richNudge} onPress={() => navigation.navigate('Subscription')}>
-              <LinearGradient colors={['#FFD700', '#F59E0B']} start={{x:0, y:0}} end={{x:1, y:1}} style={styles.nudgeGradient}>
-                <View style={styles.nudgeContent}>
-                  <Image source={require('../../assets/images/tool-icons-v2/trophy.png')} style={styles.nudgeIcon} />
-                  <View style={{flex: 1}}>
-                    <Text style={styles.nudgeTitle}>Start 7-Day Free Trial</Text>
-                    <Text style={styles.nudgeSub}>Unlock Pro & Real-Time Ad Data</Text>
-                  </View>
-                  <Feather name="arrow-right" size={20} color="#000" />
+                <View style={{flex: 1}}>
+                  <Text style={styles.popularName}>{tool.name}</Text>
+                  <Text style={styles.popularCat}>{tool.category}</Text>
                 </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          )}
-
-          {/* Tool Item 2 */}
-          <TouchableOpacity style={styles.richToolItem}>
-            <View style={styles.richToolLeft}>
-              <View style={styles.richToolIconWrap}>
-                <Image source={require('../../assets/images/tool-icons-v2/product-trolley-3d.png')} style={styles.richToolIcon} />
-              </View>
-              <View>
-                <View style={styles.richToolNameRow}>
-                  <Text style={styles.richToolName}>Product Description</Text>
-                  <Feather name="trending-up" size={12} color="#10B981" style={{marginLeft: 6}} />
+                <View style={styles.runBtn}>
+                  <Text style={styles.runBtnText}>Run</Text>
                 </View>
-                <Text style={styles.richToolSub}>E-commerce</Text>
-              </View>
-            </View>
-            <Feather name="chevron-right" size={20} color="#605E5C" />
-          </TouchableOpacity>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         <View style={{ height: 120 }} />
@@ -174,40 +230,57 @@ const DashboardScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  screenContainer: { flex: 1, backgroundColor: '#0D0F1C' },
+  screenContainer: { flex: 1, backgroundColor: '#121212' },
+  bgGlow: { position: 'absolute', top: -100, right: -100, width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(124, 58, 237, 0.1)' },
   scrollContent: { paddingBottom: 40 },
-  topPlatformsRow: { marginTop: 60, marginBottom: 24 },
-  topPlatformsContent: { paddingHorizontal: 16, gap: 12 },
-  topPlatformCard: { alignItems: 'center' },
-  topPlatformGlass: { width: 64, height: 64, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  topPlatformIcon: { width: 36, height: 36 },
-  lockBadge: { position: 'absolute', top: 6, right: 6, width: 18, height: 18, borderRadius: 9, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#F59E0B40' },
-  topPlatformName: { color: '#FFF', fontSize: 11, marginTop: 8, fontWeight: '600' },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 16 },
-  sectionTitle: { color: '#FFF', fontSize: 20, fontWeight: '800' },
-  seeAll: { color: '#7C3AED', fontWeight: '700' },
-  categoriesContent: { paddingHorizontal: 16, gap: 16 },
-  tallCategoryCard: { width: 160, height: 240, borderRadius: 32, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-  tallCardGradient: { flex: 1, padding: 20, justifyContent: 'space-between' },
-  tallCardIcon: { width: 120, height: 120, alignSelf: 'center', marginTop: 10 },
-  tallCardContent: { alignItems: 'flex-start' },
-  categoryInfoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  tallCardTitle: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  tallCardCircle: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
-  richToolList: { paddingHorizontal: 16, gap: 12 },
-  richToolItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#161824', padding: 16, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  richToolLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  richToolIconWrap: { width: 48, height: 48, borderRadius: 14, backgroundColor: '#1E1B4B', justifyContent: 'center', alignItems: 'center' },
-  richToolIcon: { width: 32, height: 32 },
-  richToolNameRow: { flexDirection: 'row', alignItems: 'center' },
-  richToolName: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  richToolSub: { color: '#A1A1AA', fontSize: 12, marginTop: 2 },
-  richNudge: { borderRadius: 24, overflow: 'hidden' },
-  nudgeGradient: { padding: 20 },
-  nudgeContent: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  nudgeIcon: { width: 48, height: 48 },
-  nudgeTitle: { color: '#000', fontSize: 18, fontWeight: '800' },
-  nudgeSub: { color: 'rgba(0,0,0,0.7)', fontSize: 13, fontWeight: '600', marginTop: 2 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 24 },
+  greeting: { fontSize: 24, fontWeight: '800', color: 'rgba(248, 248, 248, 0.95)' },
+  subGreeting: { fontSize: 14, color: 'rgba(248, 248, 248, 0.5)', marginTop: 2 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(16, 185, 129, 0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.2)' },
+  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981', marginRight: 6 },
+  statusText: { color: '#10B981', fontSize: 12, fontWeight: '700' },
+  profileBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#7C3AED', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#121212' },
+  profileText: { color: '#FFF', fontWeight: '800', fontSize: 18 },
+  bentoGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: BENTO_SPACING },
+  col2: { width: '100%', marginBottom: BENTO_SPACING },
+  bentoCard: { backgroundColor: 'rgba(40, 40, 40, 0.7)', borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
+  bentoCardContent: { flex: 1, padding: 20 },
+  heroCard: { borderLeftWidth: 4, borderLeftColor: '#7C3AED' },
+  heroContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  heroText: { flex: 1 },
+  aiLabel: { backgroundColor: 'rgba(124, 58, 237, 0.2)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, alignSelf: 'flex-start', marginBottom: 12 },
+  aiLabelText: { color: '#A78BFA', fontSize: 10, fontWeight: '800' },
+  heroTitle: { fontSize: 28, fontWeight: '900', color: '#FFF', lineHeight: 32 },
+  heroBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#7C3AED', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, alignSelf: 'flex-start', marginTop: 16, gap: 6 },
+  heroBtnText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
+  heroIcon: { width: 110, height: 110 },
+  statIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  statValue: { fontSize: 24, fontWeight: '900', color: '#FFF' },
+  statLabel: { fontSize: 12, color: 'rgba(248, 248, 248, 0.5)', marginTop: 4, fontWeight: '600' },
+  bentoSectionTitle: { fontSize: 11, fontWeight: '800', color: 'rgba(248, 248, 248, 0.4)', letterSpacing: 1, marginBottom: 16 },
+  platformRow: { gap: 12 },
+  platformItem: { width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  platformIcon: { width: 30, height: 30 },
+  lockBadge: { position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(245, 158, 11, 0.3)' },
+  bentoIconSmall: { width: 44, height: 44, marginBottom: 12 },
+  bentoCardTitle: { color: '#FFF', fontSize: 15, fontWeight: '700' },
+  bentoArrow: { position: 'absolute', bottom: 20, right: 20 },
+  proNudge: { marginHorizontal: 20, marginTop: 24, borderRadius: 20, overflow: 'hidden' },
+  proNudgeGradient: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 16 },
+  nudgeIcon: { width: 44, height: 44 },
+  nudgeTitle: { fontSize: 17, fontWeight: '900', color: '#FFF' },
+  nudgeSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+  section: { marginTop: 32, paddingHorizontal: 20 },
+  sectionTitle: { fontSize: 20, fontWeight: '800', color: '#FFF', marginBottom: 16 },
+  popularList: { backgroundColor: 'rgba(40, 40, 40, 0.7)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  popularItem: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', gap: 16 },
+  popularIconWrap: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
+  popularIcon: { width: 30, height: 30 },
+  popularName: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  popularCat: { color: 'rgba(248, 248, 248, 0.5)', fontSize: 12, marginTop: 2 },
+  runBtn: { backgroundColor: 'rgba(124, 58, 237, 0.15)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(124, 58, 237, 0.3)' },
+  runBtnText: { color: '#A78BFA', fontWeight: '800', fontSize: 13 },
 });
 
 export default DashboardScreen;

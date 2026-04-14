@@ -92,16 +92,7 @@ const LoginScreen = () => {
   const handleBiometricLogin = async () => {
     const success = await authenticateWithBiometric();
     if (!success) {
-      const { error } = useAuthStore.getState();
-      if (error === 'no_session') {
-        Alert.alert(
-          'Session Expired',
-          'Please login with phone, email, or social account first. Biometric login will work on your next visit.',
-        );
-        useAuthStore.setState({ error: null });
-      } else {
-        Alert.alert('Authentication Failed', 'Could not authenticate biometrically.');
-      }
+      Alert.alert('Authentication Failed', 'Could not authenticate biometrically.');
     }
   };
 
@@ -206,27 +197,18 @@ const LoginScreen = () => {
     } catch (err: any) {
       setOtpSending(false);
       await SecureStore.deleteItemAsync('pendingOTP');
-      setOtpError(err.message || 'Failed to send OTP. Please try again.');
+      Alert.alert('OTP Failed', err.message || 'Failed to send OTP. Please try again.');
     }
   };
 
-  const [otpVerifying, setOtpVerifying] = useState(false);
-
   const handleVerifyOTP = async () => {
-    if (!otpCode || otpCode.trim().length < 6) {
-      setOtpError('Please enter the 6-digit code');
-      return;
-    }
     setOtpError('');
-    setOtpVerifying(true);
     try {
-      await verifyPhoneOTP(otpUserId, otpCode.trim());
+      await verifyPhoneOTP(otpUserId, otpCode);
       await SecureStore.deleteItemAsync('pendingOTP');
       setShowOtpModal(false);
     } catch (err: any) {
       setOtpError(err.message || 'Invalid OTP. Please check and try again.');
-    } finally {
-      setOtpVerifying(false);
     }
   };
 
@@ -269,7 +251,7 @@ const LoginScreen = () => {
           <View style={styles.quickLoginContainer}>
             <View style={styles.quickLoginHeader}>
               <Feather name="message-circle" size={16} color="#25D366" />
-              <Text style={styles.quickLoginText}>Phone Login</Text>
+              <Text style={styles.quickLoginText}>WhatsApp Login</Text>
             </View>
 
             <View style={styles.phoneRow}>
@@ -330,7 +312,7 @@ const LoginScreen = () => {
             {otpSent && (
               <View style={styles.otpSection}>
                 <Text style={styles.otpSentText}>
-                  Enter the 6-digit code sent to {selectedCountry.code} {phoneNumber}
+                  Enter the 6-digit code sent via WhatsApp to {selectedCountry.code} {phoneNumber}
                 </Text>
 
                 {!!otpError && (
@@ -342,25 +324,26 @@ const LoginScreen = () => {
 
                 <View style={styles.otpRow}>
                   <TextInput
-                    style={[styles.otpInputInline, { letterSpacing: 8 }]}
+                    style={styles.otpInputInline}
                     placeholder="000000"
                     placeholderTextColor="#4A5568"
                     value={otpCode}
                     onChangeText={(text) => { setOtpCode(text); setOtpError(''); }}
                     keyboardType="number-pad"
                     maxLength={6}
+                    letterSpacing={8}
                     autoFocus
                   />
                   <TouchableOpacity
                     style={[styles.verifyBtn, otpCode.length < 6 && { opacity: 0.5 }]}
                     onPress={handleVerifyOTP}
-                    disabled={otpVerifying || otpCode.length < 6}
+                    disabled={isLoading || otpCode.length < 6}
                   >
                     <LinearGradient
                       colors={['#9D4EDD', '#7B2CBF']}
                       style={styles.verifyBtnGrad}
                     >
-                      {otpVerifying ? (
+                      {isLoading ? (
                         <ActivityIndicator color="#FFFFFF" size="small" />
                       ) : (
                         <Feather name="check" size={20} color="#FFFFFF" />
@@ -371,7 +354,7 @@ const LoginScreen = () => {
 
                 <TouchableOpacity
                   onPress={handleSendOTP}
-                  disabled={otpSending || resendCooldown > 0}
+                  disabled={isLoading || resendCooldown > 0}
                   style={{ alignSelf: 'center', marginTop: 12 }}
                 >
                   <Text style={[styles.resendInlineText, resendCooldown > 0 && { opacity: 0.5 }]}>
@@ -392,7 +375,7 @@ const LoginScreen = () => {
                 style={styles.biometricBtnGrad}
               >
                 <Ionicons 
-                  name={bioType === 'face' ? 'scan' : 'finger-print'} 
+                  name={bioType === 'face' ? 'faceid' : 'finger-print'} 
                   size={32} 
                   color="#9D4EDD" 
                 />
@@ -404,24 +387,22 @@ const LoginScreen = () => {
           )}
 
           <View style={styles.orContainer}>
-            <View style={styles.orLine} />
             <Text style={styles.orText}>OR CONTINUE WITH</Text>
-            <View style={styles.orLine} />
           </View>
 
           <View style={styles.socialRow}>
              <TouchableOpacity style={styles.socialBtn} onPress={loginWithGoogle}>
-                <Ionicons name="logo-google" size={22} color={Colors.secondary} />
+                <Text style={styles.googleG}>G</Text>
              </TouchableOpacity>
              <TouchableOpacity style={styles.socialBtn} onPress={loginWithFacebook}>
-                <Ionicons name="logo-facebook" size={24} color={Colors.secondary} />
+                <Feather name="facebook" size={22} color="#1877F2" />
              </TouchableOpacity>
              <TouchableOpacity style={styles.socialBtn} onPress={() => setShowEmailModal(true)}>
-                <Feather name="mail" size={22} color={Colors.secondary} />
+                <Feather name="mail" size={22} color="#FFFFFF" />
              </TouchableOpacity>
              {Platform.OS === 'ios' && (
-               <TouchableOpacity style={styles.socialBtn} onPress={loginWithApple}>
-                  <Ionicons name="logo-apple" size={24} color={Colors.secondary} />
+               <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#000000' }]} onPress={loginWithApple}>
+                  <Ionicons name="logo-apple" size={24} color="#FFFFFF" />
                </TouchableOpacity>
              )}
           </View>
@@ -612,51 +593,42 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 80,
+    paddingTop: 100,
     alignItems: 'center',
   },
   logoSection: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 60,
   },
   logoIconBg: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: 'rgba(124, 58, 237, 0.12)',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(157, 78, 221, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(124, 58, 237, 0.2)',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 8,
+    marginBottom: 20,
   },
   logoImage: {
-    width: 70,
-    height: 70,
+    width: 80,
+    height: 80,
   },
   title: {
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: 13,
-    color: '#718096',
-    marginTop: 6,
-    letterSpacing: 0.3,
+    fontSize: 14,
+    color: '#A0AEC0',
+    marginTop: 8,
   },
   quickLoginContainer: {
     width: '100%',
-    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    backgroundColor: Colors.card,
     borderRadius: 24,
     padding: 24,
-    marginBottom: 32,
+    marginBottom: 40,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
@@ -667,26 +639,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   quickLoginText: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#A0AEC0',
     fontWeight: '600',
-    letterSpacing: 0.3,
   },
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   countrySelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    backgroundColor: '#0A0A0A',
     paddingHorizontal: 12,
-    height: 54,
-    borderRadius: 14,
+    height: 56,
+    borderRadius: 16,
     gap: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   flagText: {
     fontSize: 20,
@@ -698,19 +667,17 @@ const styles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
-    backgroundColor: 'rgba(22, 24, 36, 0.55)',
-    height: 54,
-    borderRadius: 14,
+    backgroundColor: '#0A0A0A',
+    height: 56,
+    borderRadius: 16,
     paddingHorizontal: 16,
     fontSize: 16,
     color: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   arrowBtn: {
-    width: 54,
-    height: 54,
-    borderRadius: 14,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
@@ -725,37 +692,24 @@ const styles = StyleSheet.create({
   },
   orContainer: {
     marginBottom: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    paddingHorizontal: 8,
   },
   orText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#4A5568',
-    letterSpacing: 1.5,
-    fontWeight: '600',
-    marginHorizontal: 16,
-  },
-  orLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    letterSpacing: 1,
   },
   socialRow: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 48,
+    gap: 20,
+    marginBottom: 60,
   },
   socialBtn: {
-    width: 58,
-    height: 58,
-    borderRadius: 18,
-    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#161824',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   googleG: {
     fontSize: 24,
@@ -764,16 +718,13 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: 'row',
-    marginBottom: 40,
   },
   footerText: {
-    color: '#718096',
-    fontSize: 14,
+    color: '#A0AEC0',
   },
   signupText: {
     color: '#9D4EDD',
     fontWeight: 'bold',
-    fontSize: 14,
   },
   modalOverlay: {
     flex: 1,

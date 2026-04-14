@@ -14,140 +14,76 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useToolsStore, Tool } from '../../store/toolsStore';
-import { useAuthStore } from '../../store/authStore';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { useToolsStore, Tool, TOOL_CATEGORIES, PLATFORMS } from '../../store/toolsStore';
+import { Colors } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
-import { PLATFORMS_CONFIG } from '../../data/platforms';
 import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48 - 12) / 3;
+const CARD_WIDTH = (width - 48 - 16) / 3;
 
 const ToolsScreen = () => {
   const navigation = useNavigation<any>();
   const { tools } = useToolsStore();
-  const { profile } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const [activePlatform, setActivePlatform] = useState('all');
+  const [activePlatform, setActivePlatform] = useState('All');
+  const [activeSubcategory, setActiveSubcategory] = useState('All');
 
-  // Platform tabs including All
-  const platformTabs = [
-    { id: 'all', name: 'All', icon: require('../../assets/images/tool-icons-v2/onboarding-3.png'), color: Colors.secondary },
-    { id: 'google', name: 'Google Ads', icon: require('../../assets/images/tool-icons-v2/google-3d.png'), color: '#4285F4' },
-    { id: 'meta', name: 'Meta / Facebook', icon: require('../../assets/images/tool-icons-v2/meta-3d.png'), color: '#1877F2' },
-    { id: 'social-media', name: 'Social Media', icon: require('../../assets/images/tool-icons-v2/social-media-3d.png'), color: '#E4405F' },
-    { id: 'seo', name: 'SEO & Content', icon: require('../../assets/images/tool-icons-v2/seo-3d.png'), color: '#34A853' },
-    { id: 'analytics', name: 'Analytics', icon: require('../../assets/images/tool-icons-v2/analytics-3d.png'), color: '#F9AB00' },
-    { id: 'ecommerce', name: 'E-commerce', icon: require('../../assets/images/tool-icons-v2/ecommerce-3d.png'), color: '#96BF48' },
-    { id: 'ai-tools', name: 'AI Tools', icon: require('../../assets/images/tool-icons-v2/ai-3d.png'), color: '#7C3AED' },
-  ];
+  const subcategories = useMemo(() => {
+    if (activePlatform === 'All') return [];
+    const platformId = activePlatform === 'Google Ads' ? 'google' : activePlatform === 'Meta' ? 'meta' : 'shopify';
+    return TOOL_CATEGORIES.filter(c => c.platform === platformId);
+  }, [activePlatform]);
 
-  // Filter tools based on platform and search
-  const filteredData = useMemo(() => {
+  const filteredTools = useMemo(() => {
     let result = tools;
-
-    // Search filter
+    if (activePlatform !== 'All') {
+      const platformId = activePlatform === 'Google Ads' ? 'google' : activePlatform === 'Meta' ? 'meta' : 'shopify';
+      const platformCats = TOOL_CATEGORIES.filter(c => c.platform === platformId).map(c => c.id);
+      result = result.filter(t => platformCats.includes(t.category));
+    }
+    if (activeSubcategory !== 'All') {
+      result = result.filter(t => t.category === activeSubcategory);
+    }
     if (searchQuery) {
-      const q = searchQuery.toLowerCase();
       result = result.filter(t =>
-        t.name.toLowerCase().includes(q) ||
-        t.description.toLowerCase().includes(q) ||
-        t.category.toLowerCase().includes(q)
+        t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.description.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
+    return result;
+  }, [tools, activePlatform, activeSubcategory, searchQuery]);
 
-    // Platform filter
-    if (activePlatform === 'all') {
-      // Show all tools, no sections
-      return { sections: [], allTools: result };
-    }
-
-    const platform = PLATFORMS_CONFIG.find(p => p.id === activePlatform);
-    if (!platform) return { sections: [], allTools: result };
-
-    // Get all badges for this platform
-    const allPlatformBadges = platform.sections.flatMap(s => s.badges);
-    const platformTools = result.filter(t => allPlatformBadges.includes(t.category));
-
-    // Build sections
-    const sections = platform.sections
-      .map(section => ({
-        ...section,
-        tools: platformTools.filter(t => section.badges.includes(t.category)),
-      }))
-      .filter(s => s.tools.length > 0);
-
-    return { sections, allTools: [] };
-  }, [tools, activePlatform, searchQuery]);
-
-  const userSub = profile?.subscription || 'free';
-  const userHasProAccess = ['pro', 'alltools', 'enterprise', 'agency'].includes(userSub);
-
-  const renderToolCard = (tool: Tool) => {
-    const hasAccess = !tool.isPro || userHasProAccess;
-
-    return (
-      <TouchableOpacity
-        key={tool.$id}
-        style={[styles.card, !hasAccess && styles.cardLocked]}
-        activeOpacity={0.75}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          if (hasAccess) {
-            navigation.navigate('ToolDetail', { toolSlug: tool.slug });
-          } else {
-            navigation.navigate('Subscription' as any);
-          }
-        }}
-      >
-        <View style={styles.iconLiquid}>
-          <View style={styles.iconGlow} />
-          <Image source={getToolIcon(tool.slug, tool.category)} style={styles.cardIcon} resizeMode="contain" />
-          {tool.isPro && !hasAccess && (
-            <View style={styles.proBadge}>
-              <Feather name="lock" size={10} color="#FFB547" />
-            </View>
-          )}
-          {tool.isPro && hasAccess && (
-            <View style={[styles.proBadge, { backgroundColor: 'rgba(157, 78, 221, 0.9)' }]}>
-              <Feather name="star" size={8} color="#FFFFFF" />
-            </View>
-          )}
-        </View>
-        <Text style={styles.cardName} numberOfLines={2}>{tool.name}</Text>
-      </TouchableOpacity>
-    );
-  };
+  const platformTabs = [
+    { name: 'All', icon: null },
+    { name: 'Google Ads', icon: 'search' },
+    { name: 'Meta', icon: 'facebook' },
+    { name: 'Shopify', icon: 'shopping-bag' },
+  ];
 
   return (
     <View style={styles.screenContainer}>
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} stickyHeaderIndices={[]}>
         {/* Hero Banner */}
-        <View style={styles.heroBannerContainer}>
+        <ImageBackground
+          source={require('../../assets/images/screens/tools-hero.jpg')}
+          style={styles.heroBanner}
+          resizeMode="cover"
+        >
           <LinearGradient
-            colors={['rgba(124, 58, 237, 0.15)', 'rgba(13, 15, 28, 0)']}
-            style={styles.heroGradient}
+            colors={['rgba(13,15,28,0.3)', 'rgba(13,15,28,0.85)']}
+            style={styles.heroOverlay}
           >
             <View style={styles.heroContent}>
-              <View style={styles.heroLeft}>
-                <View style={styles.aiBadge}>
-                  <Feather name="zap" size={12} color="#F59E0B" />
-                  <Text style={styles.aiBadgeText}>AI Tools</Text>
-                </View>
-                <Text style={styles.heroTitle}>Marketing AI Tools</Text>
-                <Text style={styles.heroSubtitle}>Google  ·  Meta  ·  Shopify</Text>
+              <View style={styles.aiBadge}>
+                <Feather name="zap" size={12} color="#F59E0B" />
+                <Text style={styles.aiBadgeText}>AI Tools</Text>
               </View>
-              <View style={styles.heroRight}>
-                <Image 
-                  source={require('../../assets/images/tool-icons-v2/online-promotion-3d.png')} 
-                  style={styles.heroIcon} 
-                  resizeMode="contain" 
-                />
-              </View>
+              <Text style={styles.heroTitle}>Marketing AI Tools</Text>
+              <Text style={styles.heroSubtitle}>Google  ·  Meta  ·  Shopify</Text>
             </View>
           </LinearGradient>
-        </View>
+        </ImageBackground>
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
@@ -160,11 +96,6 @@ const ToolsScreen = () => {
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
-            {searchQuery ? (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Feather name="x" size={18} color={Colors.textTertiary} />
-              </TouchableOpacity>
-            ) : null}
           </View>
         </View>
 
@@ -176,60 +107,77 @@ const ToolsScreen = () => {
         >
           {platformTabs.map((tab) => (
             <TouchableOpacity
-              key={tab.id}
-              style={[styles.platformChip, activePlatform === tab.id && { backgroundColor: tab.color, borderColor: tab.color }]}
+              key={tab.name}
+              style={[styles.platformChip, activePlatform === tab.name && styles.platformChipActive]}
               onPress={() => {
                 Haptics.selectionAsync();
-                setActivePlatform(tab.id);
+                setActivePlatform(tab.name);
+                setActiveSubcategory('All');
               }}
             >
-              <Image 
-                source={tab.icon} 
-                style={[styles.platformIcon, { opacity: activePlatform === tab.id ? 1 : 0.7 }]} 
-                resizeMode="contain"
-              />
-              <Text style={[styles.platformText, activePlatform === tab.id && styles.platformTextActive]}>{tab.name}</Text>
+              {tab.icon && <Feather name={tab.icon as any} size={14} color={activePlatform === tab.name ? '#FFF' : Colors.textSecondary} />}
+              <Text style={[styles.platformText, activePlatform === tab.name && styles.platformTextActive]}>{tab.name}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        {/* Content */}
-        {activePlatform === 'all' ? (
-          // All tools - 3 column grid
-          <View style={styles.grid}>
-            {filteredData.allTools.map(renderToolCard)}
-          </View>
-        ) : (
-          // Platform sections
-          filteredData.sections.map((section) => (
-            <View key={section.key} style={styles.sectionContainer}>
-              {/* Section Header Glass Card */}
-              <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIconWrap, { backgroundColor: (PLATFORMS_CONFIG.find(p => p.id === activePlatform)?.color || Colors.secondary) + '20' }]}>
-                  <Feather name={section.icon as any} size={18} color={PLATFORMS_CONFIG.find(p => p.id === activePlatform)?.color || Colors.secondary} />
-                </View>
-                <View style={styles.sectionTextWrap}>
-                  <Text style={styles.sectionTitle}>{section.title}</Text>
-                  <Text style={styles.sectionSubtitle}>{section.subtitle}</Text>
-                </View>
-              </View>
-
-              {/* Tools Grid */}
-              <View style={styles.grid}>
-                {section.tools.map(renderToolCard)}
-              </View>
-            </View>
-          ))
+        {/* Subcategory Chips */}
+        {subcategories.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.subRow}
+          >
+            <TouchableOpacity
+              style={[styles.subChip, activeSubcategory === 'All' && styles.subChipActive]}
+              onPress={() => { Haptics.selectionAsync(); setActiveSubcategory('All'); }}
+            >
+              <Text style={[styles.subText, activeSubcategory === 'All' && styles.subTextActive]}>All</Text>
+            </TouchableOpacity>
+            {subcategories.map((s) => (
+              <TouchableOpacity
+                key={s.id}
+                style={[styles.subChip, activeSubcategory === s.id && styles.subChipActive]}
+                onPress={() => { Haptics.selectionAsync(); setActiveSubcategory(s.id); }}
+              >
+                <Text style={[styles.subText, activeSubcategory === s.id && styles.subTextActive]}>{s.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         )}
 
-        {/* Empty state */}
-        {activePlatform !== 'all' && filteredData.sections.length === 0 && (
-          <View style={styles.emptyState}>
-            <Feather name="search" size={40} color={Colors.textTertiary} />
-            <Text style={styles.emptyText}>No tools found</Text>
-          </View>
-        )}
+        {/* Spacer */}
+        <View style={{ height: 8 }} />
 
+        {/* 3-Column Grid */}
+        <View style={styles.grid}>
+          {filteredTools.map((tool) => (
+            <TouchableOpacity
+              key={tool.$id}
+              style={styles.card}
+              activeOpacity={0.75}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                navigation.navigate('ToolDetail', { toolSlug: tool.slug });
+              }}
+            >
+              <View style={styles.iconLiquid}>
+                <View style={styles.iconGlow} />
+                <Image source={getToolIcon(tool.slug)} style={styles.cardIcon} resizeMode="contain" />
+              </View>
+              <View style={styles.badgeRow}>
+                {tool.isPro && (
+                  <View style={styles.proBadge}><Text style={styles.proBadgeText}>PRO</Text></View>
+                )}
+                {tool.isNew && (
+                  <View style={styles.newBadge}><Text style={styles.newBadgeText}>NEW</Text></View>
+                )}
+                {tool.isTrending && <Feather name="trending-up" size={12} color={Colors.secondary} />}
+              </View>
+              <Text style={styles.cardName} numberOfLines={2}>{tool.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
         <View style={{ height: 120 }} />
       </ScrollView>
     </View>
@@ -241,47 +189,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0D0F1C',
   },
-  heroBannerContainer: {
-    height: 180,
-    backgroundColor: '#0D0F1C',
-    marginHorizontal: 16,
-    marginTop: Platform.OS === 'ios' ? 60 : 20,
-    borderRadius: 24,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+  heroBanner: {
+    width: '100%',
+    height: 200,
+    marginTop: Platform.OS === 'ios' ? 44 : 0,
   },
-  heroGradient: {
+  heroOverlay: {
     flex: 1,
-    padding: 24,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+    padding: 20,
   },
-  heroContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  heroLeft: {
-    flex: 1,
-  },
-  heroRight: {
-    width: 100,
-    height: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heroIcon: {
-    width: 120,
-    height: 120,
-  },
+  heroContent: {},
   aiBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 12,
     alignSelf: 'flex-start',
     marginBottom: 8,
   },
@@ -307,7 +233,7 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 14,
     paddingHorizontal: 14,
     height: 46,
@@ -323,7 +249,7 @@ const styles = StyleSheet.create({
   platformRow: {
     paddingHorizontal: 16,
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   platformChip: {
     flexDirection: 'row',
@@ -332,14 +258,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },
-  platformIcon: {
-    width: 18,
-    height: 18,
-    marginRight: 2,
+  platformChipActive: {
+    backgroundColor: Colors.secondary,
+    borderColor: Colors.secondary,
   },
   platformText: {
     color: Colors.textSecondary,
@@ -349,41 +274,27 @@ const styles = StyleSheet.create({
   platformTextActive: {
     color: '#FFFFFF',
   },
-  sectionContainer: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  subRow: {
     paddingHorizontal: 16,
-    marginBottom: 12,
-    backgroundColor: 'rgba(22, 24, 36, 0.55)',
-    marginHorizontal: 16,
-    padding: 14,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    gap: 8,
+    marginBottom: 8,
   },
-  sectionIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+  subChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
-  sectionTextWrap: {
-    flex: 1,
+  subChipActive: {
+    backgroundColor: 'rgba(124,58,237,0.2)',
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  sectionSubtitle: {
+  subText: {
+    color: Colors.textTertiary,
     fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 2,
+    fontWeight: '500',
+  },
+  subTextActive: {
+    color: Colors.secondary,
   },
   grid: {
     flexDirection: 'row',
@@ -423,37 +334,33 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
   },
-  proBadge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 181, 71, 0.25)',
-    borderWidth: 1,
-    borderColor: '#FFB547',
-    justifyContent: 'center',
+  badgeRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 3,
+    marginBottom: 4,
+    minHeight: 16,
   },
-  cardLocked: {
-    opacity: 0.6,
+  proBadge: {
+    backgroundColor: 'rgba(253,151,7,0.25)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
   },
+  proBadgeText: { fontSize: 8, color: '#FD9707', fontWeight: 'bold' },
+  newBadge: {
+    backgroundColor: 'rgba(34,197,94,0.25)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  newBadgeText: { fontSize: 8, color: '#22C55E', fontWeight: 'bold' },
   cardName: {
     fontSize: 11,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
     lineHeight: 14,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: Colors.textTertiary,
-    marginTop: 12,
   },
 });
 

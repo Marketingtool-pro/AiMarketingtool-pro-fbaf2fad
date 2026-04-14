@@ -5,7 +5,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 // Screens
+import OnboardingScreen from '../screens/auth/OnboardingScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
@@ -23,8 +25,6 @@ import NotificationsScreen from '../screens/profile/NotificationsScreen';
 import TermsScreen from '../screens/profile/TermsScreen';
 import PrivacyScreen from '../screens/profile/PrivacyScreen';
 import ContactScreen from '../screens/profile/ContactScreen';
-import HelpCenterScreen from '../screens/profile/HelpCenterScreen';
-import TutorialsScreen from '../screens/profile/TutorialsScreen';
 import HistoryScreen from '../screens/main/HistoryScreen';
 
 import { useAuthStore } from '../store/authStore';
@@ -32,6 +32,8 @@ import { Colors } from '../constants/theme';
 
 // Navigation Types
 export type RootStackParamList = {
+  Splash: undefined;
+  Onboarding: undefined;
   Auth: undefined;
   Main: undefined;
   ToolDetail: { toolSlug: string; prefillInputs?: Record<string, any> };
@@ -43,8 +45,6 @@ export type RootStackParamList = {
   Terms: undefined;
   Privacy: undefined;
   Contact: undefined;
-  HelpCenter: undefined;
-  Tutorials: undefined;
 };
 
 export type AuthStackParamList = {
@@ -170,7 +170,10 @@ const AppNavigator = () => {
         }}
       >
         {!isAuthenticated ? (
-          <Stack.Screen name="Auth" component={AuthNavigator} />
+          <>
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            <Stack.Screen name="Auth" component={AuthNavigator} />
+          </>
         ) : (
           <>
             <Stack.Screen name="Main" component={TabNavigator} />
@@ -197,8 +200,6 @@ const AppNavigator = () => {
             <Stack.Screen name="Terms" component={TermsScreen} />
             <Stack.Screen name="Privacy" component={PrivacyScreen} />
             <Stack.Screen name="Contact" component={ContactScreen} />
-            <Stack.Screen name="HelpCenter" component={HelpCenterScreen} />
-            <Stack.Screen name="Tutorials" component={TutorialsScreen} />
           </>
         )}
       </Stack.Navigator>

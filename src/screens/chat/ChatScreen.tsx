@@ -24,16 +24,14 @@ import { useAuthStore } from '../../store/authStore';
 import { functions, account } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 import { getToolIcon } from '../../constants/toolIcons';
-import { CHAT_PLATFORMS } from '../../constants/socialIcons';
 import { useToolsStore, Tool } from '../../store/toolsStore';
-import { generateChatResponse } from '../../services/aiService';
 
 const { width } = Dimensions.get('window');
 
 // Chat bot image
-const ChatBotImage = require('../../assets/images/tool-icons-v2/ai-3d.png');
-const AiAssistantImage = require('../../assets/images/tool-icons-v2/chatbot.png');
-const LogoImage = require('../../assets/images/tool-icons-v2/ai-3d.png');
+const ChatBotImage = require('../../assets/images/screens/chat-bot.jpg');
+const AiAssistantImage = require('../../assets/images/screens/ai-assistant.jpg');
+const LogoImage = require('../../assets/images/logo.jpeg');
 
 interface Message {
   id: string;
@@ -118,14 +116,14 @@ const AnimatedRipple = () => {
   );
 };
 
-// Bot avatar icon - uses 3D AI icon
+// Bot avatar icon - uses real logo with dark background
 const BotAvatar = ({ size = 32 }: { size?: number }) => {
   return (
     <View style={[styles.botAvatarContainer, { width: size, height: size, borderRadius: size / 2 }]}>
       <Image
-        source={require('../../assets/images/tool-icons-v2/ai-3d.png')}
-        style={{ width: size * 0.8, height: size * 0.8 }}
-        resizeMode="contain"
+        source={LogoImage}
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+        resizeMode="cover"
       />
     </View>
   );
@@ -150,14 +148,14 @@ const ChatScreen = () => {
 
   const suggestedPrompts: SuggestedPrompt[] = [
     {
-      iconSlug: 'facebook-ads-manager',
+      iconSlug: 'facebook-ad-copy',
       title: 'Write Ad Copy',
       description: 'Create compelling ads',
       prompt: 'Write a compelling Facebook ad copy for a fitness app',
       color: Colors.gold,
     },
     {
-      iconSlug: 'marketing-strategy-3d',
+      iconSlug: 'strategy',
       title: 'Marketing Strategy',
       description: 'Get expert advice',
       prompt: 'Give me a marketing strategy for launching a new product',
@@ -171,7 +169,7 @@ const ChatScreen = () => {
       color: Colors.secondary,
     },
     {
-      iconSlug: 'instagram-caption-generator',
+      iconSlug: 'instagram-captions',
       title: 'Social Content',
       description: 'Create viral posts',
       prompt: 'Create an engaging Instagram caption for a travel photo',
@@ -185,7 +183,7 @@ const ChatScreen = () => {
       color: Colors.success,
     },
     {
-      iconSlug: 'blog-content-generator',
+      iconSlug: 'blog-post-ideas',
       title: 'Blog Content',
       description: 'Write blog posts',
       prompt: 'Give me 10 blog post ideas for a SaaS company',
@@ -250,7 +248,7 @@ const ChatScreen = () => {
 
   const handleSend = async (text?: string) => {
     const messageText = text || inputText.trim();
-    if (!messageText || isTyping) return;
+    if (!messageText) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -265,12 +263,7 @@ const ChatScreen = () => {
     scrollToBottom();
 
     try {
-      // Direct connection to VPS 1 via generateChatResponse
-      const response = await generateChatResponse(
-        messageText,
-        messages.map(m => ({ role: m.role, content: m.content })),
-        profile?.$id
-      );
+      const response = await callWindmillChat(messageText, messages);
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -455,7 +448,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={() => { if (messages.length > 0) { clearChat(); } }} style={styles.backButton}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Feather name="arrow-left" size={22} color={Colors.white} />
           </TouchableOpacity>
           <BotAvatar size={40} />
@@ -535,31 +528,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
 
               {/* Tab Content */}
               {activeTab === 'chat' && (
-                <View>
-                  {/* Social Platform Quick Icons — 7 platforms in single row */}
-                  <View style={styles.socialRow}>
-                    {CHAT_PLATFORMS.map((platform) => (
-                      <TouchableOpacity
-                        key={platform.id}
-                        style={styles.socialChip}
-                        onPress={() => {
-                          const platformPrompt = `Write a ${platform.name} marketing post for my brand`;
-                          handleSend(platformPrompt);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Image
-                          source={platform.icon}
-                          style={styles.socialChipIcon}
-                          resizeMode="contain"
-                        />
-                        <Text style={styles.socialChipText} numberOfLines={1}>{platform.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-
-                  {/* Suggested Prompts */}
-                  <View style={styles.promptsGrid}>
+                <View style={styles.promptsGrid}>
                   {suggestedPrompts.map((prompt, index) => (
                     <TouchableOpacity
                       key={index}
@@ -581,7 +550,6 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                       <Text style={[styles.promptArrow, { color: prompt.color }]}>›</Text>
                     </TouchableOpacity>
                   ))}
-                  </View>
                 </View>
               )}
 
@@ -616,8 +584,8 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                       : `${tools.filter(t => t.category === activeCategory).length} tools`}
                   </Text>
 
-                  {/* Tools List — limit to 20 initially to avoid rendering 314 */}
-                  {(activeCategory === 'All' ? tools.slice(0, 20) : tools.filter(t => t.category === activeCategory).slice(0, 30)).map((tool) => (
+                  {/* Tools List */}
+                  {(activeCategory === 'All' ? tools : tools.filter(t => t.category === activeCategory)).map((tool) => (
                     <TouchableOpacity
                       key={tool.$id}
                       style={styles.toolListCard}
@@ -656,15 +624,6 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                       </TouchableOpacity>
                     </TouchableOpacity>
                   ))}
-                  {activeCategory === 'All' && tools.length > 20 && (
-                    <TouchableOpacity
-                      style={styles.seeAllButton}
-                      onPress={() => navigation.navigate('Main' as any, { screen: 'Tools' })}
-                    >
-                      <Text style={styles.seeAllText}>See all {tools.length} tools</Text>
-                      <Feather name="arrow-right" size={16} color={Colors.secondary} />
-                    </TouchableOpacity>
-                  )}
                 </View>
               )}
 
@@ -956,10 +915,10 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   toolListIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#1E1B4B',
+    width: 52,
+    height: 52,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1013,10 +972,10 @@ const styles = StyleSheet.create({
   runButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#8B5CF6',
+    backgroundColor: Colors.secondary,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: BorderRadius.full,
     gap: 4,
   },
   runButtonText: {
@@ -1072,50 +1031,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  socialRow: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
-    gap: 8,
-    justifyContent: 'space-between',
-    flexDirection: 'row',
-  },
-  seeAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.md,
-    backgroundColor: 'rgba(157, 78, 221, 0.1)',
-    borderRadius: 14,
-    marginTop: Spacing.sm,
-    gap: Spacing.sm,
-  },
-  seeAllText: {
-    color: Colors.secondary,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  socialChip: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(22, 24, 36, 0.7)',
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    width: 48,
-    height: 64,
-    justifyContent: 'center',
-  },
-  socialChipIcon: {
-    width: 28,
-    height: 28,
-    marginBottom: 2,
-  },
-  socialChipText: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: Colors.white,
   },
   promptsGrid: {
     width: '100%',

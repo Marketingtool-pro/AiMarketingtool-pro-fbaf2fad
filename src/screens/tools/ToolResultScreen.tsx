@@ -8,7 +8,6 @@ import {
   Share,
   Alert,
   Linking,
-  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -19,7 +18,6 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
-import { getToolIcon } from '../../constants/toolIcons';
 
 
 // Desktop-preferred tool categories (big/complex tools — show preview on mobile)
@@ -74,7 +72,6 @@ const ToolResultScreen = () => {
     const autoSave = async () => {
       if (result?.outputs?.length && user && tool && !isSaved) {
         try {
-          if (__DEV__) console.log('[ToolResult] Auto-saving to history:', tool.name, 'user:', user.$id);
           await addGeneration({
             userId: user.$id,
             toolId: tool.$id,
@@ -86,9 +83,8 @@ const ToolResultScreen = () => {
             isFavorite: false,
           });
           setIsSaved(true);
-          if (__DEV__) console.log('[ToolResult] Saved to history successfully');
-        } catch (e: any) {
-          if (__DEV__) console.log('[ToolResult] Auto-save failed:', e?.message || e);
+        } catch (e) {
+          // Silent fail — user can manually save
         }
       }
     };
@@ -309,14 +305,6 @@ const ToolResultScreen = () => {
                 </View>
               </View>
             )}
-
-            {/* AI governance disclosure */}
-            <View style={styles.aiNotice}>
-              <Feather name="info" size={14} color={Colors.textTertiary} />
-              <Text style={styles.aiNoticeText}>
-                AI-generated content. Review before publishing. Follow platform guidelines (Meta, Google, TikTok) and applicable ad policies.
-              </Text>
-            </View>
 
             {/* Action Buttons */}
             <View style={styles.outputActions}>
@@ -619,25 +607,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: Colors.secondary,
-  },
-  aiNotice: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderRadius: 10,
-    borderLeftWidth: 2,
-    borderLeftColor: Colors.secondary,
-    marginTop: 12,
-    marginBottom: 12,
-  },
-  aiNoticeText: {
-    flex: 1,
-    fontSize: 11,
-    color: Colors.textTertiary,
-    lineHeight: 16,
   },
   outputActions: {
     flexDirection: 'row',

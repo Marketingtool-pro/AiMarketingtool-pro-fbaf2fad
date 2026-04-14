@@ -157,6 +157,7 @@ const styles = StyleSheet.create({
     width: 350,
     height: 350,
     borderRadius: 175,
+    blur: 80, // Note: standard View doesn't have blur, but we use it for reference
   },
   frostLayer: {
     ...StyleSheet.absoluteFillObject,

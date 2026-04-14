@@ -1,27 +1,12 @@
 // AI Service for Marketing Tool Content Generation
-// PRIMARY (Mobile Pro): Appwrite Function "tool-executor" → VPS 1 (Windmill) → Claude/Gemini
-// FALLBACK: Firebase Functions (Genkit + Gemini + Firestore history)
+// Routes through Appwrite Function "tool-executor" → Windmill → Claude
+// NO direct Windmill calls — clients never talk to Windmill directly
 
 import { functions, account } from './appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
-import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 
 const TOOL_EXECUTOR_FUNCTION_ID = 'tool-executor';
-const CHAT_AI_FUNCTION_ID = 'chat-ai';
 const NEXTJS_API_BASE = 'https://app.marketingtool.pro';
-
-// Firebase Functions instance (Fallback Only)
-let _firebaseFunctions: any = null;
-function getFirebaseFunctions() {
-  if (!_firebaseFunctions) {
-    try {
-      _firebaseFunctions = getFunctions();
-    } catch (e) {
-      if (__DEV__) console.log('[AI] Firebase Functions not available');
-    }
-  }
-  return _firebaseFunctions;
-}
 
 export interface AIGenerationRequest {
   toolSlug: string;
@@ -41,9 +26,7 @@ export interface AIGenerationResponse {
   model?: string;
 }
 
-/**
- * Main AI Generation — Optimized for Mobile Pro (VPS 1)
- */
+// Main AI Generation — calls Appwrite Function, falls back to Next.js API
 export async function generateAIContent(request: AIGenerationRequest): Promise<AIGenerationResponse> {
   const { toolSlug, toolName, inputs, tone, language, outputCount = 3, userId } = request;
 
@@ -55,9 +38,9 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
 
   const userPrompt = `${toolName}\n\n${inputsText}\n\nTone: ${tone || 'professional'}\nLanguage: ${language || 'English'}`;
 
-  // 1. PRIMARY: Appwrite Function (Direct connection to VPS 1 / Windmill)
+  // Primary: Appwrite Function (tool-executor → Windmill → Claude)
   try {
-    if (__DEV__) console.log(`[AI] VPS 1 Tool Executor for: ${toolSlug}`);
+    if (__DEV__) console.log(`[AI] Executing tool-executor for: ${toolSlug}`);
 
     const execution = await functions.createExecution(
       TOOL_EXECUTOR_FUNCTION_ID,
@@ -70,50 +53,30 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         user_id: userId,
         options: { tone: tone || 'professional', language: language || 'English' },
       }),
-      false, '/', ExecutionMethod.POST,
+      false,  // async = false (wait for result)
+      '/',    // path
+      ExecutionMethod.POST, // method
     );
 
     if (execution.responseStatusCode >= 200 && execution.responseStatusCode < 300) {
       const result = parseExecutionResponse(execution.responseBody, outputCount);
       if (result.success && result.outputs.length > 0) {
-        if (__DEV__) console.log(`[AI] VPS 1 success: ${result.outputs.length} outputs`);
+        if (__DEV__) console.log(`[AI] Function success: ${result.outputs.length} outputs`);
         return result;
       }
     }
+
+    if (__DEV__) console.log(`[AI] Function returned status ${execution.responseStatusCode}, trying fallback`);
   } catch (error: any) {
-    if (__DEV__) console.log(`[AI] VPS 1 error: ${error.message}, trying Firebase fallback`);
+    if (__DEV__) console.log(`[AI] Function error: ${error.message}, trying fallback`);
   }
 
-  // 2. FALLBACK: Firebase Functions + Genkit
+  // Fallback: Call Next.js API directly (middleware supports Bearer auth)
   try {
-    const fb = getFirebaseFunctions();
-    if (fb) {
-      if (__DEV__) console.log(`[AI] Firebase Fallback for: ${toolSlug}`);
-      const callable = httpsCallable(fb, 'toolExecutor');
-      const result: any = await callable({
-        toolSlug,
-        toolName,
-        inputs: { ...inputs, tone: tone || 'professional', language: language || 'English' },
-        input: userPrompt,
-        outputCount,
-        userId,
-      });
-      if (result.data?.success && result.data?.outputs?.length > 0) {
-        return {
-          outputs: result.data.outputs,
-          success: true,
-          model: result.data.model,
-          tokensUsed: result.data.tokensUsed,
-        };
-      }
-    }
-  } catch (error: any) {
-    if (__DEV__) console.log(`[AI] Firebase error: ${error.message}`);
-  }
+    if (__DEV__) console.log(`[AI] Fallback: calling Next.js API for ${toolSlug}`);
 
-  // 3. LAST RESORT: Next.js API
-  try {
     const jwt = await account.createJWT();
+
     const response = await fetch(`${NEXTJS_API_BASE}/api/tools/generate`, {
       method: 'POST',
       headers: {
@@ -130,6 +93,7 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
     if (response.ok) {
       const data = await response.json();
       if (data.success && data.output) {
+        if (__DEV__) console.log(`[AI] API fallback success`);
         return {
           outputs: splitOutputs(data.output, outputCount),
           success: true,
@@ -137,8 +101,34 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         };
       }
     }
+
+    // Try the simpler /api/generate endpoint
+    const response2 = await fetch(`${NEXTJS_API_BASE}/api/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${jwt.jwt}`,
+      },
+      body: JSON.stringify({
+        tool: toolSlug,
+        input: userPrompt,
+        tone: tone || 'Professional',
+        language: language || 'English',
+      }),
+    });
+
+    if (response2.ok) {
+      const data2 = await response2.json();
+      if (data2.result) {
+        return {
+          outputs: splitOutputs(data2.result, outputCount),
+          success: true,
+          model: data2.model || 'claude',
+        };
+      }
+    }
   } catch (fallbackError: any) {
-    if (__DEV__) console.error('[AI] All fallbacks failed');
+    if (__DEV__) console.error('[AI] Fallback also failed:', fallbackError.message);
   }
 
   return {
@@ -148,76 +138,103 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
   };
 }
 
-/**
- * Chat AI Generation — Connects directly to Chat AI on VPS 1
- */
-export async function generateChatResponse(message: string, history: any[], userId?: string): Promise<string> {
-  // 1. PRIMARY: Appwrite VPS 1
-  try {
-    const execution = await functions.createExecution(
-      CHAT_AI_FUNCTION_ID,
-      JSON.stringify({
-        message,
-        history,
-        user_id: userId,
-      }),
-      false, '/', ExecutionMethod.POST,
-    );
-
-    const result = JSON.parse(execution.responseBody);
-    if (result.response || result.message) {
-      return result.response || result.message;
-    }
-  } catch (error) {
-    if (__DEV__) console.log('[AI] Chat VPS error, trying Firebase');
-  }
-
-  // 2. FALLBACK: Firebase Chat
-  try {
-    const fb = getFirebaseFunctions();
-    if (fb) {
-      const callable = httpsCallable(fb, 'chatAi');
-      const result: any = await callable({
-        userMessage: message,
-        conversationHistory: history,
-        userId,
-      });
-      return result.data?.response || "I'm sorry, I'm having trouble connecting right now.";
-    }
-  } catch (e) {
-    return "I'm sorry, I'm having trouble connecting right now.";
-  }
-
-  return "I'm sorry, I'm having trouble connecting right now.";
-}
-
 // Parse the Appwrite Function execution response
 function parseExecutionResponse(responseBody: string, outputCount: number): AIGenerationResponse {
   try {
     const result = JSON.parse(responseBody);
-    if (result.error) return { outputs: [], success: false, error: result.error };
 
-    if (result.outputs) {
-      let outputs = result.outputs;
-      if (typeof outputs === 'string') outputs = splitOutputs(outputs, outputCount);
-      return { outputs, success: true, tokensUsed: result.tokensUsed, model: result.model };
+    // Handle various response formats from the function
+    if (result.error) {
+      return { outputs: [], success: false, error: result.error };
     }
 
-    const content = result.result || result.output || result.content;
-    if (content) return { outputs: splitOutputs(String(content), outputCount), success: true, model: result.model };
+    // Format 1: { outputs: [...] }
+    if (result.outputs) {
+      let outputs = result.outputs;
+      if (typeof outputs === 'string') {
+        outputs = splitOutputs(outputs, outputCount);
+      } else if (Array.isArray(outputs) && outputs.length === 1 && typeof outputs[0] === 'string') {
+        outputs = splitOutputs(outputs[0], outputCount);
+      }
+      return {
+        outputs,
+        success: true,
+        tokensUsed: result.tokensUsed || result.tokens_used,
+        model: result.model,
+      };
+    }
 
-    return { outputs: [], success: false, error: 'Unexpected format' };
+    // Format 2: { result: "..." } or { output: "..." }
+    const content = result.result || result.output || result.content || result.text;
+    if (content) {
+      return {
+        outputs: splitOutputs(String(content), outputCount),
+        success: true,
+        tokensUsed: result.tokensUsed || result.tokens_used,
+        model: result.model,
+      };
+    }
+
+    // Format 3: Raw string response
+    if (typeof result === 'string' && result.length > 20) {
+      return {
+        outputs: splitOutputs(result, outputCount),
+        success: true,
+      };
+    }
+
+    return { outputs: [], success: false, error: 'Unexpected response format' };
   } catch {
-    return { outputs: [], success: false, error: 'Parse error' };
+    // Response might be plain text, not JSON
+    if (responseBody && responseBody.length > 20) {
+      return {
+        outputs: splitOutputs(responseBody, outputCount),
+        success: true,
+      };
+    }
+    return { outputs: [], success: false, error: 'Failed to parse response' };
   }
 }
 
 // Split AI response into separate outputs
 function splitOutputs(content: string, count: number): string[] {
+  // Try custom separator first
   if (content.includes('---VARIATION---')) {
-    return content.split('---VARIATION---').filter(p => p.trim().length > 20).slice(0, count).map(p => p.trim());
+    const parts = content.split('---VARIATION---').filter(p => p.trim().length > 20);
+    if (parts.length >= 1) {
+      return parts.slice(0, count).map(p => p.trim());
+    }
   }
+
+  // Try other common separators
+  const separators = ['---', '***', '###', '\n\nVariation', '\n\nOption'];
+  for (const sep of separators) {
+    const parts = content.split(sep).filter(p => p.trim().length > 50);
+    if (parts.length >= count) {
+      return parts.slice(0, count).map(p => p.trim());
+    }
+  }
+
+  // Try numbered variations
+  const numberedRegex = /(?:^|\n)(?:\d+\.|Option \d+|Variation \d+)[:\s]/gi;
+  const parts = content.split(numberedRegex).filter(p => p.trim().length > 50);
+  if (parts.length >= count) {
+    return parts.slice(0, count).map(p => p.trim());
+  }
+
+  // Return as single output
   return [content.trim()];
+}
+
+// Check if AI service is available
+export async function checkAIAvailability(): Promise<{ available: boolean; method: string }> {
+  try {
+    // Check Appwrite Function health by verifying current user session
+    await account.get();
+    return { available: true, method: 'appwrite-function' };
+  } catch {
+    return { available: false, method: 'none' };
+  }
 }
 
 export default generateAIContent;
