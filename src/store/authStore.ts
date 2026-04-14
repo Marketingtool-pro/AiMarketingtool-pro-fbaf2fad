@@ -267,8 +267,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         } as any;
       }
 
-      const profile = await get().fetchOrCreateProfile(user);
-      set({ user, profile, isAuthenticated: true, isLoading: false, tempPhone: null });
+      const profile = await get().fetchOrCreateProfile(user!);
+      set({ user: user!, profile, isAuthenticated: true, isLoading: false, tempPhone: null });
     } catch (error: any) {
       set({ error: error.message || 'Invalid OTP', isLoading: false });
       throw error;

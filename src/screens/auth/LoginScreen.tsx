@@ -238,7 +238,7 @@ const LoginScreen = () => {
           <View style={styles.logoSection}>
             <View style={styles.logoIconBg}>
                <Image
-                  source={require('../../assets/images/logo-icon.png')}
+                  source={require('../../../assets/images/logo-icon.png')}
                   style={styles.logoImage}
                   resizeMode="contain"
                 />
@@ -324,14 +324,13 @@ const LoginScreen = () => {
 
                 <View style={styles.otpRow}>
                   <TextInput
-                    style={styles.otpInputInline}
+                    style={[styles.otpInputInline, { letterSpacing: 8 }]}
                     placeholder="000000"
                     placeholderTextColor="#4A5568"
                     value={otpCode}
                     onChangeText={(text) => { setOtpCode(text); setOtpError(''); }}
                     keyboardType="number-pad"
                     maxLength={6}
-                    letterSpacing={8}
                     autoFocus
                   />
                   <TouchableOpacity
@@ -374,10 +373,10 @@ const LoginScreen = () => {
                 colors={['rgba(157, 78, 221, 0.1)', 'rgba(157, 78, 221, 0.05)']}
                 style={styles.biometricBtnGrad}
               >
-                <Ionicons 
-                  name={bioType === 'face' ? 'faceid' : 'finger-print'} 
-                  size={32} 
-                  color="#9D4EDD" 
+                <Ionicons
+                  name={bioType === 'face' ? 'scan-circle' : 'finger-print'}
+                  size={32}
+                  color="#9D4EDD"
                 />
                 <Text style={styles.biometricText}>
                   Quick Login with {bioType === 'face' ? 'Face ID' : 'Touch ID'}

@@ -1,4 +1,4 @@
-import { Client, Account, Databases, Storage, Functions, ID, Query, Models, OAuthProvider } from 'react-native-appwrite';
+import { Client, Account, Databases, Storage, Functions, ID, Query, Models, OAuthProvider, AuthenticatorType } from 'react-native-appwrite';
 import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
@@ -284,7 +284,7 @@ export const authService = {
       if (__DEV__) console.log('[AuthService] Verifying OTP via Firebase...');
       const result = await verifyPhoneOTP(otp);
       if (result.success) {
-        return { success: true, ...result };
+        return { ...result, success: true };
       }
       return { success: false, message: result.error || 'Invalid OTP' };
     } catch (error) {
@@ -355,7 +355,7 @@ export const authService = {
   // 2FA (TOTP) Functions
   async createTOTP(): Promise<any> {
     try {
-      return await account.createMfaTotp();
+      return await account.createMfaAuthenticator(AuthenticatorType.Totp);
     } catch (error) {
       throw error;
     }
@@ -363,7 +363,7 @@ export const authService = {
 
   async update2FA(enabled: boolean): Promise<any> {
     try {
-      return await account.updateMfa(enabled);
+      return await account.updateMFA(enabled);
     } catch (error) {
       throw error;
     }
@@ -371,7 +371,7 @@ export const authService = {
 
   async verify2FA(otp: string): Promise<any> {
     try {
-      return await account.updateMfaChallenge(otp);
+      return await account.updateMfaAuthenticator(AuthenticatorType.Totp, otp);
     } catch (error) {
       throw error;
     }

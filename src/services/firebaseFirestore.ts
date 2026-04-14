@@ -18,7 +18,7 @@ export interface PaymentRecord {
 export const getMembershipInfo = async (userId: string): Promise<MembershipData | null> => {
   try {
     const doc = await firestore().collection('memberships').doc(userId).get();
-    if (doc.exists) {
+    if (doc.exists()) {
       return doc.data() as MembershipData;
     }
     return {

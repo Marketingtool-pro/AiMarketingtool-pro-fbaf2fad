@@ -44,6 +44,11 @@ const SettingsScreen = () => {
   const [mfaOtp, setMfaOtp] = useState('');
   const [mfaLoading, setMfaLoading] = useState(false);
 
+  const [passwordModal, setPasswordModal] = useState<'hidden' | 'current' | 'new'>('hidden');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
   // Load state on mount
   useEffect(() => {
     const loadState = async () => {
