@@ -530,12 +530,8 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
               {/* Tab Content */}
               {activeTab === 'chat' && (
                 <View>
-                  {/* Social Platform Quick Icons */}
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.socialRow}
-                  >
+                  {/* Social Platform Quick Icons — 7 platforms in single row */}
+                  <View style={styles.socialRow}>
                     {CHAT_PLATFORMS.map((platform) => (
                       <TouchableOpacity
                         key={platform.id}
@@ -551,10 +547,10 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                           style={styles.socialChipIcon}
                           resizeMode="contain"
                         />
-                        <Text style={styles.socialChipText}>{platform.name}</Text>
+                        <Text style={styles.socialChipText} numberOfLines={1}>{platform.name}</Text>
                       </TouchableOpacity>
                     ))}
-                  </ScrollView>
+                  </View>
 
                   {/* Suggested Prompts */}
                   <View style={styles.promptsGrid}>
@@ -1074,7 +1070,9 @@ const styles = StyleSheet.create({
   socialRow: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
-    gap: 10,
+    gap: 8,
+    justifyContent: 'space-between',
+    flexDirection: 'row',
   },
   seeAllButton: {
     flexDirection: 'row',
@@ -1094,20 +1092,22 @@ const styles = StyleSheet.create({
   socialChip: {
     alignItems: 'center',
     backgroundColor: 'rgba(22, 24, 36, 0.7)',
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
-    minWidth: 72,
+    width: 48,
+    height: 64,
+    justifyContent: 'center',
   },
   socialChipIcon: {
-    width: 36,
-    height: 36,
-    marginBottom: 4,
+    width: 28,
+    height: 28,
+    marginBottom: 2,
   },
   socialChipText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '600',
     color: Colors.white,
   },
