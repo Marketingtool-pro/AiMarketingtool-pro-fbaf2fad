@@ -15,6 +15,11 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6758618412",
+        "appleId": "help@marketingtool.pro"
+      }
+    }
   }
 }
