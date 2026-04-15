@@ -89,7 +89,7 @@ rich_compress "$SOURCE_ROOT/business-3d-icons_Njk4NjhlY2U1M2QwMGUwMDMzZGI0MzY3/R
 echo "Syncing all remaining premium icons..."
 find "$SOURCE_ROOT" -name "*.png" | while read -r file; do
     filename=$(basename "$file")
-    new_filename=$(echo "$filename" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g' | sed 's/[^a-z0-9._-]//g')
+    new_filename=$(echo "$filename" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g; s/[^a-z0-9._-]//g')
     rich_compress "$file" "$DEST_TOOLS/$new_filename"
 done
 
