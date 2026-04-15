@@ -303,10 +303,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(13, 15, 28, 0.85)',
   },
   glassCardContent: {
-    padding: 24,
-    paddingTop: 28,
+    padding: 16,
+    paddingTop: 18,
   },
-  heroSection: { height: 260, width: '100%' },
+  heroSection: { height: 200, width: '100%' },
   heroImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
   heroGradient: { ...StyleSheet.absoluteFillObject },
   headerTop: {
