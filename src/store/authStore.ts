@@ -51,6 +51,7 @@ interface AuthState {
   loginWithFacebook: () => Promise<void>;
   sendPhoneOTP: (phoneNumber: string) => Promise<string>;
   verifyPhoneOTP: (userId: string, code: string) => Promise<void>;
+  clearOtpTemp: () => void;
   verifyTOTP: (otp: string) => Promise<void>;
   authenticateWithBiometric: () => Promise<boolean>;
   setup2FA: () => Promise<any>;
@@ -224,6 +225,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       throw error;
     }
   },
+
+  clearOtpTemp: () => set({ tempPhone: null, tempVerificationId: null }),
 
   sendPhoneOTP: async (phoneNumber: string) => {
     // Keeps isLoading off so AppNavigator stays on Login (no splash flicker)
