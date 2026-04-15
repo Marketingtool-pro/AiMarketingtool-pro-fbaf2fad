@@ -29,24 +29,34 @@ const ToolsScreen = () => {
   const [activePlatform, setActivePlatform] = useState('All');
   const [activeSubcategory, setActiveSubcategory] = useState('All');
 
+  // Map each platform tab to the categories it owns
+  const PLATFORM_CATEGORIES: Record<string, string[]> = {
+    Google: ['google-ads', 'google-seo', 'google-analytics', 'google-content'],
+    Meta: ['facebook-ads', 'meta-content'],
+    Instagram: ['instagram', 'social-media'],
+    TikTok: ['tiktok'],
+    YouTube: ['youtube'],
+    LinkedIn: ['linkedin'],
+    Shopify: ['shopify-products', 'shopify-ads', 'email-marketing', 'ecommerce-seo'],
+  };
+
   const subcategories = useMemo(() => {
     if (activePlatform === 'All') return [];
-    const platformId = activePlatform === 'Google Ads' ? 'google' : activePlatform === 'Meta' ? 'meta' : 'shopify';
-    return TOOL_CATEGORIES.filter(c => c.platform === platformId);
+    const ids = PLATFORM_CATEGORIES[activePlatform] || [];
+    return TOOL_CATEGORIES.filter((c) => ids.includes(c.id));
   }, [activePlatform]);
 
   const filteredTools = useMemo(() => {
     let result = tools;
     if (activePlatform !== 'All') {
-      const platformId = activePlatform === 'Google Ads' ? 'google' : activePlatform === 'Meta' ? 'meta' : 'shopify';
-      const platformCats = TOOL_CATEGORIES.filter(c => c.platform === platformId).map(c => c.id);
-      result = result.filter(t => platformCats.includes(t.category));
+      const ids = PLATFORM_CATEGORIES[activePlatform] || [];
+      result = result.filter((t) => ids.includes(t.category));
     }
     if (activeSubcategory !== 'All') {
-      result = result.filter(t => t.category === activeSubcategory);
+      result = result.filter((t) => t.category === activeSubcategory);
     }
     if (searchQuery) {
-      result = result.filter(t =>
+      result = result.filter((t) =>
         t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.description.toLowerCase().includes(searchQuery.toLowerCase())
       );
@@ -56,8 +66,12 @@ const ToolsScreen = () => {
 
   const platformTabs = [
     { name: 'All', icon: null },
-    { name: 'Google Ads', icon: 'search' },
+    { name: 'Google', icon: 'search' },
     { name: 'Meta', icon: 'facebook' },
+    { name: 'Instagram', icon: 'instagram' },
+    { name: 'TikTok', icon: 'video' },
+    { name: 'YouTube', icon: 'youtube' },
+    { name: 'LinkedIn', icon: 'linkedin' },
     { name: 'Shopify', icon: 'shopping-bag' },
   ];
 
@@ -66,7 +80,7 @@ const ToolsScreen = () => {
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} stickyHeaderIndices={[]}>
         {/* Hero Banner */}
         <ImageBackground
-          source={require('../../assets/images/screens/tools-hero.jpg')}
+          source={require('../../../assets/images/screens/tools-hero.jpg')}
           style={styles.heroBanner}
           resizeMode="cover"
         >

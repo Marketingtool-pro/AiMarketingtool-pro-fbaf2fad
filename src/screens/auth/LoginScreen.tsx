@@ -390,13 +390,13 @@ const LoginScreen = () => {
           </View>
 
           <View style={styles.socialRow}>
-             <TouchableOpacity style={styles.socialBtn} onPress={loginWithGoogle}>
-                <Text style={styles.googleG}>G</Text>
+             <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#FFFFFF' }]} onPress={loginWithGoogle}>
+                <Text style={[styles.googleG, { color: '#4285F4' }]}>G</Text>
              </TouchableOpacity>
-             <TouchableOpacity style={styles.socialBtn} onPress={loginWithFacebook}>
-                <Feather name="facebook" size={22} color="#1877F2" />
+             <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#1877F2' }]} onPress={loginWithFacebook}>
+                <Feather name="facebook" size={22} color="#FFFFFF" />
              </TouchableOpacity>
-             <TouchableOpacity style={styles.socialBtn} onPress={() => setShowEmailModal(true)}>
+             <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#9D4EDD' }]} onPress={() => setShowEmailModal(true)}>
                 <Feather name="mail" size={22} color="#FFFFFF" />
              </TouchableOpacity>
              {Platform.OS === 'ios' && (

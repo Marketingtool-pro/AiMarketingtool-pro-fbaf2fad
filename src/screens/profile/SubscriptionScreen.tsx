@@ -101,6 +101,11 @@ const SubscriptionScreen = () => {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.backBtnLeft} onPress={() => navigation.goBack()}>
+        <View style={styles.closeBtnBg}>
+          <Feather name="chevron-left" size={24} color="#FFF" />
+        </View>
+      </TouchableOpacity>
       <TouchableOpacity style={styles.closeBtn} onPress={() => navigation.goBack()}>
         <View style={styles.closeBtnBg}>
           <Feather name="x" size={22} color="#FFF" />
@@ -125,7 +130,7 @@ const SubscriptionScreen = () => {
               </View>
               <View style={styles.heroRight}>
                 <Image 
-                  source={require('../../assets/images/tool-icons-v2/trophy.png')} 
+                  source={require('../../../assets/images/tool-icons-v2/trophy.png')} 
                   style={styles.heroIcon} 
                   resizeMode="contain" 
                 />
@@ -229,6 +234,7 @@ const SubscriptionScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0D0F1C' },
   closeBtn: { position: 'absolute', top: 56, right: 20, zIndex: 10 },
+  backBtnLeft: { position: 'absolute', top: 56, left: 20, zIndex: 10 },
   closeBtnBg: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
   heroSection: { height: 240, backgroundColor: '#0D0F1C' },
   heroGradient: { flex: 1, paddingHorizontal: 24, justifyContent: 'center', paddingTop: 40 },

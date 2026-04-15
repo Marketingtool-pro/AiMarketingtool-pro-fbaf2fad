@@ -1,7 +1,6 @@
 import { create } from 'zustand';
-import { Models } from 'react-native-appwrite';
-import { authService, dbService, COLLECTIONS, Query } from '../services/appwrite';
-import { sendPhoneOTP as firebaseSendOTP, verifyPhoneOTP as firebaseVerifyOTP } from '../services/firebaseAuth';
+import { Models, ExecutionMethod } from 'react-native-appwrite';
+import { authService, dbService, account, functions, COLLECTIONS, Query } from '../services/appwrite';
 import { biometricService } from '../services/biometric';
 
 interface UserProfile {
@@ -214,11 +213,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   sendPhoneOTP: async (phoneNumber: string) => {
     set({ isLoading: true, error: null });
     try {
-      const result = await firebaseSendOTP(phoneNumber);
-      if (!result.success) throw new Error(result.error);
-      set({ isLoading: false, tempPhone: phoneNumber });
-      return phoneNumber;
+      const cleaned = phoneNumber.replace(/\D/g, '');
+      if (__DEV__) console.log('[Auth] Sending OTP via msg91-proxy:', cleaned);
+
+      const execution = await functions.createExecution(
+        'msg91-proxy',
+        JSON.stringify({ action: 'sendOtp', identifier: cleaned }),
+        false, '/', ExecutionMethod.POST,
+        { 'Content-Type': 'application/json' }
+      );
+
+      const responseBody = JSON.parse(execution.responseBody || '{}');
+      if (responseBody.type !== 'success') {
+        throw new Error(responseBody.message || 'Failed to send OTP');
+      }
+
+      set({ isLoading: false, tempPhone: cleaned });
+      return cleaned;
     } catch (error: any) {
+      if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
       set({ error: error.message || 'Failed to send OTP', isLoading: false });
       throw error;
     }
@@ -227,49 +240,48 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   verifyPhoneOTP: async (_userId: string, code: string) => {
     set({ isLoading: true, error: null });
     try {
-      const result = await firebaseVerifyOTP(code);
-      if (!result.success) throw new Error(result.error || 'Invalid OTP');
+      const phone = get().tempPhone || _userId;
+      if (__DEV__) console.log('[Auth] Verifying OTP for:', phone);
 
-      const firebaseUser = result.user;
-      const phone = firebaseUser.phoneNumber;
-
-      // Create Appwrite session via server-side function (no hardcoded password)
-      try {
-        const { functions } = require('../services/appwrite');
-        const { ExecutionMethod } = require('react-native-appwrite');
-        const execution = await functions.createExecution(
-          'phone-session',
-          JSON.stringify({
-            firebaseUid: firebaseUser.uid,
-            phone: phone,
-            displayName: firebaseUser.displayName || 'User',
-          }),
-          false, '/', ExecutionMethod.POST,
-        );
-        const sessionResult = JSON.parse(execution.responseBody);
-        if (sessionResult.success && sessionResult.userId && sessionResult.secret) {
-          const { account } = require('../services/appwrite');
-          await account.createSession(sessionResult.userId, sessionResult.secret);
-          if (__DEV__) console.log('[Auth] Appwrite session created for phone user');
-        }
-      } catch (sessionError: any) {
-        if (__DEV__) console.log('[Auth] Server session failed:', sessionError.message);
+      // Step 1: verify via msg91-proxy
+      const verifyExec = await functions.createExecution(
+        'msg91-proxy',
+        JSON.stringify({ action: 'verifyOtp', identifier: phone, otp: code }),
+        false, '/', ExecutionMethod.POST,
+        { 'Content-Type': 'application/json' }
+      );
+      const verifyResult = JSON.parse(verifyExec.responseBody || '{}');
+      if (!verifyResult.success) {
+        throw new Error(verifyResult.message || 'Invalid OTP');
       }
 
-      // Get Appwrite user or use Firebase data as fallback
-      let user = await authService.getCurrentUser();
-      if (!user) {
-        user = {
-          $id: firebaseUser.uid,
-          name: firebaseUser.displayName || 'User',
-          email: `${phone?.replace(/\D/g, '')}@phone.marketingtool.pro`,
+      // Step 2: mint Appwrite session via phone-session function
+      const sessionExec = await functions.createExecution(
+        'phone-session',
+        JSON.stringify({
+          firebaseUid: 'wa_' + phone.replace(/\D/g, ''),
           phone: phone,
-        } as any;
+          displayName: '',
+        }),
+        false, '/', ExecutionMethod.POST,
+        { 'Content-Type': 'application/json' }
+      );
+      const sessionResult = JSON.parse(sessionExec.responseBody || '{}');
+      if (!sessionResult.success || !sessionResult.userId || !sessionResult.secret) {
+        throw new Error(sessionResult.error || 'Failed to create session');
       }
 
-      const profile = await get().fetchOrCreateProfile(user!);
-      set({ user: user!, profile, isAuthenticated: true, isLoading: false, tempPhone: null });
+      // Step 3: create Appwrite session
+      try { await account.deleteSession('current'); } catch (_e) {}
+      await account.createSession(sessionResult.userId, sessionResult.secret);
+
+      const user = await authService.getCurrentUser();
+      if (!user) throw new Error('Session created but could not fetch user');
+
+      const profile = await get().fetchOrCreateProfile(user);
+      set({ user, profile, isAuthenticated: true, isLoading: false, tempPhone: null });
     } catch (error: any) {
+      if (__DEV__) console.log('[Auth] Verify OTP error:', error.message);
       set({ error: error.message || 'Invalid OTP', isLoading: false });
       throw error;
     }
