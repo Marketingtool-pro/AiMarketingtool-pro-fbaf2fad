@@ -122,27 +122,35 @@ const SubscriptionScreen = () => {
 
   type PlanId = 'free' | 'starter' | 'pro' | 'growth' | 'agency';
 
-  // IAP product IDs match billingService.productSkus and App Store / Play Console listings.
-  const PLAN_TO_SKU: Record<PlanId, { monthly: string; yearly: string } | null> = {
+  // Stripe Payment Links — identical to marketingtool.pro/pricing/ website flow.
+  const PLAN_TO_STRIPE_URL: Record<PlanId, { monthly: string; yearly: string } | null> = {
     free: null,
-    starter:  { monthly: 'pro_starter_monthly',      yearly: 'pro_starter_yearly' },
-    pro:      { monthly: 'pro_professional_monthly', yearly: 'pro_professional_yearly' },
-    growth:   { monthly: 'pro_growth_monthly',       yearly: 'pro_growth_yearly' },
-    agency:   null,
+    starter: {
+      monthly: 'https://buy.stripe.com/cNidR89oU0gFexpaQB9bO00',
+      yearly:  'https://buy.stripe.com/dRm6oG8kQ6F3ah98It9bO01',
+    },
+    pro: {
+      monthly: 'https://buy.stripe.com/28EdR8cB6gfD2OH8It9bO02',
+      yearly:  'https://buy.stripe.com/14AcN47gMd3r3SL0bX9bO03',
+    },
+    growth: {
+      monthly: 'https://buy.stripe.com/00w00i30w2oNdtl9Mx9bO04',
+      yearly:  'https://buy.stripe.com/cNi7sK6cId3r8913o99bO05',
+    },
+    agency: null,
   };
 
   const handleSubscribe = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     const userId = profile?.userId || profile?.$id;
+    const userEmail = (profile as any)?.email || '';
 
-    // Free Trial — no purchase, just activate
     if (selectedPlan === 'free') {
       Alert.alert('Free Trial Active', 'You have 7 days, 3 generations/day in simulation mode.');
       navigation.goBack();
       return;
     }
 
-    // Agency — contact sales (custom pricing, not IAP)
     if (selectedPlan === 'agency') {
       Linking.openURL('mailto:help@marketingtool.pro?subject=Agency%20Plan%20Inquiry');
       return;
@@ -150,17 +158,14 @@ const SubscriptionScreen = () => {
 
     setIsLoading(true);
     try {
-      const skus = PLAN_TO_SKU[selectedPlan as PlanId];
-      if (!skus) throw new Error('Invalid plan selected');
-      const sku = billingPeriod === 'yearly' ? skus.yearly : skus.monthly;
-      if (Platform.OS !== 'web') {
-        const result = await billingService.requestPurchase(sku, userId!);
-        if (result.success) {
-          Alert.alert('Success', 'Subscription activated!', [{ text: 'OK', onPress: () => { refreshProfile(); navigation.goBack(); } }]);
-        } else {
-          Alert.alert('Purchase Failed', result.error || 'Could not complete purchase.');
-        }
-      }
+      const urls = PLAN_TO_STRIPE_URL[selectedPlan as PlanId];
+      if (!urls) throw new Error('Invalid plan selected');
+      const baseUrl = billingPeriod === 'yearly' ? urls.yearly : urls.monthly;
+      const params: string[] = [];
+      if (userId) params.push('client_reference_id=' + encodeURIComponent(String(userId)));
+      if (userEmail) params.push('prefilled_email=' + encodeURIComponent(userEmail));
+      const checkoutUrl = params.length ? baseUrl + '?' + params.join('&') : baseUrl;
+      await Linking.openURL(checkoutUrl);
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Could not open checkout.');
     } finally { setIsLoading(false); }
