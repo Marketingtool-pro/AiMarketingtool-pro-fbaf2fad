@@ -52,6 +52,8 @@ rich_compress() {
     if [ -f "$src" ]; then
         echo "Processing $(basename "$dest")..."
         resize_to_png "$src" "$dest"
+    else
+        echo "Warning: Source file not found: $src (skipping $(basename "$dest"))" >&2
     fi
 }
 
@@ -67,7 +69,7 @@ rich_compress "$SOURCE_ROOT/3d-artificial-intelligence_Njk4NjhlY2U1M2QwMGUwMDMzZ
 rich_compress "$SOURCE_ROOT/business-3d-icons_Njk4NjhlY2U1M2QwMGUwMDMzZGI0MzY3/Rendered PNG/Business Achievement.png" "$DEST_TOOLS/trophy.png"
 
 # 2. GLASSIFY SOCIAL ICONS (Apply to Dashboard list)
-GLASSIFY_SRC="$SOURCE_ROOT/glassify-social-media-icons_Njk4NjhlY2U1M2QwMGUwMDMzZGI0MzY3 (1)/Glassify ΓÇô Social Media Icons/PNG"
+GLASSIFY_SRC="$SOURCE_ROOT/glassify-social-media-icons_Njk4NjhlY2U1M2QwMGUwMDMzZGI0MzY3 (1)/Glassify - Social Media Icons/PNG"
 rich_compress "$GLASSIFY_SRC/01_Facebook.png" "$DEST_SOCIAL/01_Facebook.png"
 rich_compress "$GLASSIFY_SRC/02_Instagram.png" "$DEST_SOCIAL/02_Instagram.png"
 rich_compress "$GLASSIFY_SRC/03_X.png" "$DEST_SOCIAL/03_X.png"
@@ -89,7 +91,7 @@ rich_compress "$SOURCE_ROOT/business-3d-icons_Njk4NjhlY2U1M2QwMGUwMDMzZGI0MzY3/R
 echo "Syncing all remaining premium icons..."
 find "$SOURCE_ROOT" -name "*.png" | while read -r file; do
     filename=$(basename "$file")
-    new_filename=$(echo "$filename" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g' | sed 's/[^a-z0-9._-]//g')
+    new_filename=$(echo "$filename" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g; s/[^a-z0-9._-]//g')
     rich_compress "$file" "$DEST_TOOLS/$new_filename"
 done
 
