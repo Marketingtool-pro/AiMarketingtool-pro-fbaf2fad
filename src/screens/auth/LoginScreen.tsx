@@ -328,10 +328,20 @@ const LoginScreen = () => {
                     placeholder="000000"
                     placeholderTextColor="#4A5568"
                     value={otpCode}
-                    onChangeText={(text) => { setOtpCode(text); setOtpError(''); }}
+                    onChangeText={(text) => {
+                      const digits = text.replace(/\D/g, '').slice(0, 6);
+                      setOtpCode(digits);
+                      setOtpError('');
+                      // Uber-style auto-verify when 6 digits filled (e.g. via iOS SMS autofill)
+                      if (digits.length === 6) {
+                        setTimeout(() => handleVerifyOTP(), 100);
+                      }
+                    }}
                     keyboardType="number-pad"
                     maxLength={6}
                     autoFocus
+                    textContentType="oneTimeCode"
+                    autoComplete="sms-otp"
                   />
                   <TouchableOpacity
                     style={[styles.verifyBtn, otpCode.length < 6 && { opacity: 0.5 }]}
@@ -390,18 +400,18 @@ const LoginScreen = () => {
           </View>
 
           <View style={styles.socialRow}>
-             <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#FFFFFF' }]} onPress={loginWithGoogle}>
-                <Text style={[styles.googleG, { color: '#4285F4' }]}>G</Text>
+             <TouchableOpacity activeOpacity={0.7} onPress={loginWithGoogle}>
+                <Image source={require('../../../assets/images/platforms/google.png')} style={{ width: 56, height: 56 }} resizeMode="contain" />
              </TouchableOpacity>
-             <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#1877F2' }]} onPress={loginWithFacebook}>
-                <Feather name="facebook" size={22} color="#FFFFFF" />
+             <TouchableOpacity activeOpacity={0.7} onPress={loginWithFacebook}>
+                <Image source={require('../../../assets/images/platforms/facebook.png')} style={{ width: 56, height: 56 }} resizeMode="contain" />
              </TouchableOpacity>
-             <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#9D4EDD' }]} onPress={() => setShowEmailModal(true)}>
-                <Feather name="mail" size={22} color="#FFFFFF" />
+             <TouchableOpacity activeOpacity={0.7} onPress={() => setShowEmailModal(true)}>
+                <Image source={require('../../../assets/images/platforms/messenger.png')} style={{ width: 56, height: 56 }} resizeMode="contain" />
              </TouchableOpacity>
              {Platform.OS === 'ios' && (
-               <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#000000' }]} onPress={loginWithApple}>
-                  <Ionicons name="logo-apple" size={24} color="#FFFFFF" />
+               <TouchableOpacity activeOpacity={0.7} onPress={loginWithApple}>
+                  <Image source={require('../../../assets/images/platforms/soundcloud.png')} style={{ width: 56, height: 56 }} resizeMode="contain" />
                </TouchableOpacity>
              )}
           </View>
@@ -709,6 +719,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#161824',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  socialBtnImg: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   googleG: {
     fontSize: 24,

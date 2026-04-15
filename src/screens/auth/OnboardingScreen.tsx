@@ -32,25 +32,25 @@ const ONBOARDING_DATA: OnboardingItem[] = [
     id: '1',
     title: 'AI Marketing Tools',
     description: 'Access the most comprehensive suite of AI-powered marketing tools. From ad copy to blog posts, we\'ve got you covered.',
-    icon: require('../../assets/images/tool-icons-v2/bot.png'),
+    icon: require('../../../assets/images/tool-icons-v2/bot.png'),
   },
   {
     id: '2',
     title: 'Create Content Instantly',
     description: 'Generate high-converting ads, engaging social posts, and SEO-optimized content in seconds with Claude AI.',
-    icon: require('../../assets/images/tool-icons-v2/copywriting.png'),
+    icon: require('../../../assets/images/tool-icons-v2/copywriting.png'),
   },
   {
     id: '3',
     title: 'Boost Your ROI',
     description: 'Our AI analyzes top-performing content to help you create marketing materials that convert.',
-    icon: require('../../assets/images/tool-icons-v2/growth-chart.png'),
+    icon: require('../../../assets/images/tool-icons-v2/growth-chart.png'),
   },
   {
     id: '4',
     title: '7-Day Free Trial',
     description: 'Start creating amazing marketing content today. No credit card required to get started.',
-    icon: require('../../assets/images/tool-icons-v2/marketing-target.png'),
+    icon: require('../../../assets/images/tool-icons-v2/marketing-target.png'),
   },
 ];
 

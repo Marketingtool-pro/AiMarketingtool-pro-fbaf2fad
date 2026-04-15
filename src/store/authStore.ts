@@ -3,6 +3,19 @@ import { Models, ExecutionMethod } from 'react-native-appwrite';
 import { authService, dbService, account, functions, COLLECTIONS, Query } from '../services/appwrite';
 import { biometricService } from '../services/biometric';
 
+// Appwrite Functions return responseBody as either an object (newer SDK)
+// OR as a JSON string (older SDK) OR as a plain text error message (4xx).
+// Always normalize to an object so consumers can read .success / .message safely.
+function parseAppwriteResponse(rb: any): any {
+  if (!rb) return {};
+  if (typeof rb === 'object') return rb;
+  if (typeof rb === 'string') {
+    try { return JSON.parse(rb); }
+    catch { return { success: false, message: rb }; }
+  }
+  return {};
+}
+
 interface UserProfile {
   $id: string;
   userId: string;
@@ -26,6 +39,7 @@ interface AuthState {
   isAuthenticated: boolean;
   error: string | null;
   tempPhone: string | null;
+  tempVerificationId: string | null;
   biometricPending: boolean;
   mfaPending: boolean;
 
@@ -58,6 +72,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   error: null,
   tempPhone: null,
+  tempVerificationId: null,
   biometricPending: false,
   mfaPending: false,
 
@@ -211,10 +226,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   sendPhoneOTP: async (phoneNumber: string) => {
-    set({ isLoading: true, error: null });
+    // Keeps isLoading off so AppNavigator stays on Login (no splash flicker)
+    set({ error: null });
     try {
       const cleaned = phoneNumber.replace(/\D/g, '');
-      if (__DEV__) console.log('[Auth] Sending OTP via msg91-proxy:', cleaned);
+      if (__DEV__) console.log('[Auth] Sending OTP via Bird:', cleaned);
 
       const execution = await functions.createExecution(
         'msg91-proxy',
@@ -223,34 +239,40 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         { 'Content-Type': 'application/json' }
       );
 
-      const responseBody = JSON.parse(execution.responseBody || '{}');
-      if (responseBody.type !== 'success') {
+      const responseBody = parseAppwriteResponse(execution.responseBody);
+      if (responseBody.type !== 'success' && !responseBody.success) {
         throw new Error(responseBody.message || 'Failed to send OTP');
       }
 
-      set({ isLoading: false, tempPhone: cleaned });
+      // Bird verify flow needs the verificationId returned by sendOtp
+      set({ tempPhone: cleaned, tempVerificationId: responseBody.verificationId });
       return cleaned;
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
-      set({ error: error.message || 'Failed to send OTP', isLoading: false });
+      set({ error: error.message || 'Failed to send OTP' });
       throw error;
     }
   },
 
   verifyPhoneOTP: async (_userId: string, code: string) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       const phone = get().tempPhone || _userId;
-      if (__DEV__) console.log('[Auth] Verifying OTP for:', phone);
+      const verificationId = get().tempVerificationId;
+      if (__DEV__) console.log('[Auth] Verifying OTP for:', phone, 'vid:', verificationId);
 
-      // Step 1: verify via msg91-proxy
+      if (!verificationId) {
+        throw new Error('Verification session expired. Please request a new code.');
+      }
+
+      // Bird verify expects { action, code, verificationId }
       const verifyExec = await functions.createExecution(
         'msg91-proxy',
-        JSON.stringify({ action: 'verifyOtp', identifier: phone, otp: code }),
+        JSON.stringify({ action: 'verifyOtp', code, verificationId }),
         false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
-      const verifyResult = JSON.parse(verifyExec.responseBody || '{}');
+      const verifyResult = parseAppwriteResponse(verifyExec.responseBody);
       if (!verifyResult.success) {
         throw new Error(verifyResult.message || 'Invalid OTP');
       }
@@ -266,7 +288,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
-      const sessionResult = JSON.parse(sessionExec.responseBody || '{}');
+      const sessionResult = parseAppwriteResponse(sessionExec.responseBody);
       if (!sessionResult.success || !sessionResult.userId || !sessionResult.secret) {
         throw new Error(sessionResult.error || 'Failed to create session');
       }
@@ -279,10 +301,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!user) throw new Error('Session created but could not fetch user');
 
       const profile = await get().fetchOrCreateProfile(user);
-      set({ user, profile, isAuthenticated: true, isLoading: false, tempPhone: null });
+      set({ user, profile, isAuthenticated: true, tempPhone: null, tempVerificationId: null });
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Verify OTP error:', error.message);
-      set({ error: error.message || 'Invalid OTP', isLoading: false });
+      set({ error: error.message || 'Invalid OTP' });
       throw error;
     }
   },

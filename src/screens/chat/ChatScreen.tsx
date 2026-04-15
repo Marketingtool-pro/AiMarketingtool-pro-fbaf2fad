@@ -29,9 +29,9 @@ import { useToolsStore, Tool } from '../../store/toolsStore';
 const { width } = Dimensions.get('window');
 
 // Chat bot image
-const ChatBotImage = require('../../assets/images/screens/chat-bot.jpg');
-const AiAssistantImage = require('../../assets/images/screens/ai-assistant.jpg');
-const LogoImage = require('../../assets/images/logo.jpeg');
+const ChatBotImage = require('../../../assets/images/screens/chat-bot.jpg');
+const AiAssistantImage = require('../../../assets/images/screens/ai-assistant.jpg');
+const LogoImage = require('../../../assets/images/logo.jpeg');
 
 interface Message {
   id: string;
@@ -44,6 +44,7 @@ interface Message {
 
 interface SuggestedPrompt {
   iconSlug: string;
+  image?: any;
   title: string;
   description: string;
   prompt: string;
@@ -149,6 +150,7 @@ const ChatScreen = () => {
   const suggestedPrompts: SuggestedPrompt[] = [
     {
       iconSlug: 'facebook-ad-copy',
+      image: require('../../../assets/images/platforms/facebook.png'),
       title: 'Write Ad Copy',
       description: 'Create compelling ads',
       prompt: 'Write a compelling Facebook ad copy for a fitness app',
@@ -156,6 +158,7 @@ const ChatScreen = () => {
     },
     {
       iconSlug: 'strategy',
+      image: require('../../../assets/images/platforms/google.png'),
       title: 'Marketing Strategy',
       description: 'Get expert advice',
       prompt: 'Give me a marketing strategy for launching a new product',
@@ -163,6 +166,7 @@ const ChatScreen = () => {
     },
     {
       iconSlug: 'cold-outreach-email',
+      image: require('../../../assets/images/platforms/messenger.png'),
       title: 'Email Campaign',
       description: 'Generate emails',
       prompt: 'Generate 5 email subject lines for a product launch',
@@ -170,6 +174,7 @@ const ChatScreen = () => {
     },
     {
       iconSlug: 'instagram-captions',
+      image: require('../../../assets/images/platforms/instagram.png'),
       title: 'Social Content',
       description: 'Create viral posts',
       prompt: 'Create an engaging Instagram caption for a travel photo',
@@ -177,6 +182,7 @@ const ChatScreen = () => {
     },
     {
       iconSlug: 'seo-meta-title',
+      image: require('../../../assets/images/platforms/youtube.png'),
       title: 'SEO & Keywords',
       description: 'Optimize for search',
       prompt: 'Help me find the best keywords for my e-commerce store',
@@ -184,6 +190,7 @@ const ChatScreen = () => {
     },
     {
       iconSlug: 'blog-post-ideas',
+      image: require('../../../assets/images/platforms/medium.png'),
       title: 'Blog Content',
       description: 'Write blog posts',
       prompt: 'Give me 10 blog post ideas for a SaaS company',
@@ -538,8 +545,8 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                     >
                       <View style={[styles.promptIcon, { backgroundColor: prompt.color + '20' }]}>
                         <Image
-                          source={getToolIcon(prompt.iconSlug)}
-                          style={{ width: 32, height: 32 }}
+                          source={prompt.image || getToolIcon(prompt.iconSlug)}
+                          style={{ width: 36, height: 36 }}
                           resizeMode="contain"
                         />
                       </View>

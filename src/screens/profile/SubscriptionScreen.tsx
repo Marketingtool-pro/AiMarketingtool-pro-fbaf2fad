@@ -49,7 +49,35 @@ const SubscriptionScreen = () => {
     };
   }, []);
 
+  // Plans match marketingtool.pro/pricing/ exactly
   const plans: Plan[] = [
+    {
+      id: 'free',
+      name: 'Free Trial',
+      monthlyPrice: 0, yearlyPrice: 0, yearlyTotal: 0,
+      description: '7-day trial, 3 generations/day',
+      features: [
+        { text: '7-day full access trial', included: true },
+        { text: '3 generations per day', included: true },
+        { text: 'Explore all 7 platforms', included: true },
+        { text: 'Simulation mode enabled', included: true },
+        { text: 'Priority support', included: false },
+        { text: 'Real account connect', included: false },
+      ],
+    },
+    {
+      id: 'starter',
+      name: 'Starter',
+      monthlyPrice: 29, yearlyPrice: 17, yearlyTotal: 199,
+      description: 'For solo marketers getting started',
+      features: [
+        { text: '200 generations/month', included: true },
+        { text: 'Manual execution', included: true },
+        { text: 'Standard reports', included: true },
+        { text: 'Real account connect', included: true },
+        { text: 'All 7 platforms included', included: true },
+      ],
+    },
     {
       id: 'pro',
       name: 'Professional',
@@ -68,13 +96,26 @@ const SubscriptionScreen = () => {
       id: 'growth',
       name: 'Growth',
       monthlyPrice: 99, yearlyPrice: 83, yearlyTotal: 999,
-      description: 'For Agencies & Large Advertisers',
+      description: 'For agencies & large advertisers',
       features: [
         { text: '1,500+ generations/month', included: true },
-        { text: 'Real-time scaling AI', included: true },
-        { text: 'Full Agency Dashboard', included: true },
-        { text: 'Executive Reporting', included: true },
+        { text: 'Auto-apply rules (full automation)', included: true },
+        { text: 'Predictive scaling AI', included: true },
+        { text: 'Executive dashboards', included: true },
         { text: '24/7 Priority Support', included: true },
+      ],
+    },
+    {
+      id: 'agency',
+      name: 'Agency',
+      monthlyPrice: 0, yearlyPrice: 0, yearlyTotal: 0,
+      description: 'White-label + dedicated AI optimization',
+      features: [
+        { text: 'Unlimited generations', included: true },
+        { text: 'White-label solution', included: true },
+        { text: 'Full API access', included: true },
+        { text: 'Custom integrations', included: true },
+        { text: 'SLA + dedicated support', included: true },
       ],
     },
   ];
@@ -180,7 +221,10 @@ const SubscriptionScreen = () => {
         <View style={styles.plansWrap}>
           {plans.map((plan) => {
             const selected = selectedPlan === plan.id;
-            const price = billingPeriod === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice;
+            const isAgency = plan.id === 'agency';
+            const isYearly = billingPeriod === 'yearly';
+            // Savings = monthly*12 - yearly total
+            const savings = plan.monthlyPrice > 0 ? (plan.monthlyPrice * 12) - plan.yearlyTotal : 0;
             return (
               <TouchableOpacity
                 key={plan.id}
@@ -200,13 +244,32 @@ const SubscriptionScreen = () => {
                     <Text style={styles.planName}>{plan.name}</Text>
                     <Text style={styles.planDesc}>{plan.description}</Text>
                   </View>
-                  <Text style={styles.planPrice}>${price}<Text style={{fontSize: 14}}>/mo</Text></Text>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    {plan.id === 'free' ? (
+                      <Text style={styles.planPrice}>$0<Text style={{fontSize: 14}}>/free</Text></Text>
+                    ) : isAgency ? (
+                      <Text style={styles.planPrice}>Custom</Text>
+                    ) : isYearly ? (
+                      <>
+                        <Text style={styles.planPrice}>${plan.yearlyPrice}<Text style={{fontSize: 14}}>/mo</Text></Text>
+                        <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 }}>${plan.yearlyTotal}/year</Text>
+                      </>
+                    ) : (
+                      <Text style={styles.planPrice}>${plan.monthlyPrice}<Text style={{fontSize: 14}}>/mo</Text></Text>
+                    )}
+                  </View>
                 </View>
+                {isYearly && !isAgency && savings > 0 && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6, marginLeft: 36 }}>
+                    <Feather name="tag" size={11} color="#22C55E" />
+                    <Text style={{ fontSize: 12, color: '#22C55E', fontWeight: '700' }}>Save ${savings}/year</Text>
+                  </View>
+                )}
                 <View style={styles.featList}>
                   {plan.features.map((f, i) => (
                     <View key={i} style={styles.featRow}>
-                      <Feather name="check" size={14} color="#22C55E" />
-                      <Text style={styles.featText}>{f.text}</Text>
+                      <Feather name={f.included ? 'check' : 'x'} size={14} color={f.included ? '#22C55E' : 'rgba(255,255,255,0.3)'} />
+                      <Text style={[styles.featText, !f.included && { color: 'rgba(255,255,255,0.4)', textDecorationLine: 'line-through' }]}>{f.text}</Text>
                     </View>
                   ))}
                 </View>
@@ -215,14 +278,40 @@ const SubscriptionScreen = () => {
           })}
         </View>
 
+        {/* Need More Generations? — buy extra tokens */}
+        <View style={{ paddingHorizontal: 20, marginTop: 28 }}>
+          <Text style={{ fontSize: 22, fontWeight: '900', color: '#FFF', marginBottom: 6 }}>Need More Generations?</Text>
+          <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 16 }}>
+            Buy extra tokens anytime when you reach your monthly limit.
+          </Text>
+          <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>
+            <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)', marginRight: 14 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '700' }}>100 Extra Generations</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 2 }}>Added instantly to your account</Text>
+            </View>
+            <Text style={{ color: '#A78BFA', fontSize: 22, fontWeight: '900' }}>$3</Text>
+          </View>
+        </View>
+
+        {/* Restore Purchases link */}
+        <TouchableOpacity style={{ alignItems: 'center', marginTop: 24 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, textDecorationLine: 'underline' }}>Restore Purchases</Text>
+        </TouchableOpacity>
+
         <View style={{ height: 140 }} />
       </ScrollView>
 
       {/* Bottom Bar */}
       <View style={styles.bottomBar}>
         <TouchableOpacity style={styles.subBtn} onPress={handleSubscribe} disabled={isLoading}>
-          <LinearGradient colors={['#F59E0B', '#B45309']} style={styles.subBtnGrad}>
-            {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.subBtnText}>Start My 7-Day Free Trial</Text>}
+          <LinearGradient colors={['#7C3AED', '#5B21B6']} style={styles.subBtnGrad}>
+            {isLoading ? <ActivityIndicator color="#FFF" /> : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Feather name="zap" size={18} color="#FFF" />
+                <Text style={styles.subBtnText}>Subscribe Now</Text>
+              </View>
+            )}
           </LinearGradient>
         </TouchableOpacity>
         <Text style={styles.secureText}>Cancel anytime. Secure payment via Store.</Text>
