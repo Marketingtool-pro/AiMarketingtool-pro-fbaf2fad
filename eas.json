@@ -21,7 +21,6 @@
         "appleId": "help@marketingtool.pro"
       },
       "android": {
-        "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "production",
         "releaseStatus": "completed"
       }
