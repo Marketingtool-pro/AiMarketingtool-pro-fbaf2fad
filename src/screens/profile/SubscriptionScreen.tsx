@@ -120,14 +120,38 @@ const SubscriptionScreen = () => {
     },
   ];
 
+  // Per-plan IAP product IDs — must match products configured in App Store Connect / Play Console
+  const PLAN_TO_SKU: Record<string, { monthly: string; yearly: string } | null> = {
+    free: null,
+    starter:  { monthly: 'pro_starter_monthly',      yearly: 'pro_starter_yearly' },
+    pro:      { monthly: 'pro_professional_monthly', yearly: 'pro_professional_yearly' },
+    growth:   { monthly: 'pro_growth_monthly',       yearly: 'pro_growth_yearly' },
+    agency:   null, // contact sales — not an IAP
+  };
+
   const handleSubscribe = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setIsLoading(true);
     const userId = profile?.userId || profile?.$id;
+
+    // Free Trial — no purchase, just activate
+    if (selectedPlan === 'free') {
+      Alert.alert('Free Trial Active', 'You have 7 days, 3 generations/day in simulation mode.');
+      navigation.goBack();
+      return;
+    }
+
+    // Agency — contact sales (custom pricing, not IAP)
+    if (selectedPlan === 'agency') {
+      Linking.openURL('mailto:help@marketingtool.pro?subject=Agency%20Plan%20Inquiry');
+      return;
+    }
+
+    setIsLoading(true);
     try {
+      const skus = PLAN_TO_SKU[selectedPlan];
+      if (!skus) throw new Error('Invalid plan selected');
+      const sku = billingPeriod === 'yearly' ? skus.yearly : skus.monthly;
       if (Platform.OS !== 'web') {
-        const serverPlanId = selectedPlan === 'pro' ? 'professional' : 'alltools';
-        const sku = `pro_${serverPlanId}_${billingPeriod}`;
         const result = await billingService.requestPurchase(sku, userId!);
         if (result.success) {
           Alert.alert('Success', 'Subscription activated!', [{ text: 'OK', onPress: () => { refreshProfile(); navigation.goBack(); } }]);
@@ -137,6 +161,26 @@ const SubscriptionScreen = () => {
       }
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Could not open checkout.');
+    } finally { setIsLoading(false); }
+  };
+
+  const handleRestorePurchases = async () => {
+    setIsLoading(true);
+    try {
+      if (Platform.OS === 'web') {
+        Alert.alert('Not Supported', 'Restore Purchases is only available on iOS and Android.');
+        return;
+      }
+      const result = await (billingService as any).restorePurchases?.();
+      if (result?.success) {
+        Alert.alert('Restored', 'Your previous purchases have been restored.', [
+          { text: 'OK', onPress: () => { refreshProfile(); navigation.goBack(); } },
+        ]);
+      } else {
+        Alert.alert('Nothing to Restore', result?.error || 'No previous purchases found for this Apple ID / Google account.');
+      }
+    } catch (err: any) {
+      Alert.alert('Restore Failed', err.message || 'Could not restore purchases.');
     } finally { setIsLoading(false); }
   };
 
@@ -294,9 +338,11 @@ const SubscriptionScreen = () => {
           </View>
         </View>
 
-        {/* Restore Purchases link */}
-        <TouchableOpacity style={{ alignItems: 'center', marginTop: 24 }}>
-          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, textDecorationLine: 'underline' }}>Restore Purchases</Text>
+        {/* Restore Purchases link — Apple Guideline 3.1.1 requires this */}
+        <TouchableOpacity style={{ alignItems: 'center', marginTop: 24 }} onPress={handleRestorePurchases} disabled={isLoading}>
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, textDecorationLine: 'underline' }}>
+            {isLoading ? 'Restoring…' : 'Restore Purchases'}
+          </Text>
         </TouchableOpacity>
 
         <View style={{ height: 140 }} />
