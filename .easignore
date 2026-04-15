@@ -38,11 +38,12 @@ gemini-cli/
 .DS_Store
 **/.git/
 
-# REDUNDANT MASSIVE ASSETS
-src/assets/images/tool-icons/
+# Backgrounds dir not used by current code — safe to exclude
 src/assets/images/backgrounds/
 
 # REQUIRED ASSETS (Must be included for bundling)
+# tool-icons/ stays included — toolIcons.ts requires *-old.png variants from here
+!src/assets/images/tool-icons/
 !src/assets/images/tool-icons-v2/
 !src/assets/images/screens/
 !src/assets/images/banners/
