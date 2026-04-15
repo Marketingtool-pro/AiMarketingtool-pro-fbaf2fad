@@ -28,7 +28,10 @@ module.exports = function withEasPodfileFix(config) {
       ];
       patterns.forEach(p => contents = contents.replace(p, ''));
 
-      // 2. Set the global static framework flag to TRUE (Standard for RNFB)
+      // 2. Remove SWIFT_VERSION = '5.0' from project-level settings (breaks @MainActor)
+      contents = contents.replace(/bc\.build_settings\['SWIFT_VERSION'\]\s*=\s*'5\.0'/g, "# REMOVED: SWIFT_VERSION 5.0 breaks @MainActor");
+
+      // 3. Set the global static framework flag to TRUE (Standard for RNFB)
       contents = '$RNFirebaseAsStaticFramework = true\n' + contents;
 
       // 3. Apply the "Robust Modular" patch
@@ -42,18 +45,33 @@ module.exports = function withEasPodfileFix(config) {
     pod 'FirebaseAppCheck', :modular_headers => true
     pod 'GoogleUtilities', :modular_headers => true
     pod 'FirebaseCoreInternal', :modular_headers => true
+    pod 'FirebaseAnalytics', :modular_headers => true
+    pod 'GoogleAppMeasurement', :modular_headers => true
+
+    # Fix project-level SWIFT_VERSION — 5.0 breaks @MainActor
+    installer.pods_project.build_configurations.each do |bc|
+      bc.build_settings.delete('SWIFT_VERSION')
+    end
 
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |bc|
         # Allow mixing headers across all targets
         bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
         bc.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+        bc.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
+        bc.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'
         bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-implicit-int -Wno-implicit-function-declaration -Wno-non-modular-include-in-framework-module -Wno-everything -Wno-return-type -ferror-limit=0'
         bc.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
         bc.build_settings['SWIFT_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
         bc.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
         bc.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -Xfrontend -strict-concurrency=minimal'
         bc.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu11'
+
+        # Force Swift 6.0 language mode for ALL pods
+        # expo-modules-core uses Swift 6 syntax: "extension UIView: @MainActor Protocol"
+        # This conformance syntax only exists in Swift 6 mode. Combined with
+        # SWIFT_STRICT_CONCURRENCY=minimal above, violations become warnings not errors.
+        bc.build_settings['SWIFT_VERSION'] = '6.0'
 
         # Firebase + RNFB header search paths + Xcode 26 module fix
         if target.name.start_with?('RNFB') || target.name.start_with?('Firebase') || target.name.start_with?('RNIap') || target.name.start_with?('NitroIap') || target.name.start_with?('Nitro') || target.name == 'RNFBApp'
@@ -71,7 +89,6 @@ module.exports = function withEasPodfileFix(config) {
 
         # react-native-iap (NitroIap) StoreKit 2 fix
         if target.name == 'RNIap' || target.name == 'NitroIap' || target.name.start_with?('NitroIap') || target.name.start_with?('NitroModules')
-          bc.build_settings['SWIFT_VERSION'] = '5.0'
           bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-everything -Wno-error=implicit-int -Wno-error=implicit-function-declaration'
           bc.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
         end
@@ -84,7 +101,11 @@ module.exports = function withEasPodfileFix(config) {
       end
     end`;
 
-      if (contents.includes('post_install do |installer|')) {
+      // Inject AFTER react_native_post_install so our build settings override RN's defaults
+      const rnpiRegex = /react_native_post_install\([\s\S]*?\)\s*\n/;
+      if (rnpiRegex.test(contents)) {
+        contents = contents.replace(rnpiRegex, (match) => match + '\n' + snippet + '\n');
+      } else if (contents.includes('post_install do |installer|')) {
         contents = contents.replace(
           'post_install do |installer|',
           'post_install do |installer|\n' + snippet
