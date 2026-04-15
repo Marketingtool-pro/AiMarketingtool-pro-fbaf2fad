@@ -1,12 +1,17 @@
 const { withProjectBuildGradle } = require('@expo/config-plugins');
 
-const withKotlinKspFix = (config) => {
+const withKotlinKspFix = (config, options = {}) => {
+  const {
+    kotlinVersion: kotlinVersionOption = '2.0.20',
+    kspVersion: kspVersionOption = '2.0.20-1.0.25',
+  } = options;
+
+  const KOTLIN_VERSION = kotlinVersionOption;
+  const KSP_VERSION = kspVersionOption;
+
   return withProjectBuildGradle(config, (config) => {
     if (config.modResults.language === 'groovy') {
       let buildGradle = config.modResults.contents;
-
-      const KOTLIN_VERSION = "2.0.20";
-      const KSP_VERSION = "2.0.20-1.0.25";
 
       // 1. Force versions in the ext block
       if (!buildGradle.includes("kotlinVersion =")) {
