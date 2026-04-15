@@ -120,13 +120,15 @@ const SubscriptionScreen = () => {
     },
   ];
 
-  // Per-plan IAP product IDs — must match products configured in App Store Connect / Play Console
-  const PLAN_TO_SKU: Record<string, { monthly: string; yearly: string } | null> = {
+  type PlanId = 'free' | 'starter' | 'pro' | 'growth' | 'agency';
+
+  // IAP product IDs match billingService.productSkus and App Store / Play Console listings.
+  const PLAN_TO_SKU: Record<PlanId, { monthly: string; yearly: string } | null> = {
     free: null,
     starter:  { monthly: 'pro_starter_monthly',      yearly: 'pro_starter_yearly' },
     pro:      { monthly: 'pro_professional_monthly', yearly: 'pro_professional_yearly' },
     growth:   { monthly: 'pro_growth_monthly',       yearly: 'pro_growth_yearly' },
-    agency:   null, // contact sales — not an IAP
+    agency:   null,
   };
 
   const handleSubscribe = async () => {
@@ -148,7 +150,7 @@ const SubscriptionScreen = () => {
 
     setIsLoading(true);
     try {
-      const skus = PLAN_TO_SKU[selectedPlan];
+      const skus = PLAN_TO_SKU[selectedPlan as PlanId];
       if (!skus) throw new Error('Invalid plan selected');
       const sku = billingPeriod === 'yearly' ? skus.yearly : skus.monthly;
       if (Platform.OS !== 'web') {
@@ -165,19 +167,24 @@ const SubscriptionScreen = () => {
   };
 
   const handleRestorePurchases = async () => {
+    if (Platform.OS === 'web') {
+      Alert.alert('Not Supported', 'Restore Purchases is only available on iOS and Android.');
+      return;
+    }
+    const userId = profile?.userId || profile?.$id;
+    if (!userId) {
+      Alert.alert('Sign In Required', 'Please sign in before restoring purchases.');
+      return;
+    }
     setIsLoading(true);
     try {
-      if (Platform.OS === 'web') {
-        Alert.alert('Not Supported', 'Restore Purchases is only available on iOS and Android.');
-        return;
-      }
-      const result = await (billingService as any).restorePurchases?.();
-      if (result?.success) {
-        Alert.alert('Restored', 'Your previous purchases have been restored.', [
+      const result = await billingService.restorePurchases(userId);
+      if (result.success) {
+        Alert.alert('Restored', `${result.count ?? 0} purchase(s) restored.`, [
           { text: 'OK', onPress: () => { refreshProfile(); navigation.goBack(); } },
         ]);
       } else {
-        Alert.alert('Nothing to Restore', result?.error || 'No previous purchases found for this Apple ID / Google account.');
+        Alert.alert('Nothing to Restore', result.error || 'No previous purchases found for this Apple ID / Google account.');
       }
     } catch (err: any) {
       Alert.alert('Restore Failed', err.message || 'Could not restore purchases.');
