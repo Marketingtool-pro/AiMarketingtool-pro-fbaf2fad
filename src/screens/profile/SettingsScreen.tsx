@@ -95,7 +95,15 @@ const SettingsScreen = () => {
         setMfaSecret(result.secret);
         setMfaModal(true);
       } catch (e: any) {
-        Alert.alert('Error', 'Could not initiate 2FA setup.');
+        const msg = (e?.message || '').toLowerCase();
+        const type = (e?.type || '').toLowerCase();
+        if (type.includes('password') || msg.includes('password')) {
+          Alert.alert('Set a Password First', 'Two-factor authentication requires a password on your account. Please set a password in Profile → Security, then enable 2FA.');
+        } else if (msg.includes('verified') || msg.includes('verification')) {
+          Alert.alert('Verify Your Email First', 'Please verify your email address before enabling two-factor authentication.');
+        } else {
+          Alert.alert('2FA Setup Failed', e?.message || 'Could not initiate 2FA setup. Please try again.');
+        }
       } finally {
         setMfaLoading(false);
       }
