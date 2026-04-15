@@ -25,9 +25,17 @@ const productSkus = Platform.select({
   ],
 }) || [];
 
+// IAP native module is excluded on iOS via plugins/withIosExcludeIap.js — guard every call.
+const iapAvailable = (): boolean => {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return !!(IAP && typeof (IAP as any).initConnection === 'function');
+  } catch { return false; }
+};
+
 export const billingService = {
-  // Initialize connection to store
   async initialize() {
+    if (!iapAvailable()) return false;
     try {
       await IAP.initConnection();
       if (Platform.OS === 'android') {
@@ -40,8 +48,8 @@ export const billingService = {
     }
   },
 
-  // Fetch products from store
   async getProducts() {
+    if (!iapAvailable()) return [];
     try {
       const products = await IAP.getProducts({ skus: productSkus });
       const subscriptions = await IAP.getSubscriptions({ skus: productSkus });
@@ -52,22 +60,19 @@ export const billingService = {
     }
   },
 
-  // Start purchase flow
   async requestPurchase(sku: string, userId: string) {
+    if (!iapAvailable()) {
+      return { success: false, error: 'In-app purchase is not available on this device. Please subscribe on marketingtool.pro/pricing' };
+    }
     try {
       let purchase;
       if (sku.includes('monthly') || sku.includes('yearly')) {
-        // Handle Subscription
         purchase = await IAP.requestSubscription({ sku });
       } else {
-        // Handle One-time Purchase
         purchase = await IAP.requestPurchase({ sku });
       }
-      
       if (Array.isArray(purchase)) purchase = purchase[0];
-      
       if (purchase) {
-        // Verify with backend
         return await this.verifyPurchase(purchase, userId);
       }
       return { success: false, error: 'Purchase cancelled' };
@@ -119,8 +124,8 @@ export const billingService = {
     }
   },
 
-  // Restore purchases
   async restorePurchases(userId: string) {
+    if (!iapAvailable()) return { success: false, error: 'In-app purchase is not available on this device. Please subscribe on marketingtool.pro/pricing' };
     try {
       const purchases = await IAP.getAvailablePurchases();
       if (purchases && purchases.length > 0) {
@@ -138,8 +143,8 @@ export const billingService = {
     }
   },
 
-  // End connection
   async end() {
-    await IAP.endConnection();
+    if (!iapAvailable()) return;
+    try { await IAP.endConnection(); } catch { /* noop */ }
   }
 };
