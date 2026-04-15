@@ -22,7 +22,7 @@ const withKotlinKspFix = (config) => {
       // 2. Force the correct classpath in buildscript dependencies
       if (!buildGradle.includes(`org.jetbrains.kotlin:kotlin-gradle-plugin:${KOTLIN_VERSION}`)) {
          buildGradle = buildGradle.replace(
-            /classpath\('org.jetbrains.kotlin:kotlin-gradle-plugin'\)/,
+            /classpath\(['"]org\.jetbrains\.kotlin:kotlin-gradle-plugin(?::[^'"]*)?['"]\)/,
             `classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${KOTLIN_VERSION}")`
          );
       }
