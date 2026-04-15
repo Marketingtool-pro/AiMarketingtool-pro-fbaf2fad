@@ -2,7 +2,7 @@
   "expo": {
     "name": "MarketingTool",
     "slug": "marketingtool",
-    "version": "1.4.1",
+    "version": "1.5.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -31,8 +31,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "272",
-      "googleServicesFile": "GoogleService-Info.plist",
+      "buildNumber": "432",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "FirebaseAppDelegateProxyEnabled": true,
@@ -68,9 +68,9 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#060b28"
       },
-      "googleServicesFile": "google-services.json",
+      "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 262,
+      "versionCode": 306,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -99,21 +99,6 @@
             "BROWSABLE",
             "DEFAULT"
           ]
-        },
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "https",
-              "host": "app.marketingtool.pro",
-              "pathPrefix": "/"
-            }
-          ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
         }
       ]
     },
@@ -128,26 +113,24 @@
           "ios": {
             "useFrameworks": "static",
             "deploymentTarget": "16.0",
-            "firebaseSDKVersion": "11.8.0",
             "storeKitVersion": "2",
             "forceStaticLinking": [
               "RNFBApp",
               "RNFBAuth",
-              "RNFBAppCheck",
+              "RNFBMessaging",
+              "RNFBAnalytics",
+              "RNFBCrashlytics",
+              "RNFBFirestore",
               "RNIap"
             ],
             "extraCCFlags": [
-              "-Wno-error=implicit-function-declaration",
-              "-Wno-error=implicit-int",
-              "-Wno-redeclared-class-member",
-              "-Wno-non-modular-include-in-framework-module",
-              "-Wno-error=non-modular-include-in-framework-module",
-              "-Wno-everything"
+              "-Wno-everything",
+              "-Xfrontend -disable-implicit-concurrency-module-import"
             ]
           },
           "android": {
-            "compileSdkVersion": 36,
-            "targetSdkVersion": 35,
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 34,
             "minSdkVersion": 24,
             "windowSoftInputMode": "adjustResize",
             "useMemoryPageSize16KB": true,
@@ -159,7 +142,8 @@
       ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
-      "./plugins/withAndroid16KBAlignment.js",
+      "./plugins/withEasPodfileFix.js",
+      "./plugins/withIosFirebaseSwiftFix.js",
       "./plugins/withAndroid15EdgeToEdge.js",
       "./plugins/withKotlinKspFix.js",
       "expo-notifications",
@@ -171,8 +155,6 @@
           "enableGooglePay": true
         }
       ],
-      "./plugins/withEasPodfileFix.js",
-      "./plugins/withIosFirebaseSwiftFix.js",
       "expo-secure-store",
       "expo-font",
       "expo-sharing",

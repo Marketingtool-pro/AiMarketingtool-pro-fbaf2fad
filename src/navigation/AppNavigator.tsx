@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as SecureStore from 'expo-secure-store';
 
 // Screens
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
@@ -155,15 +154,8 @@ const LoadingScreen = () => (
 // Main App Navigator
 const AppNavigator = () => {
   const { isAuthenticated, isLoading } = useAuthStore();
-  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    SecureStore.getItemAsync('hasSeenOnboarding').then(val => {
-      setHasSeenOnboarding(val === 'true');
-    });
-  }, []);
-
-  if (isLoading || hasSeenOnboarding === null) {
+  if (isLoading) {
     return <LoadingScreen />;
   }
 
@@ -179,9 +171,7 @@ const AppNavigator = () => {
       >
         {!isAuthenticated ? (
           <>
-            {!hasSeenOnboarding && (
-              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-            )}
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             <Stack.Screen name="Auth" component={AuthNavigator} />
           </>
         ) : (

@@ -5,7 +5,7 @@ import { Colors } from '../../constants/theme';
 const { width, height } = Dimensions.get('window');
 
 // App logo - MarketingTool M+signal icon
-const AppLogo = require('../../assets/images/logo-icon.png');
+const AppLogo = require('../../../assets/images/logo-icon.png');
 
 const SplashScreen = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;

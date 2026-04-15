@@ -18,7 +18,7 @@ export interface PaymentRecord {
 export const getMembershipInfo = async (userId: string): Promise<MembershipData | null> => {
   try {
     const doc = await firestore().collection('memberships').doc(userId).get();
-    if ((doc as any).exists) {
+    if (doc.exists()) {
       return doc.data() as MembershipData;
     }
     return {
@@ -63,73 +63,7 @@ export const getPaymentHistory = async (userId: string): Promise<PaymentRecord[]
   }
 };
 
-// MSG91 WhatsApp OTP via Firebase Extension
-// Writes to 'messages' collection → ext-msg91-send-msg triggers → sends WhatsApp
-export const sendWhatsAppOTP = async (phone: string): Promise<{ success: boolean; otp: string; docId: string; error?: string }> => {
-  try {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const cleanPhone = phone.replace(/\D/g, '');
-
-    // Write to messages collection — MSG91 extension picks this up
-    const docRef = await firestore().collection('messages').add({
-      flowId: '67e022aed6fc05435f737c42', // MSG91 WhatsApp OTP flow ID
-      mobile: cleanPhone,
-      vars: {
-        otp: otp,
-        VAR1: otp,
-      },
-      createdAt: firestore.FieldValue.serverTimestamp(),
-    });
-
-    // Also store OTP for verification
-    await firestore().collection('otp_verify').doc(cleanPhone).set({
-      otp: otp,
-      phone: cleanPhone,
-      createdAt: firestore.FieldValue.serverTimestamp(),
-      expiresAt: new Date(Date.now() + 10 * 60000).toISOString(),
-      verified: false,
-    });
-
-    return { success: true, otp, docId: docRef.id };
-  } catch (error: any) {
-    console.error('[Firestore] Error sending WhatsApp OTP:', error);
-    return { success: false, otp: '', docId: '', error: error.message };
-  }
-};
-
-export const verifyWhatsAppOTP = async (phone: string, code: string): Promise<{ success: boolean; error?: string }> => {
-  try {
-    const cleanPhone = phone.replace(/\D/g, '');
-    const doc = await firestore().collection('otp_verify').doc(cleanPhone).get();
-
-    if (!doc.exists) {
-      return { success: false, error: 'No OTP found. Please request a new one.' };
-    }
-
-    const data = doc.data();
-    if (!data) return { success: false, error: 'Invalid OTP data' };
-
-    if (new Date(data.expiresAt) < new Date()) {
-      await firestore().collection('otp_verify').doc(cleanPhone).delete();
-      return { success: false, error: 'OTP expired. Please request a new one.' };
-    }
-
-    if (data.otp !== code) {
-      return { success: false, error: 'Invalid OTP. Please try again.' };
-    }
-
-    // OTP verified — clean up
-    await firestore().collection('otp_verify').doc(cleanPhone).delete();
-    return { success: true };
-  } catch (error: any) {
-    console.error('[Firestore] Error verifying OTP:', error);
-    return { success: false, error: error.message };
-  }
-};
-
 export default {
   getMembershipInfo,
-  getPaymentHistory,
-  sendWhatsAppOTP,
-  verifyWhatsAppOTP,
+  getPaymentHistory
 };

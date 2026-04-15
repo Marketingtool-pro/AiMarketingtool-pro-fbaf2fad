@@ -52,3 +52,5 @@ yarn-error.*
 gha-creds-*.json
 asc-api-key.p8
 google-play-service-account.json
+.env
+.env.production

@@ -11,7 +11,6 @@ import {
   ImageSourcePropType,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import { Colors, Gradients } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
@@ -33,25 +32,25 @@ const ONBOARDING_DATA: OnboardingItem[] = [
     id: '1',
     title: 'AI Marketing Tools',
     description: 'Access the most comprehensive suite of AI-powered marketing tools. From ad copy to blog posts, we\'ve got you covered.',
-    icon: require('../../assets/images/tool-icons-v2/bot.png'),
+    icon: require('../../../assets/images/tool-icons-v2/bot.png'),
   },
   {
     id: '2',
     title: 'Create Content Instantly',
     description: 'Generate high-converting ads, engaging social posts, and SEO-optimized content in seconds with Claude AI.',
-    icon: require('../../assets/images/tool-icons-v2/copywriting.png'),
+    icon: require('../../../assets/images/tool-icons-v2/copywriting.png'),
   },
   {
     id: '3',
     title: 'Boost Your ROI',
     description: 'Our AI analyzes top-performing content to help you create marketing materials that convert.',
-    icon: require('../../assets/images/tool-icons-v2/growth-chart.png'),
+    icon: require('../../../assets/images/tool-icons-v2/growth-chart.png'),
   },
   {
     id: '4',
     title: '7-Day Free Trial',
     description: 'Start creating amazing marketing content today. No credit card required to get started.',
-    icon: require('../../assets/images/tool-icons-v2/marketing-target.png'),
+    icon: require('../../../assets/images/tool-icons-v2/marketing-target.png'),
   },
 ];
 
@@ -60,18 +59,13 @@ const OnboardingScreen = () => {
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const completeOnboarding = async () => {
-    await SecureStore.setItemAsync('hasSeenOnboarding', 'true');
-    navigation.navigate('Auth');
-  };
-
   const handleNext = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (currentIndex < ONBOARDING_DATA.length - 1) {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
       setCurrentIndex(currentIndex + 1);
     } else {
-      completeOnboarding();
+      navigation.navigate('Auth');
     }
   };
 
@@ -96,7 +90,7 @@ const OnboardingScreen = () => {
       <View style={styles.container}>
         <TouchableOpacity
           style={styles.skipBtn}
-          onPress={completeOnboarding}
+          onPress={() => navigation.navigate('Auth')}
         >
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
@@ -169,7 +163,7 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(22,24,36,0.55)',
+    backgroundColor: 'rgba(22,24,36,0.9)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },

@@ -1,8 +1,20 @@
 import { create } from 'zustand';
 import { Models, ExecutionMethod } from 'react-native-appwrite';
-import { authService, dbService, COLLECTIONS, Query, functions, account } from '../services/appwrite';
-import { ID } from 'react-native-appwrite';
+import { authService, dbService, account, functions, COLLECTIONS, Query } from '../services/appwrite';
 import { biometricService } from '../services/biometric';
+
+// Appwrite Functions return responseBody as either an object (newer SDK)
+// OR as a JSON string (older SDK) OR as a plain text error message (4xx).
+// Always normalize to an object so consumers can read .success / .message safely.
+function parseAppwriteResponse(rb: any): any {
+  if (!rb) return {};
+  if (typeof rb === 'object') return rb;
+  if (typeof rb === 'string') {
+    try { return JSON.parse(rb); }
+    catch { return { success: false, message: rb }; }
+  }
+  return {};
+}
 
 interface UserProfile {
   $id: string;
@@ -27,6 +39,7 @@ interface AuthState {
   isAuthenticated: boolean;
   error: string | null;
   tempPhone: string | null;
+  tempVerificationId: string | null;
   biometricPending: boolean;
   mfaPending: boolean;
 
@@ -59,6 +72,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   error: null,
   tempPhone: null,
+  tempVerificationId: null,
   biometricPending: false,
   mfaPending: false,
 
@@ -212,31 +226,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   sendPhoneOTP: async (phoneNumber: string) => {
+    // Keeps isLoading off so AppNavigator stays on Login (no splash flicker)
     set({ error: null });
     try {
       const cleaned = phoneNumber.replace(/\D/g, '');
-      const normalizedPhone = phoneNumber.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
-      const mobile = cleaned;
+      if (__DEV__) console.log('[Auth] Sending OTP via Bird:', cleaned);
 
-      if (__DEV__) console.log('[Auth] Sending WhatsApp OTP via MSG91 Widget:', mobile);
-
-      // Call Appwrite msg91-proxy function (uses MSG91 Widget API — WhatsApp + SMS fallback)
       const execution = await functions.createExecution(
         'msg91-proxy',
-        JSON.stringify({ action: 'sendOtp', identifier: mobile }),
-        false, '/', 'POST',
+        JSON.stringify({ action: 'sendOtp', identifier: cleaned }),
+        false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
 
-      const responseBody = JSON.parse(execution.responseBody || '{}');
-      if (responseBody.type !== 'success') {
+      const responseBody = parseAppwriteResponse(execution.responseBody);
+      if (responseBody.type !== 'success' && !responseBody.success) {
         throw new Error(responseBody.message || 'Failed to send OTP');
       }
 
-      if (__DEV__) console.log('[Auth] WhatsApp OTP sent');
-
-      set({ tempPhone: mobile });
-      return mobile;
+      // Bird verify flow needs the verificationId returned by sendOtp
+      set({ tempPhone: cleaned, tempVerificationId: responseBody.verificationId });
+      return cleaned;
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
       set({ error: error.message || 'Failed to send OTP' });
@@ -244,58 +254,54 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  verifyPhoneOTP: async (userId: string, code: string) => {
+  verifyPhoneOTP: async (_userId: string, code: string) => {
     set({ error: null });
     try {
-      const phone = get().tempPhone || userId;
-      if (__DEV__) console.log('[Auth] Verifying WhatsApp OTP for:', phone);
+      const phone = get().tempPhone || _userId;
+      const verificationId = get().tempVerificationId;
+      if (__DEV__) console.log('[Auth] Verifying OTP for:', phone, 'vid:', verificationId);
 
-      // Step 1: Verify OTP via Appwrite msg91-proxy (MSG91 Widget API)
+      if (!verificationId) {
+        throw new Error('Verification session expired. Please request a new code.');
+      }
+
+      // Bird verify expects { action, code, verificationId }
       const verifyExec = await functions.createExecution(
         'msg91-proxy',
-        JSON.stringify({ action: 'verifyOtp', identifier: phone, otp: code }),
-        false, '/', 'POST',
+        JSON.stringify({ action: 'verifyOtp', code, verificationId }),
+        false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
-
-      const verifyResult = JSON.parse(verifyExec.responseBody || '{}');
+      const verifyResult = parseAppwriteResponse(verifyExec.responseBody);
       if (!verifyResult.success) {
         throw new Error(verifyResult.message || 'Invalid OTP');
       }
 
-      if (__DEV__) console.log('[Auth] OTP verified, creating Appwrite session...');
-
-      // Step 2: Create Appwrite session via phone-session function
-      const execution = await functions.createExecution(
+      // Step 2: mint Appwrite session via phone-session function
+      const sessionExec = await functions.createExecution(
         'phone-session',
         JSON.stringify({
           firebaseUid: 'wa_' + phone.replace(/\D/g, ''),
           phone: phone,
           displayName: '',
         }),
-        false, '/', 'POST',
+        false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
-
-      const responseBody = JSON.parse(execution.responseBody || '{}');
-
-      if (!responseBody.success || !responseBody.userId || !responseBody.secret) {
-        throw new Error(responseBody.error || 'Failed to create session');
+      const sessionResult = parseAppwriteResponse(sessionExec.responseBody);
+      if (!sessionResult.success || !sessionResult.userId || !sessionResult.secret) {
+        throw new Error(sessionResult.error || 'Failed to create session');
       }
 
-      // Step 3: Create Appwrite session with the token
+      // Step 3: create Appwrite session
       try { await account.deleteSession('current'); } catch (_e) {}
-      const session = await account.createSession(responseBody.userId, responseBody.secret);
-
-      if (__DEV__) console.log('[Auth] Appwrite session created:', session.$id);
+      await account.createSession(sessionResult.userId, sessionResult.secret);
 
       const user = await authService.getCurrentUser();
-      if (user) {
-        const profile = await get().fetchOrCreateProfile(user);
-        set({ user, profile, isAuthenticated: true, isLoading: false, tempPhone: null });
-      } else {
-        throw new Error('Session created but could not fetch user');
-      }
+      if (!user) throw new Error('Session created but could not fetch user');
+
+      const profile = await get().fetchOrCreateProfile(user);
+      set({ user, profile, isAuthenticated: true, tempPhone: null, tempVerificationId: null });
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Verify OTP error:', error.message);
       set({ error: error.message || 'Invalid OTP' });
@@ -309,19 +315,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!bioEnabled) return false;
 
       const success = await biometricService.authenticate('Login with biometrics');
-      if (!success) return false;
-
-      // Biometric passed — check if there's a valid Appwrite session
-      set({ isLoading: true });
-      const user = await authService.getCurrentUser();
-      if (user) {
-        const profile = await get().fetchOrCreateProfile(user);
-        set({ user, profile, isAuthenticated: true, isLoading: false, biometricPending: false });
-        return true;
+      if (success) {
+        // Appwrite session is already managed by the SDK and SecureStore in appwrite.ts
+        // We just need to check if we can get the current user
+        set({ isLoading: true });
+        const user = await authService.getCurrentUser();
+        if (user) {
+          const profile = await get().fetchOrCreateProfile(user);
+          set({ user, profile, isAuthenticated: true, isLoading: false, biometricPending: false });
+          return true;
+        }
+        set({ isLoading: false });
       }
-
-      // Biometric succeeded but no Appwrite session — user needs to login first
-      set({ isLoading: false, error: 'no_session' });
       return false;
     } catch (error) {
       set({ isLoading: false });
