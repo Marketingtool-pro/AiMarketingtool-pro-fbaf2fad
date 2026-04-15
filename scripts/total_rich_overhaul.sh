@@ -1,21 +1,57 @@
 #!/bin/bash
+set -euo pipefail
 
-PROJECT_ROOT="/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad"
-DEST_TOOLS="$PROJECT_ROOT/src/assets/images/tool-icons-v2"
-DEST_SOCIAL="$PROJECT_ROOT/src/assets/images/social-icons"
+# Portable: derives PROJECT_ROOT from the script's location, takes SOURCE_ROOT
+# as $1 or env var. No hard-coded paths to one developer's machine.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+DEST_TOOLS="${DEST_TOOLS:-$PROJECT_ROOT/src/assets/images/tool-icons-v2}"
+DEST_SOCIAL="${DEST_SOCIAL:-$PROJECT_ROOT/src/assets/images/social-icons}"
 
 mkdir -p "$DEST_TOOLS"
 mkdir -p "$DEST_SOCIAL"
 
-# Root source path
-SOURCE_ROOT="/Users/loken/Developer/New Folder"
+# Root source path. Pass as the first argument or set SOURCE_ROOT in the environment.
+SOURCE_ROOT="${SOURCE_ROOT:-${1:-}}"
+if [ -z "$SOURCE_ROOT" ]; then
+    echo "Usage: SOURCE_ROOT=/path/to/source-root $0" >&2
+    echo "   or: $0 /path/to/source-root" >&2
+    exit 1
+fi
+if [ ! -d "$SOURCE_ROOT" ]; then
+    echo "SOURCE_ROOT does not exist or is not a directory: $SOURCE_ROOT" >&2
+    exit 1
+fi
+
+# Pick image tool: prefer ImageMagick (cross-platform), fall back to macOS sips.
+if command -v magick >/dev/null 2>&1; then
+    IMAGE_TOOL="magick"
+elif command -v convert >/dev/null 2>&1; then
+    IMAGE_TOOL="convert"
+elif command -v sips >/dev/null 2>&1; then
+    IMAGE_TOOL="sips"
+else
+    echo "No supported image conversion tool found. Install ImageMagick ('magick' or 'convert') or use macOS 'sips'." >&2
+    exit 1
+fi
+
+resize_to_png() {
+    local src="$1"
+    local dest="$2"
+    case "$IMAGE_TOOL" in
+        magick)  magick "$src" -resize 128x128 "$dest" ;;
+        convert) convert "$src" -resize 128x128 "$dest" ;;
+        sips)    sips -s format png -z 128 128 "$src" --out "$dest" > /dev/null ;;
+    esac
+}
 
 rich_compress() {
-    src="$1"
-    dest="$2"
+    local src="$1"
+    local dest="$2"
     if [ -f "$src" ]; then
         echo "Processing $(basename "$dest")..."
-        sips -s format png -z 128 128 "$src" --out "$dest" > /dev/null
+        resize_to_png "$src" "$dest"
     fi
 }
 

@@ -1,6 +1,7 @@
-# Genkit Node.js API Rules (v1.20.0)
+# Genkit Node.js API Rules
 
 This document provides rules and examples for building with the Genkit API in Node.js.
+For the exact installed version, see `package.json` (currently `genkit` and `@genkit-ai/*`).
 
 ## Important Guidelines:
 
