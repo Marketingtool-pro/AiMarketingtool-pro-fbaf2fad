@@ -3,27 +3,15 @@ import * as IAP from 'react-native-iap';
 import { functions } from './appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 
-// Native Product IDs (matching App Store & Google Play)
-const productSkus = Platform.select({
-  ios: [
-    'pro_starter_monthly',
-    'pro_starter_yearly',
-    'pro_professional_monthly',
-    'pro_professional_yearly',
-    'pro_growth_monthly',
-    'pro_growth_yearly',
-    'tokens_100',
-  ],
-  android: [
-    'pro_starter_monthly',
-    'pro_starter_yearly',
-    'pro_professional_monthly',
-    'pro_professional_yearly',
-    'pro_growth_monthly',
-    'pro_growth_yearly',
-    'tokens_100',
-  ],
-}) || [];
+const productSkus = [
+  'pro_starter_monthly',
+  'pro_starter_yearly',
+  'pro_professional_monthly',
+  'pro_professional_yearly',
+  'pro_growth_monthly',
+  'pro_growth_yearly',
+  'tokens_100',
+];
 
 // IAP native module is excluded on iOS via plugins/withIosExcludeIap.js — guard every call.
 const iapAvailable = (): boolean => {
@@ -33,14 +21,24 @@ const iapAvailable = (): boolean => {
   } catch { return false; }
 };
 
+const IAP_UNAVAILABLE_ERROR =
+  'In-app purchase is not available on this device. Please subscribe on marketingtool.pro/pricing';
+
+const SUBSCRIPTION_SKUS = new Set([
+  'pro_starter_monthly',
+  'pro_starter_yearly',
+  'pro_professional_monthly',
+  'pro_professional_yearly',
+  'pro_growth_monthly',
+  'pro_growth_yearly',
+]);
+
 export const billingService = {
   async initialize() {
     if (!iapAvailable()) return false;
     try {
       await IAP.initConnection();
-      if (Platform.OS === 'android') {
-        await IAP.flushFailedPurchasesCachedAsPendingAndroid();
-      }
+      await IAP.flushFailedPurchasesCachedAsPendingAndroid();
       return true;
     } catch (err) {
       console.error('[Billing] Init error:', err);
@@ -51,8 +49,10 @@ export const billingService = {
   async getProducts() {
     if (!iapAvailable()) return [];
     try {
-      const products = await IAP.getProducts({ skus: productSkus });
-      const subscriptions = await IAP.getSubscriptions({ skus: productSkus });
+      const [products, subscriptions] = await Promise.all([
+        IAP.getProducts({ skus: productSkus }),
+        IAP.getSubscriptions({ skus: productSkus }),
+      ]);
       return [...products, ...subscriptions];
     } catch (err) {
       console.error('[Billing] Fetch products error:', err);
@@ -62,15 +62,12 @@ export const billingService = {
 
   async requestPurchase(sku: string, userId: string) {
     if (!iapAvailable()) {
-      return { success: false, error: 'In-app purchase is not available on this device. Please subscribe on marketingtool.pro/pricing' };
+      return { success: false, error: IAP_UNAVAILABLE_ERROR };
     }
     try {
-      let purchase;
-      if (sku.includes('monthly') || sku.includes('yearly')) {
-        purchase = await IAP.requestSubscription({ sku });
-      } else {
-        purchase = await IAP.requestPurchase({ sku });
-      }
+      let purchase = SUBSCRIPTION_SKUS.has(sku)
+        ? await IAP.requestSubscription({ sku })
+        : await IAP.requestPurchase({ sku });
       if (Array.isArray(purchase)) purchase = purchase[0];
       if (purchase) {
         return await this.verifyPurchase(purchase, userId);
@@ -82,23 +79,16 @@ export const billingService = {
     }
   },
 
-  // Verify purchase with Appwrite backend
   async verifyPurchase(purchase: IAP.Purchase, userId: string) {
+    if (!iapAvailable()) return { success: false, error: IAP_UNAVAILABLE_ERROR };
     try {
-      const payload: any = {
+      const payload = {
         userId,
         productId: purchase.productId,
         platform: Platform.OS,
+        googlePurchaseToken: purchase.purchaseToken,
       };
 
-      if (Platform.OS === 'android') {
-        payload.googlePurchaseToken = purchase.purchaseToken;
-      } else {
-        payload.appleReceipt = purchase.transactionReceipt;
-        payload.transactionId = purchase.transactionId;
-      }
-
-      // Execute stripe-checkout function (which now handles native verification)
       const execution = await functions.createExecution(
         'stripe-checkout',
         JSON.stringify(payload),
@@ -106,17 +96,12 @@ export const billingService = {
       );
 
       const result = JSON.parse(execution.responseBody);
-      
+
       if (result.success) {
-        // Finalize purchase in native store
-        if (Platform.OS === 'ios') {
-          await IAP.finishTransaction({ purchase, isConsumable: !purchase.productId.includes('pro_') });
-        } else {
-          await IAP.acknowledgePurchaseAndroid({ token: purchase.purchaseToken! });
-        }
+        await IAP.acknowledgePurchaseAndroid({ token: purchase.purchaseToken! });
         return { success: true };
       }
-      
+
       return { success: false, error: result.error || 'Verification failed' };
     } catch (err: any) {
       console.error('[Billing] Verification error:', err);
@@ -125,18 +110,19 @@ export const billingService = {
   },
 
   async restorePurchases(userId: string) {
-    if (!iapAvailable()) return { success: false, error: 'In-app purchase is not available on this device. Please subscribe on marketingtool.pro/pricing' };
+    if (!iapAvailable()) return { success: false, error: IAP_UNAVAILABLE_ERROR };
     try {
       const purchases = await IAP.getAvailablePurchases();
-      if (purchases && purchases.length > 0) {
-        let successCount = 0;
-        for (const purchase of purchases) {
-          const result = await this.verifyPurchase(purchase, userId);
-          if (result.success) successCount++;
-        }
-        return { success: successCount > 0, count: successCount };
+      if (!purchases || purchases.length === 0) {
+        return { success: false, error: 'No purchases found to restore.' };
       }
-      return { success: false, error: 'No purchases found to restore.' };
+      const results = await Promise.allSettled(
+        purchases.map((p) => this.verifyPurchase(p, userId))
+      );
+      const successCount = results.filter(
+        (r) => r.status === 'fulfilled' && r.value.success
+      ).length;
+      return { success: successCount > 0, count: successCount };
     } catch (err: any) {
       console.error('[Billing] Restore error:', err);
       return { success: false, error: err.message };
