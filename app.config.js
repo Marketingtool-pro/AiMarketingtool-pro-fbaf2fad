@@ -59,10 +59,24 @@ const withEasPodfileFix = (config) => {
         bc.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
         bc.build_settings['SWIFT_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
         bc.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
-        # Do not set SWIFT_VERSION — 5.0 breaks @MainActor
+        # Default to Swift 5 for all pods (safe for Lottie, Epoxy, etc.)
+        bc.build_settings['SWIFT_VERSION'] = '5'
         bc.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -Xfrontend -strict-concurrency=minimal'
         bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-implicit-int -Wno-implicit-function-declaration -Wno-non-modular-include-in-framework-module -Wno-everything -ferror-limit=0'
         bc.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+        bc.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
+        bc.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'
+
+        # expo-modules-core/JSI require Swift 6.0 for @MainActor conformance syntax
+        if target.name == 'ExpoModulesCore' || target.name == 'ExpoModulesJSI'
+          bc.build_settings['SWIFT_VERSION'] = '6.0'
+        end
+
+        # RNFB: disable DEFINES_MODULE to prevent RCT_EXPORT_METHOD redefinition
+        if target.name.start_with?('RNFB') || target.name == 'RNFBApp'
+          bc.build_settings['DEFINES_MODULE'] = 'NO'
+          bc.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) "$(PODS_ROOT)/Headers/Public/React-Core" "$(PODS_ROOT)/Headers/Public/React-RCTBridge" "$(PODS_ROOT)/Headers/Public/React-bridging" "$(PODS_ROOT)/Headers/Public/FirebaseCore" "$(PODS_ROOT)/Headers/Public/FirebaseAuth" "$(PODS_ROOT)/Headers/Public/FirebaseAppCheck"'
+        end
       end
     end
 
@@ -71,7 +85,7 @@ const withEasPodfileFix = (config) => {
       bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
       bc.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
       bc.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
-      bc.build_settings['SWIFT_VERSION'] = '5.0'
+      bc.build_settings['SWIFT_VERSION'] = '5'
       bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-everything -ferror-limit=0'
     end`;
 
@@ -115,8 +129,15 @@ module.exports = ({ config }) => ({
       "expo-build-properties",
       {
         "ios": {
-          "useFrameworks": "dynamic",
-          "deploymentTarget": "16.0"
+          "useFrameworks": "static",
+          "deploymentTarget": "16.0",
+          "forceStaticLinking": [
+            "RNFBApp",
+            "RNFBAuth",
+            "RNFBCrashlytics",
+            "RNFBFirestore",
+            "RNFBMessaging"
+          ]
         },
         "android": {
           "compileSdkVersion": 36,

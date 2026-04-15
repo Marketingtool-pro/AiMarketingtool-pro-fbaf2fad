@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+.yarn/
+.expo/
 
 # Native folders
 ios/
@@ -48,6 +50,12 @@ src/assets/images/backgrounds/
 !src/assets/images/categories/
 !assets/
 
-# Ensure essential code is included
-!plugins/
-!src/
+# EXCLUDE HUGE BACKUPS AND RAW ASSETS
+three.js/
+media/
+ios/build/
+android/app/build/
+*.zip
+*.blend
+*.mp4
+
