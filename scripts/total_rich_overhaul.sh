@@ -52,6 +52,8 @@ rich_compress() {
     if [ -f "$src" ]; then
         echo "Processing $(basename "$dest")..."
         resize_to_png "$src" "$dest"
+    else
+        echo "Warning: Source file not found: $src (skipping $(basename "$dest"))" >&2
     fi
 }
 
