@@ -217,6 +217,8 @@ const LoginScreen = () => {
     setOtpSent(false);
     setOtpCode('');
     setOtpError('');
+    // C2 fix: clear stale verificationId/tempPhone so the next login starts fresh
+    useAuthStore.setState({ tempPhone: null, tempVerificationId: null });
     await SecureStore.deleteItemAsync('pendingOTP');
   };
 
@@ -295,7 +297,10 @@ const LoginScreen = () => {
               ) : (
                 <TouchableOpacity
                   style={styles.arrowBtn}
-                  onPress={() => { setOtpSent(false); setOtpCode(''); setOtpError(''); }}
+                  onPress={() => {
+                    setOtpSent(false); setOtpCode(''); setOtpError('');
+                    useAuthStore.setState({ tempPhone: null, tempVerificationId: null });
+                  }}
                 >
                   <LinearGradient
                     colors={['#3D2914', '#16132B']}
