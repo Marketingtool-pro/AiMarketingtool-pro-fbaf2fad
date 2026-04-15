@@ -150,7 +150,11 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
       <AnimatedRN.View style={[styles.statCardWrapper, animatedStyle]}>
         <GlassBentoCard color={stat.color}>
           <View style={[styles.statIcon, { backgroundColor: stat.color + '20' }]}>
-            <Feather name={stat.icon as any} size={18} color={stat.color} />
+            {stat.img ? (
+              <Image source={stat.img} style={{ width: 28, height: 28 }} resizeMode="contain" />
+            ) : (
+              <Feather name={stat.icon as any} size={18} color={stat.color} />
+            )}
           </View>
           <Text style={styles.statValue}>{stat.value}</Text>
           <Text style={styles.statLabel} numberOfLines={1}>{stat.label}</Text>
@@ -198,10 +202,10 @@ const DashboardScreen = () => {
   };
 
   const stats = [
-    { label: 'AI Tools', value: 'All', icon: 'zap', color: Colors.secondary, badge: 'New', screen: 'Tools' },
-    { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
-    { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
-    { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },
+    { label: 'AI Tools', value: 'All', icon: 'zap', img: require('../../assets/images/tool-icons-v2/ai-3d.png'), color: Colors.secondary, badge: 'New', screen: 'Tools' },
+    { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', img: require('../../assets/images/tool-icons-v2/analytics-3d.png'), color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
+    { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', img: require('../../assets/images/tool-icons-v2/rocket.png'), color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
+    { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', img: require('../../assets/images/tool-icons-v2/trophy.png'), color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },
   ];
 
   // Horizontal banner data
@@ -214,21 +218,21 @@ const DashboardScreen = () => {
   ];
 
   const quickActions = [
-    { label: 'AI Chat', icon: 'message-circle', color: Colors.accent, screen: 'Chat' },
-    { label: 'Meme Gen', icon: 'smile', color: Colors.secondary, screen: 'MemeGenerator' },
-    { label: 'All Tools', icon: 'grid', color: Colors.success, screen: 'Tools' },
-    { label: 'Reports', icon: 'bar-chart-2', color: Colors.gold, screen: 'History' },
+    { label: 'AI Chat', icon: 'message-circle', img: require('../../../assets/images/platforms/messenger.png'), color: Colors.accent, screen: 'Chat' },
+    { label: 'Meme Gen', icon: 'smile', img: require('../../../assets/images/platforms/instagram.png'), color: Colors.secondary, screen: 'MemeGenerator' },
+    { label: 'All Tools', icon: 'grid', img: require('../../../assets/images/platforms/google.png'), color: Colors.success, screen: 'Tools' },
+    { label: 'Reports', icon: 'bar-chart-2', img: require('../../../assets/images/platforms/youtube.png'), color: Colors.gold, screen: 'History' },
   ];
 
   const popularTools = [
-    { name: 'Instagram Caption', slug: 'instagram-captions', category: 'Social', trending: true, color: '#E4405F' },
-    { name: 'Facebook Ad Copy', slug: 'facebook-ad-copy', category: 'Ads', trending: true, color: '#1877F2' },
-    { name: 'Product Description', slug: 'product-descriptions', category: 'E-commerce', trending: true, color: '#96BF48' },
-    { name: 'Instagram Reels Script', slug: 'instagram-reels', category: 'Video', trending: true, color: '#C13584' },
-    { name: 'Shopify Product Title', slug: 'shopify-titles', category: 'E-commerce', trending: false, color: '#96BF48' },
-    { name: 'Email Subject Lines', slug: 'email-subjects', category: 'Email', trending: false, color: '#EF4444' },
-    { name: 'Google Ads Headline', slug: 'google-ads-headline', category: 'Ads', trending: true, color: '#4285F4' },
-    { name: 'Meme Generator', slug: 'meme-generator', category: 'Creative', trending: true, color: '#EC4899' },
+    { name: 'Instagram Caption', slug: 'instagram-captions', img: require('../../../assets/images/platforms/instagram.png'), category: 'Social', trending: true, color: '#E4405F' },
+    { name: 'Facebook Ad Copy', slug: 'facebook-ad-copy', img: require('../../../assets/images/platforms/facebook.png'), category: 'Ads', trending: true, color: '#1877F2' },
+    { name: 'Product Description', slug: 'product-descriptions', img: require('../../../assets/images/tool-icons-v2/ecommerce-3d.png'), category: 'E-commerce', trending: true, color: '#96BF48' },
+    { name: 'Instagram Reels Script', slug: 'instagram-reels', img: require('../../../assets/images/platforms/instagram.png'), category: 'Video', trending: true, color: '#C13584' },
+    { name: 'Shopify Product Title', slug: 'shopify-titles', img: require('../../../assets/images/tool-icons-v2/shopify-3d.png'), category: 'E-commerce', trending: false, color: '#96BF48' },
+    { name: 'Email Subject Lines', slug: 'email-subjects', img: require('../../../assets/images/platforms/messenger.png'), category: 'Email', trending: false, color: '#EF4444' },
+    { name: 'Google Ads Headline', slug: 'google-ads-headline', img: require('../../../assets/images/platforms/google.png'), category: 'Ads', trending: true, color: '#4285F4' },
+    { name: 'Meme Generator', slug: 'meme-generator', img: require('../../../assets/images/platforms/instagram.png'), category: 'Creative', trending: true, color: '#EC4899' },
   ];
 
   return (
@@ -359,7 +363,7 @@ const DashboardScreen = () => {
               >
                 <Image source={slide.image} style={styles.bannerImage} resizeMode="cover" />
                 <LinearGradient
-                  colors={['transparent', `${slide.color}CC`, slide.color]}
+                  colors={['transparent', 'transparent', `${slide.color}99`]}
                   style={styles.bannerGradient}
                 >
                   <Text style={styles.bannerTitle}>{slide.title}</Text>
@@ -403,7 +407,11 @@ const DashboardScreen = () => {
                 }}
               >
                 <View style={[styles.quickActionIcon, { backgroundColor: action.color + '15' }]}>
-                  <Feather name={action.icon as any} size={24} color={action.color} />
+                  {(action as any).img ? (
+                    <Image source={(action as any).img} style={{ width: 32, height: 32 }} resizeMode="contain" />
+                  ) : (
+                    <Feather name={action.icon as any} size={24} color={action.color} />
+                  )}
                 </View>
                 <Text style={styles.quickActionLabel}>{action.label}</Text>
               </TouchableOpacity>
@@ -508,8 +516,8 @@ const DashboardScreen = () => {
                 <View style={styles.popularInfo}>
                   <View style={[styles.popularIcon, { backgroundColor: tool.color + '20' }]}>
                     <Image
-                      source={getToolIcon(tool.slug, tool.category)}
-                      style={{ width: 28, height: 28 }}
+                      source={(tool as any).img || getToolIcon(tool.slug, tool.category)}
+                      style={{ width: 32, height: 32 }}
                       resizeMode="contain"
                     />
                   </View>

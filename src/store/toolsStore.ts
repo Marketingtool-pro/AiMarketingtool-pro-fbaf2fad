@@ -320,10 +320,103 @@ const SAMPLE_TOOLS: Tool[] = [
   { $id: 'ps7', name: 'Engagement Calculator', slug: 'engagement-calculator', shortDescription: 'Calculate engagement rates', description: 'Calculate and analyze social media engagement metrics.', icon: 'percent', category: 'social-media', isPro: false, isNew: false, isTrending: false, usageCount: 9200, rating: 4.6, inputs: [{ name: 'mainInput', label: 'Social Media Metrics', type: 'textarea', required: true, placeholder: 'Enter your followers, likes, comments...' }], outputType: 'text', tags: ['engagement', 'calculator', 'social'] },
 ];
 
+// Load ALL 314 tools from tools.json with badge -> category mapping (mirrors web app)
+import allToolsRaw from '../data/tools.json';
+import { ToolIconImagesKeys, setToolIconOverride, getToolIcon as _getToolIcon } from '../constants/toolIcons';
+
+// Smart icon assignment — semantic match where possible, unique always
+function assignUniqueIcons(slugs: string[]) {
+  const pool = ToolIconImagesKeys;
+  // Filter out clearly decorative/abstract texture packs (numeric-only or "main-files" patterns)
+  const meaningful = pool.filter(k => /[a-z]{3,}/.test(k) && !/^\d+(-[a-z])?$/.test(k));
+  const used = new Set<string>();
+
+  // Sort slugs to make assignment deterministic
+  const sorted = [...slugs].sort();
+
+  for (const slug of sorted) {
+    const slugWords = slug.split('-').filter(w => w.length > 2);
+    let chosen: string | null = null;
+
+    // 1st pass: find icon whose key contains a slug word AND not yet used
+    for (const word of slugWords) {
+      const candidate = meaningful.find(k => !used.has(k) && k.includes(word));
+      if (candidate) { chosen = candidate; break; }
+    }
+
+    // 2nd pass: any unused meaningful icon
+    if (!chosen) chosen = meaningful.find(k => !used.has(k)) || null;
+
+    // 3rd pass: fall back to full pool
+    if (!chosen) chosen = pool.find(k => !used.has(k)) || pool[0];
+
+    used.add(chosen!);
+    setToolIconOverride(slug, _getToolIcon(chosen!));
+  }
+}
+
+function badgeToCategory(badge: string, name: string): string {
+  const b = (badge || '').toLowerCase();
+  const n = (name || '').toLowerCase();
+  // Instagram MUST be checked BEFORE Meta — Instagram tools have their own page in web app
+  if (b === 'instagram' || n.includes('instagram')) return 'instagram';
+  if (b === 'tiktok' || n.includes('tiktok')) return 'tiktok';
+  if (b === 'youtube' || n.includes('youtube')) return 'youtube';
+  if (b === 'linkedin' || n.includes('linkedin')) return 'linkedin';
+  if (b === 'twitter/x' || n.includes('twitter')) return 'twitter';
+  if (b === 'pinterest' || n.includes('pinterest')) return 'pinterest';
+  if (b === 'social media') return 'social-media';
+  // Meta / Facebook only — Instagram already routed above
+  if (b === 'facebook/meta' || n.includes('facebook') || n.includes('meta ')) return 'facebook-ads';
+  // Google Ads page (web) includes these badges
+  if (b === 'google ads' || b === 'campaign' || b === 'budget' || b === 'ppc optimization' ||
+      b === 'audit' || b === 'grader' ||
+      n.includes('google ad') || n.includes('ppc') || n.includes('keyword') ||
+      n.includes('quality score')) return 'google-ads';
+  if (b === 'shopify' || n.includes('shopify')) return 'shopify-products';
+  if (b === 'e-commerce') return 'shopify-products';
+  if (b === 'seo') return 'google-seo';
+  if (b === 'content writing' || b === 'copywriting' || b === 'text editing') return 'content-creation';
+  if (b === 'analytics' || b === 'roi & attribution') return 'google-analytics';
+  if (b === 'email') return 'email-marketing';
+  // AI Tools page bucket: AI Agent + Marketing + Advertising + Branding + Developer + Automation + Schema + Education
+  if (b === 'ai agent' || b === 'automation' || b === 'marketing' || b === 'advertising' ||
+      b === 'branding' || b === 'developer' || b === 'schema' || b === 'education') return 'ai-agents';
+  return 'ai-agents';
+}
+
+const ALL_TOOLS: Tool[] = (allToolsRaw as any[]).map((t, i) => ({
+  $id: `t${i}`,
+  name: t.name || 'Tool',
+  slug: t.slug || `tool-${i}`,
+  shortDescription: t.description?.slice(0, 80) || '',
+  description: t.description || '',
+  icon: 'zap',
+  category: badgeToCategory(t.badge, t.name),
+  isPro: !!t.isPro,
+  isNew: t.badge === 'New',
+  isTrending: i < 30,
+  usageCount: 0,
+  rating: 4.7,
+  inputs: t.formFields || [{ name: 'mainInput', label: 'Input', type: 'textarea', required: true }],
+  outputType: 'text',
+  tags: [t.badge].filter(Boolean),
+})) as Tool[];
+
+// Merge: hardcoded SAMPLE_TOOLS first (curated), then all 314 from JSON deduped by slug
+const seenSlugs = new Set(SAMPLE_TOOLS.map(t => t.slug));
+const MERGED_TOOLS = [
+  ...SAMPLE_TOOLS,
+  ...ALL_TOOLS.filter(t => !seenSlugs.has(t.slug)),
+];
+
+// Assign every merged tool a UNIQUE paid icon from the 336-icon pool
+assignUniqueIcons(MERGED_TOOLS.map(t => t.slug));
+
 export const useToolsStore = create<ToolsState>((set, get) => ({
-  tools: SAMPLE_TOOLS,
+  tools: MERGED_TOOLS,
   categories: TOOL_CATEGORIES.map(c => c.id),
-  featuredTools: SAMPLE_TOOLS.filter(t => t.isTrending),
+  featuredTools: MERGED_TOOLS.filter(t => t.isTrending),
   recentTools: [],
   favoriteTools: [],
   generations: [],
@@ -335,9 +428,8 @@ export const useToolsStore = create<ToolsState>((set, get) => ({
   fetchTools: async () => {
     set({ isLoading: true });
     try {
-      // For now, use sample data
-      // In production, fetch from Appwrite
-      set({ tools: SAMPLE_TOOLS, isLoading: false });
+      // Use merged list: 30 curated SAMPLE_TOOLS + 314 from tools.json (deduped) = ~344 total
+      set({ tools: MERGED_TOOLS, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }

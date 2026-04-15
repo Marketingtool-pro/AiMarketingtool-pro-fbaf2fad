@@ -73,14 +73,27 @@ const ToolDetailScreen = () => {
   const handleGenerate = async () => {
     if (!validateInputs() || !tool || isGenerating) return;
 
-    // Check if user has credits (for free users)
-    if (profile?.subscription === 'free' && (profile?.credits || 0) <= 0) {
+    // PRO LOCK: gate Pro tools for free users
+    if (tool.isPro && profile?.subscription === 'free') {
       Alert.alert(
-        'No Credits',
-        'You have no credits remaining. Upgrade your plan for more AI generations.',
+        '🔒 Pro Tool Locked',
+        `${tool.name} is a Professional plan feature. Upgrade to unlock 500+ generations/month, advanced automation, and cross-platform intelligence.`,
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Upgrade', onPress: () => navigation.navigate('Subscription') },
+          { text: 'Upgrade to Pro', onPress: () => navigation.navigate('Subscription') },
+        ]
+      );
+      return;
+    }
+
+    // QUOTA: free trial = 3/day, Starter = 200/mo, Pro = 500/mo
+    if (profile?.subscription === 'free' && (profile?.credits || 0) <= 0) {
+      Alert.alert(
+        'Daily Limit Reached',
+        'Free trial allows 3 generations per day. Upgrade to Starter ($29/mo, 200 generations) or Pro ($59/mo, 500 generations).',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'See Plans', onPress: () => navigation.navigate('Subscription') },
         ]
       );
       return;

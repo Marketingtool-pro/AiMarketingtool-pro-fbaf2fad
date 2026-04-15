@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useToolsStore, Tool, TOOL_CATEGORIES, PLATFORMS } from '../../store/toolsStore';
+import { useAuthStore } from '../../store/authStore';
 import { Colors } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 import * as Haptics from 'expo-haptics';
@@ -25,19 +26,21 @@ const CARD_WIDTH = (width - 48 - 16) / 3;
 const ToolsScreen = () => {
   const navigation = useNavigation<any>();
   const { tools } = useToolsStore();
+  const { profile } = useAuthStore();
+  const isFreeUser = !profile?.subscription || profile.subscription === 'free';
   const [searchQuery, setSearchQuery] = useState('');
   const [activePlatform, setActivePlatform] = useState('All');
   const [activeSubcategory, setActiveSubcategory] = useState('All');
 
-  // Map each platform tab to the categories it owns
+  // 7 canonical platforms from app.marketingtool.pro web sidebar
   const PLATFORM_CATEGORIES: Record<string, string[]> = {
-    Google: ['google-ads', 'google-seo', 'google-analytics', 'google-content'],
-    Meta: ['facebook-ads', 'meta-content'],
-    Instagram: ['instagram', 'social-media'],
-    TikTok: ['tiktok'],
-    YouTube: ['youtube'],
-    LinkedIn: ['linkedin'],
-    Shopify: ['shopify-products', 'shopify-ads', 'email-marketing', 'ecommerce-seo'],
+    'Google Ads': ['google-ads'],
+    'Meta / Facebook': ['facebook-ads', 'meta-content'],
+    'Social Media': ['social-media', 'instagram', 'tiktok', 'youtube', 'linkedin', 'twitter', 'pinterest'],
+    'Content & SEO': ['google-seo', 'google-content', 'content-creation', 'copywriting'],
+    'An-Analytics': ['google-analytics'],
+    'E-commerce': ['shopify-products', 'shopify-ads', 'email-marketing', 'ecommerce-seo'],
+    'AI Tools': ['ai-agents'],
   };
 
   const subcategories = useMemo(() => {
@@ -65,14 +68,14 @@ const ToolsScreen = () => {
   }, [tools, activePlatform, activeSubcategory, searchQuery]);
 
   const platformTabs = [
-    { name: 'All', icon: null },
-    { name: 'Google', icon: 'search' },
-    { name: 'Meta', icon: 'facebook' },
-    { name: 'Instagram', icon: 'instagram' },
-    { name: 'TikTok', icon: 'video' },
-    { name: 'YouTube', icon: 'youtube' },
-    { name: 'LinkedIn', icon: 'linkedin' },
-    { name: 'Shopify', icon: 'shopping-bag' },
+    { name: 'All', img: null },
+    { name: 'Google Ads', img: require('../../../assets/images/platforms/plat-google.png') },
+    { name: 'Meta / Facebook', img: require('../../../assets/images/platforms/plat-meta.png') },
+    { name: 'Social Media', img: require('../../../assets/images/platforms/plat-social.png') },
+    { name: 'Content & SEO', img: require('../../../assets/images/platforms/plat-seo.png') },
+    { name: 'An-Analytics', img: require('../../../assets/images/platforms/plat-analytics.png') },
+    { name: 'E-commerce', img: require('../../../assets/images/platforms/plat-ecommerce.png') },
+    { name: 'AI Tools', img: require('../../../assets/images/platforms/plat-ai.png') },
   ];
 
   return (
@@ -94,7 +97,7 @@ const ToolsScreen = () => {
                 <Text style={styles.aiBadgeText}>AI Tools</Text>
               </View>
               <Text style={styles.heroTitle}>Marketing AI Tools</Text>
-              <Text style={styles.heroSubtitle}>Google  ·  Meta  ·  Shopify</Text>
+              <Text style={styles.heroSubtitle}>Google · Meta · Social · SEO · Analytics · E-com · AI</Text>
             </View>
           </LinearGradient>
         </ImageBackground>
@@ -129,7 +132,7 @@ const ToolsScreen = () => {
                 setActiveSubcategory('All');
               }}
             >
-              {tab.icon && <Feather name={tab.icon as any} size={14} color={activePlatform === tab.name ? '#FFF' : Colors.textSecondary} />}
+              {tab.img && <Image source={tab.img} style={{ width: 18, height: 18 }} resizeMode="contain" />}
               <Text style={[styles.platformText, activePlatform === tab.name && styles.platformTextActive]}>{tab.name}</Text>
             </TouchableOpacity>
           ))}
@@ -178,6 +181,11 @@ const ToolsScreen = () => {
               <View style={styles.iconLiquid}>
                 <View style={styles.iconGlow} />
                 <Image source={getToolIcon(tool.slug)} style={styles.cardIcon} resizeMode="contain" />
+                {tool.isPro && isFreeUser && (
+                  <View style={styles.lockOverlay}>
+                    <Feather name="lock" size={20} color="#FFF" />
+                  </View>
+                )}
               </View>
               <View style={styles.badgeRow}>
                 {tool.isPro && (
@@ -347,6 +355,15 @@ const styles = StyleSheet.create({
   cardIcon: {
     width: 56,
     height: 56,
+  },
+  lockOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 16,
+    zIndex: 5,
   },
   badgeRow: {
     flexDirection: 'row',
