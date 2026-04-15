@@ -14,94 +14,76 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useToolsStore, Tool } from '../../store/toolsStore';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { useToolsStore, Tool, TOOL_CATEGORIES, PLATFORMS } from '../../store/toolsStore';
+import { useAuthStore } from '../../store/authStore';
+import { Colors } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
-import { PLATFORMS_CONFIG } from '../../data/platforms';
 import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48 - 12) / 3;
+const CARD_WIDTH = (width - 48 - 16) / 3;
 
 const ToolsScreen = () => {
   const navigation = useNavigation<any>();
   const { tools } = useToolsStore();
+  const { profile } = useAuthStore();
+  const isFreeUser = !profile?.subscription || profile.subscription === 'free';
   const [searchQuery, setSearchQuery] = useState('');
-  const [activePlatform, setActivePlatform] = useState('all');
+  const [activePlatform, setActivePlatform] = useState('All');
+  const [activeSubcategory, setActiveSubcategory] = useState('All');
 
-  // Platform tabs including All
-  const platformTabs = [
-    { id: 'all', name: 'All', icon: 'grid', color: Colors.secondary },
-    ...PLATFORMS_CONFIG.map(p => ({ id: p.id, name: p.title, icon: p.icon, color: p.color })),
-  ];
+  // 7 canonical platforms from app.marketingtool.pro web sidebar
+  const PLATFORM_CATEGORIES: Record<string, string[]> = {
+    'Google Ads': ['google-ads'],
+    'Meta / Facebook': ['facebook-ads', 'meta-content'],
+    'Social Media': ['social-media', 'instagram', 'tiktok', 'youtube', 'linkedin', 'twitter', 'pinterest'],
+    'Content & SEO': ['google-seo', 'google-content', 'content-creation', 'copywriting'],
+    'An-Analytics': ['google-analytics'],
+    'E-commerce': ['shopify-products', 'shopify-ads', 'email-marketing', 'ecommerce-seo'],
+    'AI Tools': ['ai-agents'],
+  };
 
-  // Filter tools based on platform and search
-  const filteredData = useMemo(() => {
+  const subcategories = useMemo(() => {
+    if (activePlatform === 'All') return [];
+    const ids = PLATFORM_CATEGORIES[activePlatform] || [];
+    return TOOL_CATEGORIES.filter((c) => ids.includes(c.id));
+  }, [activePlatform]);
+
+  const filteredTools = useMemo(() => {
     let result = tools;
-
-    // Search filter
+    if (activePlatform !== 'All') {
+      const ids = PLATFORM_CATEGORIES[activePlatform] || [];
+      result = result.filter((t) => ids.includes(t.category));
+    }
+    if (activeSubcategory !== 'All') {
+      result = result.filter((t) => t.category === activeSubcategory);
+    }
     if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(t =>
-        t.name.toLowerCase().includes(q) ||
-        t.description.toLowerCase().includes(q) ||
-        t.category.toLowerCase().includes(q)
+      result = result.filter((t) =>
+        t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.description.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
+    return result;
+  }, [tools, activePlatform, activeSubcategory, searchQuery]);
 
-    // Platform filter
-    if (activePlatform === 'all') {
-      // Show all tools, no sections
-      return { sections: [], allTools: result };
-    }
-
-    const platform = PLATFORMS_CONFIG.find(p => p.id === activePlatform);
-    if (!platform) return { sections: [], allTools: result };
-
-    // Get all badges for this platform
-    const allPlatformBadges = platform.sections.flatMap(s => s.badges);
-    const platformTools = result.filter(t => allPlatformBadges.includes(t.category));
-
-    // Build sections
-    const sections = platform.sections
-      .map(section => ({
-        ...section,
-        tools: platformTools.filter(t => section.badges.includes(t.category)),
-      }))
-      .filter(s => s.tools.length > 0);
-
-    return { sections, allTools: [] };
-  }, [tools, activePlatform, searchQuery]);
-
-  const renderToolCard = (tool: Tool) => (
-    <TouchableOpacity
-      key={tool.$id}
-      style={styles.card}
-      activeOpacity={0.75}
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        navigation.navigate('ToolDetail', { toolSlug: tool.slug });
-      }}
-    >
-      <View style={styles.iconLiquid}>
-        <View style={styles.iconGlow} />
-        <Image source={getToolIcon(tool.slug, tool.category)} style={styles.cardIcon} resizeMode="contain" />
-        {tool.isPro && (
-          <View style={styles.proBadge}>
-            <Feather name="lock" size={8} color="#FFB547" />
-          </View>
-        )}
-      </View>
-      <Text style={styles.cardName} numberOfLines={2}>{tool.name}</Text>
-    </TouchableOpacity>
-  );
+  const platformTabs = [
+    { name: 'All', img: null },
+    { name: 'Google Ads', img: require('../../../assets/images/platforms/plat-google.png') },
+    { name: 'Meta / Facebook', img: require('../../../assets/images/platforms/plat-meta.png') },
+    { name: 'Social Media', img: require('../../../assets/images/platforms/plat-social.png') },
+    { name: 'Content & SEO', img: require('../../../assets/images/platforms/plat-seo.png') },
+    { name: 'An-Analytics', img: require('../../../assets/images/platforms/plat-analytics.png') },
+    { name: 'E-commerce', img: require('../../../assets/images/platforms/plat-ecommerce.png') },
+    { name: 'AI Tools', img: require('../../../assets/images/platforms/plat-ai.png') },
+  ];
 
   return (
     <View style={styles.screenContainer}>
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} stickyHeaderIndices={[]}>
         {/* Hero Banner */}
         <ImageBackground
-          source={require('../../assets/images/screens/tools-hero.jpg')}
+          source={require('../../../assets/images/screens/tools-hero.jpg')}
           style={styles.heroBanner}
           resizeMode="cover"
         >
@@ -115,7 +97,7 @@ const ToolsScreen = () => {
                 <Text style={styles.aiBadgeText}>AI Tools</Text>
               </View>
               <Text style={styles.heroTitle}>Marketing AI Tools</Text>
-              <Text style={styles.heroSubtitle}>Google  ·  Meta  ·  Shopify</Text>
+              <Text style={styles.heroSubtitle}>Google · Meta · Social · SEO · Analytics · E-com · AI</Text>
             </View>
           </LinearGradient>
         </ImageBackground>
@@ -131,11 +113,6 @@ const ToolsScreen = () => {
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
-            {searchQuery ? (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Feather name="x" size={18} color={Colors.textTertiary} />
-              </TouchableOpacity>
-            ) : null}
           </View>
         </View>
 
@@ -147,56 +124,82 @@ const ToolsScreen = () => {
         >
           {platformTabs.map((tab) => (
             <TouchableOpacity
-              key={tab.id}
-              style={[styles.platformChip, activePlatform === tab.id && { backgroundColor: tab.color, borderColor: tab.color }]}
+              key={tab.name}
+              style={[styles.platformChip, activePlatform === tab.name && styles.platformChipActive]}
               onPress={() => {
                 Haptics.selectionAsync();
-                setActivePlatform(tab.id);
+                setActivePlatform(tab.name);
+                setActiveSubcategory('All');
               }}
             >
-              <Feather name={tab.icon as any} size={14} color={activePlatform === tab.id ? '#FFF' : Colors.textSecondary} />
-              <Text style={[styles.platformText, activePlatform === tab.id && styles.platformTextActive]}>{tab.name}</Text>
+              {tab.img && <Image source={tab.img} style={{ width: 18, height: 18 }} resizeMode="contain" />}
+              <Text style={[styles.platformText, activePlatform === tab.name && styles.platformTextActive]}>{tab.name}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        {/* Content */}
-        {activePlatform === 'all' ? (
-          // All tools - 3 column grid
-          <View style={styles.grid}>
-            {filteredData.allTools.map(renderToolCard)}
-          </View>
-        ) : (
-          // Platform sections
-          filteredData.sections.map((section) => (
-            <View key={section.key} style={styles.sectionContainer}>
-              {/* Section Header Glass Card */}
-              <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIconWrap, { backgroundColor: (PLATFORMS_CONFIG.find(p => p.id === activePlatform)?.color || Colors.secondary) + '20' }]}>
-                  <Feather name={section.icon as any} size={18} color={PLATFORMS_CONFIG.find(p => p.id === activePlatform)?.color || Colors.secondary} />
-                </View>
-                <View style={styles.sectionTextWrap}>
-                  <Text style={styles.sectionTitle}>{section.title}</Text>
-                  <Text style={styles.sectionSubtitle}>{section.subtitle}</Text>
-                </View>
-              </View>
-
-              {/* Tools Grid */}
-              <View style={styles.grid}>
-                {section.tools.map(renderToolCard)}
-              </View>
-            </View>
-          ))
+        {/* Subcategory Chips */}
+        {subcategories.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.subRow}
+          >
+            <TouchableOpacity
+              style={[styles.subChip, activeSubcategory === 'All' && styles.subChipActive]}
+              onPress={() => { Haptics.selectionAsync(); setActiveSubcategory('All'); }}
+            >
+              <Text style={[styles.subText, activeSubcategory === 'All' && styles.subTextActive]}>All</Text>
+            </TouchableOpacity>
+            {subcategories.map((s) => (
+              <TouchableOpacity
+                key={s.id}
+                style={[styles.subChip, activeSubcategory === s.id && styles.subChipActive]}
+                onPress={() => { Haptics.selectionAsync(); setActiveSubcategory(s.id); }}
+              >
+                <Text style={[styles.subText, activeSubcategory === s.id && styles.subTextActive]}>{s.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         )}
 
-        {/* Empty state */}
-        {activePlatform !== 'all' && filteredData.sections.length === 0 && (
-          <View style={styles.emptyState}>
-            <Feather name="search" size={40} color={Colors.textTertiary} />
-            <Text style={styles.emptyText}>No tools found</Text>
-          </View>
-        )}
+        {/* Spacer */}
+        <View style={{ height: 8 }} />
 
+        {/* 3-Column Grid */}
+        <View style={styles.grid}>
+          {filteredTools.map((tool) => (
+            <TouchableOpacity
+              key={tool.$id}
+              style={styles.card}
+              activeOpacity={0.75}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                navigation.navigate('ToolDetail', { toolSlug: tool.slug });
+              }}
+            >
+              <View style={styles.iconLiquid}>
+                <View style={styles.iconGlow} />
+                <Image source={getToolIcon(tool.slug)} style={styles.cardIcon} resizeMode="contain" />
+                {tool.isPro && isFreeUser && (
+                  <View style={styles.lockOverlay}>
+                    <Feather name="lock" size={20} color="#FFF" />
+                  </View>
+                )}
+              </View>
+              <View style={styles.badgeRow}>
+                {tool.isPro && (
+                  <View style={styles.proBadge}><Text style={styles.proBadgeText}>PRO</Text></View>
+                )}
+                {tool.isNew && (
+                  <View style={styles.newBadge}><Text style={styles.newBadgeText}>NEW</Text></View>
+                )}
+                {tool.isTrending && <Feather name="trending-up" size={12} color={Colors.secondary} />}
+              </View>
+              <Text style={styles.cardName} numberOfLines={2}>{tool.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
         <View style={{ height: 120 }} />
       </ScrollView>
     </View>
@@ -252,7 +255,7 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 14,
     paddingHorizontal: 14,
     height: 46,
@@ -268,7 +271,7 @@ const styles = StyleSheet.create({
   platformRow: {
     paddingHorizontal: 16,
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   platformChip: {
     flexDirection: 'row',
@@ -277,9 +280,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
+  },
+  platformChipActive: {
+    backgroundColor: Colors.secondary,
+    borderColor: Colors.secondary,
   },
   platformText: {
     color: Colors.textSecondary,
@@ -289,41 +296,27 @@ const styles = StyleSheet.create({
   platformTextActive: {
     color: '#FFFFFF',
   },
-  sectionContainer: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  subRow: {
     paddingHorizontal: 16,
-    marginBottom: 12,
-    backgroundColor: 'rgba(22, 24, 36, 0.55)',
-    marginHorizontal: 16,
-    padding: 14,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    gap: 8,
+    marginBottom: 8,
   },
-  sectionIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+  subChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
-  sectionTextWrap: {
-    flex: 1,
+  subChipActive: {
+    backgroundColor: 'rgba(124,58,237,0.2)',
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  sectionSubtitle: {
+  subText: {
+    color: Colors.textTertiary,
     fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 2,
+    fontWeight: '500',
+  },
+  subTextActive: {
+    color: Colors.secondary,
   },
   grid: {
     flexDirection: 'row',
@@ -363,34 +356,42 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
   },
-  proBadge: {
+  lockOverlay: {
     position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: 'rgba(255, 181, 71, 0.2)',
-    borderWidth: 1,
-    borderColor: '#FFB547',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 16,
+    zIndex: 5,
   },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginBottom: 4,
+    minHeight: 16,
+  },
+  proBadge: {
+    backgroundColor: 'rgba(253,151,7,0.25)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  proBadgeText: { fontSize: 8, color: '#FD9707', fontWeight: 'bold' },
+  newBadge: {
+    backgroundColor: 'rgba(34,197,94,0.25)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  newBadgeText: { fontSize: 8, color: '#22C55E', fontWeight: 'bold' },
   cardName: {
     fontSize: 11,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
     lineHeight: 14,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: Colors.textTertiary,
-    marginTop: 12,
   },
 });
 

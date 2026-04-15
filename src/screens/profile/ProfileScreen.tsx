@@ -95,15 +95,15 @@ const ProfileScreen = () => {
       title: 'Subscription',
       items: [
         { iconName: 'star', label: 'Manage Plan', screen: 'Subscription', badge: profile?.subscription === 'free' ? 'Upgrade' : null },
-        { iconName: 'credit-card', label: 'Payment & Billing', screen: 'Subscription' as keyof RootStackParamList },
+        { iconName: 'credit-card', label: 'Payment & Billing', url: 'https://billing.stripe.com/p/login/4gw5oe3PY0hW0qk000' },
       ],
     },
     {
       title: 'Support',
       items: [
-        { iconName: 'help-circle', label: 'Help Center', url: 'https://www.marketingtool.pro/help/' },
-        { iconName: 'message-circle', label: 'Contact Support', url: 'https://www.marketingtool.pro/contact/' },
-        { iconName: 'book', label: 'Tutorials', url: 'https://www.marketingtool.pro/blog/' },
+        { iconName: 'help-circle', label: 'Help Center', url: 'https://marketingtool.pro/help/' },
+        { iconName: 'message-circle', label: 'Contact Support', url: 'https://marketingtool.pro/contact/' },
+        { iconName: 'book', label: 'Tutorials', url: 'https://marketingtool.pro/blog/' },
       ],
     },
     {
@@ -119,7 +119,7 @@ const ProfileScreen = () => {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#0D0F1C', '#0D0F1C', '#0D0F1C']}
+        colors={['#0D0F1C', '#131538', '#0D0F1C']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -169,20 +169,11 @@ const ProfileScreen = () => {
 
               <View style={[
                 styles.planBadge,
-                { backgroundColor: profile?.subscription && profile.subscription !== 'free' ? '#f59e0b' : 'rgba(255,255,255,0.1)' }
+                { backgroundColor: profile?.subscription === 'pro' ? '#f59e0b' : 'rgba(255,255,255,0.1)' }
               ]}>
-                <Feather name={profile?.subscription && profile.subscription !== 'free' ? 'star' : 'user'} size={12} color="#fff" style={{ marginRight: 4 }} />
+                <Feather name="user" size={12} color="#fff" style={{ marginRight: 4 }} />
                 <Text style={styles.planText}>
-                  {(() => {
-                    switch (profile?.subscription) {
-                      case 'starter': return 'Starter Plan';
-                      case 'pro': return 'Professional';
-                      case 'alltools': return 'Growth Plan';
-                      case 'enterprise': return 'Enterprise';
-                      case 'agency': return 'Agency';
-                      default: return 'Free Plan';
-                    }
-                  })()}
+                  {profile?.subscription === 'pro' ? 'Pro Member' : 'Free Plan'}
                 </Text>
               </View>
             </View>
@@ -292,31 +283,31 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   glassCardOuter: {
-    width: width - 48,
+    width: width - 32,
     alignSelf: 'center',
-    borderRadius: 20,
+    borderRadius: 28,
     overflow: 'hidden',
     shadowColor: '#7e22ce',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 12,
   },
   glassCardGradient: {
-    borderRadius: 20,
+    borderRadius: 28,
     padding: 1.5,
   },
   glassCardBorder: {
-    borderRadius: 19,
+    borderRadius: 27,
     overflow: 'hidden',
     backgroundColor: 'rgba(13, 15, 28, 0.85)',
   },
   glassCardContent: {
-    padding: 16,
-    paddingTop: 20,
+    padding: 14,
+    paddingTop: 14,
   },
-  heroSection: { height: 180, width: '100%' },
-  heroImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%', opacity: 0.6 },
+  heroSection: { height: 260, width: '100%' },
+  heroImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
   heroGradient: { ...StyleSheet.absoluteFillObject },
   headerTop: {
     flexDirection: 'row',
@@ -334,22 +325,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: { paddingHorizontal: 0, marginTop: -50, marginBottom: Spacing.md },
+  header: { paddingHorizontal: 0, marginTop: -80, marginBottom: Spacing.lg },
   profileHeader: { alignItems: 'center' },
   avatarWrapper: { position: 'relative' },
   avatarContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: '#7e22ce',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: 'rgba(126, 34, 206, 0.6)',
   },
   avatarImg: { width: '100%', height: '100%' },
-  avatarText: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
+  avatarText: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
   editAvatarBtn: {
     position: 'absolute',
     bottom: 0,
@@ -363,21 +354,21 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(13, 15, 28, 0.55)',
   },
-  userName: { color: '#fff', fontSize: 14, fontWeight: '700', marginTop: 6 },
-  email: { color: 'rgba(255,255,255,0.6)', fontSize: 11, marginBottom: 4 },
+  userName: { color: '#fff', fontSize: 17, fontWeight: '700', marginTop: 6 },
+  email: { color: 'rgba(255,255,255,0.6)', fontSize: 14, marginBottom: 8 },
   planBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
   planText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 12,
+    marginTop: 20,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.08)',
-    paddingTop: 12,
+    paddingTop: 16,
   },
   statBox: { flex: 1, alignItems: 'center' },
-  statValue: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  statLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 10, marginTop: 2 },
+  statValue: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  statLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 2 },
   upgradeBanner: { marginHorizontal: Spacing.lg, marginBottom: Spacing.lg, borderRadius: BorderRadius.lg, overflow: 'hidden' },
   upgradeGradient: { flexDirection: 'row', alignItems: 'center', padding: Spacing.lg },
   upgradeIconWrap: {
@@ -402,11 +393,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
   },
   menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: Spacing.md, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.05)' },
   noBorder: { borderBottomWidth: 0 },

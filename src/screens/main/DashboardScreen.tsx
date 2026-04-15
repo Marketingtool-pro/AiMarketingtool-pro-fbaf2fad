@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,6 @@ import {
   Easing,
   Platform,
 } from 'react-native';
-import * as Notifications from 'expo-notifications';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 // Skia removed - using cross-platform LinearGradient instead for iOS compatibility
@@ -151,7 +150,11 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
       <AnimatedRN.View style={[styles.statCardWrapper, animatedStyle]}>
         <GlassBentoCard color={stat.color}>
           <View style={[styles.statIcon, { backgroundColor: stat.color + '20' }]}>
-            <Feather name={stat.icon as any} size={18} color={stat.color} />
+            {stat.img ? (
+              <Image source={stat.img} style={{ width: 28, height: 28 }} resizeMode="contain" />
+            ) : (
+              <Feather name={stat.icon as any} size={18} color={stat.color} />
+            )}
           </View>
           <Text style={styles.statValue}>{stat.value}</Text>
           <Text style={styles.statLabel} numberOfLines={1}>{stat.label}</Text>
@@ -167,16 +170,14 @@ const DashboardScreen = () => {
   const { tools, featuredTools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
   const [refreshing, setRefreshing] = React.useState(false);
   const [campaignsCount, setCampaignsCount] = React.useState<number>(0);
-  const [notifCount, setNotifCount] = useState(0);
   const [generationsCount, setGenerationsCount] = React.useState<number>(0);
 
   useEffect(() => {
     fetchTools();
+    // Fetch user generations when logged in
     if (user?.$id) {
       fetchGenerations(user.$id);
     }
-    // Check real notification count
-    Notifications.getPresentedNotificationsAsync().then(n => setNotifCount(n.length));
   }, [user?.$id]);
 
   // Update counts when generations change
@@ -201,37 +202,37 @@ const DashboardScreen = () => {
   };
 
   const stats = [
-    { label: 'Explore All', value: 'AI Tools', icon: 'zap', color: Colors.secondary, badge: 'New', screen: 'Tools' },
-    { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
-    { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
-    { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },
+    { label: 'AI Tools', value: 'All', icon: 'zap', img: require('../../assets/images/tool-icons-v2/ai-3d.png'), color: Colors.secondary, badge: 'New', screen: 'Tools' },
+    { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', img: require('../../assets/images/tool-icons-v2/analytics-3d.png'), color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
+    { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', img: require('../../assets/images/tool-icons-v2/rocket.png'), color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
+    { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', img: require('../../assets/images/tool-icons-v2/trophy.png'), color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },
   ];
 
   // Horizontal banner data
   const bannerSlides = [
-    { id: 1, image: BannerImages.banner1, title: 'AI Marketing Pro', subtitle: 'Create stunning ads in seconds' },
-    { id: 2, image: BannerImages.banner2, title: 'Smart Content', subtitle: 'AI-powered writing assistant' },
-    { id: 3, image: BannerImages.banner3, title: 'ROI Boost', subtitle: 'Data-driven strategies' },
-    { id: 4, image: BannerImages.banner4, title: 'Digital Growth', subtitle: 'Scale your business faster' },
-    { id: 5, image: BannerImages.banner5, title: 'Marketing Suite', subtitle: 'All tools in one place' },
+    { id: 1, image: BannerImages.banner1, title: 'AI Marketing Pro', subtitle: 'Create stunning ads in seconds', color: '#6C5CE7' },
+    { id: 2, image: BannerImages.banner2, title: 'Smart Content', subtitle: 'AI-powered writing assistant', color: '#00B894' },
+    { id: 3, image: BannerImages.banner3, title: 'ROI Boost', subtitle: 'Data-driven strategies', color: '#E17055' },
+    { id: 4, image: BannerImages.banner4, title: 'Digital Growth', subtitle: 'Scale your business faster', color: '#0984E3' },
+    { id: 5, image: BannerImages.banner5, title: 'Marketing Suite', subtitle: 'All tools in one place', color: '#A29BFE' },
   ];
 
   const quickActions = [
-    { label: 'AI Chat', icon: 'message-circle', color: Colors.accent, screen: 'Chat' },
-    { label: 'Meme Gen', icon: 'smile', color: Colors.secondary, screen: 'MemeGenerator' },
-    { label: 'All Tools', icon: 'grid', color: Colors.success, screen: 'Tools' },
-    { label: 'Reports', icon: 'bar-chart-2', color: Colors.gold, screen: 'History' },
+    { label: 'AI Chat', icon: 'message-circle', img: require('../../../assets/images/platforms/messenger.png'), color: Colors.accent, screen: 'Chat' },
+    { label: 'Meme Gen', icon: 'smile', img: require('../../../assets/images/platforms/instagram.png'), color: Colors.secondary, screen: 'MemeGenerator' },
+    { label: 'All Tools', icon: 'grid', img: require('../../../assets/images/platforms/google.png'), color: Colors.success, screen: 'Tools' },
+    { label: 'Reports', icon: 'bar-chart-2', img: require('../../../assets/images/platforms/youtube.png'), color: Colors.gold, screen: 'History' },
   ];
 
   const popularTools = [
-    { name: 'Instagram Caption', slug: 'instagram-caption', category: 'Social', trending: true, color: '#E4405F' },
-    { name: 'Facebook Ad Copy', slug: 'facebook-ad-copy', category: 'Ads', trending: true, color: '#1877F2' },
-    { name: 'Product Description', slug: 'product-description', category: 'E-commerce', trending: true, color: '#96BF48' },
-    { name: 'Instagram Reels Script', slug: 'reels-script', category: 'Video', trending: true, color: '#C13584' },
-    { name: 'Product Title Optimizer', slug: 'product-title-optimizer', category: 'E-commerce', trending: false, color: '#96BF48' },
-    { name: 'Email Subject Lines', slug: 'email-subject-lines', category: 'Email', trending: false, color: '#EF4444' },
-    { name: 'Google Ads Headline', slug: 'google-ads-headline', category: 'Ads', trending: true, color: '#4285F4' },
-    { name: 'Meme Generator', slug: 'meme-generator', category: 'Creative', trending: true, color: '#EC4899' },
+    { name: 'Instagram Caption', slug: 'instagram-captions', img: require('../../../assets/images/platforms/instagram.png'), category: 'Social', trending: true, color: '#E4405F' },
+    { name: 'Facebook Ad Copy', slug: 'facebook-ad-copy', img: require('../../../assets/images/platforms/facebook.png'), category: 'Ads', trending: true, color: '#1877F2' },
+    { name: 'Product Description', slug: 'product-descriptions', img: require('../../../assets/images/tool-icons-v2/ecommerce-3d.png'), category: 'E-commerce', trending: true, color: '#96BF48' },
+    { name: 'Instagram Reels Script', slug: 'instagram-reels', img: require('../../../assets/images/platforms/instagram.png'), category: 'Video', trending: true, color: '#C13584' },
+    { name: 'Shopify Product Title', slug: 'shopify-titles', img: require('../../../assets/images/tool-icons-v2/shopify-3d.png'), category: 'E-commerce', trending: false, color: '#96BF48' },
+    { name: 'Email Subject Lines', slug: 'email-subjects', img: require('../../../assets/images/platforms/messenger.png'), category: 'Email', trending: false, color: '#EF4444' },
+    { name: 'Google Ads Headline', slug: 'google-ads-headline', img: require('../../../assets/images/platforms/google.png'), category: 'Ads', trending: true, color: '#4285F4' },
+    { name: 'Meme Generator', slug: 'meme-generator', img: require('../../../assets/images/platforms/instagram.png'), category: 'Creative', trending: true, color: '#EC4899' },
   ];
 
   return (
@@ -264,7 +265,7 @@ const DashboardScreen = () => {
               onPress={() => navigation.navigate('Notifications')}
             >
               <Feather name="bell" size={22} color={Colors.white} />
-              {notifCount > 0 && <View style={styles.notificationDot} />}
+              <View style={styles.notificationDot} />
             </TouchableOpacity>
           </View>
         </View>
@@ -290,7 +291,7 @@ const DashboardScreen = () => {
             />
           </View>
           <LinearGradient
-            colors={['transparent', 'rgba(13, 15, 28, 0.8)', 'rgba(13, 15, 28, 0.95)']}
+            colors={['transparent', 'rgba(6, 11, 40, 0.8)', 'rgba(6, 11, 40, 0.95)']}
             style={styles.heroGradient}
           >
             <View style={styles.heroContent}>
@@ -362,7 +363,7 @@ const DashboardScreen = () => {
               >
                 <Image source={slide.image} style={styles.bannerImage} resizeMode="cover" />
                 <LinearGradient
-                  colors={['transparent', 'rgba(13,15,28,0.6)', 'rgba(13,15,28,0.95)']}
+                  colors={['transparent', 'transparent', `${slide.color}99`]}
                   style={styles.bannerGradient}
                 >
                   <Text style={styles.bannerTitle}>{slide.title}</Text>
@@ -406,7 +407,11 @@ const DashboardScreen = () => {
                 }}
               >
                 <View style={[styles.quickActionIcon, { backgroundColor: action.color + '15' }]}>
-                  <Feather name={action.icon as any} size={24} color={action.color} />
+                  {(action as any).img ? (
+                    <Image source={(action as any).img} style={{ width: 32, height: 32 }} resizeMode="contain" />
+                  ) : (
+                    <Feather name={action.icon as any} size={24} color={action.color} />
+                  )}
                 </View>
                 <Text style={styles.quickActionLabel}>{action.label}</Text>
               </TouchableOpacity>
@@ -511,8 +516,8 @@ const DashboardScreen = () => {
                 <View style={styles.popularInfo}>
                   <View style={[styles.popularIcon, { backgroundColor: tool.color + '20' }]}>
                     <Image
-                      source={getToolIcon(tool.slug, tool.category)}
-                      style={{ width: 28, height: 28 }}
+                      source={(tool as any).img || getToolIcon(tool.slug, tool.category)}
+                      style={{ width: 32, height: 32 }}
                       resizeMode="contain"
                     />
                   </View>
@@ -783,7 +788,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   statValue: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 'bold',
     color: Colors.white,
   },
@@ -810,7 +815,7 @@ const styles = StyleSheet.create({
   },
   bannerSlide: {
     width: width - 48,
-    height: 200,
+    height: 160,
     marginRight: Spacing.md,
     borderRadius: BorderRadius.xl,
     overflow: 'hidden',
@@ -841,15 +846,13 @@ const styles = StyleSheet.create({
   bannerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(124,58,237,0.6)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignSelf: 'flex-start',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-    marginTop: 10,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginTop: 8,
+    gap: 4,
   },
   bannerButtonText: {
     fontSize: 12,
