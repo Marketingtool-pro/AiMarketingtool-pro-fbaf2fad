@@ -92,7 +92,8 @@
   },
   "private": true,
   "overrides": {
-    "expo-file-system": "$expo-file-system"
+    "expo-file-system": "$expo-file-system",
+    "@tootallnate/once": "^3.0.1"
   },
   "resolutions": {
     "expo-file-system": "~55.0.10"
