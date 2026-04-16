@@ -41,6 +41,11 @@
             "CFBundleURLSchemes": [
               "com.googleusercontent.apps.911925145433-ulns32v0guck53vdob9ejqpbcqri8hes"
             ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.911925145433-ulns32v0guck53vdob9ejqpbcqri8hes"
+            ]
           }
         ],
         "NSCameraUsageDescription": "Allow MarketingTool to access your camera for profile photos and content creation.",
@@ -50,6 +55,7 @@
         "NSLocationWhenInUseUsageDescription": "Allow MarketingTool to access your location for personalized content.",
         "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads and analytics.",
         "UIBackgroundModes": [
+          "remote-notification",
           "remote-notification"
         ],
         "LSApplicationQueriesSchemes": [
@@ -173,6 +179,12 @@
         "projectId": "93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
       }
     },
-    "owner": "aimarketintool-2-2-2"
+    "owner": "aimarketintool-2-2-2",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
+    }
   }
 }
