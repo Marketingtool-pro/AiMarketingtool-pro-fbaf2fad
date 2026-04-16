@@ -98,7 +98,18 @@ const SettingsScreen = () => {
         const msg = (e?.message || '').toLowerCase();
         const type = (e?.type || '').toLowerCase();
         if (type.includes('password') || msg.includes('password')) {
-          Alert.alert('Set a Password First', 'Two-factor authentication requires a password on your account. Please set a password in Profile → Security, then enable 2FA.');
+          Alert.alert(
+            'Set a Password First',
+            'Two-factor authentication requires a password on your account. Set one now to continue.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Set Password', onPress: () => {
+                setCurrentPassword('');
+                setNewPassword('');
+                setPasswordModal('new');
+              }},
+            ]
+          );
         } else if (msg.includes('verified') || msg.includes('verification')) {
           Alert.alert('Verify Your Email First', 'Please verify your email address before enabling two-factor authentication.');
         } else {
@@ -222,9 +233,11 @@ const SettingsScreen = () => {
     try {
       await authService.updatePassword(currentPassword, newPassword);
       setPasswordModal('hidden');
-      Alert.alert('Success', 'Your password has been updated.');
+      setCurrentPassword('');
+      setNewPassword('');
+      Alert.alert('Success', 'Your password has been set. You can now enable two-factor authentication.');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to update password. Check your current password.');
+      Alert.alert('Error', error.message || 'Failed to update password.');
     } finally {
       setPasswordLoading(false);
     }
