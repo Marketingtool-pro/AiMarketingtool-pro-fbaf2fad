@@ -51,14 +51,13 @@ const PrivacyScreen = () => {
 
           <Text style={styles.heading}>Third-Party Services</Text>
           <Text style={styles.paragraph}>
-            We use the following third-party services that may process your data:{'\n\n'}
-            {'\u2022'} Appwrite (cloud backend): Account data, user profiles, and generation history.{'\n'}
-            {'\u2022'} Apple App Store / Google Play Services: Subscription billing and app distribution.{'\n'}
-            {'\u2022'} Google Sign-In, Apple Sign-In, Facebook Login: Authentication via OAuth.{'\n'}
-            {'\u2022'} MSG91: SMS delivery for phone number verification.{'\n'}
-            {'\u2022'} Firebase: Phone authentication and push notifications.{'\n'}
-            {'\u2022'} Google Cloud / Vertex AI: Powering advanced AI features and analysis.{'\n'}
-            {'\u2022'} Anthropic (Claude AI): Processing your content generation requests (inputs are not stored by the AI provider).
+            We use trusted service providers to operate the App. Data shared with each provider is limited to what is necessary for the described function:{'\n\n'}
+            {'\u2022'} Cloud infrastructure: Secure storage for your account data, profiles, and generation history.{'\n'}
+            {'\u2022'} App stores: Subscription billing and app distribution via Apple App Store and Google Play.{'\n'}
+            {'\u2022'} Authentication: Secure sign-in via your Apple, Google, or Facebook account (OAuth).{'\n'}
+            {'\u2022'} SMS verification: One-time codes sent to verify your phone number.{'\n'}
+            {'\u2022'} Push notifications: Delivered through your device's native notification service.{'\n'}
+            {'\u2022'} AI content generation: Your inputs are processed to generate marketing content. Inputs are not stored by AI providers after processing.
           </Text>
 
           <Text style={styles.heading}>Biometric Data</Text>
