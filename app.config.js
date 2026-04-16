@@ -131,7 +131,6 @@ module.exports = ({ config }) => ({
         "ios": {
           "useFrameworks": "static",
           "deploymentTarget": "16.0",
-          "storeKitVersion": "2",
           "forceStaticLinking": [
             "RNFBApp",
             "RNFBAuth",
