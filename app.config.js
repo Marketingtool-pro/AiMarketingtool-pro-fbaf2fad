@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const { withDangerousMod, withXcodeProject } = require('@expo/config-plugins');
-const withRNIapPod = require('./plugins/withRNIapPod');
 
 /**
  * INLINED BUILD PLUGINS for Xcode 16.1+ compatibility
@@ -125,7 +124,6 @@ module.exports = ({ config }) => ({
   plugins: [
     [withIosFirebaseSwiftFix],
     [withEasPodfileFix],
-    [withRNIapPod],
     [withXcodeProjectFix],
     [
       "expo-build-properties",
