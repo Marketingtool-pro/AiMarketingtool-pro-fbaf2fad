@@ -63,6 +63,13 @@ export const billingService = {
       return { success: false, error: IAP_UNAVAILABLE_ERROR };
     }
     try {
+      const available = await this.getProducts();
+      console.log('[Billing] Available products:', available.map((p: any) => p.productId));
+      const found = available.find((p: any) => p.productId === sku);
+      if (!found) {
+        console.error('[Billing] Product not found in store:', sku, 'Available:', available.map((p: any) => p.productId));
+        return { success: false, error: `Product "${sku}" is not available in your region. Please contact support.` };
+      }
       let purchase = SUBSCRIPTION_SKUS.has(sku)
         ? await IAP.requestSubscription({ sku })
         : await IAP.requestPurchase({ sku });
