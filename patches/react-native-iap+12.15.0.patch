@@ -1,0 +1,13 @@
+diff --git a/node_modules/react-native-iap/RNIap.podspec b/node_modules/react-native-iap/RNIap.podspec
+index 9fe1f91..e069379 100644
+--- a/node_modules/react-native-iap/RNIap.podspec
++++ b/node_modules/react-native-iap/RNIap.podspec
+@@ -28,7 +28,7 @@ Pod::Spec.new do |s|
+         "CLANG_CXX_LANGUAGE_STANDARD" => "c++17"
+     }
+ 
+-    s.dependency "React-Codegen"
++    s.dependency "ReactCodegen"
+     s.dependency "RCT-Folly"
+     s.dependency "RCTRequired"
+     s.dependency "RCTTypeSafety"
