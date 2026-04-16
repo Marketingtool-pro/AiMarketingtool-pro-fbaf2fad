@@ -136,8 +136,7 @@ module.exports = ({ config }) => ({
             "RNFBAuth",
             "RNFBCrashlytics",
             "RNFBFirestore",
-            "RNFBMessaging",
-            "RNIap"
+            "RNFBMessaging"
           ]
         },
         "android": {
