@@ -19,6 +19,8 @@ import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import * as Haptics from 'expo-haptics';
 import { billingService } from '../../services/billingService';
+import { functions } from '../../services/appwrite';
+import { ExecutionMethod } from 'react-native-appwrite';
 
 const { width } = Dimensions.get('window');
 
@@ -157,18 +159,23 @@ const SubscriptionScreen = () => {
 
     setIsLoading(true);
     try {
-      const skus = PLAN_TO_SKU[selectedPlan as PlanId];
-      if (!skus) throw new Error('Invalid plan selected');
-      const sku = billingPeriod === 'yearly' ? skus.yearly : skus.monthly;
-      if (Platform.OS !== 'web') {
-        const result = await billingService.requestPurchase(sku, userId!);
-        if (result.success) {
-          Alert.alert('Success', 'Subscription activated!', [
-            { text: 'OK', onPress: () => { refreshProfile(); navigation.goBack(); } },
-          ]);
-        } else {
-          Alert.alert('Purchase Failed', result.error || 'Could not complete purchase.');
-        }
+      const userEmail = (profile as any)?.email || '';
+      const execution = await functions.createExecution(
+        'stripe-checkout',
+        JSON.stringify({
+          planId: selectedPlan,
+          billingPeriod,
+          userId,
+          userEmail,
+          platform: 'mobile',
+        }),
+        false, '/', ExecutionMethod.POST,
+      );
+      const result = JSON.parse(execution.responseBody);
+      if (result.url) {
+        await Linking.openURL(result.url);
+      } else if (result.error) {
+        Alert.alert('Checkout Error', result.error);
       }
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Could not open checkout.');
