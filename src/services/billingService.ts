@@ -4,33 +4,31 @@ import { functions } from './appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 
 const productSkus = [
-  'pro_starter_monthly',
-  'pro_starter_yearly',
-  'pro_professional_monthly',
-  'pro_professional_yearly',
-  'pro_growth_monthly',
-  'pro_growth_yearly',
-  'tokens_100',
+  'pro.marketingtool.starter.monthly',
+  'pro.marketingtool.starter.yearly',
+  'pro.marketingtool.pro.monthly',
+  'pro.marketingtool.pro.yearly',
+  'pro.marketingtool.growth.monthly',
+  'pro.marketingtool.growth.yearly',
+  'pro.marketingtool.tokens',
 ];
 
-// IAP native module is excluded on iOS via plugins/withIosExcludeIap.js — guard every call.
 const iapAvailable = (): boolean => {
-  if (Platform.OS !== 'android') return false;
   try {
     return !!(IAP && typeof (IAP as any).initConnection === 'function');
   } catch { return false; }
 };
 
 const IAP_UNAVAILABLE_ERROR =
-  'In-app purchase is not available on this device. Please subscribe on marketingtool.pro/pricing';
+  'In-app purchase is not available on this device.';
 
 const SUBSCRIPTION_SKUS = new Set([
-  'pro_starter_monthly',
-  'pro_starter_yearly',
-  'pro_professional_monthly',
-  'pro_professional_yearly',
-  'pro_growth_monthly',
-  'pro_growth_yearly',
+  'pro.marketingtool.starter.monthly',
+  'pro.marketingtool.starter.yearly',
+  'pro.marketingtool.pro.monthly',
+  'pro.marketingtool.pro.yearly',
+  'pro.marketingtool.growth.monthly',
+  'pro.marketingtool.growth.yearly',
 ]);
 
 export const billingService = {
@@ -82,12 +80,17 @@ export const billingService = {
   async verifyPurchase(purchase: IAP.Purchase, userId: string) {
     if (!iapAvailable()) return { success: false, error: IAP_UNAVAILABLE_ERROR };
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         userId,
         productId: purchase.productId,
         platform: Platform.OS,
-        googlePurchaseToken: purchase.purchaseToken,
       };
+      if (Platform.OS === 'android') {
+        payload.googlePurchaseToken = purchase.purchaseToken;
+      } else {
+        payload.appleReceipt = purchase.transactionReceipt;
+        payload.transactionId = purchase.transactionId;
+      }
 
       const execution = await functions.createExecution(
         'stripe-checkout',
@@ -98,7 +101,14 @@ export const billingService = {
       const result = JSON.parse(execution.responseBody);
 
       if (result.success) {
-        await IAP.acknowledgePurchaseAndroid({ token: purchase.purchaseToken! });
+        if (Platform.OS === 'ios') {
+          await IAP.finishTransaction({
+            purchase,
+            isConsumable: !SUBSCRIPTION_SKUS.has(purchase.productId),
+          });
+        } else {
+          await IAP.acknowledgePurchaseAndroid({ token: purchase.purchaseToken! });
+        }
         return { success: true };
       }
 
