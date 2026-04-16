@@ -71,7 +71,7 @@
     "react-native": "0.83.4",
     "react-native-appwrite": "0.24.0",
     "react-native-gesture-handler": "2.30.0",
-    "react-native-iap": "^12.16.4",
+    "react-native-iap": "^12.15.0",
     "react-native-reanimated": "4.2.1",
     "react-native-safe-area-context": "~5.6.2",
     "react-native-screens": "~4.23.0",
