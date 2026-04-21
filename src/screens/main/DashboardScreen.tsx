@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -167,7 +167,7 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
 const DashboardScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user, profile } = useAuthStore();
-  const { tools, featuredTools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
+  const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
   const [refreshing, setRefreshing] = React.useState(false);
   const [campaignsCount, setCampaignsCount] = React.useState<number>(0);
   const [generationsCount, setGenerationsCount] = React.useState<number>(0);
@@ -224,16 +224,36 @@ const DashboardScreen = () => {
     { label: 'Reports', icon: 'bar-chart-2', img: require('../../../assets/images/platforms/youtube.png'), color: Colors.gold, screen: 'History' },
   ];
 
-  const popularTools = [
-    { name: 'Instagram Caption', slug: 'instagram-captions', img: require('../../../assets/images/platforms/instagram.png'), category: 'Social', trending: true, color: '#E4405F' },
-    { name: 'Facebook Ad Copy', slug: 'facebook-ad-copy', img: require('../../../assets/images/platforms/facebook.png'), category: 'Ads', trending: true, color: '#1877F2' },
-    { name: 'Product Description', slug: 'product-descriptions', img: require('../../../assets/images/tool-icons-v2/ecommerce-3d.png'), category: 'E-commerce', trending: true, color: '#96BF48' },
-    { name: 'Instagram Reels Script', slug: 'instagram-reels', img: require('../../../assets/images/platforms/instagram.png'), category: 'Video', trending: true, color: '#C13584' },
-    { name: 'Shopify Product Title', slug: 'shopify-titles', img: require('../../../assets/images/tool-icons-v2/shopify-3d.png'), category: 'E-commerce', trending: false, color: '#96BF48' },
-    { name: 'Email Subject Lines', slug: 'email-subjects', img: require('../../../assets/images/platforms/messenger.png'), category: 'Email', trending: false, color: '#EF4444' },
-    { name: 'Google Ads Headline', slug: 'google-ads-headline', img: require('../../../assets/images/platforms/google.png'), category: 'Ads', trending: true, color: '#4285F4' },
-    { name: 'Meme Generator', slug: 'meme-generator', img: require('../../../assets/images/platforms/instagram.png'), category: 'Creative', trending: true, color: '#EC4899' },
-  ];
+  // Recommendations derived from the real tool catalog — picks one representative
+  // tool from each major platform so links never orphan when tools.json changes.
+  // Includes the Meme Generator as a special-case entry (separate screen).
+  const popularTools = useMemo(() => {
+    const categoryPicks: Array<{ cat: string; color: string }> = [
+      { cat: 'google-ads', color: '#4285F4' },
+      { cat: 'facebook-ads', color: '#1877F2' },
+      { cat: 'instagram', color: '#E4405F' },
+      { cat: 'shopify-products', color: '#96BF48' },
+      { cat: 'email-marketing', color: '#EF4444' },
+      { cat: 'google-seo', color: '#4285F4' },
+      { cat: 'ai-agents', color: '#EC4899' },
+    ];
+    const picks = categoryPicks
+      .map(({ cat, color }) => {
+        const match = tools.find((t) => t.category === cat);
+        return match
+          ? { name: match.name, slug: match.slug, category: match.category, color }
+          : null;
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+    // Meme Generator has its own dedicated screen (not ToolDetail).
+    picks.push({
+      name: 'Meme Generator',
+      slug: 'meme-generator',
+      category: 'Creative',
+      color: '#EC4899',
+    });
+    return picks;
+  }, [tools]);
 
   return (
     <View style={styles.screenContainer}>
@@ -498,7 +518,7 @@ const DashboardScreen = () => {
           </View>
 
           <View style={styles.popularList}>
-            {popularTools.map((tool, index) => (
+            {popularTools.map((tool: typeof popularTools[number], index: number) => (
               <TouchableOpacity
                 key={index}
                 style={[
@@ -524,11 +544,6 @@ const DashboardScreen = () => {
                   <View>
                     <View style={styles.popularNameRow}>
                       <Text style={styles.popularName}>{tool.name}</Text>
-                      {tool.trending && (
-                        <View style={styles.trendingBadge}>
-                          <Feather name="trending-up" size={10} color={Colors.success} />
-                        </View>
-                      )}
                     </View>
                     <Text style={styles.popularUsesText}>{tool.category}</Text>
                   </View>

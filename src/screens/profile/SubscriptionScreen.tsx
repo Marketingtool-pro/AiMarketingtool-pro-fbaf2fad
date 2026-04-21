@@ -145,6 +145,10 @@ const SubscriptionScreen = () => {
   const handleSubscribe = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     const userId = profile?.userId || profile?.$id;
+    if (!userId && selectedPlan !== 'free' && selectedPlan !== 'agency') {
+      Alert.alert('Sign In Required', 'Please sign in before subscribing.');
+      return;
+    }
 
     if (selectedPlan === 'free') {
       Alert.alert('Free Trial Active', 'You have 7 days, 3 generations/day in simulation mode.');
@@ -159,6 +163,25 @@ const SubscriptionScreen = () => {
 
     setIsLoading(true);
     try {
+      const skuInfo = PLAN_TO_SKU[selectedPlan as PlanId];
+      if (Platform.OS === 'ios' || Platform.OS === 'android') {
+        if (!skuInfo) {
+          Alert.alert('Unavailable', 'This plan is not available in the mobile app.');
+          return;
+        }
+        const sku = billingPeriod === 'monthly' ? skuInfo.monthly : skuInfo.yearly;
+        const result = await billingService.requestPurchase(sku, userId!);
+        if (result.success) {
+          Alert.alert('Success', 'Your subscription is now active!', [
+            { text: 'OK', onPress: () => { refreshProfile(); navigation.goBack(); } },
+          ]);
+          return;
+        }
+        if (result.error === 'Purchase cancelled') return;
+        Alert.alert('Purchase Failed', result.error || 'Could not complete the purchase. Please try again.');
+        return;
+      }
+
       const userEmail = (profile as any)?.email || '';
       const execution = await functions.createExecution(
         'stripe-checkout',
@@ -167,19 +190,29 @@ const SubscriptionScreen = () => {
           billingPeriod,
           userId,
           userEmail,
-          platform: 'mobile',
+          platform: 'web',
         }),
         false, '/', ExecutionMethod.POST,
       );
       const result = JSON.parse(execution.responseBody);
       if (result.url) {
         await Linking.openURL(result.url);
-      } else if (result.error) {
-        Alert.alert('Checkout Error', result.error);
+      } else {
+        Alert.alert('Checkout Error', result.error || 'Could not start checkout.');
       }
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Could not open checkout.');
     } finally { setIsLoading(false); }
+  };
+
+  const handleManageSubscription = () => {
+    if (Platform.OS === 'ios') {
+      Linking.openURL('itms-apps://apps.apple.com/account/subscriptions');
+    } else if (Platform.OS === 'android') {
+      Linking.openURL('https://play.google.com/store/account/subscriptions');
+    } else {
+      Linking.openURL('https://marketingtool.pro/account/billing');
+    }
   };
 
   const handleRestorePurchases = async () => {
@@ -234,7 +267,7 @@ const SubscriptionScreen = () => {
                   <Text style={styles.trialBadgeText}>7-Day Free Trial Available</Text>
                 </View>
                 <Text style={styles.heroTitle}>Scale Your Marketing with AI</Text>
-                <Text style={styles.heroSub}>Join 12,000+ marketers using real-time data to drive ROAS.</Text>
+                <Text style={styles.heroSub}>Generate ad copy, SEO content, emails & campaigns on demand.</Text>
               </View>
               <View style={styles.heroRight}>
                 <Image 
@@ -247,21 +280,21 @@ const SubscriptionScreen = () => {
           </LinearGradient>
         </View>
 
-        {/* Trust Stats Bar */}
+        {/* Trust Stats Bar — only verifiable facts */}
         <View style={styles.trustStatsBar}>
           <View style={styles.trustStat}>
-            <Text style={styles.trustStatValue}>314+</Text>
+            <Text style={styles.trustStatValue}>130+</Text>
             <Text style={styles.trustStatLabel}>AI Tools</Text>
           </View>
           <View style={styles.trustDivider} />
           <View style={styles.trustStat}>
-            <Text style={styles.trustStatValue}>$2.4M+</Text>
-            <Text style={styles.trustStatLabel}>Ad Spend</Text>
+            <Text style={styles.trustStatValue}>7-Day</Text>
+            <Text style={styles.trustStatLabel}>Free Trial</Text>
           </View>
           <View style={styles.trustDivider} />
           <View style={styles.trustStat}>
-            <Text style={styles.trustStatValue}>4.9/5</Text>
-            <Text style={styles.trustStatLabel}>Rating</Text>
+            <Text style={styles.trustStatValue}>Cancel</Text>
+            <Text style={styles.trustStatLabel}>Anytime</Text>
           </View>
         </View>
 
@@ -361,12 +394,28 @@ const SubscriptionScreen = () => {
           </View>
         </View>
 
-        {/* Restore Purchases link — Apple Guideline 3.1.1 requires this */}
-        <TouchableOpacity style={{ alignItems: 'center', marginTop: 24 }} onPress={handleRestorePurchases} disabled={isLoading}>
-          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, textDecorationLine: 'underline' }}>
-            {isLoading ? 'Restoring…' : 'Restore Purchases'}
+        {/* Restore + Manage — Apple 3.1.1 / Google Play Billing policy */}
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 24 }}>
+          <TouchableOpacity onPress={handleRestorePurchases} disabled={isLoading}>
+            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, textDecorationLine: 'underline' }}>
+              {isLoading ? 'Restoring…' : 'Restore Purchases'}
+            </Text>
+          </TouchableOpacity>
+          {Platform.OS !== 'web' && (
+            <TouchableOpacity onPress={handleManageSubscription}>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, textDecorationLine: 'underline' }}>
+                Manage Subscription
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Required legal disclosure for auto-renewable subscriptions */}
+        {Platform.OS !== 'web' && (
+          <Text style={styles.legalText}>
+            Payment will be charged to your {Platform.OS === 'ios' ? 'Apple ID' : 'Google Play'} account at confirmation of purchase. Subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period. Manage or cancel in your account settings.
           </Text>
-        </TouchableOpacity>
+        )}
 
         <View style={{ height: 140 }} />
       </ScrollView>
@@ -384,6 +433,14 @@ const SubscriptionScreen = () => {
           </LinearGradient>
         </TouchableOpacity>
         <Text style={styles.secureText}>Cancel anytime. Secure payment via Store.</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 8 }}>
+          <TouchableOpacity onPress={() => Linking.openURL('https://marketingtool.pro/terms')}>
+            <Text style={{ fontSize: 11, color: '#71717A', textDecorationLine: 'underline' }}>Terms of Use</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => Linking.openURL('https://marketingtool.pro/privacy')}>
+            <Text style={{ fontSize: 11, color: '#71717A', textDecorationLine: 'underline' }}>Privacy Policy</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -432,6 +489,7 @@ const styles = StyleSheet.create({
   featList: { marginTop: 20, gap: 10 },
   featRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   featText: { fontSize: 14, color: '#D4D4D8' },
+  legalText: { fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 16, paddingHorizontal: 24, marginTop: 16, textAlign: 'center' },
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingBottom: 40, paddingTop: 20, backgroundColor: 'rgba(13,15,28,0.95)', borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
   subBtn: { borderRadius: 16, overflow: 'hidden', height: 56 },
   subBtnGrad: { flex: 1, justifyContent: 'center', alignItems: 'center' },

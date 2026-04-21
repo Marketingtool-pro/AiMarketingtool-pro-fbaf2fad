@@ -337,10 +337,13 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
         try {
           await account.get();
         } catch (sessionError) {
-          console.log('Session validation failed - attempting chat anyway');
+          if (__DEV__) console.log('Session validation failed - attempting chat anyway');
         }
       }
 
+      // 🚨 CRITICAL FIX FOR ANR (1.58% rate):
+      // Change async from false to true. 
+      // Synchronous execution on main thread freezes the app and triggers ANRs.
       const execution = await functions.createExecution(
         'chat-ai',
         JSON.stringify({
@@ -348,55 +351,48 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
           user_message: userMessage,
           conversation_history: conversationHistory,
         }),
-        false,
+        true, // async = true (RETURN IMMEDIATELY, DO NOT BLOCK MAIN THREAD)
         '/',
         ExecutionMethod.POST
       );
 
-      // Check execution status before parsing
-      if (execution.status === 'failed' || execution.responseStatusCode >= 400) {
-        throw new Error(`Function failed with status: ${execution.responseStatusCode}`);
+      // Polling for result since we are now async
+      let status = execution.status;
+      let executionId = execution.$id;
+      let attempts = 0;
+      let maxAttempts = 30; // 30 seconds max wait
+
+      while ((status === 'waiting' || status === 'processing') && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const updatedExecution = await functions.getExecution('chat-ai', executionId);
+        status = updatedExecution.status;
+        
+        if (status === 'completed') {
+          const result = JSON.parse(updatedExecution.responseBody);
+          if (result.error) throw new Error(result.error);
+          return result.response || result.content || 'I could not generate a response.';
+        }
+        
+        attempts++;
       }
 
-      if (!execution.responseBody || execution.responseBody.trim() === '') {
-        throw new Error('Empty response from AI service');
+      if (status === 'failed') {
+        throw new Error('AI execution failed on server');
       }
 
-      const result = JSON.parse(execution.responseBody);
-
-      if (result.error) {
-        throw new Error(result.error);
+      if (attempts >= maxAttempts) {
+        throw new Error('AI response timed out');
       }
 
-      return result.response || result.content || 'I could not generate a response.';
+      return 'I could not generate a response in time.';
     } catch (error) {
       // Retry once with reduced history (handles payload size / timeout issues)
       if (retryCount < 1) {
-        console.log('Chat call failed, retrying with reduced history...');
+        if (__DEV__) console.log('Chat call failed, retrying with reduced history...');
         return callWindmillChat(userMessage, history, retryCount + 1);
       }
-      // Second retry failed — use fallback
-      return generateFallbackResponse(userMessage);
+      throw error;
     }
-  };
-
-  // Fallback when API is unavailable
-  const generateFallbackResponse = (prompt: string): string => {
-    const lowerPrompt = prompt.toLowerCase();
-
-    if (lowerPrompt.includes('ad') || lowerPrompt.includes('copy')) {
-      return `Here's a compelling ad framework for you:\n\n📱 **Ad Copy Structure:**\n\n**Hook:** Grab attention in the first line\n**Problem:** Address the pain point\n**Solution:** Present your offer\n**Proof:** Add social proof or benefits\n**CTA:** Clear call to action\n\nWant me to write specific copy? Tell me about your product!`;
-    }
-
-    if (lowerPrompt.includes('email') || lowerPrompt.includes('subject')) {
-      return `Here are 5 high-converting email subject lines:\n\n1. 🚀 [Benefit] in just [Timeframe]\n2. Don't miss: [Offer] ends tonight\n3. Quick question about [Topic]...\n4. You're invited: [Event/Offer]\n5. The #1 mistake in [Industry]\n\nWhich style fits your campaign?`;
-    }
-
-    if (lowerPrompt.includes('strategy') || lowerPrompt.includes('plan')) {
-      return `Here's a marketing strategy framework:\n\n📊 **Marketing Plan:**\n\n**1. Define Goals**\n• Revenue targets\n• Lead generation\n• Brand awareness\n\n**2. Know Your Audience**\n• Demographics\n• Pain points\n• Buying behavior\n\n**3. Choose Channels**\n• Paid ads\n• Content marketing\n• Social media\n• Email\n\n**4. Create Content**\n• Value-driven\n• Consistent brand\n• Clear CTAs\n\nWant me to dive deeper into any area?`;
-    }
-
-    return `Great question! As your AI marketing assistant, I can help you with:\n\n🎯 **What I Do Best:**\n• Write compelling ad copy\n• Create marketing strategies\n• Generate email campaigns\n• Optimize for conversions\n• Social media content\n\nWhat specific marketing challenge can I help you solve today?`;
   };
 
   const handlePromptPress = (prompt: string) => {
@@ -616,11 +612,6 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                           )}
                         </View>
                         <Text style={styles.toolListDesc} numberOfLines={1}>{tool.shortDescription}</Text>
-                        <View style={styles.toolListMeta}>
-                          <Feather name="star" size={12} color={Colors.gold} />
-                          <Text style={styles.toolListRating}>{tool.rating.toFixed(1)}</Text>
-                          <Text style={styles.toolListUses}>{tool.usageCount} uses</Text>
-                        </View>
                       </View>
                       <TouchableOpacity
                         style={styles.runButton}

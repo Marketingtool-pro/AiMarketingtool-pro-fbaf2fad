@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "911925145433",
+    "firebase_url": "https://marketing-tool-484720-default-rtdb.firebaseio.com",
     "project_id": "marketing-tool-484720",
     "storage_bucket": "marketing-tool-484720.firebasestorage.app"
   },
@@ -14,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "911925145433-9u2j7enk344gimkmva881hngh39iopna.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "pro.marketingtool.app",
+            "certificate_hash": "b1eb06e5d24610cbd2126a201b916899d39d64aa"
+          }
+        },
+        {
           "client_id": "911925145433-ulns32v0guck53vdob9ejqpbcqri8hes.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -22,7 +31,7 @@
           }
         },
         {
-          "client_id": "100801518418929477429",
+          "client_id": "911925145433-ftceal4kug43ehg2nu30ccs6v1md9snt.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
@@ -37,6 +46,14 @@
             {
               "client_id": "100801518418929477429",
               "client_type": 3
+            },
+            {
+              "client_id": "911925145433-f885hn108caqm828puujtqd46eimh6ps.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "pro.marketingtool.app",
+                "app_store_id": "6758618412"
+              }
             }
           ]
         }

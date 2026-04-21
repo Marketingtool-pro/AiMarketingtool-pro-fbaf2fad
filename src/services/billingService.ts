@@ -2,16 +2,21 @@ import { Platform } from 'react-native';
 import * as IAP from 'react-native-iap';
 import { functions } from './appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
+import { parseAppwriteResponse } from '../store/authStore';
 
-const productSkus = [
-  'pro.marketingtool.starter.monthly',
-  'pro.marketingtool.starter.yearly',
-  'pro.marketingtool.pro.monthly',
-  'pro.marketingtool.pro.yearly',
-  'pro.marketingtool.growth.monthly',
-  'pro.marketingtool.growth.yearly',
-  'pro.marketingtool.tokens',
-];
+export type PlanId = 'free' | 'starter' | 'pro' | 'growth' | 'agency';
+
+export const PLAN_TO_SKU: Record<Exclude<PlanId, 'free' | 'agency'>, { monthly: string; yearly: string }> = {
+  starter: { monthly: 'pro.marketingtool.starter.monthly', yearly: 'pro.marketingtool.starter.yearly' },
+  pro:     { monthly: 'pro.marketingtool.pro.monthly',     yearly: 'pro.marketingtool.pro.yearly' },
+  growth:  { monthly: 'pro.marketingtool.growth.monthly',  yearly: 'pro.marketingtool.growth.yearly' },
+};
+
+const SUBSCRIPTION_SKUS = new Set(
+  Object.values(PLAN_TO_SKU).flatMap(p => [p.monthly, p.yearly])
+);
+const CONSUMABLE_SKUS = ['pro.marketingtool.tokens'];
+const productSkus = [...SUBSCRIPTION_SKUS, ...CONSUMABLE_SKUS];
 
 const iapAvailable = (): boolean => {
   try {
@@ -19,17 +24,7 @@ const iapAvailable = (): boolean => {
   } catch { return false; }
 };
 
-const IAP_UNAVAILABLE_ERROR =
-  'In-app purchase is not available on this device.';
-
-const SUBSCRIPTION_SKUS = new Set([
-  'pro.marketingtool.starter.monthly',
-  'pro.marketingtool.starter.yearly',
-  'pro.marketingtool.pro.monthly',
-  'pro.marketingtool.pro.yearly',
-  'pro.marketingtool.growth.monthly',
-  'pro.marketingtool.growth.yearly',
-]);
+const IAP_UNAVAILABLE_ERROR = 'In-app purchase is not available on this device.';
 
 export const billingService = {
   async initialize() {
@@ -47,10 +42,15 @@ export const billingService = {
   async getProducts() {
     if (!iapAvailable()) return [];
     try {
-      const [products, subscriptions] = await Promise.all([
-        IAP.getProducts({ skus: productSkus }),
-        IAP.getSubscriptions({ skus: productSkus }),
+      // Correctly split SKUs to avoid empty returns on certain StoreKit versions
+      const subSkus = productSkus.filter(sku => SUBSCRIPTION_SKUS.has(sku));
+      const prodSkus = productSkus.filter(sku => !SUBSCRIPTION_SKUS.has(sku));
+
+      const [subscriptions, products] = await Promise.all([
+        subSkus.length > 0 ? IAP.getSubscriptions({ skus: subSkus }) : Promise.resolve([]),
+        prodSkus.length > 0 ? IAP.getProducts({ skus: prodSkus }) : Promise.resolve([]),
       ]);
+      
       return [...products, ...subscriptions];
     } catch (err) {
       console.error('[Billing] Fetch products error:', err);
@@ -64,7 +64,7 @@ export const billingService = {
     }
     try {
       const available = await this.getProducts();
-      console.log('[Billing] Available products:', available.map((p: any) => p.productId));
+      if (__DEV__) console.log('[Billing] Available products:', available.map((p: any) => p.productId));
       const found = available.find((p: any) => p.productId === sku);
       if (!found) {
         console.error('[Billing] Product not found in store:', sku, 'Available:', available.map((p: any) => p.productId));
@@ -105,7 +105,7 @@ export const billingService = {
         false, '/', ExecutionMethod.POST
       );
 
-      const result = JSON.parse(execution.responseBody);
+      const result = parseAppwriteResponse(execution.responseBody);
 
       if (result.success) {
         if (Platform.OS === 'ios') {

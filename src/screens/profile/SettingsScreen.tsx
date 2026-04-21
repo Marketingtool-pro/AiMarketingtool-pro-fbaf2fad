@@ -16,7 +16,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useAuthStore } from '../../store/authStore';
+import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { authService, functions } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
@@ -181,18 +181,25 @@ const SettingsScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Call server-side function to delete user data
-              await functions.createExecution(
+              if (!user?.$id) {
+                throw new Error('User session not found. Please log in again.');
+              }
+              const execution = await functions.createExecution(
                 'delete-account',
-                JSON.stringify({ userId: user?.$id }),
+                JSON.stringify({ userId: user.$id }),
                 false, '/', ExecutionMethod.POST,
               );
+              const body = parseAppwriteResponse(execution.responseBody);
+              if (body.success !== true) {
+                throw new Error(body.message || body.error || 'Deletion failed on server');
+              }
               Alert.alert('Account Deleted', 'Your account has been successfully deleted.');
               logout();
             } catch (error: any) {
-              // Even if function fails, log out and show success (Apple/Google requirement)
-              Alert.alert('Account Deleted', 'Your account has been scheduled for deletion.');
-              logout();
+              Alert.alert(
+                'Deletion Failed',
+                error?.message || 'We could not delete your account. Please contact support@marketingtool.pro.',
+              );
             }
           },
         },
@@ -204,10 +211,10 @@ const SettingsScreen = () => {
     try {
       const SecureStore = require('expo-secure-store');
       await SecureStore.deleteItemAsync('appwrite_session');
-    } catch {
-      // Cache clear attempt, show success regardless
+      Alert.alert('Cache Cleared', 'App cache has been cleared successfully.', [{ text: 'OK' }]);
+    } catch (error: any) {
+      Alert.alert('Clear Failed', error?.message || 'Could not clear cache. Please try again.');
     }
-    Alert.alert('Cache Cleared', 'App cache has been cleared successfully.', [{ text: 'OK' }]);
   };
 
   const handleChangePassword = () => {

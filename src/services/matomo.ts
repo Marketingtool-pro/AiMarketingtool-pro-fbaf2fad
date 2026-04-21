@@ -13,7 +13,7 @@ class MatomoService {
     if (this.isInitialized) return;
 
     try {
-      console.log('[Matomo] Initializing tracker for', Platform.OS);
+      if (__DEV__) console.log('[Matomo] Initializing tracker for', Platform.OS);
       
       // On mobile, we use the tracking API instead of loading the .js container
       // to avoid blocking the UI thread and bridge.
@@ -26,13 +26,13 @@ class MatomoService {
 
   async trackView(screenName: string) {
     if (!this.isInitialized) await this.init();
-    console.log(`[Matomo] Tracking view: ${screenName}`);
+    if (__DEV__) console.log(`[Matomo] Tracking view: ${screenName}`);
     // implementation of tracking pixel or API call here
   }
 
   async trackEvent(category: string, action: any) {
     if (!this.isInitialized) await this.init();
-    console.log(`[Matomo] Tracking event: ${category}`, action);
+    if (__DEV__) console.log(`[Matomo] Tracking event: ${category}`, action);
   }
 }
 

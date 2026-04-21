@@ -191,10 +191,6 @@ const ToolsScreen = () => {
                 {tool.isPro && (
                   <View style={styles.proBadge}><Text style={styles.proBadgeText}>PRO</Text></View>
                 )}
-                {tool.isNew && (
-                  <View style={styles.newBadge}><Text style={styles.newBadgeText}>NEW</Text></View>
-                )}
-                {tool.isTrending && <Feather name="trending-up" size={12} color={Colors.secondary} />}
               </View>
               <Text style={styles.cardName} numberOfLines={2}>{tool.name}</Text>
             </TouchableOpacity>
