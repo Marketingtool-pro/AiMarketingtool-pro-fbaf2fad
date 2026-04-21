@@ -42,7 +42,7 @@ const withKotlinKspFix = (config, options) => {
         buildGradle = buildGradle.replace(/ext\s*\{/, `ext {\n${injectedLines}`);
       } else {
         // If ext block is missing, inject it before buildscript
-        buildGradle = `ext {\n${injectedLines}\n}\n` + buildGradle;
+        buildGradle = buildGradle.replace(/buildscript\s*\{/, `ext {\n${injectedLines}\n}\n\nbuildscript {`);
       }
     }
 
