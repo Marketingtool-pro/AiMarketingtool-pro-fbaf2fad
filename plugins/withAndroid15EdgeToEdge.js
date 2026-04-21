@@ -119,7 +119,6 @@ import com.facebook.react.ReactActivity`
     <style name="AppTheme" parent="Theme.EdgeToEdge">
         <item name="android:windowTranslucentStatus">false</item>
         <item name="android:windowTranslucentNavigation">false</item>
-        <item name="android:windowContrastEnforced">false</item>
     </style>
 </resources>
 `);
