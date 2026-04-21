@@ -34,16 +34,6 @@ module.exports = function withEasPodfileFix(config) {
 
       // 3. Robust Patch Snippet
       const snippet = `
-    # Force modular headers for Firebase
-    pod 'Firebase', :modular_headers => true
-    pod 'FirebaseCore', :modular_headers => true
-    pod 'FirebaseFirestore', :modular_headers => true
-    pod 'RNFBFirestore', :modular_headers => true
-    pod 'FirebaseAuth', :modular_headers => true
-    pod 'FirebaseAppCheck', :modular_headers => true
-    pod 'GoogleUtilities', :modular_headers => true
-    pod 'FirebaseCoreInternal', :modular_headers => true
-
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |bc|
         bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
@@ -53,18 +43,12 @@ module.exports = function withEasPodfileFix(config) {
         bc.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
         bc.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -Xfrontend -strict-concurrency=minimal'
 
-        # ExpoModulesCore is the only pod that needs Swift 6 (for conformance macros);
-        # everything else must stay on Swift 5, otherwise Swift 6 language mode rejects
-        # third-party pods (lottie-ios, etc.) due to Sendable/strict-concurrency errors.
         if target.name == 'ExpoModulesCore'
           bc.build_settings['SWIFT_VERSION'] = '6.0'
         else
           bc.build_settings['SWIFT_VERSION'] = '5'
         end
 
-        # Header search paths for the React Native <-> Firebase/IAP bridge pods only.
-        # Firebase* Swift pods keep DEFINES_MODULE=YES so "import FirebaseCore"
-        # still resolves in FirebaseSessions and the rest of the Firebase SDK.
         if target.name.start_with?('RNFB') || target.name.start_with?('RNIap')
           bc.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) "$(PODS_ROOT)/Headers/Public/React-Core" "$(PODS_ROOT)/Headers/Public/React-RCTBridge" "$(PODS_ROOT)/Headers/Public/FirebaseCore" "$(PODS_ROOT)/Headers/Public/FirebaseAuth" "$(PODS_ROOT)/Headers/Public/FirebaseAppCheck"'
           bc.build_settings['DEFINES_MODULE'] = 'NO'
