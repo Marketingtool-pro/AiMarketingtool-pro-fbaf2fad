@@ -22,6 +22,9 @@ const withKotlinKspFix = (config, options) => {
     if (config.modResults.language !== 'groovy') return config;
     let buildGradle = config.modResults.contents;
 
+    // 🚨 CRITICAL FIX: Remove supportLibVersion from line 1
+    buildGradle = buildGradle.replace(/^supportLibVersion\s*=\s*["'].*["']\s*/m, '');
+
     const varsToEnsure = [
       { name: 'kotlinVersion', value: `'${kotlinVersion}'` },
       { name: 'kspVersion', value: `'${kspVersion}'` },
