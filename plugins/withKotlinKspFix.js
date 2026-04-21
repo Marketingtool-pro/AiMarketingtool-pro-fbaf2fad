@@ -14,7 +14,6 @@ const DEFAULTS = {
  * Android build.gradle + Gradle wrapper fixes for Expo SDK 55 / RN 0.83.
  */
 const withKotlinKspFix = (config, options) => {
-  console.log('[withKotlinKspFix] Executing Kotlin/KSP/Gradle fix...');
   const opts = { ...DEFAULTS, ...(options || {}) };
   const { kotlinVersion, kspVersion, agpVersion, googlePlayServicesVersion, gradleVersion } = opts;
 
@@ -29,6 +28,10 @@ const withKotlinKspFix = (config, options) => {
       { name: 'kotlinVersion', value: `'${kotlinVersion}'` },
       { name: 'kspVersion', value: `'${kspVersion}'` },
       { name: 'googlePlayServicesVersion', value: `"${googlePlayServicesVersion}"` },
+      { name: 'compileSdkVersion', value: '35' },
+      { name: 'targetSdkVersion', value: '35' },
+      { name: 'buildToolsVersion', value: '"35.0.0"' },
+      { name: 'minSdkVersion', value: '24' },
     ];
     
     const missing = varsToEnsure.filter(v => !new RegExp(`\\b${v.name}\\s*=`).test(buildGradle));
@@ -37,6 +40,9 @@ const withKotlinKspFix = (config, options) => {
       const injectedLines = missing.map(v => `        ${v.name} = ${v.value}`).join('\n');
       if (/ext\s*\{/.test(buildGradle)) {
         buildGradle = buildGradle.replace(/ext\s*\{/, `ext {\n${injectedLines}`);
+      } else {
+        // If ext block is missing, inject it before buildscript
+        buildGradle = `ext {\n${injectedLines}\n}\n` + buildGradle;
       }
     }
 
