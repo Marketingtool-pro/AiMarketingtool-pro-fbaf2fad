@@ -7,7 +7,7 @@ const DEFAULTS = {
   kspVersion: '2.1.20-1.0.32',
   agpVersion: '8.7.2',
   googlePlayServicesVersion: '18.0.0',
-  gradleVersion: '8.10.2',
+  gradleVersion: '8.13',
 };
 
 /**
