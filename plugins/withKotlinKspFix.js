@@ -28,9 +28,9 @@ const withKotlinKspFix = (config, options) => {
       { name: 'kotlinVersion', value: `'${kotlinVersion}'` },
       { name: 'kspVersion', value: `'${kspVersion}'` },
       { name: 'googlePlayServicesVersion', value: `"${googlePlayServicesVersion}"` },
-      { name: 'compileSdkVersion', value: '36' },
-      { name: 'targetSdkVersion', value: '36' },
-      { name: 'buildToolsVersion', value: '"36.0.0"' },
+      { name: 'compileSdkVersion', value: '35' },
+      { name: 'targetSdkVersion', value: '35' },
+      { name: 'buildToolsVersion', value: '"35.0.0"' },
       { name: 'minSdkVersion', value: '24' },
     ];
     

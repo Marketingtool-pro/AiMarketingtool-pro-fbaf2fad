@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "442",
+      "buildNumber": "443",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -59,13 +59,12 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 328,
+      "versionCode": 329,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
         "USE_BIOMETRIC",
-        "VIBRATE",
-        "com.google.android.gms.permission.AD_ID"
+        "VIBRATE"
       ],
       "intentFilters": [
         {
