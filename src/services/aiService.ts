@@ -42,6 +42,7 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
   try {
     if (__DEV__) console.log(`[AI] Executing tool-executor for: ${toolSlug}`);
 
+    // 🚨 ANR FIX: Set async=true to prevent blocking the main thread during execution
     const execution = await functions.createExecution(
       TOOL_EXECUTOR_FUNCTION_ID,
       JSON.stringify({
@@ -53,20 +54,33 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         user_id: userId,
         options: { tone: tone || 'professional', language: language || 'English' },
       }),
-      false,  // async = false (wait for result)
+      true,  // async = true (DO NOT BLOCK)
       '/',    // path
       ExecutionMethod.POST, // method
     );
 
-    if (execution.responseStatusCode >= 200 && execution.responseStatusCode < 300) {
-      const result = parseExecutionResponse(execution.responseBody, outputCount);
-      if (result.success && result.outputs.length > 0) {
-        if (__DEV__) console.log(`[AI] Function success: ${result.outputs.length} outputs`);
-        return result;
+    // Polling for the result
+    let status = execution.status;
+    let executionId = execution.$id;
+    let attempts = 0;
+    const maxAttempts = 45; // Longer timeout for complex tools
+
+    while ((status === 'waiting' || status === 'processing') && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const updatedExecution = await functions.getExecution(TOOL_EXECUTOR_FUNCTION_ID, executionId);
+      status = updatedExecution.status;
+      
+      if (status === 'completed') {
+        const result = parseExecutionResponse(updatedExecution.responseBody, outputCount);
+        if (result.success && result.outputs.length > 0) {
+          if (__DEV__) console.log(`[AI] Function success: ${result.outputs.length} outputs`);
+          return result;
+        }
       }
+      attempts++;
     }
 
-    if (__DEV__) console.log(`[AI] Function returned status ${execution.responseStatusCode}, trying fallback`);
+    if (__DEV__) console.log(`[AI] Function timed out or failed with status ${status}, trying fallback`);
   } catch (error: any) {
     if (__DEV__) console.log(`[AI] Function error: ${error.message}, trying fallback`);
   }

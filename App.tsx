@@ -26,62 +26,68 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       try {
-        // Initialize App Check
-        await initializeAppCheck();
+        // Run fonts and auth in parallel, each with its own timeout.
+        // Cap at 1.5s to prevent slow auth/network from gating the splash.
+        const withTimeout = <T,>(p: Promise<T>, ms: number) =>
+          Promise.race([p, new Promise(resolve => setTimeout(resolve, ms))]);
 
-        // Initialize Crashlytics — auto-capture crashes to Firebase
-        try {
-          await crashlytics().setCrashlyticsCollectionEnabled(true);
-          crashlytics().log('App started');
-        } catch (e) {
-          console.warn('Crashlytics init error:', e);
-        }
-
-        // Initialize Firebase Analytics — track events to Firebase dashboard
-        try {
-          await analytics().setAnalyticsCollectionEnabled(true);
-          await analytics().logAppOpen();
-        } catch (e) {
-          console.warn('Analytics init error:', e);
-        }
-
-        // Initialize FCM — request push permission + get token
-        try {
-          const authStatus = await messaging().requestPermission();
-          if (authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-              authStatus === messaging.AuthorizationStatus.PROVISIONAL) {
-            const token = await messaging().getToken();
-            if (__DEV__) console.log('[FCM] Token:', token?.substring(0, 20) + '...');
-            // Foreground message handler
-            messaging().onMessage(async (msg) => {
-              if (__DEV__) console.log('[FCM] Foreground:', msg.notification?.title);
-            });
-          }
-        } catch (e) {
-          console.warn('FCM init error:', e);
-        }
-
-        // Initialize Matomo early but don't block
-        matomo.init().catch(e => console.warn('Matomo init error', e));
-
-        // Pre-load fonts
-        await Font.loadAsync({
-          ...Feather.font,
-        });
-
-        // Check authentication state with hard timeout
-        await Promise.race([
-          checkAuth(),
-          new Promise(resolve => setTimeout(resolve, 4000)),
+        await Promise.all([
+          withTimeout(Font.loadAsync({ ...Feather.font }), 1500),
+          withTimeout(checkAuth(), 1500),
         ]);
       } catch (e) {
         console.warn('Error loading app resources:', e);
       } finally {
         setAppIsReady(true);
+        // Non-critical inits run AFTER UI is ready — prevents ANR on cold start
+        deferredInit();
       }
     }
 
+    // Guard against listener registration after unmount. `deferredInit` is
+    // fire-and-forget, so `messaging().requestPermission()` can still be
+    // pending when the cleanup runs; without this flag we'd register an
+    // onMessage listener with no way to unsubscribe it — classic leak on
+    // fast remount (login → logout → login).
+    let mounted = true;
+    let unsubscribeFcm: (() => void) | undefined;
+
+    async function deferredInit() {
+      // App Check initialization (moved from prepare to prevent blocking UI thread)
+      initializeAppCheck().catch(e => console.warn('AppCheck init error:', e));
+
+      crashlytics().setCrashlyticsCollectionEnabled(true)
+        .then(() => crashlytics().log('App started'))
+        .catch(e => console.warn('Crashlytics init error:', e));
+
+      analytics().setAnalyticsCollectionEnabled(true)
+        .then(() => analytics().logAppOpen())
+        .catch(e => console.warn('Analytics init error:', e));
+
+      messaging().requestPermission()
+        .then(async (authStatus) => {
+          if (!mounted) return;
+          if (authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+              authStatus === messaging.AuthorizationStatus.PROVISIONAL) {
+            const token = await messaging().getToken();
+            if (!mounted) return;
+            if (__DEV__) console.log('[FCM] Token:', token?.substring(0, 20) + '...');
+            unsubscribeFcm = messaging().onMessage(async (msg) => {
+              if (__DEV__) console.log('[FCM] Foreground:', msg.notification?.title);
+            });
+          }
+        })
+        .catch(e => console.warn('FCM init error:', e));
+
+      matomo.init().catch(e => console.warn('Matomo init error', e));
+    }
+
     prepare();
+
+    return () => {
+      mounted = false;
+      unsubscribeFcm?.();
+    };
   }, []);
 
   const onLayoutRootView = useCallback(async () => {
@@ -99,7 +105,7 @@ export default function App() {
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
         <View style={styles.container} onLayout={onLayoutRootView}>
-          <StatusBar style="light" translucent={true} />
+          <StatusBar style="light" />
           <AppNavigator />
         </View>
       </SafeAreaProvider>

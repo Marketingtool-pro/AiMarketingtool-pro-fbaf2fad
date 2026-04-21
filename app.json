@@ -7,15 +7,6 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "scheme": "marketingtool",
-    "androidStatusBar": {
-      "backgroundColor": "#00000000",
-      "translucent": true,
-      "barStyle": "light-content"
-    },
-    "androidNavigationBar": {
-      "backgroundColor": "#060b28",
-      "barStyle": "light-content"
-    },
     "platforms": [
       "ios",
       "android"
@@ -31,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "433",
+      "buildNumber": "438",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -39,23 +30,15 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.911925145433-ulns32v0guck53vdob9ejqpbcqri8hes"
-            ]
-          },
-          {
-            "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.911925145433-ulns32v0guck53vdob9ejqpbcqri8hes"
+              "com.googleusercontent.apps.911925145433-f885hn108caqm828puujtqd46eimh6ps"
             ]
           }
         ],
-        "NSCameraUsageDescription": "Allow MarketingTool to access your camera for profile photos and content creation.",
-        "NSPhotoLibraryUsageDescription": "Allow MarketingTool to access your photos for uploading media content.",
-        "NSMicrophoneUsageDescription": "Allow MarketingTool to access your microphone for voice features.",
-        "NSFaceIDUsageDescription": "Allow MarketingTool to use Face ID for secure authentication.",
-        "NSLocationWhenInUseUsageDescription": "Allow MarketingTool to access your location for personalized content.",
-        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads and analytics.",
+        "NSCameraUsageDescription": "Allow MarketingTool to access your camera to upload your profile photo.",
+        "NSPhotoLibraryUsageDescription": "Allow MarketingTool to access your photos to upload a profile picture or share generated content.",
+        "NSFaceIDUsageDescription": "Use Face ID to sign in securely.",
+        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized marketing content.",
         "UIBackgroundModes": [
-          "remote-notification",
           "remote-notification"
         ],
         "LSApplicationQueriesSchemes": [
@@ -76,19 +59,12 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 306,
+      "versionCode": 315,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "RECORD_AUDIO",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
         "USE_BIOMETRIC",
-        "USE_FINGERPRINT",
-        "VIBRATE",
-        "RECEIVE_BOOT_COMPLETED"
+        "VIBRATE"
       ],
       "intentFilters": [
         {
@@ -141,8 +117,8 @@
             "windowSoftInputMode": "adjustResize",
             "useMemoryPageSize16KB": true,
             "ndkVersion": "27.1.12297006",
-            "kotlinVersion": "2.0.20",
-            "kspVersion": "2.0.20-1.0.25"
+            "kotlinVersion": "2.1.20",
+            "kspVersion": "2.1.20-1.0.32"
           }
         }
       ],
@@ -151,7 +127,6 @@
       "./plugins/withEasPodfileFix.js",
       "./plugins/withIosFirebaseSwiftFix.js",
       "./plugins/withAndroid15EdgeToEdge.js",
-      "./plugins/withKotlinKspFix.js",
       "expo-notifications",
       "react-native-iap",
       [
@@ -165,7 +140,8 @@
       "expo-font",
       "expo-sharing",
       "expo-web-browser",
-      "expo-asset"
+      "expo-asset",
+      "./plugins/withKotlinKspFix.js"
     ],
     "extra": {
       "appwriteEndpoint": "https://api.marketingtool.pro/v1",

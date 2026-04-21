@@ -78,25 +78,27 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       const generations = generationsResult.documents;
       const totalGenerations = generations.length;
 
-      // Metrics matching spec: Clicks, Conversions, Revenue
+      const favoritesCount = generations.filter((g: any) => g.isFavorite === true).length;
+      const uniqueTools = new Set(generations.map((g: any) => g.toolId).filter(Boolean)).size;
+      const totalTokens = generations.reduce((sum: number, g: any) => sum + (Number(g.tokensUsed) || 0), 0);
+
       const metrics: DashboardMetric[] = [
-        { id: 'clicks', label: 'Total Clicks', value: (totalGenerations * 45).toLocaleString(), change: 12, trend: 'up', icon: 'mouse-pointer', color: '#4285F4' },
-        { id: 'convs', label: 'Conversions', value: (totalGenerations * 3).toLocaleString(), change: 5, trend: 'up', icon: 'target', color: '#1877F2' },
-        { id: 'revenue', label: 'Revenue', value: `$${(totalGenerations * 150).toLocaleString()}`, change: 8, trend: 'up', icon: 'dollar-sign', color: '#96BF48' },
-        { id: 'gen', label: 'AI Generates', value: totalGenerations, change: 15, trend: 'up', icon: 'zap', color: '#E4405F' },
+        { id: 'gen', label: 'AI Generations', value: totalGenerations, change: 0, trend: 'neutral', icon: 'zap', color: '#E4405F' },
+        { id: 'tools', label: 'Tools Used', value: uniqueTools, change: 0, trend: 'neutral', icon: 'grid', color: '#4285F4' },
+        { id: 'favs', label: 'Saved', value: favoritesCount, change: 0, trend: 'neutral', icon: 'bookmark', color: '#96BF48' },
+        { id: 'tokens', label: 'Tokens Used', value: totalTokens.toLocaleString(), change: 0, trend: 'neutral', icon: 'activity', color: '#1877F2' },
       ];
 
-      // 2. Performance Data (Mocked for last 7 days)
       const performanceData: PerformanceDataPoint[] = [];
       const now = new Date();
-      for (let i = 6; i >= 0; i--) {
+      const { dateRange } = get();
+      const daysToShow = dateRange === '30d' ? 30 : dateRange === 'all' ? 90 : 7;
+      for (let i = daysToShow - 1; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(now.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
-        
-        // Count generations for this date
-        const count = generations.filter((g: any) => g.createdAt.startsWith(dateStr)).length;
-        performanceData.push({ date: dateStr, value: count || Math.floor(Math.random() * 10) + 1 });
+        const count = generations.filter((g: any) => typeof g.createdAt === 'string' && g.createdAt.startsWith(dateStr)).length;
+        performanceData.push({ date: dateStr, value: count });
       }
 
       // 3. Recent Activities

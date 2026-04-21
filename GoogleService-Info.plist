@@ -9,7 +9,7 @@
 	<key>BUNDLE_ID</key>
 	<string>pro.marketingtool.app</string>
 	<key>CLIENT_ID</key>
-	<string>911925145433-ulns32v0guck53vdob9ejqpbcqri8hes.apps.googleusercontent.com</string>
+	<string>911925145433-f885hn108caqm828puujtqd46eimh6ps.apps.googleusercontent.com</string>
 	<key>GCM_SENDER_ID</key>
 	<string>911925145433</string>
 	<key>GOOGLE_APP_ID</key>
@@ -29,7 +29,7 @@
 	<key>PROJECT_ID</key>
 	<string>marketing-tool-484720</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.911925145433-ulns32v0guck53vdob9ejqpbcqri8hes</string>
+	<string>com.googleusercontent.apps.911925145433-f885hn108caqm828puujtqd46eimh6ps</string>
 	<key>STORAGE_BUCKET</key>
 	<string>marketing-tool-484720.firebasestorage.app</string>
 </dict>

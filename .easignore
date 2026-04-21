@@ -7,17 +7,27 @@ node_modules/
 ios/
 android/
 
-# Build artifacts
+# Build artifacts (FORCE EXCLUDE)
 dist/
 build/
 web-build/
+out/
+.next/
+
+# Huge Root Backups & Compressed Archives
+LotsOfFiles.tgz
+*.tgz
+*.zip
+*.tar.gz
+*.blend
+*.mp4
+*.jks
 
 # SECURE: BLOCK ALL CREDENTIALS & WORK TRACKS
 credentials/
 conductor/
 path/
 gemini-cli/
-*.jks
 *.p8
 *.p12
 *.key
@@ -32,31 +42,4 @@ gemini-cli/
 !GoogleService-Info.plist
 !src/**/*.json
 
-# IDE / System
-.vscode/
-.idea/
-.DS_Store
-**/.git/
-
-# Backgrounds dir not used by current code — safe to exclude
-src/assets/images/backgrounds/
-
-# REQUIRED ASSETS (Must be included for bundling)
-# tool-icons/ stays included — toolIcons.ts requires *-old.png variants from here
-!src/assets/images/tool-icons/
-!src/assets/images/tool-icons-v2/
-!src/assets/images/screens/
-!src/assets/images/banners/
-!src/assets/images/dashboard/
-!src/assets/images/categories/
-!assets/
-
-# EXCLUDE HUGE BACKUPS AND RAW ASSETS
-three.js/
-media/
-ios/build/
-android/app/build/
-*.zip
-*.blend
-*.mp4
 

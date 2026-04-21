@@ -9,6 +9,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "postinstall": "npx patch-package",
+    "eas-build-pre-install": "node scripts/fix-gradle.js",
+    "eas-build-post-install": "node scripts/fix-gradle.js",
     "icons:compress": "node scripts/compressIcons.js"
   },
   "dependencies": {
@@ -61,6 +63,7 @@
     "expo-status-bar": "~55.0.5",
     "expo-store-review": "~55.0.11",
     "expo-symbols": "~55.0.7",
+    "expo-system-ui": "~55.0.15",
     "expo-updates": "~55.0.13",
     "expo-web-browser": "~55.0.10",
     "genkit": "^1.16.1",
@@ -93,9 +96,11 @@
   "private": true,
   "overrides": {
     "expo-file-system": "$expo-file-system",
-    "@tootallnate/once": "^3.0.1"
+    "@tootallnate/once": "^3.0.1",
+    "protobufjs": "^7.5.5"
   },
   "resolutions": {
-    "expo-file-system": "~55.0.10"
+    "expo-file-system": "~55.0.10",
+    "protobufjs": "^7.5.5"
   }
 }

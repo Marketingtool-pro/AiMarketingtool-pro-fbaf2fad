@@ -239,11 +239,6 @@ const ToolDetailScreen = () => {
             </View>
             <View style={styles.toolMeta}>
               <View style={styles.toolBadges}>
-                {tool.isNew && (
-                  <View style={[styles.badge, { backgroundColor: Colors.success }]}>
-                    <Text style={styles.badgeText}>NEW</Text>
-                  </View>
-                )}
                 {tool.isPro && (
                   <View style={[styles.badge, { backgroundColor: Colors.accent }]}>
                     <Text style={styles.badgeText}>PRO</Text>
@@ -256,14 +251,6 @@ const ToolDetailScreen = () => {
           </View>
 
           <View style={styles.toolStats}>
-            <View style={styles.statItem}>
-              <Feather name="users" size={16} color={Colors.textSecondary} />
-              <Text style={styles.statText}>{(tool.usageCount / 1000).toFixed(1)}k uses</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Feather name="star" size={16} color={Colors.warning} />
-              <Text style={styles.statText}>{tool.rating} rating</Text>
-            </View>
             <View style={styles.statItem}>
               <Feather name="clock" size={16} color={Colors.textSecondary} />
               <Text style={styles.statText}>~10 sec</Text>
