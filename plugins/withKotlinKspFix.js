@@ -73,6 +73,13 @@ allprojects {
             if (requested.group == 'com.google.devtools.ksp') {
                 details.useVersion kspVersion
             }
+            // 🚨 Pin to SDK 35 compatible versions
+            if (requested.group == 'androidx.core' && requested.name == 'core-ktx') {
+                details.useVersion '1.15.0'
+            }
+            if (requested.group == 'androidx.activity') {
+                details.useVersion '1.10.1'
+            }
         }
     }
 }
