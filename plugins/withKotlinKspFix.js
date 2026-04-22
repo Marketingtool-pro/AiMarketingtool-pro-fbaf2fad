@@ -80,6 +80,9 @@ allprojects {
             if (requested.group == 'androidx.activity') {
                 details.useVersion '1.10.1'
             }
+            if (requested.group == 'androidx.browser' && requested.name == 'browser') {
+                details.useVersion '1.8.0'
+            }
         }
     }
 }
