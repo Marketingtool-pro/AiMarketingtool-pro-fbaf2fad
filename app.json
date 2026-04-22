@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "445",
+      "buildNumber": "446",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -59,7 +59,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 332,
+      "versionCode": 333,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -75,6 +75,11 @@
               "scheme": "https",
               "host": "marketingtool.pro",
               "pathPrefix": "/"
+            },
+            {
+              "scheme": "https",
+              "host": "app.marketingtool.pro",
+              "pathPrefix": "/"
             }
           ],
           "category": [
@@ -82,7 +87,7 @@
             "DEFAULT"
           ]
         }
-      ]
+      ],
     },
     "web": {
       "favicon": "./assets/favicon.png",
