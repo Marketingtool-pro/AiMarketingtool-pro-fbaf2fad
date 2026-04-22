@@ -74,7 +74,7 @@ allprojects {
                 details.useVersion kspVersion
             }
             // 🚨 Pin to SDK 35 compatible versions
-            if (requested.group == 'androidx.core' && requested.name == 'core-ktx') {
+            if (requested.group == 'androidx.core' && (requested.name == 'core-ktx' || requested.name == 'core')) {
                 details.useVersion '1.15.0'
             }
             if (requested.group == 'androidx.activity') {
