@@ -127,6 +127,13 @@ function assignUniqueIcons(slugs: string[]) {
   // Sort slugs to make assignment deterministic across app launches
   const sorted = [...slugs].sort();
 
+  // cycleIdx tracks how many tools we've passed over so the exhaustion
+  // fallback actually rotates through the full pool. Using `used.size`
+  // here was the bug: once every icon was used at least once, used.size
+  // plateaued at pool.length and `used.size % pool.length` collapsed to 0,
+  // so every remaining tool was assigned pool[0] (= "facebook").
+  let cycleIdx = 0;
+
   for (const slug of sorted) {
     const slugWords = slug.split('-').filter(w => w.length > 2);
     let chosen: string | null = null;
@@ -143,12 +150,12 @@ function assignUniqueIcons(slugs: string[]) {
     // 3rd pass: any unused icon in the FULL pool (incl. numeric / texture packs)
     if (!chosen) chosen = pool.find(k => !used.has(k)) || null;
 
-    // 4th pass (true exhaustion): cycle so we don't all share pool[0].
-    // With 314 tools and a 336-icon pool this should never fire; if it does,
-    // the caller needs to grow the pool.
-    if (!chosen) chosen = pool[used.size % pool.length];
+    // 4th pass (true exhaustion): cycle through the pool so the overflow
+    // tools don't all collapse onto pool[0].
+    if (!chosen) chosen = pool[cycleIdx % pool.length];
 
     used.add(chosen);
+    cycleIdx++;
     setToolIconOverride(slug, _getToolIcon(chosen));
   }
 }
