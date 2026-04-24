@@ -297,7 +297,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         vStatus = vUpdated.status;
         if (vStatus === 'completed') {
           const verifyResult = parseAppwriteResponse(vUpdated.responseBody);
-          if (!verifyResult.success) throw new Error(verifyResult.message || 'Invalid OTP');
+          if (__DEV__) console.log('[Auth] verifyOtp raw body:', vUpdated.responseBody);
+          if (!verifyResult.success) {
+            const msg = verifyResult.message || verifyResult.error || 'Invalid OTP. Please try again.';
+            throw new Error(typeof msg === 'string' ? msg : 'Invalid OTP. Please try again.');
+          }
           break;
         }
         vAttempts++;
