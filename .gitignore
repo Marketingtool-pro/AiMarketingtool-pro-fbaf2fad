@@ -54,3 +54,6 @@ asc-api-key.p8
 google-play-service-account.json
 .env
 .env.production
+
+# EAS Submit — Google Play service account (NEVER commit)
+.eas-google-play-sa.json

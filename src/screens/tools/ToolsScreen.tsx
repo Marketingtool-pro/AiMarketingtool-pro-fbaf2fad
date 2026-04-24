@@ -9,7 +9,6 @@ import {
   Image,
   ImageBackground,
   Dimensions,
-  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -210,7 +209,7 @@ const styles = StyleSheet.create({
   heroBanner: {
     width: '100%',
     height: 200,
-    marginTop: Platform.OS === 'ios' ? 44 : 0,
+    marginTop: 44,
   },
   heroOverlay: {
     flex: 1,

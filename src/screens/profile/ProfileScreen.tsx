@@ -9,7 +9,6 @@ import {
   Alert,
   Dimensions,
   Linking,
-  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -314,7 +313,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
-    paddingTop: Platform.OS === 'ios' ? 56 : 40,
+    paddingTop: 56,
   },
   headerTitle: { fontSize: 28, fontWeight: 'bold', color: Colors.white },
   settingsButton: {
