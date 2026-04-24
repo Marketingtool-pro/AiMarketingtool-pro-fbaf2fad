@@ -15,8 +15,7 @@ export const PLAN_TO_SKU: Record<Exclude<PlanId, 'free' | 'agency'>, { monthly: 
 const SUBSCRIPTION_SKUS = new Set(
   Object.values(PLAN_TO_SKU).flatMap(p => [p.monthly, p.yearly])
 );
-const CONSUMABLE_SKUS = ['pro.marketingtool.tokens'];
-const productSkus = [...SUBSCRIPTION_SKUS, ...CONSUMABLE_SKUS];
+const CONSUMABLE_SKUS = ['tokens'];
 
 const iapAvailable = (): boolean => {
   try {
@@ -31,7 +30,6 @@ export const billingService = {
     if (!iapAvailable()) return false;
     try {
       await IAP.initConnection();
-      await IAP.flushFailedPurchasesCachedAsPendingAndroid();
       return true;
     } catch (err) {
       console.error('[Billing] Init error:', err);
@@ -42,16 +40,19 @@ export const billingService = {
   async getProducts() {
     if (!iapAvailable()) return [];
     try {
-      // Correctly split SKUs to avoid empty returns on certain StoreKit versions
-      const subSkus = productSkus.filter(sku => SUBSCRIPTION_SKUS.has(sku));
-      const prodSkus = productSkus.filter(sku => !SUBSCRIPTION_SKUS.has(sku));
+      const subSkus = [...SUBSCRIPTION_SKUS];
+      const prodSkus = [...CONSUMABLE_SKUS];
 
       const [subscriptions, products] = await Promise.all([
-        subSkus.length > 0 ? IAP.getSubscriptions({ skus: subSkus }) : Promise.resolve([]),
-        prodSkus.length > 0 ? IAP.getProducts({ skus: prodSkus }) : Promise.resolve([]),
+        subSkus.length > 0
+          ? IAP.fetchProducts({ skus: subSkus, type: 'subs' })
+          : Promise.resolve([]),
+        prodSkus.length > 0
+          ? IAP.fetchProducts({ skus: prodSkus, type: 'in-app' })
+          : Promise.resolve([]),
       ]);
-      
-      return [...products, ...subscriptions];
+
+      return [...(products || []), ...(subscriptions || [])];
     } catch (err) {
       console.error('[Billing] Fetch products error:', err);
       return [];
@@ -64,16 +65,32 @@ export const billingService = {
     }
     try {
       const available = await this.getProducts();
-      if (__DEV__) console.log('[Billing] Available products:', available.map((p: any) => p.productId));
-      const found = available.find((p: any) => p.productId === sku);
+      if (__DEV__) console.log('[Billing] Available products:', available.map((p: any) => p.id || p.productId));
+      const found = available.find((p: any) => (p.id || p.productId) === sku);
       if (!found) {
-        console.error('[Billing] Product not found in store:', sku, 'Available:', available.map((p: any) => p.productId));
+        console.error('[Billing] Product not found in store:', sku, 'Available:', available.map((p: any) => p.id || p.productId));
         return { success: false, error: `Product "${sku}" is not available in your region. Please contact support.` };
       }
-      let purchase = SUBSCRIPTION_SKUS.has(sku)
-        ? await IAP.requestSubscription({ sku })
-        : await IAP.requestPurchase({ sku });
-      if (Array.isArray(purchase)) purchase = purchase[0];
+
+      const isSub = SUBSCRIPTION_SKUS.has(sku);
+      const requestArgs: any = isSub
+        ? {
+            request: {
+              apple: { sku },
+              google: { skus: [sku] },
+            },
+            type: 'subs',
+          }
+        : {
+            request: {
+              apple: { sku },
+              google: { skus: [sku] },
+            },
+            type: 'in-app',
+          };
+
+      const result = await IAP.requestPurchase(requestArgs);
+      let purchase = Array.isArray(result) ? result[0] : result;
       if (purchase) {
         return await this.verifyPurchase(purchase, userId);
       }
@@ -87,16 +104,17 @@ export const billingService = {
   async verifyPurchase(purchase: IAP.Purchase, userId: string) {
     if (!iapAvailable()) return { success: false, error: IAP_UNAVAILABLE_ERROR };
     try {
+      const p = purchase as any;
       const payload: Record<string, unknown> = {
         userId,
-        productId: purchase.productId,
+        productId: p.productId || p.id,
         platform: Platform.OS,
       };
       if (Platform.OS === 'android') {
-        payload.googlePurchaseToken = purchase.purchaseToken;
+        payload.googlePurchaseToken = p.purchaseToken;
       } else {
-        payload.appleReceipt = purchase.transactionReceipt;
-        payload.transactionId = purchase.transactionId;
+        payload.appleReceipt = p.jwsRepresentationIOS || p.transactionReceipt;
+        payload.transactionId = p.transactionId;
       }
 
       const execution = await functions.createExecution(
@@ -111,10 +129,10 @@ export const billingService = {
         if (Platform.OS === 'ios') {
           await IAP.finishTransaction({
             purchase,
-            isConsumable: !SUBSCRIPTION_SKUS.has(purchase.productId),
+            isConsumable: !SUBSCRIPTION_SKUS.has(p.productId || p.id),
           });
-        } else {
-          await IAP.acknowledgePurchaseAndroid({ token: purchase.purchaseToken! });
+        } else if (p.purchaseToken) {
+          await IAP.acknowledgePurchaseAndroid(p.purchaseToken);
         }
         return { success: true };
       }

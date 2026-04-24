@@ -82,7 +82,7 @@ const SubscriptionScreen = () => {
     },
     {
       id: 'pro',
-      name: 'Professional',
+      name: 'Pro',
       monthlyPrice: 59, yearlyPrice: 42, yearlyTotal: 499,
       description: 'Connect Real Google & Meta Ads Data',
       popular: true,
@@ -378,21 +378,23 @@ const SubscriptionScreen = () => {
           })}
         </View>
 
-        {/* Need More Generations? — buy extra tokens */}
-        <View style={{ paddingHorizontal: 20, marginTop: 28 }}>
-          <Text style={{ fontSize: 22, fontWeight: '900', color: '#FFF', marginBottom: 6 }}>Need More Generations?</Text>
-          <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 16 }}>
-            Buy extra tokens anytime when you reach your monthly limit.
-          </Text>
-          <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>
-            <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)', marginRight: 14 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '700' }}>100 Extra Generations</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 2 }}>Added instantly to your account</Text>
+        {/* Apple 3.1.1: no Consumable IAP for tokens registered yet. Render card only on Android (Play has SKU "tokens" — 100 Extra Generations product, active in 173 countries) to avoid "misleading UI" rejection on iOS. */}
+        {Platform.OS === 'android' && (
+          <View style={{ paddingHorizontal: 20, marginTop: 28 }}>
+            <Text style={{ fontSize: 22, fontWeight: '900', color: '#FFF', marginBottom: 6 }}>Need More Generations?</Text>
+            <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 16 }}>
+              Buy extra tokens anytime when you reach your monthly limit.
+            </Text>
+            <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>
+              <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)', marginRight: 14 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '700' }}>100 Extra Generations</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 2 }}>Added instantly to your account</Text>
+              </View>
+              <Text style={{ color: '#A78BFA', fontSize: 22, fontWeight: '900' }}>$3</Text>
             </View>
-            <Text style={{ color: '#A78BFA', fontSize: 22, fontWeight: '900' }}>$3</Text>
           </View>
-        </View>
+        )}
 
         {/* Restore + Manage — Apple 3.1.1 / Google Play Billing policy */}
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 24 }}>

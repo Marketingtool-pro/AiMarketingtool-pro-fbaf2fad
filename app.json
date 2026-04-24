@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "446",
+      "buildNumber": "450",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -59,7 +59,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 333,
+      "versionCode": 340,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -87,7 +87,7 @@
             "DEFAULT"
           ]
         }
-      ],
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",

@@ -43,6 +43,7 @@ module.exports = ({ config }) => ({
     ],
     "@react-native-firebase/app",
     "@react-native-firebase/auth",
+    "@react-native-firebase/crashlytics",
     "react-native-iap",
     "expo-secure-store",
     "expo-font",
