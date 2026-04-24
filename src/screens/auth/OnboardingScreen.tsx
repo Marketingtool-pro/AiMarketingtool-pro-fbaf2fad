@@ -7,7 +7,6 @@ import {
   Dimensions,
   FlatList,
   TouchableOpacity,
-  Platform,
   ImageSourcePropType,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -138,7 +137,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   skipBtn: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
+    top: 60,
     right: 20,
     zIndex: 10,
   },
@@ -199,7 +198,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: 40,
-    paddingBottom: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 60,
   },
   pagination: {
     flexDirection: 'row',

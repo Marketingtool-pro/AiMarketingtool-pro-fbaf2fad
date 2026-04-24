@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
-import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Screens
@@ -83,7 +83,7 @@ const AuthNavigator = () => (
 // Tab Navigator
 const TabNavigator = () => {
   const insets = useSafeAreaInsets();
-  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 16 : 8);
+  const bottomPadding = Math.max(insets.bottom, 8);
 
   return (
     <Tab.Navigator
