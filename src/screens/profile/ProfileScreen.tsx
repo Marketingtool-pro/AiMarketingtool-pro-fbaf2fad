@@ -9,6 +9,7 @@ import {
   Alert,
   Dimensions,
   Linking,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -94,7 +95,20 @@ const ProfileScreen = () => {
       title: 'Subscription',
       items: [
         { iconName: 'star', label: 'Manage Plan', screen: 'Subscription', badge: profile?.subscription === 'free' ? 'Upgrade' : null },
-        { iconName: 'credit-card', label: 'Payment & Billing', url: 'https://billing.stripe.com/p/login/4gw5oe3PY0hW0qk000' },
+        // Platform-aware billing route. Apple 3.1.1 / Play policy require IAP
+        // subscriptions to be managed via the platform's own subscription
+        // settings, not via an external Stripe portal. Web users (no IAP) keep
+        // the Stripe billing portal.
+        {
+          iconName: 'credit-card',
+          label: 'Payment & Billing',
+          url:
+            Platform.OS === 'ios'
+              ? 'itms-apps://apps.apple.com/account/subscriptions'
+              : Platform.OS === 'android'
+              ? 'https://play.google.com/store/account/subscriptions'
+              : 'https://billing.stripe.com/p/login/4gw5oe3PY0hW0qk000',
+        },
       ],
     },
     {
