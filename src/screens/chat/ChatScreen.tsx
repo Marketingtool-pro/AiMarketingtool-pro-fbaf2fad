@@ -20,7 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
-import { useAuthStore } from '../../store/authStore';
+import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { functions, account } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 import { getToolIcon } from '../../constants/toolIcons';
@@ -368,9 +368,9 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
         status = updatedExecution.status;
         
         if (status === 'completed') {
-          const result = JSON.parse(updatedExecution.responseBody);
+          const result = parseAppwriteResponse(updatedExecution.responseBody);
           if (result.error) throw new Error(result.error);
-          return result.response || result.content || 'I could not generate a response.';
+          return result.response || result.content || result.message || 'I could not generate a response.';
         }
         
         attempts++;

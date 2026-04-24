@@ -15,7 +15,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useAuthStore } from '../../store/authStore';
+import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import * as Haptics from 'expo-haptics';
 import { billingService } from '../../services/billingService';
@@ -194,11 +194,11 @@ const SubscriptionScreen = () => {
         }),
         false, '/', ExecutionMethod.POST,
       );
-      const result = JSON.parse(execution.responseBody);
+      const result = parseAppwriteResponse(execution.responseBody);
       if (result.url) {
         await Linking.openURL(result.url);
       } else {
-        Alert.alert('Checkout Error', result.error || 'Could not start checkout.');
+        Alert.alert('Checkout Error', result.error || result.message || 'Could not start checkout.');
       }
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Could not open checkout.');
