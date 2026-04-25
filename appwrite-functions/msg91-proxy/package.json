@@ -1,0 +1,11 @@
+{
+  "name": "msg91-proxy",
+  "version": "1.0.0",
+  "description": "OTP send + verify via Bird Verify API (function name legacy; uses Bird internally, not MSG91)",
+  "main": "src/main.js",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}
