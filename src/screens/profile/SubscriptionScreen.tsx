@@ -184,13 +184,13 @@ const SubscriptionScreen = () => {
 
       const userEmail = (profile as any)?.email || '';
       const execution = await functions.createExecution(
-        'stripe-checkout',
+        'iap-verify',
         JSON.stringify({
           planId: selectedPlan,
           billingPeriod,
           userId,
           userEmail,
-          platform: 'web',
+          platform: Platform.OS,
         }),
         false, '/', ExecutionMethod.POST,
       );

@@ -36,7 +36,7 @@ const PrivacyScreen = () => {
             {'\u2022'} Profile data (avatar, preferences, settings){'\n'}
             {'\u2022'} Usage data (tools used, generations created, features accessed){'\n'}
             {'\u2022'} Device information (device type, OS version, app version){'\n'}
-            {'\u2022'} Payment information (processed securely via Stripe)
+            {'\u2022'} Subscription information (processed securely by Apple App Store / Google Play in-app purchase)
           </Text>
 
           <Text style={styles.heading}>How We Use Your Information</Text>

@@ -95,19 +95,16 @@ const ProfileScreen = () => {
       title: 'Subscription',
       items: [
         { iconName: 'star', label: 'Manage Plan', screen: 'Subscription', badge: profile?.subscription === 'free' ? 'Upgrade' : null },
-        // Platform-aware billing route. Apple 3.1.1 / Play policy require IAP
-        // subscriptions to be managed via the platform's own subscription
-        // settings, not via an external Stripe portal. Web users (no IAP) keep
-        // the Stripe billing portal.
+        // Platform-native subscription management. Apple 3.1.1 / Google Play
+        // policy require IAP subs to be managed via the platform's own
+        // settings — no external payment links permitted in the app.
         {
           iconName: 'credit-card',
           label: 'Payment & Billing',
           url:
             Platform.OS === 'ios'
               ? 'itms-apps://apps.apple.com/account/subscriptions'
-              : Platform.OS === 'android'
-              ? 'https://play.google.com/store/account/subscriptions'
-              : 'https://billing.stripe.com/p/login/4gw5oe3PY0hW0qk000',
+              : 'https://play.google.com/store/account/subscriptions',
         },
       ],
     },

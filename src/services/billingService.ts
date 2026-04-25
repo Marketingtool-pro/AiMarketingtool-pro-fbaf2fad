@@ -118,7 +118,7 @@ export const billingService = {
       }
 
       const execution = await functions.createExecution(
-        'stripe-checkout',
+        'iap-verify',
         JSON.stringify(payload),
         false, '/', ExecutionMethod.POST
       );

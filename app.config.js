@@ -38,7 +38,9 @@ module.exports = ({ config }) => ({
           "targetSdkVersion": 35,
           "minSdkVersion": 24,
           "kotlinVersion": "2.1.20",
-          "kspVersion": "2.1.20-1.0.32"
+          "kspVersion": "2.1.20-1.0.32",
+          "ndkVersion": "26.1.10909125",
+          "cmakeVersion": "3.22.1"
         }
       }
     ],
