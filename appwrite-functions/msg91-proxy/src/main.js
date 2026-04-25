@@ -1,26 +1,35 @@
 /**
- * msg91-proxy — OTP send + verify via Bird (MessageBird) Verify API.
+ * msg91-proxy — OTP send + verify using Appwrite DB `otps` collection + Bird SMS.
  *
- * Function name kept as "msg91-proxy" for backwards compatibility with the
- * phone-app code that calls it. Internally uses Bird, NOT MSG91 (DLT issues
- * in India). Delivery is SMS (UsedPlatform: "sms").
+ * Architecture (matches your actual setup, per the otps table screenshot):
  *
- * Actions (request body JSON):
- *   { action: "sendOtp",   phone: "9571312555", countryCode: "+91" }
- *     -> { success: true, verificationId: "<bird verify id>" }
- *   { action: "verifyOtp", code: "514164", verificationId: "<from sendOtp>" }
- *     -> { success: true } | { success: false, message: "..." }
+ *   sendOtp:
+ *     1. Generate random 6-digit code locally
+ *     2. Upsert into Appwrite DB > Main Database > otps  with mobile + otp + expiresAt
+ *     3. Send the code via Bird channel as plain SMS (NOT Bird Verify API)
+ *     4. Return verificationId = mobile (so verify can look it up)
  *
- * Always returns valid JSON — no plain-text/HTML responses, so the phone
- * app's JSON.parse never throws "Unexpected token o in JSON at position 1".
+ *   verifyOtp:
+ *     1. Query otps collection where mobile == verificationId
+ *     2. Compare stored otp to submitted code, check expiresAt > now
+ *     3. Delete the row on success (single-use OTP)
+ *     4. Return success/fail
  *
- * Env vars (already set in Appwrite Function Settings):
- *   BIRD_WORKSPACE_ID  — required
- *   BIRD_CHANNEL_ID    — required (SMS channel)
- *   BIRD_ACCESS_KEY    — required
+ * Env vars (already set in Appwrite Console > Function > Settings):
+ *   APPWRITE_API_KEY              — function-side admin key
+ *   APPWRITE_PROJECT_ID           — 6952c8a0002d3365625d
+ *   APPWRITE_ENDPOINT             — https://api.marketingtool.pro/v1
+ *   BIRD_WORKSPACE_ID             — 6268074f-7db9-4c73-b88b-70808aa34099
+ *   BIRD_CHANNEL_ID               — 982f6e4f-0574-5c83-8296-0d8ffd5adfa5  (SMS channel)
+ *   BIRD_ACCESS_KEY               — Bird API access key
+ *
+ * Optional env (override defaults):
+ *   APPWRITE_DATABASE_ID          — default 'main'
+ *   APPWRITE_OTP_COLLECTION_ID    — default 'otps'
+ *   OTP_EXPIRY_MINUTES            — default 10
  */
 
-const BIRD_BASE = 'https://api.bird.com';
+import { Client, Databases, Query, ID } from 'node-appwrite';
 
 const respond = (res, payload, statusCode = 200) =>
   res.json(payload, statusCode, { 'Content-Type': 'application/json' });
@@ -30,9 +39,21 @@ const normalizeMobile = (countryCode, phone) => {
   return `${cc}${phone}`.replace(/[\s\-()]/g, '');
 };
 
-async function birdSendOtp({ phone, countryCode }, log, error) {
-  const fullPhone = normalizeMobile(countryCode, phone);
-  const url = `${BIRD_BASE}/workspaces/${process.env.BIRD_WORKSPACE_ID}/channels/${process.env.BIRD_CHANNEL_ID}/verifications`;
+const randomOtp = () => String(Math.floor(100000 + Math.random() * 900000));
+
+function appwriteClient() {
+  return new Client()
+    .setEndpoint(process.env.APPWRITE_ENDPOINT)
+    .setProject(process.env.APPWRITE_PROJECT_ID)
+    .setKey(process.env.APPWRITE_API_KEY);
+}
+
+const DB_ID = process.env.APPWRITE_DATABASE_ID || 'main';
+const COLLECTION_ID = process.env.APPWRITE_OTP_COLLECTION_ID || 'otps';
+const EXPIRY_MIN = Number(process.env.OTP_EXPIRY_MINUTES) || 10;
+
+async function birdSendSms(fullPhone, text, log, error) {
+  const url = `https://api.bird.com/workspaces/${process.env.BIRD_WORKSPACE_ID}/channels/${process.env.BIRD_CHANNEL_ID}/messages`;
   const r = await fetch(url, {
     method: 'POST',
     headers: {
@@ -40,40 +61,48 @@ async function birdSendOtp({ phone, countryCode }, log, error) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      identifier: { type: 'phonenumber', value: fullPhone },
-      timeout: 600,
+      receiver: { contacts: [{ identifierValue: fullPhone }] },
+      body: { type: 'text', text: { text } },
     }),
   });
   const data = await r.json().catch(() => ({}));
   if (!r.ok) {
-    error(`Bird send failed ${r.status}: ${JSON.stringify(data).slice(0, 300)}`);
-    return { ok: false, message: data.message || data.error || 'Failed to send OTP' };
+    error(`Bird SMS send failed ${r.status}: ${JSON.stringify(data).slice(0, 300)}`);
+    return { ok: false, message: data.message || 'Failed to send SMS' };
   }
-  log(`Bird verification id=${data.id} for ${fullPhone}`);
-  return { ok: true, verificationId: data.id };
+  log(`Bird SMS sent to ${fullPhone} (id=${data.id})`);
+  return { ok: true, providerId: data.id };
 }
 
-async function birdVerifyOtp({ verificationId, code }, log, error) {
-  const url = `${BIRD_BASE}/workspaces/${process.env.BIRD_WORKSPACE_ID}/verifications/${verificationId}`;
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `AccessKey ${process.env.BIRD_ACCESS_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ code }),
+async function upsertOtp(databases, mobile, otp, expiresAt, log) {
+  // Delete any existing OTPs for this mobile so the latest one wins
+  try {
+    const existing = await databases.listDocuments(DB_ID, COLLECTION_ID, [
+      Query.equal('mobile', mobile),
+      Query.limit(20),
+    ]);
+    for (const doc of existing.documents) {
+      await databases.deleteDocument(DB_ID, COLLECTION_ID, doc.$id).catch(() => {});
+    }
+  } catch (e) {
+    log(`No prior OTPs to clear (${e.message})`);
+  }
+  return databases.createDocument(DB_ID, COLLECTION_ID, ID.unique(), {
+    mobile,
+    otp,
+    expiresAt,
   });
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) {
-    error(`Bird verify failed ${r.status}: ${JSON.stringify(data).slice(0, 300)}`);
-    return { ok: false, message: data.message || 'Invalid OTP. Please try again.' };
-  }
-  if (data.status === 'verified') {
-    log(`Bird verified ${verificationId}`);
-    return { ok: true };
-  }
-  if (data.status === 'expired') return { ok: false, message: 'OTP expired. Please request a new code.' };
-  return { ok: false, message: 'Invalid OTP. Please try again.' };
+}
+
+async function findValidOtp(databases, mobile, code) {
+  const now = new Date().toISOString();
+  const result = await databases.listDocuments(DB_ID, COLLECTION_ID, [
+    Query.equal('mobile', mobile),
+    Query.equal('otp', code),
+    Query.greaterThan('expiresAt', now),
+    Query.limit(1),
+  ]);
+  return result.documents[0] || null;
 }
 
 export default async ({ req, res, log, error }) => {
@@ -85,25 +114,58 @@ export default async ({ req, res, log, error }) => {
   }
 
   const { action } = body;
+  const databases = new Databases(appwriteClient());
 
   if (action === 'sendOtp') {
     if (!body.phone || !body.countryCode) {
       return respond(res, { success: false, message: 'Missing phone or countryCode' }, 400);
     }
-    const r = await birdSendOtp(body, log, error);
-    return respond(
-      res,
-      r.ok ? { success: true, verificationId: r.verificationId } : { success: false, message: r.message },
-      r.ok ? 200 : 502,
+    const mobile = normalizeMobile(body.countryCode, body.phone);
+    const otp = randomOtp();
+    const expiresAt = new Date(Date.now() + EXPIRY_MIN * 60 * 1000).toISOString();
+
+    try {
+      await upsertOtp(databases, mobile, otp, expiresAt, log);
+    } catch (e) {
+      error(`OTP store failed: ${e.message}`);
+      return respond(res, { success: false, message: 'Failed to store OTP' }, 500);
+    }
+
+    const sms = await birdSendSms(
+      mobile,
+      `Your MarketingTool verification code is: ${otp}\n\nValid for ${EXPIRY_MIN} minutes. Do not share.`,
+      log,
+      error,
     );
+    if (!sms.ok) {
+      return respond(res, { success: false, message: sms.message }, 502);
+    }
+
+    return respond(res, { success: true, verificationId: mobile });
   }
 
   if (action === 'verifyOtp') {
     if (!body.code || !body.verificationId) {
       return respond(res, { success: false, message: 'Missing code or verificationId' }, 400);
     }
-    const r = await birdVerifyOtp(body, log, error);
-    return respond(res, r.ok ? { success: true } : { success: false, message: r.message });
+    const mobile = body.verificationId;
+
+    let doc;
+    try {
+      doc = await findValidOtp(databases, mobile, body.code);
+    } catch (e) {
+      error(`OTP lookup failed: ${e.message}`);
+      return respond(res, { success: false, message: 'Verification service unavailable' }, 500);
+    }
+
+    if (!doc) {
+      return respond(res, { success: false, message: 'Invalid or expired OTP. Please try again.' });
+    }
+
+    // Single-use: delete on success
+    await databases.deleteDocument(DB_ID, COLLECTION_ID, doc.$id).catch(() => {});
+    log(`OTP verified for ${mobile}`);
+    return respond(res, { success: true });
   }
 
   return respond(res, { success: false, message: `Unknown action: ${action}` }, 400);
