@@ -57,3 +57,5 @@ google-play-service-account.json
 
 # EAS Submit — Google Play service account (NEVER commit)
 .eas-google-play-sa.json
+GoogleService-Info.plist.bak-*
+idv-quickstart/
