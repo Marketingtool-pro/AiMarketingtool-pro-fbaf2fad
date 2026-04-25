@@ -25,8 +25,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Build production for Android and iOS
-        run: eas build --platform all --profile production --non-interactive
+      - name: Build production for Android
+        run: eas build --platform android --profile production --non-interactive
 
   eas-submit:
     runs-on: ubuntu-latest
@@ -47,7 +47,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Submit to App Stores
-        run: eas submit --platform all --profile production --non-interactive
-        env:
-          EXPO_APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      - name: Submit to Google Play
+        run: eas submit --platform android --profile production --non-interactive
