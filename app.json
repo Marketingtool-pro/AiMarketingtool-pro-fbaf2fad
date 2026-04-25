@@ -22,7 +22,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
+<<<<<<< Updated upstream
       "buildNumber": "450",
+=======
+      "buildNumber": "448",
+>>>>>>> Stashed changes
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -59,7 +63,11 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
+<<<<<<< Updated upstream
       "versionCode": 340,
+=======
+      "versionCode": 448,
+>>>>>>> Stashed changes
       "allowBackup": false,
       "permissions": [
         "CAMERA",
