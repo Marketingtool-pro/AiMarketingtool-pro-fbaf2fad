@@ -3,6 +3,7 @@ const path = require('path');
 const withEasPodfileFix = require('./plugins/withEasPodfileFix');
 const withKotlinKspFix = require('./plugins/withKotlinKspFix');
 const withAndroid15EdgeToEdge = require('./plugins/withAndroid15EdgeToEdge');
+const withAndroidAbiFilters = require('./plugins/withAndroidAbiFilters');
 
 /**
  * AI Marketing Tool - Mobile Config (2026)
