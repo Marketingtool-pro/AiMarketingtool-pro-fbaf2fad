@@ -29,6 +29,8 @@ import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 import { biometricService, BiometricType } from '../../services/biometric';
 
+import * as AppleAuthentication from 'expo-apple-authentication';
+
 const { width } = Dimensions.get('window');
 
 // Country data for phone login
@@ -251,8 +253,8 @@ const LoginScreen = () => {
           {/* Quick Login */}
           <View style={styles.quickLoginContainer}>
             <View style={styles.quickLoginHeader}>
-              <Feather name="message-circle" size={16} color="#25D366" />
-              <Text style={styles.quickLoginText}>WhatsApp Login</Text>
+              <Feather name="smartphone" size={16} color="#9D4EDD" />
+              <Text style={styles.quickLoginText}>Phone Login</Text>
             </View>
 
             <View style={styles.phoneRow}>
@@ -414,9 +416,13 @@ const LoginScreen = () => {
                 <Image source={require('../../../assets/images/platforms/messenger.png')} style={{ width: 56, height: 56 }} resizeMode="contain" />
              </TouchableOpacity>
              {Platform.OS === 'ios' && (
-               <TouchableOpacity activeOpacity={0.7} onPress={loginWithApple}>
-                  <Image source={require('../../../assets/images/platforms/soundcloud.png')} style={{ width: 56, height: 56 }} resizeMode="contain" />
-               </TouchableOpacity>
+               <AppleAuthentication.AppleAuthenticationButton
+                 buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                 buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                 cornerRadius={16}
+                 style={{ width: 56, height: 56 }}
+                 onPress={loginWithApple}
+               />
              )}
           </View>
 

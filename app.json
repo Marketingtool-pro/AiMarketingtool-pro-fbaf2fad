@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "451",
+      "buildNumber": "448",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -59,7 +59,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 451,
+      "versionCode": 448,
       "allowBackup": false,
       "permissions": [
         "CAMERA",

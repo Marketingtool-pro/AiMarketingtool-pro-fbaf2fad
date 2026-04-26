@@ -15,6 +15,8 @@ import { initializeAppCheck } from './src/services/firebaseAppCheck';
 import crashlytics from '@react-native-firebase/crashlytics';
 import analytics from '@react-native-firebase/analytics';
 import messaging from '@react-native-firebase/messaging';
+import { StripeProvider } from '@stripe/stripe-react-native';
+import * as TrackingTransparency from 'expo-tracking-transparency';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -26,7 +28,13 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       try {
+        // Request ATT permission on iOS
+        if (Platform.OS === 'ios') {
+          await TrackingTransparency.requestTrackingPermissionsAsync();
+        }
+
         // Run fonts and auth in parallel, each with its own timeout.
+...
         // Cap at 1.5s to prevent slow auth/network from gating the splash.
         const withTimeout = <T,>(p: Promise<T>, ms: number) =>
           Promise.race([p, new Promise(resolve => setTimeout(resolve, ms))]);
@@ -103,12 +111,17 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <SafeAreaProvider>
-        <View style={styles.container} onLayout={onLayoutRootView}>
-          <StatusBar style="light" />
-          <AppNavigator />
-        </View>
-      </SafeAreaProvider>
+      <StripeProvider
+        publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder'}
+        merchantIdentifier="merchant.pro.marketingtool.app"
+      >
+        <SafeAreaProvider>
+          <View style={styles.container} onLayout={onLayoutRootView}>
+            <StatusBar style="light" />
+            <AppNavigator />
+          </View>
+        </SafeAreaProvider>
+      </StripeProvider>
     </GestureHandlerRootView>
   );
 }

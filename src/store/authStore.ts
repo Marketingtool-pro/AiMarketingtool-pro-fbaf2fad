@@ -232,13 +232,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Keeps isLoading off so AppNavigator stays on Login (no splash flicker)
     set({ error: null });
     try {
-      const cleaned = phoneNumber.replace(/\D/g, '');
-      if (__DEV__) console.log('[Auth] Sending OTP via Bird:', cleaned);
+      // Input: +91 9999999999 or 9999999999
+      let countryCode = '91';
+      let phone = phoneNumber.replace(/\D/g, '');
+      
+      if (phoneNumber.startsWith('+')) {
+        // Simple extraction for common CC lengths (1-3 digits)
+        if (phone.startsWith('91')) {
+          countryCode = '91';
+          phone = phone.substring(2);
+        } else if (phone.startsWith('1') && phone.length === 11) {
+          countryCode = '1';
+          phone = phone.substring(1);
+        }
+      }
+
+      if (__DEV__) console.log('[Auth] Sending OTP via Bird:', { countryCode, phone });
 
       // 🚨 ANR FIX: Set async=true to prevent blocking the main thread
       const execution = await functions.createExecution(
         'msg91-proxy',
-        JSON.stringify({ action: 'sendOtp', identifier: cleaned }),
+        JSON.stringify({ 
+          action: 'sendOtp', 
+          phone: phone, 
+          countryCode: countryCode 
+        }),
         true, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
@@ -252,11 +270,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         status = updated.status;
         if (status === 'completed') {
           const responseBody = parseAppwriteResponse(updated.responseBody);
-          if (responseBody.type !== 'success' && !responseBody.success) {
+          if (!responseBody.success) {
             throw new Error(responseBody.message || 'Failed to send OTP');
           }
-          set({ tempPhone: cleaned, tempVerificationId: responseBody.verificationId });
-          return cleaned;
+          const mobile = responseBody.verificationId; // Full normalized mobile from function
+          set({ tempPhone: mobile, tempVerificationId: mobile });
+          return mobile;
         }
         attempts++;
       }
@@ -273,7 +292,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ error: null });
     try {
       const phone = get().tempPhone || _userId;
-      const verificationId = get().tempVerificationId;
+      const verificationId = phone; // The msg91-proxy uses 'mobile' as verificationId
       if (__DEV__) console.log('[Auth] Verifying OTP for:', phone, 'vid:', verificationId);
 
       if (!verificationId) {
@@ -361,8 +380,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const success = await biometricService.authenticate('Login with biometrics');
       if (success) {
-        // Appwrite session is already managed by the SDK and SecureStore in appwrite.ts
-        // We just need to check if we can get the current user
         set({ isLoading: true });
         const user = await authService.getCurrentUser();
         if (user) {
@@ -466,7 +483,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   clearError: () => set({ error: null }),
 
-  // Helper function to fetch or create user profile
   fetchOrCreateProfile: async (user: Models.User<Models.Preferences>): Promise<UserProfile> => {
     const defaultProfile: UserProfile = {
       $id: user.$id,
@@ -516,7 +532,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       return newProfile as UserProfile;
     } catch (error) {
-      // Return a default profile if database operations fail or timeout
       return defaultProfile;
     }
   },

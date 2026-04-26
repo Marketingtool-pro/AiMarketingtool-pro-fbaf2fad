@@ -15,7 +15,7 @@ module.exports = ({ config }) => ({
     [withKotlinKspFix, {
       kotlinVersion: '2.1.20',
       kspVersion: '2.1.20-1.0.32',
-      gradleVersion: '9.0.1',
+      gradleVersion: '8.13',
     }],
     [withAndroid15EdgeToEdge],
     [
@@ -50,7 +50,6 @@ module.exports = ({ config }) => ({
     "react-native-iap",
     "expo-secure-store",
     "expo-font",
-    "expo-sharing",
     "expo-web-browser",
     "expo-asset"
   ]

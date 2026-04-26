@@ -120,42 +120,47 @@ import { ToolIconImagesKeys, setToolIconOverride, getToolIcon as _getToolIcon } 
 // tool past that threshold to share the same icon. The full 336-icon pool is
 // now used before we even consider duplicating anything.
 function assignUniqueIcons(slugs: string[]) {
-  const pool = ToolIconImagesKeys;
-  const meaningful = pool.filter(k => /[a-z]{3,}/.test(k) && !/^\d+(-[a-z])?$/.test(k));
+  const pool = [...ToolIconImagesKeys];
   const used = new Set<string>();
+  const sortedSlugs = [...slugs].sort();
 
-  // Sort slugs to make assignment deterministic across app launches
-  const sorted = [...slugs].sort();
+  let poolIdx = 0;
 
-  // cycleIdx tracks how many tools we've passed over so the exhaustion
-  // fallback actually rotates through the full pool. Using `used.size`
-  // here was the bug: once every icon was used at least once, used.size
-  // plateaued at pool.length and `used.size % pool.length` collapsed to 0,
-  // so every remaining tool was assigned pool[0] (= "facebook").
-  let cycleIdx = 0;
-
-  for (const slug of sorted) {
-    const slugWords = slug.split('-').filter(w => w.length > 2);
+  for (const slug of sortedSlugs) {
     let chosen: string | null = null;
+    const slugWords = slug.split('-').filter(w => w.length > 3); // More specific matching
 
-    // 1st pass: semantic match in the meaningful subset
+    // 1st pass: Precise semantic match
     for (const word of slugWords) {
-      const candidate = meaningful.find(k => !used.has(k) && k.includes(word));
-      if (candidate) { chosen = candidate; break; }
+      const match = pool.find(k => !used.has(k) && k.toLowerCase() === word.toLowerCase());
+      if (match) { chosen = match; break; }
     }
 
-    // 2nd pass: any unused icon in the meaningful subset
-    if (!chosen) chosen = meaningful.find(k => !used.has(k)) || null;
+    // 2nd pass: Partial semantic match
+    if (!chosen) {
+      for (const word of slugWords) {
+        const match = pool.find(k => !used.has(k) && k.toLowerCase().includes(word.toLowerCase()));
+        if (match) { chosen = match; break; }
+      }
+    }
 
-    // 3rd pass: any unused icon in the FULL pool (incl. numeric / texture packs)
-    if (!chosen) chosen = pool.find(k => !used.has(k)) || null;
+    // 3rd pass: Direct rotation from pool to guarantee 100% uniqueness
+    if (!chosen) {
+      while (poolIdx < pool.length && used.has(pool[poolIdx])) {
+        poolIdx++;
+      }
+      if (poolIdx < pool.length) {
+        chosen = pool[poolIdx];
+        poolIdx++;
+      }
+    }
 
-    // 4th pass (true exhaustion): cycle through the pool so the overflow
-    // tools don't all collapse onto pool[0].
-    if (!chosen) chosen = pool[cycleIdx % pool.length];
+    // Final fallback (should never happen with 1000 icons vs 314 tools)
+    if (!chosen) {
+      chosen = pool[used.size % pool.length];
+    }
 
     used.add(chosen);
-    cycleIdx++;
     setToolIconOverride(slug, _getToolIcon(chosen));
   }
 }

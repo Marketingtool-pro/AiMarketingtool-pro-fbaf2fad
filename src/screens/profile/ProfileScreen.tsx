@@ -101,10 +101,11 @@ const ProfileScreen = () => {
         {
           iconName: 'credit-card',
           label: 'Payment & Billing',
-          url:
-            Platform.OS === 'ios'
-              ? 'itms-apps://apps.apple.com/account/subscriptions'
-              : 'https://play.google.com/store/account/subscriptions',
+          url: Platform.select({
+            ios: 'itms-apps://apps.apple.com/account/subscriptions',
+            android: 'https://play.google.com/store/account/subscriptions',
+            default: 'https://marketingtool.pro/account/billing'
+          }),
         },
       ],
     },
