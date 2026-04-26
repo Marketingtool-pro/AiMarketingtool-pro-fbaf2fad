@@ -142,6 +142,31 @@ const SubscriptionScreen = () => {
     agency: null,
   };
 
+  const handlePurchase = async (sku: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const userId = profile?.userId || profile?.$id;
+    if (!userId) {
+      Alert.alert('Sign In Required', 'Please sign in before making a purchase.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await billingService.requestPurchase(sku, userId!);
+      if (result.success) {
+        Alert.alert('Success', 'Your account has been topped up!', [
+          { text: 'OK', onPress: () => { refreshProfile(); } },
+        ]);
+      } else if (result.error !== 'Purchase cancelled') {
+        Alert.alert('Purchase Failed', result.error || 'Could not complete the purchase.');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Could not process purchase.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubscribe = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     const userId = profile?.userId || profile?.$id;
@@ -383,7 +408,7 @@ const SubscriptionScreen = () => {
         {/* Apple 3.1.1: no Consumable IAP for tokens registered yet. Render card only on Android (Play has SKU "tokens" — 100 Extra Generations product, active in 173 countries) to avoid "misleading UI" rejection on iOS. */}
         <TouchableOpacity 
           style={{ paddingHorizontal: 20, marginTop: 28 }}
-          onPress={() => handlePurchase('starter')} // Or a specific 'tokens' SKU if registered
+          onPress={() => handlePurchase('tokens')}
           activeOpacity={0.7}
         >
           <Text style={{ fontSize: 22, fontWeight: '900', color: '#FFF', marginBottom: 6 }}>Need More Generations?</Text>
