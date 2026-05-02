@@ -59,3 +59,10 @@ google-play-service-account.json
 .eas-google-play-sa.json
 GoogleService-Info.plist.bak-*
 idv-quickstart/
+
+# Build artifacts — regenerable, must never be in git
+*.aab
+*.apk
+*.ipa
+*.app
+*.dSYM.zip
