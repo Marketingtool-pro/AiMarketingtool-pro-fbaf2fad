@@ -12,7 +12,7 @@
       "android"
     ],
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#060b28"
     },
@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "461",
+      "buildNumber": "463",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -59,7 +59,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 461,
+      "versionCode": 465,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -135,13 +135,6 @@
       "./plugins/withAndroid15EdgeToEdge.js",
       "expo-notifications",
       "react-native-iap",
-      [
-        "@stripe/stripe-react-native",
-        {
-          "merchantIdentifier": "merchant.pro.marketingtool.app",
-          "enableGooglePay": true
-        }
-      ],
       "expo-secure-store",
       "expo-font",
       "expo-sharing",

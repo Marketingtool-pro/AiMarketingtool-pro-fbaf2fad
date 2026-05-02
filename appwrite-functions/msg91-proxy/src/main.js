@@ -41,6 +41,11 @@ const normalizeMobile = (countryCode, phone) => {
 
 const randomOtp = () => String(Math.floor(100000 + Math.random() * 900000));
 
+// App Store / Play Store reviewer test number: skip Bird, fixed OTP.
+// Update review notes to point reviewers at this phone + code.
+const REVIEW_TEST_NUMBERS = new Set(['+919999999999']);
+const REVIEW_TEST_OTP = '123456';
+
 function appwriteClient() {
   return new Client()
     .setEndpoint(process.env.APPWRITE_ENDPOINT)
@@ -121,7 +126,8 @@ export default async ({ req, res, log, error }) => {
       return respond(res, { success: false, message: 'Missing phone or countryCode' }, 400);
     }
     const mobile = normalizeMobile(body.countryCode, body.phone);
-    const otp = randomOtp();
+    const isReviewTester = REVIEW_TEST_NUMBERS.has(mobile);
+    const otp = isReviewTester ? REVIEW_TEST_OTP : randomOtp();
     const expiresAt = new Date(Date.now() + EXPIRY_MIN * 60 * 1000).toISOString();
 
     try {
@@ -129,6 +135,11 @@ export default async ({ req, res, log, error }) => {
     } catch (e) {
       error(`OTP store failed: ${e.message}`);
       return respond(res, { success: false, message: 'Failed to store OTP' }, 500);
+    }
+
+    if (isReviewTester) {
+      log(`Review-tester number ${mobile} — skipping Bird SMS, fixed OTP stored`);
+      return respond(res, { success: true, verificationId: mobile });
     }
 
     const sms = await birdSendSms(
