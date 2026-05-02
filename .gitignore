@@ -25,6 +25,8 @@ credentials/
 !tsconfig.json
 !google-services.json
 !GoogleService-Info.plist
+!assets/animations/*.json
+!src/assets/animations/*.json
 
 # Metro
 .metro-health-check*

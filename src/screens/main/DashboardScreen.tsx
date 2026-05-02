@@ -39,10 +39,10 @@ const { width } = Dimensions.get('window');
 const isVisionOS = (Platform.OS as any) === 'visionos';
 
 const Animations = {
-  aiRobot: require('../../assets/animations/ai-robot.json'),
-  pulseGlow: require('../../assets/animations/pulse-glow.json'),
-  loadingDots: require('../../assets/animations/loading-dots.json'),
-  liquidWave: require('../../assets/animations/liquid-wave.json'),
+  aiRobot: require('../../../assets/animations/ai-robot.json'),
+  pulseGlow: require('../../../assets/animations/pulse-glow.json'),
+  loadingDots: require('../../../assets/animations/loading-dots.json'),
+  liquidWave: require('../../../assets/animations/liquid-wave.json'),
 };
 
 const DashboardImages = {
