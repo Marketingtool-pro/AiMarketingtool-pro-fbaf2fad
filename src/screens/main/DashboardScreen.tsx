@@ -46,36 +46,36 @@ const Animations = {
 };
 
 const DashboardImages = {
-  aiRobot: require('../../assets/images/dashboard/ai-robot.jpg'),
-  aiDashboard: require('../../assets/images/dashboard/ai-dashboard.jpg'),
-  analyticsCharacter: require('../../assets/images/dashboard/analytics-character.jpg'),
-  seoRobot: require('../../assets/images/dashboard/seo-robot.jpg'),
-  webAnalytics: require('../../assets/images/dashboard/web-analytics.jpg'),
+  aiRobot: require('../../../assets/images/dashboard/ai-robot.jpg'),
+  aiDashboard: require('../../../assets/images/dashboard/ai-dashboard.jpg'),
+  analyticsCharacter: require('../../../assets/images/dashboard/analytics-character.jpg'),
+  seoRobot: require('../../../assets/images/dashboard/seo-robot.jpg'),
+  webAnalytics: require('../../../assets/images/dashboard/web-analytics.jpg'),
 };
 
 const CategoryImageAssets = {
-  'google-ads': require('../../assets/images/categories/google-ads.jpg'),
-  'google-seo': require('../../assets/images/categories/google-seo.jpg'),
-  'google-analytics': require('../../assets/images/categories/google-analytics.jpg'),
-  'google-content': require('../../assets/images/categories/google-content.jpg'),
-  'facebook-ads': require('../../assets/images/categories/facebook-ads.jpg'),
-  'instagram': require('../../assets/images/categories/instagram.jpg'),
-  'social-media': require('../../assets/images/categories/social-media.jpg'),
-  'meta-content': require('../../assets/images/categories/meta-content.jpg'),
-  'shopify-products': require('../../assets/images/categories/shopify-products.jpg'),
-  'shopify-ads': require('../../assets/images/categories/shopify-ads.jpg'),
-  'email-marketing': require('../../assets/images/categories/email-marketing.jpg'),
-  'ecommerce-seo': require('../../assets/images/categories/ecommerce-seo.jpg'),
-  'ai-agents': require('../../assets/images/categories/ai-agents.jpg'),
-  'content-creation': require('../../assets/images/categories/content-creation.jpg'),
+  'google-ads': require('../../../assets/images/categories/google-ads.jpg'),
+  'google-seo': require('../../../assets/images/categories/google-seo.jpg'),
+  'google-analytics': require('../../../assets/images/categories/google-analytics.jpg'),
+  'google-content': require('../../../assets/images/categories/google-content.jpg'),
+  'facebook-ads': require('../../../assets/images/categories/facebook-ads.jpg'),
+  'instagram': require('../../../assets/images/categories/instagram.jpg'),
+  'social-media': require('../../../assets/images/categories/social-media.jpg'),
+  'meta-content': require('../../../assets/images/categories/meta-content.jpg'),
+  'shopify-products': require('../../../assets/images/categories/shopify-products.jpg'),
+  'shopify-ads': require('../../../assets/images/categories/shopify-ads.jpg'),
+  'email-marketing': require('../../../assets/images/categories/email-marketing.jpg'),
+  'ecommerce-seo': require('../../../assets/images/categories/ecommerce-seo.jpg'),
+  'ai-agents': require('../../../assets/images/categories/ai-agents.jpg'),
+  'content-creation': require('../../../assets/images/categories/content-creation.jpg'),
 };
 
 const BannerImages = {
-  banner1: require('../../assets/images/banners/banner-1.jpg'),
-  banner2: require('../../assets/images/banners/banner-2.jpg'),
-  banner3: require('../../assets/images/banners/banner-3.jpg'),
-  banner4: require('../../assets/images/banners/banner-4.jpg'),
-  banner5: require('../../assets/images/banners/banner-5.jpg'),
+  banner1: require('../../../assets/images/banners/banner-1.jpg'),
+  banner2: require('../../../assets/images/banners/banner-2.jpg'),
+  banner3: require('../../../assets/images/banners/banner-3.jpg'),
+  banner4: require('../../../assets/images/banners/banner-4.jpg'),
+  banner5: require('../../../assets/images/banners/banner-5.jpg'),
 };
 
 const CategoryImages: Record<string, { image: any; gradient: string[] }> = {
@@ -202,10 +202,10 @@ const DashboardScreen = () => {
   };
 
   const stats = [
-    { label: 'AI Tools', value: 'All', icon: 'zap', img: require('../../assets/images/tool-icons-v2/ai-3d.png'), color: Colors.secondary, badge: 'New', screen: 'Tools' },
-    { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', img: require('../../assets/images/tool-icons-v2/analytics-3d.png'), color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
-    { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', img: require('../../assets/images/tool-icons-v2/rocket.png'), color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
-    { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', img: require('../../assets/images/tool-icons-v2/trophy.png'), color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },
+    { label: 'AI Tools', value: 'All', icon: 'zap', img: require('../../../assets/images/tool-icons-v2/ai-3d.png'), color: Colors.secondary, badge: 'New', screen: 'Tools' },
+    { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', img: require('../../../assets/images/tool-icons-v2/analytics-3d.png'), color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
+    { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', img: require('../../../assets/images/tool-icons-v2/rocket.png'), color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
+    { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', img: require('../../../assets/images/tool-icons-v2/trophy.png'), color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },
   ];
 
   // Horizontal banner data
