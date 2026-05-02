@@ -110,8 +110,8 @@ export const TOOL_CATEGORIES = [
 ];
 
 
-// Load ALL 314 tools from tools.json with badge -> category mapping (mirrors web app)
-import allToolsRaw from '../data/tools.json';
+// Load ALL 314 tools from tools.js (was tools.json — renamed to bypass *.json archive filter)
+const allToolsRaw = require('../data/tools.js');
 import { ToolIconImagesKeys, setToolIconOverride, getToolIcon as _getToolIcon } from '../constants/toolIcons';
 
 // Smart icon assignment — semantic-match-first, fall back to the FULL pool
