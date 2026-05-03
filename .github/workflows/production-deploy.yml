@@ -62,4 +62,4 @@ jobs:
       - name: Submit to store
         env:
           PLATFORM: ${{ matrix.platform }}
-        run: eas submit --platform "$PLATFORM" --profile production --non-interactive
+        run: eas submit --platform "$PLATFORM" --profile production --non-interactive --latest
