@@ -1,183 +1,150 @@
-/**
- * msg91-proxy — OTP send + verify using Appwrite DB `otps` collection + Bird SMS.
- *
- * Architecture (matches your actual setup, per the otps table screenshot):
- *
- *   sendOtp:
- *     1. Generate random 6-digit code locally
- *     2. Upsert into Appwrite DB > Main Database > otps  with mobile + otp + expiresAt
- *     3. Send the code via Bird channel as plain SMS (NOT Bird Verify API)
- *     4. Return verificationId = mobile (so verify can look it up)
- *
- *   verifyOtp:
- *     1. Query otps collection where mobile == verificationId
- *     2. Compare stored otp to submitted code, check expiresAt > now
- *     3. Delete the row on success (single-use OTP)
- *     4. Return success/fail
- *
- * Env vars (already set in Appwrite Console > Function > Settings):
- *   APPWRITE_API_KEY              — function-side admin key
- *   APPWRITE_PROJECT_ID           — 6952c8a0002d3365625d
- *   APPWRITE_ENDPOINT             — https://api.marketingtool.pro/v1
- *   BIRD_WORKSPACE_ID             — 6268074f-7db9-4c73-b88b-70808aa34099
- *   BIRD_CHANNEL_ID               — 982f6e4f-0574-5c83-8296-0d8ffd5adfa5  (SMS channel)
- *   BIRD_ACCESS_KEY               — Bird API access key
- *
- * Optional env (override defaults):
- *   APPWRITE_DATABASE_ID          — default 'main'
- *   APPWRITE_OTP_COLLECTION_ID    — default 'otps'
- *   OTP_EXPIRY_MINUTES            — default 10
- */
+const https = require("https");
 
-import { Client, Databases, Query, ID } from 'node-appwrite';
+// All credentials read from Appwrite Function env vars (no inline secrets).
+// Required env: BIRD_ACCESS_KEY, BIRD_WORKSPACE_ID, BIRD_CHANNEL_ID,
+//               APPWRITE_API_KEY, APPWRITE_PROJECT_ID
+// Optional env: REVIEW_TEST_PHONE (defaults +919999999999),
+//               REVIEW_TEST_OTP (defaults 123456)
 
-const respond = (res, payload, statusCode = 200) =>
-  res.json(payload, statusCode, { 'Content-Type': 'application/json' });
+const BIRD_KEY = process.env.BIRD_ACCESS_KEY;
+const BIRD_WS = process.env.BIRD_WORKSPACE_ID;
+const BIRD_CH = process.env.BIRD_CHANNEL_ID;
+const AW_KEY = process.env.APPWRITE_API_KEY;
+const AW_PROJ = process.env.APPWRITE_PROJECT_ID;
 
-const normalizeMobile = (countryCode, phone) => {
-  const cc = countryCode.startsWith('+') ? countryCode : `+${countryCode}`;
-  return `${cc}${phone}`.replace(/[\s\-()]/g, '');
-};
+// App Store / Play Store reviewer bypass — works for ANY country reviewer flow.
+const REVIEW_TEST_PHONE = process.env.REVIEW_TEST_PHONE || "+919999999999";
+const REVIEW_TEST_OTP = process.env.REVIEW_TEST_OTP || "123456";
+const REVIEW_VERIFICATION_ID = "REVIEW_BYPASS_VID";
 
-const randomOtp = () => String(Math.floor(100000 + Math.random() * 900000));
-
-// App Store / Play Store reviewer test number: skip Bird, fixed OTP.
-// Update review notes to point reviewers at this phone + code.
-const REVIEW_TEST_NUMBERS = new Set(['+919999999999']);
-const REVIEW_TEST_OTP = '123456';
-
-function appwriteClient() {
-  return new Client()
-    .setEndpoint(process.env.APPWRITE_ENDPOINT)
-    .setProject(process.env.APPWRITE_PROJECT_ID)
-    .setKey(process.env.APPWRITE_API_KEY);
-}
-
-const DB_ID = process.env.APPWRITE_DATABASE_ID || 'main';
-const COLLECTION_ID = process.env.APPWRITE_OTP_COLLECTION_ID || 'otps';
-const EXPIRY_MIN = Number(process.env.OTP_EXPIRY_MINUTES) || 10;
-
-async function birdSendSms(fullPhone, text, log, error) {
-  const url = `https://api.bird.com/workspaces/${process.env.BIRD_WORKSPACE_ID}/channels/${process.env.BIRD_CHANNEL_ID}/messages`;
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `AccessKey ${process.env.BIRD_ACCESS_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      receiver: { contacts: [{ identifierValue: fullPhone }] },
-      body: { type: 'text', text: { text } },
-    }),
-  });
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) {
-    error(`Bird SMS send failed ${r.status}: ${JSON.stringify(data).slice(0, 300)}`);
-    return { ok: false, message: data.message || 'Failed to send SMS' };
-  }
-  log(`Bird SMS sent to ${fullPhone} (id=${data.id})`);
-  return { ok: true, providerId: data.id };
-}
-
-async function upsertOtp(databases, mobile, otp, expiresAt, log) {
-  // Delete any existing OTPs for this mobile so the latest one wins
-  try {
-    const existing = await databases.listDocuments(DB_ID, COLLECTION_ID, [
-      Query.equal('mobile', mobile),
-      Query.limit(20),
-    ]);
-    for (const doc of existing.documents) {
-      await databases.deleteDocument(DB_ID, COLLECTION_ID, doc.$id).catch(() => {});
-    }
-  } catch (e) {
-    log(`No prior OTPs to clear (${e.message})`);
-  }
-  return databases.createDocument(DB_ID, COLLECTION_ID, ID.unique(), {
-    mobile,
-    otp,
-    expiresAt,
+function httpReq(host, path, method, headers, body) {
+  return new Promise((resolve, reject) => {
+    var req = https.request({ hostname: host, path, method, headers, timeout: 15000 }, (res) => {
+      var data = "";
+      res.on("data", (c) => { data += c; });
+      res.on("end", () => { try { resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode, body: JSON.parse(data) }); } catch(e) { resolve({ ok: false, status: res.statusCode, body: data }); } });
+    });
+    req.on("error", reject);
+    req.on("timeout", () => { req.destroy(); reject(new Error("timeout")); });
+    if (body) req.write(body);
+    req.end();
   });
 }
 
-async function findValidOtp(databases, mobile, code) {
-  const now = new Date().toISOString();
-  const result = await databases.listDocuments(DB_ID, COLLECTION_ID, [
-    Query.equal('mobile', mobile),
-    Query.equal('otp', code),
-    Query.greaterThan('expiresAt', now),
-    Query.limit(1),
-  ]);
-  return result.documents[0] || null;
-}
+module.exports = async ({ req, res, log, error }) => {
+  var H = { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" };
+  if (req.method === "OPTIONS") return res.json({ status: "ok" }, 200, H);
 
-export default async ({ req, res, log, error }) => {
-  let body;
+  // Fail fast if env vars not configured.
+  if (!BIRD_KEY || !BIRD_WS || !BIRD_CH || !AW_KEY || !AW_PROJ) {
+    error("[B] Missing required env vars (BIRD_ACCESS_KEY, BIRD_WORKSPACE_ID, BIRD_CHANNEL_ID, APPWRITE_API_KEY, APPWRITE_PROJECT_ID)");
+    return res.json({ success: false, message: "Server misconfigured" }, 500, H);
+  }
+
   try {
-    body = JSON.parse(req.bodyRaw || req.body || '{}');
-  } catch (e) {
-    return respond(res, { success: false, message: 'Invalid request body' }, 400);
-  }
+    var body;
+    try { body = typeof req.body === "string" ? JSON.parse(req.body) : req.body; } catch(e) { body = {}; }
+    var action = body.action || "";
+    var phone = body.phone || body.identifier || "";
+    var code = body.code || body.otp || "";
+    var vid = body.verificationId || body.reqId || "";
+    var birdH = { "Authorization": "AccessKey " + BIRD_KEY, "Content-Type": "application/json" };
+    var awH = { "Content-Type": "application/json", "X-Appwrite-Project": AW_PROJ, "X-Appwrite-Key": AW_KEY };
 
-  const { action } = body;
-  const databases = new Databases(appwriteClient());
+    log("[B] " + action + " " + (phone ? phone.substring(0,5) + "***" : ""));
 
-  if (action === 'sendOtp') {
-    if (!body.phone || !body.countryCode) {
-      return respond(res, { success: false, message: 'Missing phone or countryCode' }, 400);
-    }
-    const mobile = normalizeMobile(body.countryCode, body.phone);
-    const isReviewTester = REVIEW_TEST_NUMBERS.has(mobile);
-    const otp = isReviewTester ? REVIEW_TEST_OTP : randomOtp();
-    const expiresAt = new Date(Date.now() + EXPIRY_MIN * 60 * 1000).toISOString();
+    if (action === "sendOtp" || action === "send") {
+      var np = phone.startsWith("+") ? phone : "+" + phone.replace(/\D/g, "");
+      if (np.length < 8) return res.json({ success: false, message: "Bad phone" }, 400, H);
 
-    try {
-      await upsertOtp(databases, mobile, otp, expiresAt, log);
-    } catch (e) {
-      error(`OTP store failed: ${e.message}`);
-      return respond(res, { success: false, message: 'Failed to store OTP' }, 500);
-    }
+      // REVIEWER BYPASS — App Store / Play Store demo. Skips Bird, no SMS sent.
+      if (np === REVIEW_TEST_PHONE) {
+        log("[B] reviewer bypass: skipping Bird, accepting fixed OTP");
+        // Still register/find Appwrite user so verifyOtp can issue a session token.
+        var tr = await httpReq("api.marketingtool.pro", "/v1/account/tokens/phone", "POST",
+          { "Content-Type": "application/json", "X-Appwrite-Project": AW_PROJ },
+          JSON.stringify({ userId: "unique()", phone: np }));
+        var uid = tr.ok ? tr.body.userId : null;
+        return res.json({ success: true, type: "success", message: "OTP sent", verificationId: REVIEW_VERIFICATION_ID, reqId: REVIEW_VERIFICATION_ID, userId: uid }, 200, H);
+      }
 
-    if (isReviewTester) {
-      log(`Review-tester number ${mobile} — skipping Bird SMS, fixed OTP stored`);
-      return respond(res, { success: true, verificationId: mobile });
-    }
+      // Create Appwrite phone token (registers user)
+      var tr = await httpReq("api.marketingtool.pro", "/v1/account/tokens/phone", "POST",
+        { "Content-Type": "application/json", "X-Appwrite-Project": AW_PROJ },
+        JSON.stringify({ userId: "unique()", phone: np }));
+      var uid = tr.ok ? tr.body.userId : null;
+      log("[B] aw token: " + (tr.ok ? uid : tr.status));
 
-    const sms = await birdSendSms(
-      mobile,
-      `Your MarketingTool verification code is: ${otp}\n\nValid for ${EXPIRY_MIN} minutes. Do not share.`,
-      log,
-      error,
-    );
-    if (!sms.ok) {
-      return respond(res, { success: false, message: sms.message }, 502);
-    }
-
-    return respond(res, { success: true, verificationId: mobile });
-  }
-
-  if (action === 'verifyOtp') {
-    if (!body.code || !body.verificationId) {
-      return respond(res, { success: false, message: 'Missing code or verificationId' }, 400);
-    }
-    const mobile = body.verificationId;
-
-    let doc;
-    try {
-      doc = await findValidOtp(databases, mobile, body.code);
-    } catch (e) {
-      error(`OTP lookup failed: ${e.message}`);
-      return respond(res, { success: false, message: 'Verification service unavailable' }, 500);
+      // Send via Bird Verify (international support)
+      var r = await httpReq("api.bird.com", "/workspaces/" + BIRD_WS + "/verify", "POST", birdH,
+        JSON.stringify({ identifier: { phonenumber: np }, codeLength: 6, maxAttempts: 5, timeout: 300, steps: [{ channelId: BIRD_CH }] }));
+      log("[B] bird: " + r.status);
+      if (!r.ok) return res.json({ success: false, message: "Send failed" }, 500, H);
+      return res.json({ success: true, type: "success", message: "OTP sent", verificationId: r.body.id, reqId: r.body.id, userId: uid }, 200, H);
     }
 
-    if (!doc) {
-      return respond(res, { success: false, message: 'Invalid or expired OTP. Please try again.' });
+    if (action === "verifyOtp" || action === "verify") {
+      if (!code || !vid) return res.json({ success: false, message: "Code required" }, 400, H);
+
+      // REVIEWER BYPASS — accept fixed code for fixed verification ID.
+      if (vid === REVIEW_VERIFICATION_ID) {
+        if (String(code) !== REVIEW_TEST_OTP) {
+          log("[B] reviewer bypass: wrong code submitted");
+          return res.json({ success: false, message: "Invalid OTP" }, 400, H);
+        }
+        log("[B] reviewer bypass: accepted");
+        var vp = REVIEW_TEST_PHONE;
+        var uid = body.userId || null;
+        if (!uid) {
+          var sr = await httpReq("api.marketingtool.pro", "/v1/users?search=" + encodeURIComponent(vp), "GET", awH);
+          if (sr.ok && sr.body.users && sr.body.users.length > 0) uid = sr.body.users[0]["$id"];
+        }
+        if (!uid) return res.json({ success: true, verified: true, message: "No user" }, 200, H);
+        var tokR = await httpReq("api.marketingtool.pro", "/v1/users/" + uid + "/tokens", "POST", awH,
+          JSON.stringify({ length: 64, expire: 31536000 }));
+        if (!tokR.ok) return res.json({ success: true, verified: true, userId: uid, message: "Token failed: " + tokR.status }, 200, H);
+        return res.json({ success: true, type: "success", verified: true, userId: uid, secret: tokR.body.secret }, 200, H);
+      }
+
+      var r = await httpReq("api.bird.com", "/workspaces/" + BIRD_WS + "/verify/" + vid, "POST", birdH,
+        JSON.stringify({ code: String(code) }));
+      log("[B] verify: " + r.status + " " + (r.body.status || "?"));
+      if (!r.ok || r.body.status !== "verified") return res.json({ success: false, message: "Invalid OTP" }, 400, H);
+
+      var vp = r.body.identifier ? r.body.identifier.phonenumber : phone;
+      var uid = body.userId || null;
+
+      // Find user if not provided
+      if (!uid) {
+        var sr = await httpReq("api.marketingtool.pro", "/v1/users?search=" + encodeURIComponent(vp), "GET", awH);
+        if (sr.ok && sr.body.users && sr.body.users.length > 0) uid = sr.body.users[0]["$id"];
+        log("[B] search: " + (uid || "none"));
+      }
+      if (!uid) return res.json({ success: true, verified: true, message: "No user" }, 200, H);
+
+      // Create token via REST API (not SDK)
+      var tokR = await httpReq("api.marketingtool.pro", "/v1/users/" + uid + "/tokens", "POST", awH,
+        JSON.stringify({ length: 64, expire: 31536000 }));
+      log("[B] token: " + tokR.status + " secret_len=" + (tokR.ok ? tokR.body.secret.length : 0));
+
+      if (!tokR.ok) {
+        log("[B] token err: " + JSON.stringify(tokR.body).substring(0,200));
+        return res.json({ success: true, verified: true, userId: uid, message: "Token failed: " + tokR.status }, 200, H);
+      }
+
+      return res.json({ success: true, type: "success", verified: true, userId: uid, secret: tokR.body.secret }, 200, H);
     }
 
-    // Single-use: delete on success
-    await databases.deleteDocument(DB_ID, COLLECTION_ID, doc.$id).catch(() => {});
-    log(`OTP verified for ${mobile}`);
-    return respond(res, { success: true });
-  }
+    if (action === "resendOtp" || action === "resend") {
+      if (!vid) return res.json({ success: false, message: "ID required" }, 400, H);
+      // Reviewer bypass — resend is a no-op (same fixed code stays valid).
+      if (vid === REVIEW_VERIFICATION_ID) {
+        return res.json({ success: true, verificationId: vid }, 200, H);
+      }
+      var r = await httpReq("api.bird.com", "/workspaces/" + BIRD_WS + "/verify/" + vid + "/resend", "POST", birdH);
+      return res.json({ success: r.ok, verificationId: vid }, 200, H);
+    }
 
-  return respond(res, { success: false, message: `Unknown action: ${action}` }, 400);
+    return res.json({ message: "Unknown action" }, 400, H);
+  } catch (err) { error("[B] " + err.message); return res.json({ success: false, message: "Error" }, 500, H); }
 };
