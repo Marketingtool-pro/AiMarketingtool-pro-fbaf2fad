@@ -3,170 +3,126 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Android 15 Edge-to-Edge Fix (Comprehensive)
+ * Android 15 Edge-to-Edge — deprecation-clean rewrite.
  *
- * Fixes ALL deprecated APIs reported by Play Console:
- * 1. Window.getStatusBarColor/setStatusBarColor/setNavigationBarColor (React Native StatusBarModule)
- * 2. LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES/DEFAULT (React Native WindowUtilKt)
- * 3. BottomSheetDialog/EdgeToEdgeUtils/SheetDialog (Google Material library)
- * 4. ExpoCropImageUtils (Expo Image Picker)
+ * Why the previous version of this plugin still tripped Play Console's
+ * "deprecated APIs" warning: it WROTE android:statusBarColor /
+ * navigationBarColor / windowLayoutInDisplayCutoutMode into styles.xml.
+ * Even setting them to @android:color/transparent counts as USING the
+ * deprecated setters under static analysis.
  *
- * Fix approach:
- * - MainActivity: Use modern androidx.activity.enableEdgeToEdge() API
- * - styles.xml: Set Android 15 compatible values
- * - values-v35: Opt into edge-to-edge for API 35+
- * - build.gradle: Force Material 1.12.0+ which has Android 15 edge-to-edge fixes
- * - gradle.properties: Enable edge-to-edge React Native flag
+ * Correct Android 15 approach (and what this plugin now does):
+ *   1. MainActivity.onCreate calls enableEdgeToEdge() — handles transparent
+ *      system bars without touching the deprecated APIs.
+ *   2. WindowInsetsControllerCompat sets system-bar icon appearance
+ *      (Light/Dark) — modern, non-deprecated.
+ *   3. styles.xml is STRIPPED of the three deprecated attrs (and never
+ *      gains them again).
+ *   4. values-v35/styles.xml is REMOVED — no per-API-level overrides
+ *      needed once enableEdgeToEdge is in place.
+ *   5. gradle.properties opts into Expo SDK 55's official flag
+ *      (expo.edgeToEdgeEnabled=true) which wires up react-native-edge-to-edge.
  */
 module.exports = function withAndroid15EdgeToEdge(config, options = {}) {
-  // Status bar icon appearance — pass { preferLightStatusBar: true } for light-themed apps.
   const preferLightStatusBar = options.preferLightStatusBar === true;
 
-  // Step 1: Use enableEdgeToEdge() in MainActivity (KOTLIN)
+  // Step 1: Inject enableEdgeToEdge() into MainActivity (Kotlin only)
   config = withMainActivity(config, (config) => {
     const lang = config.modResults.language;
-    if (lang === 'kt' || lang === 'kotlin') {
-      let content = config.modResults.contents;
+    if (lang !== 'kt' && lang !== 'kotlin') {
+      if (lang === 'java') {
+        console.warn('[withAndroid15EdgeToEdge] MainActivity is Java; this plugin only patches Kotlin. Convert MainActivity to Kotlin or add enableEdgeToEdge() in onCreate manually.');
+      }
+      return config;
+    }
 
-      const superOnCreatePattern = /super\.onCreate\((null|savedInstanceState)\)/;
-      const needsPatch = !content.includes('enableEdgeToEdge()') && superOnCreatePattern.test(content);
+    let content = config.modResults.contents;
+    const superOnCreatePattern = /super\.onCreate\((null|savedInstanceState)\)/;
+    const alreadyPatched = content.includes('enableEdgeToEdge()');
+    if (alreadyPatched || !superOnCreatePattern.test(content)) {
+      config.modResults.contents = content;
+      return config;
+    }
 
-      if (needsPatch) {
-        if (!content.includes('import androidx.activity.enableEdgeToEdge')) {
-          content = content.replace(
-            /import com\.facebook\.react\.ReactActivity/,
-            `import androidx.activity.enableEdgeToEdge
+    if (!content.includes('import androidx.activity.enableEdgeToEdge')) {
+      content = content.replace(
+        /import com\.facebook\.react\.ReactActivity/,
+        `import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowInsetsControllerCompat
 import com.facebook.react.ReactActivity`
-          );
-        }
+      );
+    }
 
-        const match = content.match(superOnCreatePattern);
-        content = content.replace(
-          match[0],
-          `enableEdgeToEdge()
+    const match = content.match(superOnCreatePattern);
+    content = content.replace(
+      match[0],
+      `enableEdgeToEdge()
     ${match[0]}
 
     val controller = WindowInsetsControllerCompat(window, window.decorView)
     controller.isAppearanceLightStatusBars = ${preferLightStatusBar}
     controller.isAppearanceLightNavigationBars = ${preferLightStatusBar}`
-        );
-      }
+    );
 
-      config.modResults.contents = content;
-    } else if (lang === 'java') {
-      console.warn('[withAndroid15EdgeToEdge] MainActivity is Java; this plugin only patches Kotlin. Convert MainActivity to Kotlin or manually add enableEdgeToEdge() in onCreate.');
-    }
+    config.modResults.contents = content;
     return config;
   });
 
-  // Step 2: Patch styles.xml
+  // Step 2: Scrub deprecated attrs from AppTheme in styles.xml.
+  // Never re-add them — enableEdgeToEdge() handles transparency.
   config = withAndroidStyles(config, (config) => {
     const styles = config.modResults;
     const appTheme = styles.resources.style?.find((s) => s.$.name === 'AppTheme');
+    if (!appTheme || !appTheme.item) return config;
 
-    if (appTheme) {
-      if (appTheme.item) {
-        appTheme.item = appTheme.item.filter(
-          (item) =>
-            item.$.name !== 'android:statusBarColor' &&
-            item.$.name !== 'android:navigationBarColor' &&
-            item.$.name !== 'android:windowLayoutInDisplayCutoutMode' &&
-            item.$.name !== 'android:enforceEdgeToEdge' &&
-            item.$.name !== 'android:windowTranslucentStatus' &&
-            item.$.name !== 'android:windowTranslucentNavigation'
-        );
-      } else {
-        appTheme.item = [];
-      }
-
-      appTheme.item.push(
-        { $: { name: 'android:statusBarColor' }, _: '@android:color/transparent' },
-        { $: { name: 'android:navigationBarColor' }, _: '@android:color/transparent' },
-        { $: { name: 'android:windowLayoutInDisplayCutoutMode' }, _: 'always' },
-        { $: { name: 'android:windowTranslucentStatus' }, _: 'false' },
-        { $: { name: 'android:windowTranslucentNavigation' }, _: 'false' }
-      );
-    }
+    appTheme.item = appTheme.item.filter(
+      (item) =>
+        item.$.name !== 'android:statusBarColor' &&
+        item.$.name !== 'android:navigationBarColor' &&
+        item.$.name !== 'android:windowLayoutInDisplayCutoutMode' &&
+        item.$.name !== 'android:enforceEdgeToEdge' &&
+        item.$.name !== 'android:windowTranslucentStatus' &&
+        item.$.name !== 'android:windowTranslucentNavigation'
+    );
 
     return config;
   });
 
-  // Step 3: Create values-v35 folder + force Material library update + gradle.properties
+  // Step 3: Remove leftover values-v35 overrides + opt into Expo 55 flag.
   config = withDangerousMod(config, [
     'android',
     async (config) => {
       const projectRoot = config.modRequest.platformProjectRoot;
-      const resDir = path.join(projectRoot, 'app', 'src', 'main', 'res');
 
-      // values-v35 for Android 15 (API 35)
-      const v35Dir = path.join(resDir, 'values-v35');
-      if (!fs.existsSync(v35Dir)) {
-        fs.mkdirSync(v35Dir, { recursive: true });
+      // Drop any pre-existing values-v35 styles.xml so it can't reintroduce
+      // the deprecated attrs on a subsequent build.
+      const v35Styles = path.join(projectRoot, 'app', 'src', 'main', 'res', 'values-v35', 'styles.xml');
+      if (fs.existsSync(v35Styles)) {
+        fs.rmSync(v35Styles, { force: true });
       }
 
-      // Explicitly define Theme.EdgeToEdge as an alias if needed, or just use it.
-      // We also set windowOptOutEdgeToEdgeEnforcement to false to follow Android 15 rules.
-      fs.writeFileSync(path.join(v35Dir, 'styles.xml'), `<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="Theme.EdgeToEdge" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:windowOptOutEdgeToEdgeEnforcement">false</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">always</item>
-    </style>
-
-    <style name="AppTheme" parent="Theme.EdgeToEdge">
-        <item name="android:windowTranslucentStatus">false</item>
-        <item name="android:windowTranslucentNavigation">false</item>
-    </style>
-</resources>
-`);
-
-      // Step 4: Force Material 1.12.0 in app/build.gradle
-      const buildGradlePath = path.join(projectRoot, 'app', 'build.gradle');
-      if (fs.existsSync(buildGradlePath)) {
-        let buildGradle = fs.readFileSync(buildGradlePath, 'utf8');
-
-        if (!buildGradle.includes('com.google.android.material:material:1.12')) {
-          if (buildGradle.includes('dependencies {')) {
-            buildGradle = buildGradle.replace(
-              'dependencies {',
-              `dependencies {
-    implementation("com.google.android.material:material:1.12.0")`
-            );
-          }
-
-          if (buildGradle.includes('android {')) {
-            buildGradle = buildGradle.replace(
-              'android {',
-              `configurations.all {
-    resolutionStrategy {
-        force "com.google.android.material:material:1.12.0"
-    }
-}
-
-android {`
-            );
-          }
-
-          fs.writeFileSync(buildGradlePath, buildGradle);
-        }
-      }
-
-      // Step 5: Add React Native edge-to-edge flag in gradle.properties
+      // Opt into Expo SDK 55's edge-to-edge plumbing. Removes any prior
+      // unofficial flags that earlier versions of this plugin wrote.
       const gradlePropsPath = path.join(projectRoot, 'gradle.properties');
       if (fs.existsSync(gradlePropsPath)) {
         let props = fs.readFileSync(gradlePropsPath, 'utf8');
-        let updatedProps = props;
-        if (!props.includes('reactNativeEdgeToEdge')) {
-          updatedProps += '\n# Enable React Native edge-to-edge support for Android 15\nreactNativeEdgeToEdge=true\n';
+        const cleaned = props
+          .split('\n')
+          .filter((line) => {
+            const t = line.trim();
+            return (
+              !t.startsWith('reactNativeEdgeToEdge=') &&
+              !t.startsWith('android.enableEdgeToEdgeEnforcement=')
+            );
+          })
+          .join('\n');
+
+        let next = cleaned;
+        if (!/^expo\.edgeToEdgeEnabled\s*=/m.test(next)) {
+          next = next.replace(/\s*$/, '') + '\n\n# Expo SDK 55 edge-to-edge — wires up react-native-edge-to-edge\nexpo.edgeToEdgeEnabled=true\n';
         }
-        if (!props.includes('android.enableEdgeToEdgeEnforcement')) {
-          updatedProps += 'android.enableEdgeToEdgeEnforcement=true\n';
-        }
-        if (updatedProps !== props) {
-          fs.writeFileSync(gradlePropsPath, updatedProps);
+        if (next !== props) {
+          fs.writeFileSync(gradlePropsPath, next);
         }
       }
 

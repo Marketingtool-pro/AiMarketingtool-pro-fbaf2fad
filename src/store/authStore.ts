@@ -249,38 +249,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (__DEV__) console.log('[Auth] Sending OTP via Bird:', { countryCode, phone });
 
-      // 🚨 ANR FIX: Set async=true to prevent blocking the main thread
+      // Sync execution (false). Async + getExecution polling required
+      // 'executions.read' scope which guests don't have, surfacing as
+      // "OTP Failed: missing scopes" before any login could happen.
       const execution = await functions.createExecution(
         'msg91-proxy',
-        JSON.stringify({ 
-          action: 'sendOtp', 
-          phone: phone, 
-          countryCode: countryCode 
+        JSON.stringify({
+          action: 'sendOtp',
+          phone: phone,
+          countryCode: countryCode
         }),
-        true, '/', ExecutionMethod.POST,
+        false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
 
-      // Polling for OTP send result
-      let status = execution.status;
-      let attempts = 0;
-      while ((status === 'waiting' || status === 'processing') && attempts < 15) {
-        await new Promise(resolve => setTimeout(resolve, 800));
-        const updated = await functions.getExecution('msg91-proxy', execution.$id);
-        status = updated.status;
-        if (status === 'completed') {
-          const responseBody = parseAppwriteResponse(updated.responseBody);
-          if (!responseBody.success) {
-            throw new Error(responseBody.message || 'Failed to send OTP');
-          }
-          const mobile = responseBody.verificationId; // Full normalized mobile from function
-          set({ tempPhone: mobile, tempVerificationId: mobile });
-          return mobile;
-        }
-        attempts++;
+      const responseBody = parseAppwriteResponse(execution.responseBody);
+      if (!responseBody.success) {
+        throw new Error(responseBody.message || 'Failed to send OTP');
       }
-
-      throw new Error('OTP send request timed out');
+      const mobile = responseBody.verificationId;
+      set({ tempPhone: mobile, tempVerificationId: mobile });
+      return mobile;
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
       set({ error: error.message || 'Failed to send OTP' });
@@ -299,36 +288,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error('Verification session expired. Please request a new code.');
       }
 
-      // 🚨 ANR FIX: Set async=true for OTP verification
+      // Sync execution — async polling needs executions.read scope
+      // (guests don't have it, so the polling itself is what was failing).
       const verifyExec = await functions.createExecution(
         'msg91-proxy',
         JSON.stringify({ action: 'verifyOtp', code, verificationId }),
-        true, '/', ExecutionMethod.POST,
+        false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
 
-      // Polling for verify result
-      let vStatus = verifyExec.status;
-      let vAttempts = 0;
-      while ((vStatus === 'waiting' || vStatus === 'processing') && vAttempts < 15) {
-        await new Promise(resolve => setTimeout(resolve, 800));
-        const vUpdated = await functions.getExecution('msg91-proxy', verifyExec.$id);
-        vStatus = vUpdated.status;
-        if (vStatus === 'completed') {
-          const verifyResult = parseAppwriteResponse(vUpdated.responseBody);
-          if (__DEV__) console.log('[Auth] verifyOtp raw body:', vUpdated.responseBody);
-          if (!verifyResult.success) {
-            const msg = verifyResult.message || verifyResult.error || 'Invalid OTP. Please try again.';
-            throw new Error(typeof msg === 'string' ? msg : 'Invalid OTP. Please try again.');
-          }
-          break;
-        }
-        vAttempts++;
+      const verifyResult = parseAppwriteResponse(verifyExec.responseBody);
+      if (__DEV__) console.log('[Auth] verifyOtp raw body:', verifyExec.responseBody);
+      if (!verifyResult.success) {
+        const msg = verifyResult.message || verifyResult.error || 'Invalid OTP. Please try again.';
+        throw new Error(typeof msg === 'string' ? msg : 'Invalid OTP. Please try again.');
       }
-      if (vStatus !== 'completed') throw new Error('OTP verification timed out');
 
       // Step 2: mint Appwrite session via phone-session function
-      // 🚨 ANR FIX: Set async=true for session creation
       const sessionExec = await functions.createExecution(
         'phone-session',
         JSON.stringify({
@@ -336,36 +312,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           phone: phone,
           displayName: '',
         }),
-        true, '/', ExecutionMethod.POST,
+        false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
 
-      // Polling for session creation
-      let sStatus = sessionExec.status;
-      let sAttempts = 0;
-      while ((sStatus === 'waiting' || sStatus === 'processing') && sAttempts < 15) {
-        await new Promise(resolve => setTimeout(resolve, 800));
-        const sUpdated = await functions.getExecution('phone-session', sessionExec.$id);
-        sStatus = sUpdated.status;
-        if (sStatus === 'completed') {
-          const sessionResult = parseAppwriteResponse(sUpdated.responseBody);
-          if (!sessionResult.success || !sessionResult.userId || !sessionResult.secret) {
-            throw new Error(sessionResult.error || 'Failed to create session');
-          }
-          // Step 3: create Appwrite session
-          try { await account.deleteSession('current'); } catch (_e) {}
-          await account.createSession(sessionResult.userId, sessionResult.secret);
-
-          const user = await authService.getCurrentUser();
-          if (!user) throw new Error('Session created but could not fetch user');
-
-          const profile = await get().fetchOrCreateProfile(user);
-          set({ user, profile, isAuthenticated: true, tempPhone: null, tempVerificationId: null });
-          return;
-        }
-        sAttempts++;
+      const sessionResult = parseAppwriteResponse(sessionExec.responseBody);
+      if (!sessionResult.success || !sessionResult.userId || !sessionResult.secret) {
+        throw new Error(sessionResult.error || 'Failed to create session');
       }
-      throw new Error('Session creation timed out');
+
+      // Step 3: create Appwrite session
+      try { await account.deleteSession('current'); } catch (_e) {}
+      await account.createSession(sessionResult.userId, sessionResult.secret);
+
+      const user = await authService.getCurrentUser();
+      if (!user) throw new Error('Session created but could not fetch user');
+
+      const profile = await get().fetchOrCreateProfile(user);
+      set({ user, profile, isAuthenticated: true, tempPhone: null, tempVerificationId: null });
+      return;
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Verify OTP error:', error.message);
       set({ error: error.message || 'Invalid OTP' });

@@ -13,7 +13,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ios, android]
+        # Android temporarily disabled for this build cycle. Re-add 'android'
+        # to the list when ready to ship the next Play Store version.
+        platform: [ios]
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
@@ -42,7 +44,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ios, android]
+        # Android temporarily disabled for this build cycle. Re-add 'android'
+        # to the list when ready to ship the next Play Store version.
+        platform: [ios]
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 

@@ -205,7 +205,11 @@ const ALL_TOOLS: Tool[] = (allToolsRaw as any[]).map((t, i) => ({
   description: t.description || '',
   icon: 'zap',
   category: badgeToCategory(t.badge, t.name),
-  isPro: !!t.isPro,
+  // All 314 tools are paid features. Free trial users get 3 generations/day
+  // across the catalog (gated in ToolDetailScreen.handleGenerate). The web
+  // app's pricing tiers (Starter/Pro/Growth) treat the catalog as one paid
+  // surface — no per-tool free/paid split. Lock badge renders accordingly.
+  isPro: t.isPro !== false,
   inputs: t.formFields || [{ name: 'mainInput', label: 'Input', type: 'textarea', required: true }],
   outputType: 'text',
   tags: [t.badge].filter(Boolean),

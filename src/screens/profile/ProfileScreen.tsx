@@ -274,7 +274,7 @@ const ProfileScreen = () => {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.versionText}>MarketingTool v1.3.3</Text>
+          <Text style={styles.versionText}>MarketingTool v1.5.0</Text>
           <View style={styles.footerLinks}>
             <TouchableOpacity onPress={() => navigation.navigate('Terms' as any)}>
               <Text style={styles.footerLink}>Terms</Text>

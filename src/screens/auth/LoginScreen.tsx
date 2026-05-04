@@ -126,7 +126,9 @@ const LoginScreen = () => {
     return () => { if (cooldownRef.current) clearInterval(cooldownRef.current); };
   }, []);
 
-  // Restore OTP modal when app returns from Chrome reCAPTCHA (Firebase opens Chrome on iOS)
+  // Restore OTP modal across app foreground/background — pendingOTP is written
+  // before sendPhoneOTP so a kill/relaunch mid-flow doesn't leave the user stuck
+  // on the phone-entry screen.
   useEffect(() => {
     SecureStore.getItemAsync('pendingOTP').then(pending => {
       if (pending) {
@@ -182,14 +184,15 @@ const LoginScreen = () => {
     setOtpCode('');
     setOtpSending(true);
 
-    // Save BEFORE Firebase call — survives Chrome reCAPTCHA redirect on iOS
+    // Save BEFORE the network call so a foreground/background swap mid-OTP
+    // can re-open the modal on relaunch.
     await SecureStore.setItemAsync('pendingOTP', JSON.stringify({
       phone: phoneNumber,
       countryCode: selectedCountry.code,
     }));
 
     try {
-      // Firebase Phone Auth — may open Chrome for reCAPTCHA on iOS
+      // Bird Verify (SMS) via Appwrite msg91-proxy function — see authStore.ts.
       const userId = await sendPhoneOTP(formattedPhone);
       setOtpUserId(userId);
       setOtpSent(true);
@@ -318,7 +321,7 @@ const LoginScreen = () => {
             {otpSent && (
               <View style={styles.otpSection}>
                 <Text style={styles.otpSentText}>
-                  Enter the 6-digit code sent via WhatsApp to {selectedCountry.code} {phoneNumber}
+                  Enter the 6-digit code sent via SMS to {selectedCountry.code} {phoneNumber}
                 </Text>
 
                 {!!otpError && (

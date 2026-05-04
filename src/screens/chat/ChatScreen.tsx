@@ -341,9 +341,10 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
         }
       }
 
-      // 🚨 CRITICAL FIX FOR ANR (1.58% rate):
-      // Change async from false to true. 
-      // Synchronous execution on main thread freezes the app and triggers ANRs.
+      // Sync execution (false). Async + getExecution polling needs
+      // executions.read scope, and even when granted it adds 1-30s of
+      // polling latency. fetch() under the hood is async at the JS layer
+      // so this doesn't block the UI thread / cause ANRs.
       const execution = await functions.createExecution(
         'chat-ai',
         JSON.stringify({
@@ -351,40 +352,21 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
           user_message: userMessage,
           conversation_history: conversationHistory,
         }),
-        true, // async = true (RETURN IMMEDIATELY, DO NOT BLOCK MAIN THREAD)
+        false,
         '/',
         ExecutionMethod.POST
       );
 
-      // Polling for result since we are now async
-      let status = execution.status;
-      let executionId = execution.$id;
-      let attempts = 0;
-      let maxAttempts = 30; // 30 seconds max wait
-
-      while ((status === 'waiting' || status === 'processing') && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const updatedExecution = await functions.getExecution('chat-ai', executionId);
-        status = updatedExecution.status;
-        
-        if (status === 'completed') {
-          const result = parseAppwriteResponse(updatedExecution.responseBody);
-          if (result.error) throw new Error(result.error);
-          return result.response || result.content || result.message || 'I could not generate a response.';
-        }
-        
-        attempts++;
-      }
-
-      if (status === 'failed') {
-        throw new Error('AI execution failed on server');
-      }
-
-      if (attempts >= maxAttempts) {
-        throw new Error('AI response timed out');
-      }
-
-      return 'I could not generate a response in time.';
+      const result = parseAppwriteResponse(execution.responseBody);
+      if (result.error) throw new Error(result.error);
+      return (
+        result.response ||
+        result.content ||
+        result.message ||
+        result.result ||
+        result.text ||
+        'I could not generate a response.'
+      );
     } catch (error) {
       // Retry once with reduced history (handles payload size / timeout issues)
       if (retryCount < 1) {

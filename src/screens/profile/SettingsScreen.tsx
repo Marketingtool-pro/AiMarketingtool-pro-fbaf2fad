@@ -374,7 +374,7 @@ const SettingsScreen = () => {
         {
           icon: 'info',
           label: 'App Version',
-          description: '1.3.5',
+          description: '1.5.0',
           type: 'info',
         },
         {
