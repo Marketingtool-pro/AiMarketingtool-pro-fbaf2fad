@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "466",
+      "buildNumber": "468",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -109,6 +109,11 @@
               "RNFBCrashlytics",
               "RNFBFirestore",
               "RNIap"
+            ],
+            "extraPods": [
+              {
+                "name": "RecaptchaEnterprise"
+              }
             ],
             "extraCCFlags": [
               "-Wno-everything",
