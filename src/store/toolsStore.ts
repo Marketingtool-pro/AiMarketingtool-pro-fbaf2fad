@@ -114,54 +114,29 @@ export const TOOL_CATEGORIES = [
 const allToolsRaw = require('../data/tools.js');
 import { ToolIconImagesKeys, setToolIconOverride, getToolIcon as _getToolIcon } from '../constants/toolIcons';
 
-// Smart icon assignment — semantic-match-first, fall back to the FULL pool
-// before duplicating. The prior implementation filtered down to a "meaningful"
-// subset and only fell back to `pool[0]` on exhaustion, which caused every
-// tool past that threshold to share the same icon. The full 336-icon pool is
-// now used before we even consider duplicating anything.
+// Build 448's exact icon assignment — restored to match TestFlight 448 1:1.
 function assignUniqueIcons(slugs: string[]) {
-  const pool = [...ToolIconImagesKeys];
+  const pool = ToolIconImagesKeys;
+  const meaningful = pool.filter(k => /[a-z]{3,}/.test(k) && !/^\d+(-[a-z])?$/.test(k));
   const used = new Set<string>();
-  const sortedSlugs = [...slugs].sort();
 
-  let poolIdx = 0;
+  const sorted = [...slugs].sort();
 
-  for (const slug of sortedSlugs) {
+  for (const slug of sorted) {
+    const slugWords = slug.split('-').filter(w => w.length > 2);
     let chosen: string | null = null;
-    const slugWords = slug.split('-').filter(w => w.length > 3); // More specific matching
 
-    // 1st pass: Precise semantic match
     for (const word of slugWords) {
-      const match = pool.find(k => !used.has(k) && k.toLowerCase() === word.toLowerCase());
-      if (match) { chosen = match; break; }
+      const candidate = meaningful.find(k => !used.has(k) && k.includes(word));
+      if (candidate) { chosen = candidate; break; }
     }
 
-    // 2nd pass: Partial semantic match
-    if (!chosen) {
-      for (const word of slugWords) {
-        const match = pool.find(k => !used.has(k) && k.toLowerCase().includes(word.toLowerCase()));
-        if (match) { chosen = match; break; }
-      }
-    }
+    if (!chosen) chosen = meaningful.find(k => !used.has(k)) || null;
 
-    // 3rd pass: Direct rotation from pool to guarantee 100% uniqueness
-    if (!chosen) {
-      while (poolIdx < pool.length && used.has(pool[poolIdx])) {
-        poolIdx++;
-      }
-      if (poolIdx < pool.length) {
-        chosen = pool[poolIdx];
-        poolIdx++;
-      }
-    }
+    if (!chosen) chosen = pool.find(k => !used.has(k)) || pool[0];
 
-    // Final fallback (should never happen with 1000 icons vs 314 tools)
-    if (!chosen) {
-      chosen = pool[used.size % pool.length];
-    }
-
-    used.add(chosen);
-    setToolIconOverride(slug, _getToolIcon(chosen));
+    used.add(chosen!);
+    setToolIconOverride(slug, _getToolIcon(chosen!));
   }
 }
 
@@ -205,11 +180,7 @@ const ALL_TOOLS: Tool[] = (allToolsRaw as any[]).map((t, i) => ({
   description: t.description || '',
   icon: 'zap',
   category: badgeToCategory(t.badge, t.name),
-  // All 314 tools are paid features. Free trial users get 3 generations/day
-  // across the catalog (gated in ToolDetailScreen.handleGenerate). The web
-  // app's pricing tiers (Starter/Pro/Growth) treat the catalog as one paid
-  // surface — no per-tool free/paid split. Lock badge renders accordingly.
-  isPro: t.isPro !== false,
+  isPro: !!t.isPro,
   inputs: t.formFields || [{ name: 'mainInput', label: 'Input', type: 'textarea', required: true }],
   outputType: 'text',
   tags: [t.badge].filter(Boolean),
