@@ -114,6 +114,32 @@ export const TOOL_CATEGORIES = [
 const allToolsRaw = require('../data/tools.js');
 import { ToolIconImagesKeys, setToolIconOverride, getToolIcon as _getToolIcon } from '../constants/toolIcons';
 
+// Pro lock derivation — basic single-shot content tools stay free so users
+// can taste the catalog; everything advanced (analytics, audits, AI agents,
+// schemas, multi-step generators, optimizers) requires a paid plan.
+// Tuned against the actual 314-tool catalog: ~12 free, ~302 pro.
+const FREE_KEYWORDS = ['caption', 'hashtag', 'meme', 'tagline', 'slogan', 'subject-line', 'quote-image'];
+const FREE_EXACT_SLUGS = new Set([
+  'blog-post-ideas',
+  'instagram-bio',
+  'instagram-bio-optimizer',
+  'seo-title-generator',
+  'youtube-title-generator',
+  'meta-description-generator',
+  'product-description-writer',
+  'youtube-description-generator',
+  'review-response',
+  'viral-tweet',
+  'viral-tweets',
+  'social-bio-writer',
+]);
+function deriveIsPro(slug: any): boolean {
+  if (typeof slug !== 'string') return true;
+  const s = slug.toLowerCase();
+  if (FREE_EXACT_SLUGS.has(s)) return false;
+  return !FREE_KEYWORDS.some((k) => s.includes(k));
+}
+
 // Build 448's exact icon assignment — restored to match TestFlight 448 1:1.
 function assignUniqueIcons(slugs: string[]) {
   const pool = ToolIconImagesKeys;
@@ -180,7 +206,7 @@ const ALL_TOOLS: Tool[] = (allToolsRaw as any[]).map((t, i) => ({
   description: t.description || '',
   icon: 'zap',
   category: badgeToCategory(t.badge, t.name),
-  isPro: !!t.isPro,
+  isPro: t.isPro === false ? false : deriveIsPro(t.slug),
   inputs: t.formFields || [{ name: 'mainInput', label: 'Input', type: 'textarea', required: true }],
   outputType: 'text',
   tags: [t.badge].filter(Boolean),
