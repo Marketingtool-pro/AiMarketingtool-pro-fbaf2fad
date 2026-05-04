@@ -2,6 +2,11 @@ import { create } from 'zustand';
 import { Models, ExecutionMethod } from 'react-native-appwrite';
 import { authService, dbService, account, functions, COLLECTIONS, Query } from '../services/appwrite';
 import { biometricService } from '../services/biometric';
+import {
+  sendPhoneOTP as firebaseSendOTP,
+  verifyPhoneOTP as firebaseVerifyOTP,
+  signOutFirebase,
+} from '../services/firebaseAuth';
 
 // Appwrite Functions return responseBody as either an object (newer SDK)
 // OR as a JSON string (older SDK) OR as a plain text error message (4xx).
@@ -229,47 +234,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   clearOtpTemp: () => set({ tempPhone: null, tempVerificationId: null }),
 
   sendPhoneOTP: async (phoneNumber: string) => {
-    // Keeps isLoading off so AppNavigator stays on Login (no splash flicker)
+    // Firebase Phone Auth — Google's SMS infrastructure (Uber/Ola pattern).
+    // Trusted by users; handles silent push on iOS / SMS auto-retrieval on
+    // Android automatically. firebaseAuth service is in services/firebaseAuth.ts.
     set({ error: null });
     try {
-      // Input: +91 9999999999 or 9999999999
-      let countryCode = '91';
-      let phone = phoneNumber.replace(/\D/g, '');
-      
-      if (phoneNumber.startsWith('+')) {
-        // Simple extraction for common CC lengths (1-3 digits)
-        if (phone.startsWith('91')) {
-          countryCode = '91';
-          phone = phone.substring(2);
-        } else if (phone.startsWith('1') && phone.length === 11) {
-          countryCode = '1';
-          phone = phone.substring(1);
-        }
+      const cleaned = phoneNumber.replace(/\D/g, '');
+      const formatted = phoneNumber.startsWith('+') ? phoneNumber : `+91${cleaned}`;
+
+      // Reviewer bypass — App Store review uses +919999999999 / 123456.
+      // Skip Firebase entirely so reviewers don't depend on real SMS delivery.
+      if (formatted === '+919999999999') {
+        if (__DEV__) console.log('[Auth] Reviewer bypass active for', formatted);
+        set({ tempPhone: formatted, tempVerificationId: formatted });
+        return formatted;
       }
 
-      if (__DEV__) console.log('[Auth] Sending OTP via Bird:', { countryCode, phone });
-
-      // Sync execution (false). Async + getExecution polling required
-      // 'executions.read' scope which guests don't have, surfacing as
-      // "OTP Failed: missing scopes" before any login could happen.
-      const execution = await functions.createExecution(
-        'msg91-proxy',
-        JSON.stringify({
-          action: 'sendOtp',
-          phone: phone,
-          countryCode: countryCode
-        }),
-        false, '/', ExecutionMethod.POST,
-        { 'Content-Type': 'application/json' }
-      );
-
-      const responseBody = parseAppwriteResponse(execution.responseBody);
-      if (!responseBody.success) {
-        throw new Error(responseBody.message || 'Failed to send OTP');
+      if (__DEV__) console.log('[Auth] Sending OTP via Firebase to', formatted);
+      const result = await firebaseSendOTP(formatted);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send OTP');
       }
-      const mobile = responseBody.verificationId;
-      set({ tempPhone: mobile, tempVerificationId: mobile });
-      return mobile;
+      set({ tempPhone: formatted, tempVerificationId: formatted });
+      return formatted;
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
       set({ error: error.message || 'Failed to send OTP' });
@@ -281,37 +268,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ error: null });
     try {
       const phone = get().tempPhone || _userId;
-      const verificationId = phone; // The msg91-proxy uses 'mobile' as verificationId
-      if (__DEV__) console.log('[Auth] Verifying OTP for:', phone, 'vid:', verificationId);
-
-      if (!verificationId) {
+      if (!phone) {
         throw new Error('Verification session expired. Please request a new code.');
       }
 
-      // Sync execution — async polling needs executions.read scope
-      // (guests don't have it, so the polling itself is what was failing).
-      const verifyExec = await functions.createExecution(
-        'msg91-proxy',
-        JSON.stringify({ action: 'verifyOtp', code, verificationId }),
-        false, '/', ExecutionMethod.POST,
-        { 'Content-Type': 'application/json' }
-      );
+      let firebaseUid: string;
 
-      const verifyResult = parseAppwriteResponse(verifyExec.responseBody);
-      if (__DEV__) console.log('[Auth] verifyOtp raw body:', verifyExec.responseBody);
-      if (!verifyResult.success) {
-        const msg = verifyResult.message || verifyResult.error || 'Invalid OTP. Please try again.';
-        throw new Error(typeof msg === 'string' ? msg : 'Invalid OTP. Please try again.');
+      // Reviewer bypass — accept fixed 123456 for the reviewer phone.
+      if (phone === '+919999999999' && code === '123456') {
+        firebaseUid = 'reviewer_bypass_919999999999';
+      } else {
+        if (__DEV__) console.log('[Auth] Verifying OTP via Firebase for', phone);
+        const verifyResult = await firebaseVerifyOTP(code);
+        if (!verifyResult.success || !verifyResult.user) {
+          throw new Error(verifyResult.error || 'Invalid OTP. Please try again.');
+        }
+        firebaseUid = verifyResult.user.uid;
       }
 
-      // Step 2: mint Appwrite session via phone-session function
+      // Mint Appwrite session via phone-session function. The function takes
+      // firebaseUid + phone and returns a one-time secret we exchange for a
+      // session token. Sync execution — guests can't poll executions.read.
       const sessionExec = await functions.createExecution(
         'phone-session',
-        JSON.stringify({
-          firebaseUid: 'wa_' + phone.replace(/\D/g, ''),
-          phone: phone,
-          displayName: '',
-        }),
+        JSON.stringify({ firebaseUid, phone, displayName: '' }),
         false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
@@ -321,7 +301,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error(sessionResult.error || 'Failed to create session');
       }
 
-      // Step 3: create Appwrite session
       try { await account.deleteSession('current'); } catch (_e) {}
       await account.createSession(sessionResult.userId, sessionResult.secret);
 
@@ -365,6 +344,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     try {
       await authService.logout();
+      // Sign out of Firebase too — phone-auth users have a Firebase session
+      // alongside the Appwrite one. Failing to sign out leaves the Firebase
+      // user logged in and triggers stale-state behavior on next login.
+      try { await signOutFirebase(); } catch (_e) {}
       set({
         user: null,
         profile: null,
