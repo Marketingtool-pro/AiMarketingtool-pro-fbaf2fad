@@ -15,14 +15,19 @@ export const initializeAppCheck = async () => {
     }
 
     const provider = appCheck().newReactNativeFirebaseAppCheckProvider();
-    
-    // Configure the provider with your Site Keys from the terminal output
+
+    // App Attest is the modern attestation provider (iOS 14+, free, no
+    // extra pod). Firebase Phone Auth uses App Check tokens for device
+    // verification — without this, Auth falls back to reCAPTCHA Enterprise
+    // SDK which isn't linked, producing "[auth/unknown] reCAPTCHA SDK is
+    // not linked" errors. deviceCheck stays as the fallback for the very
+    // small slice of devices where App Attest is unavailable.
     provider.configure({
       android: {
         provider: 'playIntegrity',
       },
       apple: {
-        provider: 'deviceCheck',
+        provider: 'appAttestWithDeviceCheckFallback',
       },
     });
 

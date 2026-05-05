@@ -37,9 +37,15 @@ export default function App() {
         const withTimeout = <T,>(p: Promise<T>, ms: number) =>
           Promise.race([p, new Promise(resolve => setTimeout(resolve, ms))]);
 
+        // App Check must be ready BEFORE the user reaches the login screen.
+        // Firebase Phone Auth on iOS uses the App Check token to verify the
+        // device — without it, Auth falls back to reCAPTCHA Enterprise SDK
+        // which isn't linked. Capping at 2s so a slow attestation call
+        // doesn't block the splash forever.
         await Promise.all([
           withTimeout(Font.loadAsync({ ...Feather.font }), 1500),
           withTimeout(checkAuth(), 1500),
+          withTimeout(initializeAppCheck(), 2000),
         ]);
       } catch (e) {
         console.warn('Error loading app resources:', e);
@@ -59,8 +65,8 @@ export default function App() {
     let unsubscribeFcm: (() => void) | undefined;
 
     async function deferredInit() {
-      // App Check initialization (moved from prepare to prevent blocking UI thread)
-      initializeAppCheck().catch(e => console.warn('AppCheck init error:', e));
+      // Note: App Check init moved to prepare() above so the token is ready
+      // when the user reaches the login screen. Don't call it again here.
 
       crashlytics().setCrashlyticsCollectionEnabled(true)
         .then(() => crashlytics().log('App started'))
