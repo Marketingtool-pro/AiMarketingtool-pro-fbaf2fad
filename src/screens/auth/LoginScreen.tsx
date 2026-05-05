@@ -415,9 +415,6 @@ const LoginScreen = () => {
              <TouchableOpacity activeOpacity={0.7} onPress={loginWithFacebook}>
                 <Image source={require('../../../assets/images/platforms/facebook.png')} style={{ width: 56, height: 56 }} resizeMode="contain" />
              </TouchableOpacity>
-             <TouchableOpacity activeOpacity={0.7} onPress={() => setShowEmailModal(true)}>
-                <Image source={require('../../../assets/images/platforms/messenger.png')} style={{ width: 56, height: 56 }} resizeMode="contain" />
-             </TouchableOpacity>
              {Platform.OS === 'ios' && (
                <AppleAuthentication.AppleAuthenticationButton
                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
@@ -428,6 +425,17 @@ const LoginScreen = () => {
                />
              )}
           </View>
+
+          {/* Explicit Email login button — App Store reviewer fallback when
+              phone OTP can't be tested. Labelled clearly per review notes. */}
+          <TouchableOpacity
+             activeOpacity={0.7}
+             onPress={() => setShowEmailModal(true)}
+             style={styles.emailLoginButton}
+          >
+             <Feather name="mail" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+             <Text style={styles.emailLoginText}>Sign in with Email</Text>
+          </TouchableOpacity>
 
           <View style={styles.footer}>
              <Text style={styles.footerText}>Don't have an account? </Text>
@@ -723,7 +731,25 @@ const styles = StyleSheet.create({
   socialRow: {
     flexDirection: 'row',
     gap: 20,
-    marginBottom: 60,
+    marginBottom: 20,
+  },
+  emailLoginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: 'rgba(157, 78, 221, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(157, 78, 221, 0.45)',
+    marginBottom: 40,
+    minWidth: 240,
+  },
+  emailLoginText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
   },
   socialBtn: {
     width: 56,
