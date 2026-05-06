@@ -165,6 +165,13 @@ export async function signOutFirebase(): Promise<void> {
   }
 }
 
+// Drops in-memory + persisted verificationId so the next sendPhoneOTP
+// always starts fresh. Call when user changes phone, country, or aborts.
+export async function clearVerification(): Promise<void> {
+  verificationId = null;
+  try { await SecureStore.deleteItemAsync('firebaseVerificationId'); } catch {}
+}
+
 export function onAuthStateChanged(
   callback: (user: any | null) => void
 ): () => void {
@@ -179,4 +186,5 @@ export default {
   getCurrentFirebaseUser,
   signOutFirebase,
   onAuthStateChanged,
+  clearVerification,
 };

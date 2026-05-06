@@ -28,6 +28,7 @@ import { useAuthStore } from '../../store/authStore';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 import { biometricService, BiometricType } from '../../services/biometric';
+import { clearVerification as clearFirebaseVerification } from '../../services/firebaseAuth';
 
 import * as AppleAuthentication from 'expo-apple-authentication';
 
@@ -74,6 +75,10 @@ const LoginScreen = () => {
   const [otpSending, setOtpSending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Guards against handleVerifyOTP being invoked twice (auto-verify on 6th
+  // digit + manual button tap). The second call would arrive after Firebase
+  // has consumed verificationId, throwing auth/missing-verification-code.
+  const verifyingRef = useRef(false);
 
   const [isBioAvailable, setIsBioAvailable] = useState(false);
   const [bioType, setBioType] = useState<BiometricType>('none');
@@ -125,6 +130,21 @@ const LoginScreen = () => {
   useEffect(() => {
     return () => { if (cooldownRef.current) clearInterval(cooldownRef.current); };
   }, []);
+
+  // If user changes phone number or country AFTER OTP was sent, the cached
+  // verificationId points to the old session — using it causes Firebase to
+  // throw auth/missing-verification-code on verify. Drop OTP state so the
+  // user is forced to re-send for the new identifier.
+  useEffect(() => {
+    if (!otpSent) return;
+    setOtpSent(false);
+    setOtpCode('');
+    setOtpError('');
+    setShowOtpModal(false);
+    useAuthStore.getState().clearOtpTemp();
+    clearFirebaseVerification();
+    SecureStore.deleteItemAsync('pendingOTP').catch(() => {});
+  }, [phoneNumber, selectedCountry.code]);
 
   // Restore OTP modal across app foreground/background — pendingOTP is written
   // before sendPhoneOTP so a kill/relaunch mid-flow doesn't leave the user stuck
@@ -207,6 +227,9 @@ const LoginScreen = () => {
   };
 
   const handleVerifyOTP = async () => {
+    if (verifyingRef.current) return;
+    if (otpCode.length < 6) return;
+    verifyingRef.current = true;
     setOtpError('');
     try {
       await verifyPhoneOTP(otpUserId, otpCode);
@@ -214,6 +237,8 @@ const LoginScreen = () => {
       setShowOtpModal(false);
     } catch (err: any) {
       setOtpError(err.message || 'Invalid OTP. Please check and try again.');
+    } finally {
+      verifyingRef.current = false;
     }
   };
 
@@ -223,6 +248,7 @@ const LoginScreen = () => {
     setOtpCode('');
     setOtpError('');
     useAuthStore.getState().clearOtpTemp();
+    await clearFirebaseVerification();
     await SecureStore.deleteItemAsync('pendingOTP');
   };
 
@@ -304,6 +330,8 @@ const LoginScreen = () => {
                   onPress={() => {
                     setOtpSent(false); setOtpCode(''); setOtpError('');
                     useAuthStore.getState().clearOtpTemp();
+                    clearFirebaseVerification();
+                    SecureStore.deleteItemAsync('pendingOTP').catch(() => {});
                   }}
                 >
                   <LinearGradient
