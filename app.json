@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "472",
+      "buildNumber": "473",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -112,7 +112,8 @@
             ],
             "extraPods": [
               {
-                "name": "RecaptchaEnterprise"
+                "name": "RecaptchaEnterprise",
+                "version": "~> 18.0"
               }
             ],
             "extraCCFlags": [
@@ -135,6 +136,8 @@
       ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
+      "@react-native-firebase/messaging",
+      "@react-native-firebase/app-check",
       "./plugins/withEasPodfileFix.js",
       "./plugins/withIosFirebaseSwiftFix.js",
       "./plugins/withAndroid15EdgeToEdge.js",
