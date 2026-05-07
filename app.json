@@ -143,6 +143,7 @@
       "./plugins/withIosFirebaseSwiftFix.js",
       "./plugins/withAndroid15EdgeToEdge.js",
       "./plugins/withAndroidMaterialPin.js",
+      "./plugins/withFirebaseDeferredInit.js",
       "expo-notifications",
       "react-native-iap",
       "expo-secure-store",

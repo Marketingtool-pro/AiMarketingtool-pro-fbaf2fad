@@ -69,6 +69,17 @@ export default function App() {
       // Note: App Check init moved to prepare() above so the token is ready
       // when the user reaches the login screen. Don't call it again here.
 
+      // Firebase auto-init is OFF in AndroidManifest (see
+      // withFirebaseDeferredInit.js). On low-end devices in markets with
+      // bad networks (India: Infinix, realme, vivo) the FID registration
+      // network call hangs and FCM's blockingGetToken loop ANRs the app
+      // (Play Console trace: thread "TAG" parked in CountDownLatch.await
+      // > Tasks.await > FirebaseMessaging). Re-enabling here happens AFTER
+      // onLayoutRootView, so the user-visible startup completes BEFORE
+      // Firebase reaches for the network.
+      messaging().setAutoInitEnabled(true)
+        .catch(e => console.warn('Messaging auto-init enable error:', e));
+
       crashlytics().setCrashlyticsCollectionEnabled(true)
         .then(() => crashlytics().log('App started'))
         .catch(e => console.warn('Crashlytics init error:', e));
