@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "477",
+      "buildNumber": "478",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -59,7 +59,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 467,
+      "versionCode": 470,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -122,9 +122,9 @@
             ]
           },
           "android": {
-            "compileSdkVersion": 36,
-            "targetSdkVersion": 36,
-            "buildToolsVersion": "36.0.0",
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0",
             "minSdkVersion": 24,
             "windowSoftInputMode": "adjustResize",
             "useMemoryPageSize16KB": true,
@@ -138,6 +138,7 @@
       "@react-native-firebase/auth",
       "@react-native-firebase/messaging",
       "@react-native-firebase/app-check",
+      "@react-native-firebase/crashlytics",
       "./plugins/withEasPodfileFix.js",
       "./plugins/withIosFirebaseSwiftFix.js",
       [

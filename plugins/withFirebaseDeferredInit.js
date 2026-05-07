@@ -29,6 +29,9 @@ module.exports = function withFirebaseDeferredInit(config) {
     }
 
     const application = getMainApplicationOrThrow(config.modResults);
+    application.$ = application.$ || {};
+    application.$['android:extractNativeLibs'] = 'false';
+
     if (!application['meta-data']) application['meta-data'] = [];
 
     const flags = [
