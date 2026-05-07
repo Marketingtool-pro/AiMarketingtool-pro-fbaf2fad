@@ -57,10 +57,9 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#060b28"
       },
-      "edgeToEdgeEnabled": true,
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 466,
+      "versionCode": 467,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -142,7 +141,6 @@
       "./plugins/withEasPodfileFix.js",
       "./plugins/withIosFirebaseSwiftFix.js",
       "./plugins/withAndroid15EdgeToEdge.js",
-      "./plugins/withAndroidMaterialPin.js",
       "./plugins/withFirebaseDeferredInit.js",
       "expo-notifications",
       "react-native-iap",
