@@ -411,6 +411,20 @@ const LoginScreen = () => {
             )}
           </View>
 
+          {/* Email login entry — promoted above the fold so iPad reviewers
+              see it without scrolling past biometric/social. Apple rejected
+              v1.5.0 on iPad Air 11" because the bottom button was hidden
+              below the keyboard. Keep BOTH this and the bottom one visible. */}
+          <TouchableOpacity
+             activeOpacity={0.7}
+             onPress={() => setShowEmailModal(true)}
+             style={styles.emailLoginButtonTop}
+             accessibilityLabel="Sign in with email and password"
+          >
+             <Feather name="mail" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+             <Text style={styles.emailLoginText}>Sign in with Email</Text>
+          </TouchableOpacity>
+
           {isBioEnabled && isBioAvailable && (
             <TouchableOpacity 
               style={styles.biometricBtn} 
@@ -651,7 +665,10 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 100,
+    // Tablet-friendly top inset: 100 was iPhone-tuned and stole ~100pt of
+    // visible viewport on iPad, hiding the email login below the keyboard.
+    paddingTop: Platform.OS === 'ios' && (Dimensions.get('window').width >= 768) ? 48 : 100,
+    paddingBottom: 24,
     alignItems: 'center',
   },
   logoSection: {
@@ -773,6 +790,23 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(157, 78, 221, 0.45)',
     marginBottom: 40,
     minWidth: 240,
+  },
+  // Above-the-fold variant shown right under the phone-login row.
+  // Solid purple fill so reviewers can't miss it on iPad Air 11".
+  emailLoginButtonTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: 'rgba(157, 78, 221, 0.35)',
+    borderWidth: 1,
+    borderColor: 'rgba(157, 78, 221, 0.7)',
+    marginTop: 16,
+    marginBottom: 16,
+    minWidth: 240,
+    alignSelf: 'center',
   },
   emailLoginText: {
     color: '#FFFFFF',

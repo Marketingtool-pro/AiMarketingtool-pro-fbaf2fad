@@ -3,8 +3,6 @@ import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { makeRedirectUri } from 'expo-auth-session';
-import { sendPhoneOTP, verifyPhoneOTP } from './firebaseAuth';
-
 // Ensure web browser closes properly after OAuth
 WebBrowser.maybeCompleteAuthSession();
 
@@ -263,31 +261,6 @@ export const authService = {
       return null;
     } catch (error: any) {
       if (__DEV__) console.error('[OAuth] Facebook error:', error?.message || error);
-      throw error;
-    }
-  },
-
-  // OTP via Firebase Phone Auth
-  async sendOTPFunction(phone: string): Promise<any> {
-    try {
-      if (__DEV__) console.log('[AuthService] Using Firebase for OTP:', phone);
-      const result = await sendPhoneOTP(phone);
-      if (!result.success) throw new Error(result.error || 'Failed to send OTP');
-      return result;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  async verifyOTPFunction(phone: string, otp: string): Promise<any> {
-    try {
-      if (__DEV__) console.log('[AuthService] Verifying OTP via Firebase...');
-      const result = await verifyPhoneOTP(otp);
-      if (result.success) {
-        return { ...result, success: true };
-      }
-      return { success: false, message: result.error || 'Invalid OTP' };
-    } catch (error) {
       throw error;
     }
   },
