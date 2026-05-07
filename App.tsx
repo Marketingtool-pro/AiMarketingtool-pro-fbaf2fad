@@ -1,10 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import '@tamagui/native/setup-zeego';
-import { StatusBar } from 'expo-status-bar';
+// expo-status-bar removed: it routes through deprecated APIs on Android 15
+// (StatusBarModule -> Window.setStatusBarColor). react-native-edge-to-edge's
+// <SystemBars /> replaces it cleanly on both platforms.
 import { View, StyleSheet, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { SystemBars } from 'react-native-edge-to-edge';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import { Feather } from '@expo/vector-icons';
@@ -130,14 +133,12 @@ export default function App() {
       <KeyboardProvider>
       <SafeAreaProvider>
         <View style={styles.container} onLayout={onLayoutRootView}>
-          {/* iOS only: <StatusBar /> uses iOS's modern UIStatusBar API.
-              On Android 15 it routes through RN's StatusBarModule and hits
-              the deprecated Window.setStatusBarColor — Play Console flags
-              that under "deprecated APIs". Status-bar appearance on
-              Android is handled entirely by withAndroid15EdgeToEdge.js
-              (WindowInsetsControllerCompat). Net effect: light icons on
-              dark background on both platforms — same look, modern APIs. */}
-          {Platform.OS === 'ios' && <StatusBar style="light" />}
+          {/* SystemBars (from react-native-edge-to-edge) replaces both
+              expo-status-bar and expo-navigation-bar. It uses the modern
+              WindowInsetsControllerCompat path on Android 15 — no
+              deprecated Window.setStatusBarColor / setNavigationBarColor
+              calls. Same light icons on dark background on both platforms. */}
+          <SystemBars style="light" />
           <AppNavigator />
         </View>
       </SafeAreaProvider>
