@@ -140,6 +140,15 @@
       "@react-native-firebase/app-check",
       "./plugins/withEasPodfileFix.js",
       "./plugins/withIosFirebaseSwiftFix.js",
+      [
+        "react-native-edge-to-edge",
+        {
+          "android": {
+            "parentTheme": "Default",
+            "enforceNavigationBarContrast": false
+          }
+        }
+      ],
       "./plugins/withAndroid15EdgeToEdge.js",
       "./plugins/withFirebaseDeferredInit.js",
       "expo-notifications",
