@@ -141,6 +141,7 @@
       "./plugins/withEasPodfileFix.js",
       "./plugins/withIosFirebaseSwiftFix.js",
       "./plugins/withAndroid15EdgeToEdge.js",
+      "./plugins/withAndroidMaterialPin.js",
       "expo-notifications",
       "react-native-iap",
       "expo-secure-store",

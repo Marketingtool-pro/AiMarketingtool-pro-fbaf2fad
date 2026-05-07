@@ -117,7 +117,14 @@ export default function App() {
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
         <View style={styles.container} onLayout={onLayoutRootView}>
-          <StatusBar style="light" />
+          {/* iOS only: <StatusBar /> uses iOS's modern UIStatusBar API.
+              On Android 15 it routes through RN's StatusBarModule and hits
+              the deprecated Window.setStatusBarColor — Play Console flags
+              that under "deprecated APIs". Status-bar appearance on
+              Android is handled entirely by withAndroid15EdgeToEdge.js
+              (WindowInsetsControllerCompat). Net effect: light icons on
+              dark background on both platforms — same look, modern APIs. */}
+          {Platform.OS === 'ios' && <StatusBar style="light" />}
           <AppNavigator />
         </View>
       </SafeAreaProvider>
