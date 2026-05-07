@@ -57,9 +57,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#060b28"
       },
+      "edgeToEdgeEnabled": true,
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 465,
+      "versionCode": 466,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
