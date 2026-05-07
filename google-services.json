@@ -15,14 +15,6 @@
       },
       "oauth_client": [
         {
-          "client_id": "911925145433-9u2j7enk344gimkmva881hngh39iopna.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "pro.marketingtool.app",
-            "certificate_hash": "b1eb06e5d24610cbd2126a201b916899d39d64aa"
-          }
-        },
-        {
           "client_id": "911925145433-ulns32v0guck53vdob9ejqpbcqri8hes.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -37,7 +29,7 @@
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBqLxexqY-R54RnutJmN7c8ot7L_7FAt_E"
+          "current_key": "AIzaSyDOBuix6QO3t9URwEJR7Ya2xm-rt0MvZmA"
         }
       ],
       "services": {
