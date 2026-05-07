@@ -79,6 +79,11 @@ const LoginScreen = () => {
   // digit + manual button tap). The second call would arrive after Firebase
   // has consumed verificationId, throwing auth/missing-verification-code.
   const verifyingRef = useRef(false);
+  // Blocks verify while a send (or resend) is mid-flight. iOS SMS auto-fill
+  // can drop the new code into the input before Firebase returns the new
+  // verificationId, causing the auto-verify timeout to fire against the
+  // stale ID. Ref (not state) so setTimeout reads the live value.
+  const sendingRef = useRef(false);
 
   const [isBioAvailable, setIsBioAvailable] = useState(false);
   const [bioType, setBioType] = useState<BiometricType>('none');
@@ -203,6 +208,13 @@ const LoginScreen = () => {
     setOtpError('');
     setOtpCode('');
     setOtpSending(true);
+    sendingRef.current = true;
+
+    // Drop the stale verificationId atomically BEFORE the new send so any
+    // SMS-autofill verify that races in during the network round-trip fails
+    // fast with "no pending verification" instead of hitting Firebase with
+    // a stale ID and showing a misleading "Invalid OTP".
+    await clearFirebaseVerification();
 
     // Save BEFORE the network call so a foreground/background swap mid-OTP
     // can re-open the modal on relaunch.
@@ -217,17 +229,21 @@ const LoginScreen = () => {
       setOtpUserId(userId);
       setOtpSent(true);
       setShowOtpModal(true);
-      setOtpSending(false);
       startCooldown();
     } catch (err: any) {
-      setOtpSending(false);
       await SecureStore.deleteItemAsync('pendingOTP');
       Alert.alert('OTP Failed', err.message || 'Failed to send OTP. Please try again.');
+    } finally {
+      setOtpSending(false);
+      sendingRef.current = false;
     }
   };
 
   const handleVerifyOTP = async () => {
     if (verifyingRef.current) return;
+    // Refuse to verify while a send/resend is in flight — the new
+    // verificationId hasn't landed yet and using the old one would fail.
+    if (sendingRef.current) return;
     if (otpCode.length < 6) return;
     verifyingRef.current = true;
     setOtpError('');
