@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -19,6 +20,7 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore, Tool, ToolInput } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { getToolIcon } from '../../constants/toolIcons';
 
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -234,8 +236,17 @@ const ToolDetailScreen = () => {
           </View>
 
           <View style={styles.toolInfo}>
+            {/* Use the same getToolIcon image source as ToolsScreen / Dashboard
+                / ChatScreen so the icon stays identical across the entire app.
+                The Feather fallback was a placeholder that always rendered
+                'zap' because Tool.icon is hardcoded to 'zap' in toolsStore. */}
             <View style={[styles.toolIcon, { backgroundColor: Colors.secondary + '20' }]}>
-              <Feather name={tool.icon as any} size={32} color={Colors.secondary} />
+              <Image source={getToolIcon(tool.slug)} style={{ width: 48, height: 48 }} resizeMode="contain" />
+              {tool.isPro && profile?.subscription === 'free' && (
+                <View style={styles.lockOverlay}>
+                  <Feather name="lock" size={18} color="#FFF" />
+                </View>
+              )}
             </View>
             <View style={styles.toolMeta}>
               <View style={styles.toolBadges}>
@@ -365,29 +376,43 @@ const ToolDetailScreen = () => {
           <View style={{ height: 120 }} />
         </ScrollView>
 
-        {/* Generate Button */}
+        {/* Generate Button — switches to "Upgrade to Pro" CTA when the
+            current tool is Pro-locked for a free user. handleGenerate
+            already routes to Subscription in that case; this just makes
+            the visual state match (lock icon + amber gradient) so the
+            user knows BEFORE tapping. */}
         <View style={styles.generateContainer}>
-          <TouchableOpacity
-            onPress={handleGenerate}
-            disabled={isGenerating}
-            style={styles.generateButton}
-          >
-            <LinearGradient colors={Gradients.primary} style={styles.generateGradient}>
-              {isGenerating ? (
-                <View style={styles.generatingContent}>
-                  <ActivityIndicator color={Colors.white} />
-                  <Text style={styles.generateText}>
-                    {elapsedSeconds >= 5 ? `Still generating... ${elapsedSeconds}s` : `Generating... ${elapsedSeconds}s`}
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.generateContent}>
-                  <Feather name="zap" size={24} color={Colors.white} />
-                  <Text style={styles.generateText}>Generate Content</Text>
-                </View>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
+          {(() => {
+            const isLockedForUser = tool.isPro && profile?.subscription === 'free';
+            return (
+              <TouchableOpacity
+                onPress={handleGenerate}
+                disabled={isGenerating}
+                style={styles.generateButton}
+              >
+                <LinearGradient
+                  colors={isLockedForUser ? ['#F59E0B', '#D97706'] : Gradients.primary}
+                  style={styles.generateGradient}
+                >
+                  {isGenerating ? (
+                    <View style={styles.generatingContent}>
+                      <ActivityIndicator color={Colors.white} />
+                      <Text style={styles.generateText}>
+                        {elapsedSeconds >= 5 ? `Still generating... ${elapsedSeconds}s` : `Generating... ${elapsedSeconds}s`}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.generateContent}>
+                      <Feather name={isLockedForUser ? 'lock' : 'zap'} size={24} color={Colors.white} />
+                      <Text style={styles.generateText}>
+                        {isLockedForUser ? 'Upgrade to Pro' : 'Generate Content'}
+                      </Text>
+                    </View>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            );
+          })()}
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -449,6 +474,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
+    // Required so the absolutely-positioned lockOverlay anchors here.
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  lockOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: BorderRadius.lg,
   },
   toolMeta: {
     flex: 1,

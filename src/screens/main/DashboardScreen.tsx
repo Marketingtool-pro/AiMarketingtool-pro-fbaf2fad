@@ -540,10 +540,22 @@ const DashboardScreen = () => {
                       style={{ width: 32, height: 32 }}
                       resizeMode="contain"
                     />
+                    {/* Same Pro lock visual as ToolsScreen / ToolDetailScreen
+                        so locked state is consistent across every screen. */}
+                    {(tool as any).isPro && profile?.subscription === 'free' && (
+                      <View style={styles.dashLockOverlay}>
+                        <Feather name="lock" size={14} color="#FFF" />
+                      </View>
+                    )}
                   </View>
                   <View>
                     <View style={styles.popularNameRow}>
                       <Text style={styles.popularName}>{tool.name}</Text>
+                      {(tool as any).isPro && (
+                        <View style={styles.dashProBadge}>
+                          <Text style={styles.dashProBadgeText}>PRO</Text>
+                        </View>
+                      )}
                     </View>
                     <Text style={styles.popularUsesText}>{tool.category}</Text>
                   </View>
@@ -1026,6 +1038,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  dashLockOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: BorderRadius.sm,
+  },
+  dashProBadge: {
+    marginLeft: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    backgroundColor: '#F59E0B',
+    borderRadius: 4,
+  },
+  dashProBadgeText: {
+    color: '#000',
+    fontSize: 9,
+    fontWeight: '700',
   },
   popularNameRow: {
     flexDirection: 'row',
