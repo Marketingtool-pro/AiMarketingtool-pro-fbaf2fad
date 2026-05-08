@@ -298,7 +298,7 @@ const SubscriptionScreen = () => {
               </View>
               <View style={styles.heroRight}>
                 <Image 
-                  source={require('../../../assets/images/tool-icons-v2/trophy.png')} 
+                  source={require('../../../assets/images/tool-icons-v2/trophy.webp')} 
                   style={styles.heroIcon} 
                   resizeMode="contain" 
                 />

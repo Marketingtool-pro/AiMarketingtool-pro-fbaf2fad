@@ -4,7 +4,7 @@
     "slug": "marketingtool",
     "version": "1.5.0",
     "orientation": "default",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon.webp",
     "userInterfaceStyle": "dark",
     "scheme": "marketingtool",
     "platforms": [
@@ -12,7 +12,7 @@
       "android"
     ],
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/icon.webp",
       "resizeMode": "contain",
       "backgroundColor": "#060b28"
     },
@@ -54,12 +54,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/adaptive-icon.webp",
         "backgroundColor": "#060b28"
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 473,
+      "versionCode": 474,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -90,7 +90,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png",
+      "favicon": "./assets/favicon.webp",
       "bundler": "metro"
     },
     "plugins": [
@@ -130,7 +130,9 @@
             "useMemoryPageSize16KB": true,
             "ndkVersion": "27.1.12297006",
             "kotlinVersion": "2.1.20",
-            "kspVersion": "2.1.20-1.0.32"
+            "kspVersion": "2.1.20-1.0.32",
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResources": true
           }
         }
       ],

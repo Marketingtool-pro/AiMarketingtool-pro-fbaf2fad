@@ -39,7 +39,7 @@ const GlassCard = ({ children }: { children: React.ReactNode }) => (
   </View>
 );
 
-const ProfileHeroImage = require('../../../assets/images/screens/profile-hero.jpg');
+const ProfileHeroImage = require('../../../assets/images/screens/profile-hero.webp');
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
