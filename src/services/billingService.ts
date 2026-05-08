@@ -25,16 +25,23 @@ const iapAvailable = (): boolean => {
 
 const IAP_UNAVAILABLE_ERROR = 'In-app purchase is not available on this device.';
 
+let initPromise: Promise<boolean> | null = null;
+
 export const billingService = {
   async initialize() {
     if (!iapAvailable()) return false;
-    try {
-      await IAP.initConnection();
-      return true;
-    } catch (err) {
-      console.error('[Billing] Init error:', err);
-      return false;
-    }
+    if (initPromise) return initPromise;
+    initPromise = (async () => {
+      try {
+        await IAP.initConnection();
+        return true;
+      } catch (err) {
+        console.error('[Billing] Init error:', err);
+        initPromise = null;
+        return false;
+      }
+    })();
+    return initPromise;
   },
 
   async getProducts() {
@@ -64,12 +71,16 @@ export const billingService = {
       return { success: false, error: IAP_UNAVAILABLE_ERROR };
     }
     try {
+      await this.initialize();
       const available = await this.getProducts();
       if (__DEV__) console.log('[Billing] Available products:', available.map((p: any) => p.id || p.productId));
       const found = available.find((p: any) => (p.id || p.productId) === sku);
       if (!found) {
         console.error('[Billing] Product not found in store:', sku, 'Available:', available.map((p: any) => p.id || p.productId));
-        return { success: false, error: `Product "${sku}" is not available in your region. Please contact support.` };
+        const reason = available.length === 0
+          ? 'Subscription products are not yet available. Please try again in a few minutes.'
+          : `This subscription is not available right now. Please contact support.`;
+        return { success: false, error: reason };
       }
 
       const isSub = SUBSCRIPTION_SKUS.has(sku);

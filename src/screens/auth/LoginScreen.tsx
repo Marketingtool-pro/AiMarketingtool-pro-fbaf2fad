@@ -476,7 +476,7 @@ const LoginScreen = () => {
              {Platform.OS === 'ios' && (
                <AppleAuthentication.AppleAuthenticationButton
                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                 buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                 buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE}
                  cornerRadius={16}
                  style={{ width: 56, height: 56 }}
                  onPress={loginWithApple}

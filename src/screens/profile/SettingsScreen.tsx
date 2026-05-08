@@ -49,6 +49,37 @@ const SettingsScreen = () => {
   const [newPassword, setNewPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  const [nameModalVisible, setNameModalVisible] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [nameSaving, setNameSaving] = useState(false);
+
+  const openEditName = () => {
+    setNameDraft(user?.name || '');
+    setNameModalVisible(true);
+  };
+
+  const handleSaveName = async () => {
+    const trimmed = nameDraft.trim();
+    if (!trimmed) {
+      Alert.alert('Name required', 'Please enter a name.');
+      return;
+    }
+    if (trimmed === user?.name) {
+      setNameModalVisible(false);
+      return;
+    }
+    try {
+      setNameSaving(true);
+      await authService.updateProfile(trimmed);
+      await useAuthStore.getState().updateProfile({ name: trimmed });
+      setNameModalVisible(false);
+    } catch (err: any) {
+      Alert.alert('Update failed', err?.message || 'Could not update your name.');
+    } finally {
+      setNameSaving(false);
+    }
+  };
+
   // Load state on mount
   useEffect(() => {
     const loadState = async () => {
@@ -434,9 +465,14 @@ const SettingsScreen = () => {
             <Text style={styles.userName}>{user?.name || 'User'}</Text>
             <Text style={styles.userEmail}>{user?.email}</Text>
           </View>
-          <View style={styles.editButton}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={openEditName}
+            accessibilityRole="button"
+            accessibilityLabel="Edit profile name"
+          >
             <Feather name="edit-2" size={18} color={Colors.secondary} />
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Settings Sections */}
@@ -616,6 +652,56 @@ const SettingsScreen = () => {
               >
                 <Text style={styles.modalSubmitText}>
                   {passwordLoading ? 'Updating...' : passwordModal === 'current' ? 'Next' : 'Update'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Edit Name Modal */}
+      <Modal
+        visible={nameModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setNameModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Name</Text>
+            <Text style={styles.modalSubtitle}>This is the name shown on your profile.</Text>
+
+            <TextInput
+              style={styles.modalInput}
+              autoFocus
+              placeholder="Your name"
+              placeholderTextColor={Colors.textTertiary}
+              value={nameDraft}
+              onChangeText={setNameDraft}
+              editable={!nameSaving}
+              maxLength={64}
+              returnKeyType="done"
+              onSubmitEditing={handleSaveName}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setNameModalVisible(false)}
+                disabled={nameSaving}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalSubmitBtn, (nameSaving || !nameDraft.trim()) && { opacity: 0.6 }]}
+                onPress={handleSaveName}
+                disabled={nameSaving || !nameDraft.trim()}
+              >
+                <Text style={styles.modalSubmitText}>
+                  {nameSaving ? 'Saving...' : 'Save'}
                 </Text>
               </TouchableOpacity>
             </View>
