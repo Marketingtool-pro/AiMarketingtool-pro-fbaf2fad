@@ -84,7 +84,7 @@
     "genkit": "^1.33.0",
     "lottie-react-native": "~7.3.4",
     "material-symbols": "^0.44.0",
-    "react": "19.2.0",
+    "react": "19.2.6",
     "react-dom": "19.2.0",
     "react-native": "0.83.6",
     "react-native-appwrite": "0.24.0",
@@ -107,7 +107,7 @@
   "devDependencies": {
     "@tamagui/babel-plugin": "2.0.0-rc.22",
     "@tamagui/config": "2.0.0-rc.22",
-    "@types/react": "19.2.10",
+    "@types/react": "19.2.14",
     "babel-preset-expo": "~55.0.11",
     "typescript": "5.9.2"
   },
