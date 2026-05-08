@@ -125,13 +125,21 @@ export const billingService = {
 
       const result = parseAppwriteResponse(execution.responseBody);
 
-      if (result.success) {
-        if (Platform.OS === 'ios') {
+      // CRITICAL iOS FIX: ALWAYS finish the transaction in Sandbox/Prod to prevent the queue from locking up.
+      // If we don't finish it, the next purchase attempt will immediately fail or get stuck.
+      if (Platform.OS === 'ios') {
+        try {
           await IAP.finishTransaction({
             purchase,
             isConsumable: !SUBSCRIPTION_SKUS.has(p.productId || p.id),
           });
-        } else if (p.purchaseToken) {
+        } catch (e) {
+          console.warn('[Billing] Failed to finish iOS transaction:', e);
+        }
+      }
+
+      if (result.success) {
+        if (Platform.OS === 'android' && p.purchaseToken) {
           await IAP.acknowledgePurchaseAndroid(p.purchaseToken);
         }
         return { success: true };

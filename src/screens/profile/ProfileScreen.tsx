@@ -168,9 +168,13 @@ const ProfileScreen = () => {
                     </Text>
                   )}
                 </View>
-                <View style={styles.editAvatarBtn}>
+                <TouchableOpacity 
+                  style={styles.editAvatarBtn}
+                  onPress={() => navigation.navigate('Settings')}
+                  activeOpacity={0.7}
+                >
                   <Feather name="camera" size={12} color={Colors.white} />
-                </View>
+                </TouchableOpacity>
               </View>
 
               <Text style={styles.userName}>
