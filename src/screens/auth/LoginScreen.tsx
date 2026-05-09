@@ -286,7 +286,7 @@ const LoginScreen = () => {
           <View style={styles.logoSection}>
             <View style={styles.logoIconBg}>
                <Image
-                  source={require('../../../assets/images/logo-icon.webp')}
+                  source={require('../../../assets/images/logo-icon.png')}
                   style={styles.logoImage}
                   resizeMode="contain"
                 />
@@ -468,10 +468,10 @@ const LoginScreen = () => {
 
           <View style={styles.socialRow}>
              <TouchableOpacity activeOpacity={0.7} onPress={loginWithGoogle}>
-                <Image source={require('../../../assets/images/platforms/google.webp')} style={{ width: 56, height: 56 }} resizeMode="contain" />
+                <Image source={require('../../../assets/images/platforms/google.png')} style={{ width: 56, height: 56 }} resizeMode="contain" />
              </TouchableOpacity>
              <TouchableOpacity activeOpacity={0.7} onPress={loginWithFacebook}>
-                <Image source={require('../../../assets/images/platforms/facebook.webp')} style={{ width: 56, height: 56 }} resizeMode="contain" />
+                <Image source={require('../../../assets/images/platforms/facebook.png')} style={{ width: 56, height: 56 }} resizeMode="contain" />
              </TouchableOpacity>
              {Platform.OS === 'ios' && (
                <AppleAuthentication.AppleAuthenticationButton
