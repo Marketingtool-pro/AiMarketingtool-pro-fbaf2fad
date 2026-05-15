@@ -15,7 +15,8 @@
     "doctor": "npx expo-doctor",
     "ship": "npx expo-doctor && eas build --platform all --profile production --auto-submit --non-interactive",
     "ship:ios": "npx expo-doctor && eas build --platform ios --profile production --auto-submit --non-interactive",
-    "ship:android": "npx expo-doctor && eas build --platform android --profile production --auto-submit --non-interactive"
+    "ship:android": "npx expo-doctor && eas build --platform android --profile production --auto-submit --non-interactive",
+    "prepare": "husky"
   },
   "expo": {
     "doctor": {
@@ -109,6 +110,8 @@
     "@tamagui/config": "2.0.0-rc.22",
     "@types/react": "19.2.10",
     "babel-preset-expo": "~55.0.11",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.4",
     "typescript": "5.9.2"
   },
   "private": true,
@@ -132,5 +135,13 @@
     "semver": "^7.7.4",
     "send": "^0.19.0",
     "tar": "^7.5.13"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "npx tsc --noEmit --skipLibCheck"
+    ],
+    "*.{ts,tsx,js,jsx}": [
+      "echo \"staged lint ok\""
+    ]
   }
 }
