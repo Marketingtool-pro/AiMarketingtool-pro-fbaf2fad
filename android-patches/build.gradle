@@ -1,7 +1,7 @@
 buildscript {
     repositories { google(); mavenCentral() }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.5.2'
+        classpath 'com.android.tools.build:gradle:9.2.0'
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20'
     }
 }
@@ -12,7 +12,7 @@ apply plugin: 'maven-publish'
 
 android {
     namespace 'com.facebook.react.patch'
-    compileSdk 35
+    compileSdk 36
     defaultConfig { minSdk 24 }
     kotlinOptions { jvmTarget = '17' }
     // Only include our 2 patched files, not a full Android library
@@ -43,13 +43,13 @@ dependencies {
 
 // Step 1: Download original react-android AAR + POM from Maven Central
 task downloadOriginalAAR {
-    def aarOut = file("${buildDir}/orig/react-android-${reactVersion}.aar")
+    def aarOut = file("${buildDir}/orig/react-android-${reactVersion}-release.aar")
     def pomOut = file("${buildDir}/orig/react-android-${reactVersion}.pom")
     outputs.files(aarOut, pomOut)
     doLast {
         aarOut.parentFile.mkdirs()
         def base = "https://repo1.maven.org/maven2/com/facebook/react/react-android/${reactVersion}"
-        new URL("${base}/react-android-${reactVersion}.aar").withInputStream { i -> aarOut << i }
+        new URL("${base}/react-android-${reactVersion}-release.aar").withInputStream { i -> aarOut << i }
         new URL("${base}/react-android-${reactVersion}.pom").withInputStream { i -> pomOut << i }
         println "✅ Downloaded react-android-${reactVersion}.aar (${aarOut.length()} bytes)"
     }
@@ -57,7 +57,7 @@ task downloadOriginalAAR {
 
 // Step 2: Extract the original AAR and classes.jar
 task extractOriginalAAR(dependsOn: downloadOriginalAAR) {
-    def aarIn  = file("${buildDir}/orig/react-android-${reactVersion}.aar")
+    def aarIn  = file("${buildDir}/orig/react-android-${reactVersion}-release.aar")
     def outDir = file("${buildDir}/aar-contents")
     def classesDir = file("${buildDir}/orig-classes")
     inputs.file(aarIn)
