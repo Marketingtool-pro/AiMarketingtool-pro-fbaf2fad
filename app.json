@@ -153,6 +153,7 @@
           }
         }
       ],
+      "./plugins/withRNEdgeToEdgeFix.js",
       "./plugins/withAndroid15EdgeToEdge.js",
       "./plugins/withFirebaseDeferredInit.js",
       "expo-notifications",

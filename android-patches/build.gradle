@@ -1,0 +1,179 @@
+buildscript {
+    repositories { google(); mavenCentral() }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.5.2'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20'
+    }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'maven-publish'
+
+android {
+    namespace 'com.facebook.react.patch'
+    compileSdk 35
+    defaultConfig { minSdk 24 }
+    kotlinOptions { jvmTarget = '17' }
+    // Only include our 2 patched files, not a full Android library
+    sourceSets {
+        main {
+            kotlin.srcDirs = ['src/main/kotlin']
+            manifest.srcFile 'src/main/AndroidManifest.xml'
+        }
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+def reactVersion = '0.83.6'
+def patchedVersion = "${reactVersion}-e2e.1"
+
+dependencies {
+    // All imports needed by our 2 patched files
+    compileOnly "com.facebook.react:react-android:${reactVersion}"
+    compileOnly "androidx.core:core:1.13.1"
+    compileOnly "androidx.core:core-ktx:1.13.1"
+}
+
+// ── AAR Surgery ──────────────────────────────────────────────────────────────
+
+// Step 1: Download original react-android AAR + POM from Maven Central
+task downloadOriginalAAR {
+    def aarOut = file("${buildDir}/orig/react-android-${reactVersion}.aar")
+    def pomOut = file("${buildDir}/orig/react-android-${reactVersion}.pom")
+    outputs.files(aarOut, pomOut)
+    doLast {
+        aarOut.parentFile.mkdirs()
+        def base = "https://repo1.maven.org/maven2/com/facebook/react/react-android/${reactVersion}"
+        new URL("${base}/react-android-${reactVersion}.aar").withInputStream { i -> aarOut << i }
+        new URL("${base}/react-android-${reactVersion}.pom").withInputStream { i -> pomOut << i }
+        println "✅ Downloaded react-android-${reactVersion}.aar (${aarOut.length()} bytes)"
+    }
+}
+
+// Step 2: Extract the original AAR and classes.jar
+task extractOriginalAAR(dependsOn: downloadOriginalAAR) {
+    def aarIn  = file("${buildDir}/orig/react-android-${reactVersion}.aar")
+    def outDir = file("${buildDir}/aar-contents")
+    def classesDir = file("${buildDir}/orig-classes")
+    inputs.file(aarIn)
+    outputs.dir(outDir)
+    outputs.dir(classesDir)
+    doLast {
+        copy { from zipTree(aarIn); into outDir }
+        copy { from zipTree(new File(outDir, "classes.jar")); into classesDir }
+        println "✅ Extracted ${classesDir.list().length} entries from classes.jar"
+    }
+}
+
+// Step 3: Remove the old StatusBarModule + WindowUtil class files from extracted classes
+task deleteDeprecatedClasses(dependsOn: extractOriginalAAR) {
+    def classesDir = file("${buildDir}/orig-classes")
+    inputs.dir(classesDir)
+    outputs.dir(classesDir)
+    doLast {
+        def deleted = []
+        fileTree(classesDir) {
+            include 'com/facebook/react/modules/statusbar/StatusBarModule.class'
+            include 'com/facebook/react/modules/statusbar/StatusBarModule$*.class'
+            include 'com/facebook/react/views/view/WindowUtilKt.class'
+            include 'com/facebook/react/views/view/WindowUtil*.class'
+        }.each { f ->
+            deleted << f.name
+            f.delete()
+        }
+        println "✅ Deleted ${deleted.size()} deprecated class files: ${deleted}"
+    }
+}
+
+// Step 4: After compileReleaseKotlin, copy our patched class files into the extracted classes dir
+task injectPatchedClasses(dependsOn: ['deleteDeprecatedClasses', 'compileReleaseKotlin']) {
+    def compiledDir = file("${buildDir}/tmp/kotlin-classes/release")
+    def classesDir  = file("${buildDir}/orig-classes")
+    inputs.dir(compiledDir)
+    outputs.dir(classesDir)
+    doLast {
+        copy {
+            from(compiledDir) {
+                include 'com/facebook/react/modules/statusbar/**'
+                include 'com/facebook/react/views/view/WindowUtilKt.class'
+                include 'com/facebook/react/views/view/WindowUtil*.class'
+            }
+            into classesDir
+        }
+        println "✅ Injected patched StatusBarModule + WindowUtil classes"
+    }
+}
+
+// Step 5: Re-assemble the patched AAR
+task assemblePatchedAAR(dependsOn: injectPatchedClasses) {
+    def aarContents = file("${buildDir}/aar-contents")
+    def classesDir  = file("${buildDir}/orig-classes")
+    def outputAAR   = file("${buildDir}/patched/react-android-${patchedVersion}.aar")
+    def outputPOM   = file("${buildDir}/patched/react-android-${patchedVersion}.pom")
+    inputs.dir(aarContents)
+    inputs.dir(classesDir)
+    outputs.files(outputAAR, outputPOM)
+    doLast {
+        outputAAR.parentFile.mkdirs()
+        // Re-pack classes.jar
+        ant.zip(destfile: new File(aarContents, "classes.jar").absolutePath, update: false) {
+            fileset(dir: classesDir.absolutePath)
+        }
+        // Re-pack the full AAR
+        ant.zip(destfile: outputAAR.absolutePath) {
+            fileset(dir: aarContents.absolutePath)
+        }
+        // Copy POM, bump version
+        def origPomText = file("${buildDir}/orig/react-android-${reactVersion}.pom").text
+        outputPOM.text = origPomText.replace(
+            "<version>${reactVersion}</version>",
+            "<version>${patchedVersion}</version>"
+        )
+        println "✅ Patched AAR: ${outputAAR} (${outputAAR.length()} bytes)"
+    }
+}
+
+// ── Publishing ───────────────────────────────────────────────────────────────
+
+afterEvaluate {
+    publishing {
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad")
+                credentials {
+                    username = System.getenv("GITHUB_ACTOR") ?: "Marketingtool-pro"
+                    password = System.getenv("GITHUB_TOKEN") ?: ""
+                }
+            }
+        }
+        publications {
+            patchedReactAndroid(MavenPublication) {
+                groupId    = "com.facebook.react"
+                artifactId = "react-android"
+                version    = patchedVersion
+                artifact(file("${buildDir}/patched/react-android-${patchedVersion}.aar")) {
+                    builtBy(assemblePatchedAAR)
+                    extension = "aar"
+                }
+                pom {
+                    withXml {
+                        def origPom = new XmlParser().parseText(
+                            file("${buildDir}/patched/react-android-${patchedVersion}.pom").text
+                        )
+                        // Merge original POM dependencies into our publication POM
+                        def depsNode = origPom.dependencies[0]
+                        if (depsNode) {
+                            asNode().append(depsNode)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

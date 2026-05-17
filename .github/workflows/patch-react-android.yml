@@ -1,0 +1,47 @@
+name: Build & Publish Patched react-android AAR
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android-patches/**'
+  workflow_dispatch:
+
+jobs:
+  build-patched-aar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Make gradlew executable
+        working-directory: android-patches
+        run: chmod +x gradlew
+
+      - name: Build patched AAR and publish to GitHub Packages
+        working-directory: android-patches
+        run: ./gradlew assemblePatchedAAR publish --no-daemon
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      - name: Upload patched AAR as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: react-android-patched
+          path: android-patches/build/patched/react-android-0.83.6-e2e.1.aar
