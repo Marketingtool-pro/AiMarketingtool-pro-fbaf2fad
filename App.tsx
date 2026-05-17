@@ -20,6 +20,7 @@ import crashlytics from '@react-native-firebase/crashlytics';
 import analytics from '@react-native-firebase/analytics';
 import messaging from '@react-native-firebase/messaging';
 import * as TrackingTransparency from 'expo-tracking-transparency';
+import { initRemoteConfig } from './src/services/firebaseRemoteConfig';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -107,6 +108,10 @@ export default function App() {
         .catch(e => console.warn('FCM init error:', e));
 
       matomo.init().catch(e => console.warn('Matomo init error', e));
+
+      // Remote Config — deferred so it doesn't block first paint. Falls back
+      // to baked-in defaults if fetch fails (see firebaseRemoteConfig.ts).
+      initRemoteConfig().catch(e => console.warn('RemoteConfig init error', e));
     }
 
     prepare();

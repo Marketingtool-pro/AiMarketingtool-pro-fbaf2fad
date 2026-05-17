@@ -59,7 +59,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 474,
+      "versionCode": 475,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -141,6 +141,7 @@
       "@react-native-firebase/messaging",
       "@react-native-firebase/app-check",
       "@react-native-firebase/crashlytics",
+      "@react-native-firebase/perf",
       "./plugins/withEasPodfileFix.js",
       "./plugins/withIosFirebaseSwiftFix.js",
       [
