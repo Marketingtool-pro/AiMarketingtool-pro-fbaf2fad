@@ -3,20 +3,22 @@ import groovy.xml.XmlParser
 buildscript {
     repositories { google(); mavenCentral() }
     dependencies {
-        classpath 'com.android.tools.build:gradle:9.2.0'
+        classpath 'com.android.tools.build:gradle:8.5.2'
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20'
     }
 }
 
 apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
 apply plugin: 'maven-publish'
 
 android {
     namespace 'com.facebook.react.patch'
     compileSdk 36
     defaultConfig { minSdk 24 }
-    kotlinOptions { jvmTarget = '17' }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
     // Only include our 2 patched files, not a full Android library
     sourceSets {
         main {
@@ -24,6 +26,10 @@ android {
             manifest.srcFile 'src/main/AndroidManifest.xml'
         }
     }
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
 }
 
 repositories {
