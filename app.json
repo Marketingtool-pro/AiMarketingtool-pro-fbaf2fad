@@ -59,7 +59,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 477,
+      "versionCode": 480,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -162,6 +162,7 @@
       "expo-sharing",
       "expo-web-browser",
       "expo-asset",
+      "expo-tracking-transparency",
       "./plugins/withKotlinKspFix.js"
     ],
     "extra": {
