@@ -1,4 +1,4 @@
-name: Build & Publish Patched react-android AAR
+name: Patch react-android AAR
 
 on:
   push:
@@ -24,21 +24,18 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v3
-
       - name: Make gradlew executable
         working-directory: android-patches
         run: chmod +x gradlew
 
-      - name: Build patched AAR and publish to GitHub Packages
+      - name: Build and publish patched AAR
         working-directory: android-patches
         run: ./gradlew assemblePatchedAAR publish --no-daemon
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
 
-      - name: Upload patched AAR as artifact
+      - name: Upload AAR artifact
         uses: actions/upload-artifact@v4
         with:
           name: react-android-patched
