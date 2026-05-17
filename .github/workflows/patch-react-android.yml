@@ -2,18 +2,19 @@ name: Patch react-android AAR
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
-      - 'android-patches/**'
+      - android-patches/**
   workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   build-patched-aar:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,15 +23,14 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: temurin
 
       - name: Make gradlew executable
-        working-directory: android-patches
-        run: chmod +x gradlew
+        run: chmod +x android-patches/gradlew
 
       - name: Build and publish patched AAR
         working-directory: android-patches
-        run: ./gradlew assemblePatchedAAR publish --no-daemon
+        run: ./gradlew assemblePatchedAAR publish --no-daemon --stacktrace
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
