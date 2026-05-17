@@ -114,7 +114,7 @@
     "@types/react": "19.2.14",
     "babel-preset-expo": "~55.0.11",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.4",
+    "lint-staged": "16.4.0",
     "typescript": "5.9.2"
   },
   "private": true,

@@ -7,6 +7,10 @@ on:
       - 'v*.*.*'
   workflow_dispatch:
 
+concurrency:
+  group: production-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   eas-build-production:
     name: Build (${{ matrix.platform }})
