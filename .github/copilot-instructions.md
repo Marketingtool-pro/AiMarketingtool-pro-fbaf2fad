@@ -27,7 +27,7 @@
 
 ## High-level architecture
 
-- This repository is the phone app repo (`Marketingtool-pro/AiMarketingtool-pro-fbaf2fad`). In the local workstation layout, the matching working copy is `/Users/anshsingh/Desktop/Developer/MarketingTool_Phone`. The matching web repo is `Marketingtool-pro/web-app-router-`, with local working copy `/Users/anshsingh/Desktop/Developer/MarketingTool_Web`. Keep both local repos aligned with their GitHub repos and avoid drifting work across duplicate copies. For auth, AI generation, or webhook-driven behavior, expect fixes to sometimes require checking both repos.
+- This repository is the phone app repo (`Marketingtool-pro/AiMarketingtool-pro-fbaf2fad`). In the local workstation layout, the matching working copy is in a local directory like `<path_to_your_workspace>/MarketingTool_Phone`. The matching web repo is `Marketingtool-pro/web-app-router-`, with local working copy `<path_to_your_workspace>/MarketingTool_Web`. Keep both local repos aligned with their GitHub repos and avoid drifting work across duplicate copies. For auth, AI generation, or webhook-driven behavior, expect fixes to sometimes require checking both repos.
 
 - Treat `/Users/anshsingh/Desktop/Developer` as the single Marketingtool-pro organization workspace root. Keep the two product repos (`MarketingTool_Phone` and `MarketingTool_Web`) as the primary repos in that workspace rather than replacing them with a different structure.
 

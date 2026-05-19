@@ -14,6 +14,11 @@ jobs:
   submit-gradle:
     name: submit-gradle
     runs-on: ubuntu-latest
+    # Forks get read-only tokens; skip on fork PRs since
+    # gradle/actions/dependency-submission requires contents: write.
+    if: |
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: write
     steps:

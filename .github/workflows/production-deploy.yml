@@ -55,6 +55,28 @@ jobs:
           eas whoami
           eas project:info
 
+      - name: Write Google Play Service Account key (android)
+        if: matrix.platform == 'android'
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -z "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::GOOGLE_PLAY_SERVICE_ACCOUNT_JSON secret is not set; android submit will fail."
+            exit 1
+          fi
+          printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > ./.eas-google-play-sa.json
+
+      - name: Write App Store Connect API key (ios)
+        if: matrix.platform == 'ios'
+        env:
+          APPLE_ASC_API_KEY_P8: ${{ secrets.APPLE_ASC_API_KEY_P8 }}
+        run: |
+          if [ -z "$APPLE_ASC_API_KEY_P8" ]; then
+            echo "::error::APPLE_ASC_API_KEY_P8 secret is not set; ios submit will fail."
+            exit 1
+          fi
+          printf '%s' "$APPLE_ASC_API_KEY_P8" > ./AuthKey_D5KG7J5R95.p8
+
       - name: Build production with auto-submit (${{ matrix.platform }})
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform }}
         run: |
