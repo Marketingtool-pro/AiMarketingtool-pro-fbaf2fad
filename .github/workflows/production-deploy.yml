@@ -80,8 +80,22 @@ jobs:
       - name: Build production with auto-submit (${{ matrix.platform }})
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform }}
         run: |
-          eas build \
+          # Retry against transient Expo / GH outages so a real failure
+          # is the only thing that fails this production deploy.
+          attempt=1
+          max_attempts=3
+          until eas build \
             --platform ${{ matrix.platform }} \
             --profile production \
             --auto-submit \
-            --non-interactive
+            --non-interactive; do
+            status=$?
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "::error::eas build (${{ matrix.platform }}) failed after ${attempt} attempts (exit ${status})"
+              exit "$status"
+            fi
+            sleep_for=$((60 * attempt))
+            echo "::warning::eas build attempt ${attempt} failed (exit ${status}); retrying in ${sleep_for}s"
+            sleep "$sleep_for"
+            attempt=$((attempt + 1))
+          done
