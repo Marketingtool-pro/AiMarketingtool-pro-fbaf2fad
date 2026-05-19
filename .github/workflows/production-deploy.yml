@@ -51,9 +51,30 @@ jobs:
         run: npm ci
 
       - name: Verify Expo / EAS auth (auto-connect)
+        shell: bash
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          eas whoami
-          eas project:info
+          set -o pipefail
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::EXPO_TOKEN secret is empty; the production build cannot authenticate to EAS."
+            exit 1
+          fi
+          surface() {
+            local label="$1"; shift
+            local log; log="$(mktemp)"
+            if ! "$@" 2>&1 | tee "$log"; then
+              local s="${PIPESTATUS[0]}"
+              while IFS= read -r line; do
+                [ -z "$line" ] && continue
+                echo "::error::${label}: ${line}"
+              done < "$log"
+              echo "::error::${label} failed (exit ${s})"
+              return "$s"
+            fi
+          }
+          surface "eas whoami" eas whoami
+          surface "eas project:info" eas project:info
 
       - name: Write Google Play Service Account key (android)
         if: ${{ matrix.platform == 'android' && (github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform) }}

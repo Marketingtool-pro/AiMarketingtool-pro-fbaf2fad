@@ -58,15 +58,33 @@ jobs:
         run: npm ci
 
       - name: Verify Expo / EAS auth (auto-connect)
+        shell: bash
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
+          set -o pipefail
           if [ -z "$EXPO_TOKEN" ]; then
             echo "::error::EXPO_TOKEN secret is empty; the preview build cannot authenticate to EAS."
             exit 1
           fi
-          eas whoami
-          eas project:info
+          # Run each command capturing its output and surface any
+          # failure as ::error:: annotations so the run summary tells
+          # us exactly which check broke.
+          surface() {
+            local label="$1"; shift
+            local log; log="$(mktemp)"
+            if ! "$@" 2>&1 | tee "$log"; then
+              local s="${PIPESTATUS[0]}"
+              while IFS= read -r line; do
+                [ -z "$line" ] && continue
+                echo "::error::${label}: ${line}"
+              done < "$log"
+              echo "::error::${label} failed (exit ${s})"
+              return "$s"
+            fi
+          }
+          surface "eas whoami" eas whoami
+          surface "eas project:info" eas project:info
 
       - name: Build preview for Android and iOS (wait for result)
         shell: bash
