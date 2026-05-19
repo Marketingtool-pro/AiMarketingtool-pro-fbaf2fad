@@ -109,6 +109,18 @@ allprojects {
         }
     }
 }
+
+// Use Kotlin 1.9 language semantics with the KGP 2.1.20 compiler.
+// This fixes "Overload resolution ambiguity" errors in react-native-nitro-modules
+// and other libraries that were written for Kotlin 1.9 overload resolution rules.
+allprojects {
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            languageVersion = "1.9"
+            jvmTarget = "17"
+        }
+    }
+}
 `;
     if (!buildGradle.includes('resolutionStrategy.eachDependency')) {
       buildGradle += resolutionStrategy;
