@@ -188,8 +188,9 @@ internal class StatusBarModule(reactContext: ReactApplicationContext?) :
   /**
    * Applies a status bar background color.
    * API < 35: uses Window.setStatusBarColor() (correct on these versions).
-   * API >= 35: deprecated; Android 15 forces E2E so bar is transparent by policy.
-   *            Only syncs icon appearance to match the requested color's luminance.
+   * API >= 35: setting status bar color is deprecated; newer platform behavior keeps the bar
+   *            transparent by policy, so this only syncs icon appearance to the requested
+   *            color's luminance.
    */
   private fun applyStatusBarColor(window: android.view.Window?, color: Int) {
     window ?: return
