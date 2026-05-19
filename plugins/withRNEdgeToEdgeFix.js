@@ -21,12 +21,15 @@ const GITHUB_MAVEN_URL =
   'https://maven.pkg.github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad';
 const PATCHED_VERSION = '0.83.6-e2e.1';
 
+// GITHUB_ACTOR must be the GitHub username of the PAT owner (not the org name).
+// Set it as an EAS secret: eas env:create --name GITHUB_ACTOR --value "<your-gh-username>"
+// GITHUB_TOKEN must be a classic PAT with read:packages scope from the same account.
 const MAVEN_BLOCK = `
         // ── Patched react-android: Android 15 edge-to-edge deprecated API fix ──
         maven {
             url "${GITHUB_MAVEN_URL}"
             credentials {
-                username = System.getenv("GITHUB_ACTOR") ?: "Marketingtool-pro"
+                username = System.getenv("GITHUB_ACTOR") ?: System.getenv("GITHUB_USERNAME") ?: ""
                 password = System.getenv("GITHUB_TOKEN") ?: ""
             }
         }`;
@@ -40,7 +43,7 @@ allprojects {
         maven {
             url "${GITHUB_MAVEN_URL}"
             credentials {
-                username = System.getenv("GITHUB_ACTOR") ?: "Marketingtool-pro"
+                username = System.getenv("GITHUB_ACTOR") ?: System.getenv("GITHUB_USERNAME") ?: ""
                 password = System.getenv("GITHUB_TOKEN") ?: ""
             }
         }
