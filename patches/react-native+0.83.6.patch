@@ -1,0 +1,270 @@
+diff --git a/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/modules/statusbar/StatusBarModule.kt b/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/modules/statusbar/StatusBarModule.kt
+index 1e773ba..6ab5847 100644
+--- a/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/modules/statusbar/StatusBarModule.kt
++++ b/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/modules/statusbar/StatusBarModule.kt
+@@ -9,10 +9,12 @@ package com.facebook.react.modules.statusbar
+ 
+ import android.animation.ArgbEvaluator
+ import android.animation.ValueAnimator
++import android.graphics.Color
+ import android.os.Build
+ import android.view.View
+ import android.view.WindowInsetsController
+ import android.view.WindowManager
++import androidx.core.view.WindowInsetsControllerCompat
+ import com.facebook.common.logging.FLog
+ import com.facebook.fbreact.specs.NativeStatusBarManagerAndroidSpec
+ import com.facebook.react.bridge.GuardedRunnable
+@@ -21,7 +23,6 @@ import com.facebook.react.bridge.ReactApplicationContext
+ import com.facebook.react.bridge.UiThreadUtil
+ import com.facebook.react.common.ReactConstants
+ import com.facebook.react.module.annotations.ReactModule
+-import com.facebook.react.uimanager.DisplayMetricsHolder.getStatusBarHeightPx
+ import com.facebook.react.uimanager.PixelUtil
+ import com.facebook.react.views.view.isEdgeToEdgeFeatureFlagOn
+ import com.facebook.react.views.view.setStatusBarTranslucency
+@@ -32,20 +33,36 @@ import com.facebook.react.views.view.setStatusBarVisibility
+ internal class StatusBarModule(reactContext: ReactApplicationContext?) :
+     NativeStatusBarManagerAndroidSpec(reactContext) {
+ 
+-  @Suppress("DEPRECATION")
++  /**
++   * Cache of the last color set via [setColor]. Used on API 35+ where
++   * Window.getStatusBarColor() is deprecated and unavailable without suppression.
++   */
++  private var cachedStatusBarColor: Int? = null
++
+   override fun getTypedExportedConstants(): Map<String, Any> {
+     val currentActivity = reactApplicationContext.currentActivity
+     val statusBarColor =
+-        currentActivity?.window?.statusBarColor?.let { color ->
+-          String.format("#%06X", 0xFFFFFF and color)
+-        } ?: "black"
++        if (Build.VERSION.SDK_INT >= 35) {
++          cachedStatusBarColor?.let { String.format("#%06X", 0xFFFFFF and it) } ?: "black"
++        } else {
++          @Suppress("DEPRECATION")
++          currentActivity?.window?.statusBarColor?.let { color ->
++            String.format("#%06X", 0xFFFFFF and color)
++          } ?: "black"
++        }
+     return mapOf(
+-        HEIGHT_KEY to PixelUtil.toDIPFromPixel(getStatusBarHeightPx(currentActivity).toFloat()),
++        HEIGHT_KEY to PixelUtil.toDIPFromPixel(statusBarHeightPx(currentActivity).toFloat()),
+         DEFAULT_BACKGROUND_COLOR_KEY to statusBarColor,
+     )
+   }
+ 
+-  @Suppress("DEPRECATION")
++  /** Returns status bar height in pixels using the public Android resources API. */
++  private fun statusBarHeightPx(context: android.content.Context?): Int {
++    val res = context?.resources ?: android.content.res.Resources.getSystem()
++    val id = res.getIdentifier("status_bar_height", "dimen", "android")
++    return if (id > 0) res.getDimensionPixelSize(id) else 0
++  }
++
+   override fun setColor(colorDouble: Double, animated: Boolean) {
+     val color = colorDouble.toInt()
+     val activity = reactApplicationContext.getCurrentActivity()
+@@ -63,21 +80,27 @@ internal class StatusBarModule(reactContext: ReactApplicationContext?) :
+       )
+       return
+     }
++    cachedStatusBarColor = color
+     UiThreadUtil.runOnUiThread(
+         object : GuardedRunnable(reactApplicationContext) {
+           override fun runGuarded() {
+             val window = activity.window ?: return
+-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+             if (animated) {
+-              val curColor = window.statusBarColor
++              val curColor: Int =
++                  if (Build.VERSION.SDK_INT >= 35) {
++                    cachedStatusBarColor ?: Color.BLACK
++                  } else {
++                    @Suppress("DEPRECATION")
++                    window.statusBarColor
++                  }
+               val colorAnimation = ValueAnimator.ofObject(ArgbEvaluator(), curColor, color)
+               colorAnimation.addUpdateListener { animator ->
+-                activity.window?.statusBarColor = (animator.animatedValue as Int)
++                applyStatusBarColor(activity.window, animator.animatedValue as Int)
+               }
+               colorAnimation.setDuration(300).startDelay = 0
+               colorAnimation.start()
+             } else {
+-              window.statusBarColor = color
++              applyStatusBarColor(window, color)
+             }
+           }
+         }
+@@ -137,7 +160,6 @@ internal class StatusBarModule(reactContext: ReactApplicationContext?) :
+           if (Build.VERSION.SDK_INT > Build.VERSION_CODES.R) {
+             val insetsController = window.insetsController ?: return@Runnable
+             if ("dark-content" == style) {
+-              // dark-content means dark icons on a light status bar
+               insetsController.setSystemBarsAppearance(
+                   WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
+                   WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
+@@ -163,6 +185,34 @@ internal class StatusBarModule(reactContext: ReactApplicationContext?) :
+     )
+   }
+ 
++  /**
++   * Applies a status bar background color.
++   * API < 35: uses Window.setStatusBarColor() (correct on these versions).
++   * API >= 35: deprecated; Android 15 forces E2E so bar is transparent by policy.
++   *            Only syncs icon appearance to match the requested color's luminance.
++   */
++  private fun applyStatusBarColor(window: android.view.Window?, color: Int) {
++    window ?: return
++    cachedStatusBarColor = color
++    if (Build.VERSION.SDK_INT < 35) {
++      @Suppress("DEPRECATION")
++      window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
++      @Suppress("DEPRECATION")
++      window.statusBarColor = color
++    }
++    WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars =
++        isColorLight(color)
++  }
++
++  /** Returns true if the color has high enough luminance to warrant dark (visible) icons. */
++  private fun isColorLight(color: Int): Boolean {
++    val r = Color.red(color) / 255.0
++    val g = Color.green(color) / 255.0
++    val b = Color.blue(color) / 255.0
++    val luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
++    return luminance > 0.179
++  }
++
+   companion object {
+     private const val HEIGHT_KEY = "HEIGHT"
+     private const val DEFAULT_BACKGROUND_COLOR_KEY = "DEFAULT_BACKGROUND_COLOR"
+diff --git a/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt b/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt
+index 0cff3bc..f91ef2f 100644
+--- a/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt
++++ b/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt
+@@ -7,6 +7,7 @@
+ 
+ package com.facebook.react.views.view
+ 
++import android.content.res.Configuration
+ import android.graphics.Color
+ import android.os.Build
+ import android.view.Window
+@@ -15,21 +16,10 @@ import androidx.core.view.ViewCompat
+ import androidx.core.view.WindowCompat
+ import androidx.core.view.WindowInsetsCompat
+ import androidx.core.view.WindowInsetsControllerCompat
+-import com.facebook.react.views.common.UiModeUtils
+ 
+-// The light scrim color used in the platform API 29+
+-// https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/com/android/internal/policy/DecorView.java;drc=6ef0f022c333385dba2c294e35b8de544455bf19;l=142
+ internal val LightNavigationBarColor = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
+-
+-// The dark scrim color used in the platform.
+-// https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/res/res/color/system_bar_background_semi_transparent.xml
+-// https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/res/remote_color_resources_res/values/colors.xml;l=67
+ internal val DarkNavigationBarColor = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
+ 
+-/**
+- * This does not enable or apply edge-to-edge behavior, it simply tracks whether it has been flagged
+- * as enabled elsewhere in the application.
+- */
+ public var isEdgeToEdgeFeatureFlagOn: Boolean = false
+   private set
+ 
+@@ -39,8 +29,6 @@ public fun setEdgeToEdgeFeatureFlagOn() {
+ 
+ @Suppress("DEPRECATION")
+ internal fun Window.setStatusBarTranslucency(isTranslucent: Boolean) {
+-  // If the status bar is translucent hook into the window insets calculations
+-  // and consume all the top insets so no padding will be added under the status bar.
+   if (isTranslucent) {
+     decorView.setOnApplyWindowInsetsListener { v, insets ->
+       val defaultInsets = v.onApplyWindowInsets(insets)
+@@ -58,11 +46,7 @@ internal fun Window.setStatusBarTranslucency(isTranslucent: Boolean) {
+ }
+ 
+ internal fun Window.setStatusBarVisibility(isHidden: Boolean) {
+-  if (isHidden) {
+-    this.statusBarHide()
+-  } else {
+-    this.statusBarShow()
+-  }
++  if (isHidden) this.statusBarHide() else this.statusBarShow()
+ }
+ 
+ @Suppress("DEPRECATION")
+@@ -74,9 +58,8 @@ private fun Window.statusBarHide() {
+     }
+   } else {
+     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+-      // Ensure the content extends into the cutout area
+       attributes.layoutInDisplayCutoutMode =
+-          WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
++          WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+       setDecorFitsSystemWindows(false)
+     }
+     addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+@@ -94,7 +77,7 @@ private fun Window.statusBarShow() {
+   } else {
+     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+       attributes.layoutInDisplayCutoutMode =
+-          WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
++          WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+       setDecorFitsSystemWindows(true)
+     }
+     addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN)
+@@ -102,26 +85,30 @@ private fun Window.statusBarShow() {
+   }
+ }
+ 
+-@Suppress("DEPRECATION")
+ internal fun Window.enableEdgeToEdge() {
+   WindowCompat.setDecorFitsSystemWindows(this, false)
+-
+-  val isDarkMode = UiModeUtils.isDarkMode(context)
++  val isDarkMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
++      Configuration.UI_MODE_NIGHT_YES
+ 
+   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+     isStatusBarContrastEnforced = false
+     isNavigationBarContrastEnforced = true
+   }
+ 
+-  statusBarColor = Color.TRANSPARENT
+-  navigationBarColor =
+-      when {
+-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> Color.TRANSPARENT
+-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !isDarkMode -> LightNavigationBarColor
+-        else -> DarkNavigationBarColor
+-      }
++  if (Build.VERSION.SDK_INT < 35) {
++    @Suppress("DEPRECATION")
++    statusBarColor = Color.TRANSPARENT
++    @Suppress("DEPRECATION")
++    navigationBarColor =
++        when {
++          Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> Color.TRANSPARENT
++          Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !isDarkMode -> LightNavigationBarColor
++          else -> DarkNavigationBarColor
++        }
++  }
+ 
+   WindowInsetsControllerCompat(this, decorView).run {
++    isAppearanceLightStatusBars = !isDarkMode
+     isAppearanceLightNavigationBars = !isDarkMode
+   }
+ 
+@@ -130,7 +117,8 @@ internal fun Window.enableEdgeToEdge() {
+         when {
+           Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ->
+               WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+-          else -> WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
++          else ->
++              WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+         }
+   }
+ }
