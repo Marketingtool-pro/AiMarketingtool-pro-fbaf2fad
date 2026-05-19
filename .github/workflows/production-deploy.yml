@@ -82,18 +82,28 @@ jobs:
         run: |
           # Retry against transient Expo / GH outages so a real failure
           # is the only thing that fails this production deploy. Backoff
-          # covers ~15 minutes of Expo unavailability before giving up.
+          # covers ~15 min of unavailability before giving up.
           attempt=1
           max_attempts=5
           sleeps="60 120 240 480"
-          until eas build \
-            --platform ${{ matrix.platform }} \
-            --profile production \
-            --auto-submit \
-            --non-interactive; do
-            status=$?
+          log="$(mktemp)"
+          while :; do
+            if eas build \
+              --platform ${{ matrix.platform }} \
+              --profile production \
+              --auto-submit \
+              --non-interactive 2>&1 | tee "$log"; then
+              break
+            fi
+            status="${PIPESTATUS[0]}"
             if [ "$attempt" -ge "$max_attempts" ]; then
-              echo "::error::eas build (${{ matrix.platform }}) failed after ${attempt} attempts (exit ${status})"
+              echo "::group::Final eas build output (last 100 lines, ${{ matrix.platform }})"
+              tail -n 100 "$log"
+              echo "::endgroup::"
+              if build_url=$(grep -oE 'https://expo\.dev/[^[:space:]]+/builds/[A-Za-z0-9-]+' "$log" | tail -n1); then
+                [ -n "$build_url" ] && echo "::notice::Last EAS build URL (${{ matrix.platform }}): ${build_url}"
+              fi
+              echo "::error::eas build (${{ matrix.platform }}) failed after ${attempt} attempts (exit ${status}); see grouped log above"
               exit "$status"
             fi
             sleep_for=$(echo "$sleeps" | cut -d' ' -f"$attempt")
