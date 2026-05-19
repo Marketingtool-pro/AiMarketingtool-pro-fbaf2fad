@@ -11,6 +11,9 @@ on:
 jobs:
   build-patched-aar:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
