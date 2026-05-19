@@ -31,34 +31,23 @@ jobs:
         working-directory: android-patches
         run: ./gradlew assemblePatchedAAR --no-daemon --stacktrace
 
-      - name: Commit AAR as local Maven repository
+      - name: Publish AAR to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           AAR_VERSION="0.83.6-e2e.1"
-          AAR_GROUP_PATH="com/facebook/react/react-android"
-          LOCAL_MAVEN="android-patches/local-maven/${AAR_GROUP_PATH}/${AAR_VERSION}"
-          mkdir -p "${LOCAL_MAVEN}"
+          AAR_FILE="android-patches/build/patched/react-android-${AAR_VERSION}.aar"
+          TAG="react-android-${AAR_VERSION}"
 
-          # Copy the patched AAR
-          cp android-patches/build/patched/react-android-${AAR_VERSION}.aar "${LOCAL_MAVEN}/"
+          # Delete existing release if present, then recreate
+          gh release delete "${TAG}" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
+          git push origin ":refs/tags/${TAG}" 2>/dev/null || true
 
-          # Write a minimal POM so Gradle resolves transitive deps via original coordinates
-          cat > "${LOCAL_MAVEN}/react-android-${AAR_VERSION}.pom" << 'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <project>
-            <modelVersion>4.0.0</modelVersion>
-            <groupId>com.facebook.react</groupId>
-            <artifactId>react-android</artifactId>
-            <version>0.83.6-e2e.1</version>
-            <packaging>aar</packaging>
-          </project>
-          EOF
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add android-patches/local-maven/
-          git diff --cached --quiet && echo "No changes to commit" || \
-            git commit -m "chore: update patched react-android AAR in local-maven [skip ci]"
-          git push
+          gh release create "${TAG}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Patched react-android ${AAR_VERSION}" \
+            --notes "Android 15 edge-to-edge deprecated API fix for react-android ${AAR_VERSION}" \
+            "${AAR_FILE}"
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
