@@ -61,16 +61,18 @@ jobs:
         run: |
           # Retry against transient Expo / GH Actions outages (cache 400,
           # "services aren't available right now") so a real PR build
-          # failure is the only thing that fails this job.
+          # failure is the only thing that fails this job. Backoff covers
+          # ~10 minutes of Expo unavailability before giving up.
           attempt=1
-          max_attempts=3
+          max_attempts=5
+          sleeps="30 60 120 240"
           until eas build --platform all --profile preview --non-interactive; do
             status=$?
             if [ "$attempt" -ge "$max_attempts" ]; then
               echo "::error::eas build failed after ${attempt} attempts (exit ${status})"
               exit "$status"
             fi
-            sleep_for=$((30 * attempt))
+            sleep_for=$(echo "$sleeps" | cut -d' ' -f"$attempt")
             echo "::warning::eas build attempt ${attempt} failed (exit ${status}); retrying in ${sleep_for}s"
             sleep "$sleep_for"
             attempt=$((attempt + 1))

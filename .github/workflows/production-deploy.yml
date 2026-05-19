@@ -81,9 +81,11 @@ jobs:
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform }}
         run: |
           # Retry against transient Expo / GH outages so a real failure
-          # is the only thing that fails this production deploy.
+          # is the only thing that fails this production deploy. Backoff
+          # covers ~15 minutes of Expo unavailability before giving up.
           attempt=1
-          max_attempts=3
+          max_attempts=5
+          sleeps="60 120 240 480"
           until eas build \
             --platform ${{ matrix.platform }} \
             --profile production \
@@ -94,7 +96,7 @@ jobs:
               echo "::error::eas build (${{ matrix.platform }}) failed after ${attempt} attempts (exit ${status})"
               exit "$status"
             fi
-            sleep_for=$((60 * attempt))
+            sleep_for=$(echo "$sleeps" | cut -d' ' -f"$attempt")
             echo "::warning::eas build attempt ${attempt} failed (exit ${status}); retrying in ${sleep_for}s"
             sleep "$sleep_for"
             attempt=$((attempt + 1))
