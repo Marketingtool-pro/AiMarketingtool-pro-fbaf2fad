@@ -63,13 +63,23 @@ jobs:
       - name: Verify Expo / EAS auth (auto-connect)
         shell: bash
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_TOKEN_RAW: ${{ secrets.EXPO_TOKEN }}
         run: |
           set -o pipefail
+          # Trim whitespace / newlines / CR — the previous run failed
+          # with "*** is not a legal HTTP header value", which means
+          # the stored EXPO_TOKEN secret has a trailing newline or
+          # other whitespace. Strip it defensively so eas-cli can use
+          # it as an Authorization header.
+          EXPO_TOKEN="$(printf '%s' "$EXPO_TOKEN_RAW" | tr -d '\r\n\t ' )"
           if [ -z "$EXPO_TOKEN" ]; then
-            echo "::error::EXPO_TOKEN secret is empty; the preview build cannot authenticate to EAS."
+            echo "::error::EXPO_TOKEN secret is empty (or only whitespace); the preview build cannot authenticate to EAS."
             exit 1
           fi
+          if [ "${#EXPO_TOKEN}" != "${#EXPO_TOKEN_RAW}" ]; then
+            echo "::warning::EXPO_TOKEN secret contained whitespace/newlines and was trimmed (${#EXPO_TOKEN_RAW} → ${#EXPO_TOKEN} chars). Update the secret value at Settings → Secrets and variables → Actions to remove trailing whitespace."
+          fi
+          export EXPO_TOKEN
           surface() {
             local label="$1"; shift
             local log; log="$(mktemp)"
@@ -90,9 +100,11 @@ jobs:
       - name: Build preview for Android and iOS (wait for result)
         shell: bash
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_TOKEN_RAW: ${{ secrets.EXPO_TOKEN }}
         run: |
           set -o pipefail
+          EXPO_TOKEN="$(printf '%s' "$EXPO_TOKEN_RAW" | tr -d '\r\n\t ' )"
+          export EXPO_TOKEN
 
           # Indicators of *transient* failures we should retry. Anything
           # else (compile error, signing failure, config error, etc.) is
