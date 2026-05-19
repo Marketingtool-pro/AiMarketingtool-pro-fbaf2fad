@@ -32,7 +32,9 @@ jobs:
           mkdir -p _site
           touch _site/.nojekyll
           cp -f app-ads.txt _site/app-ads.txt 2>/dev/null || true
-          if [ ! -f _site/index.html ]; then
+          if [ -f index.html ]; then
+            cp -f index.html _site/index.html
+          else
             cat > _site/index.html <<'HTML'
           <!doctype html>
           <html lang="en">

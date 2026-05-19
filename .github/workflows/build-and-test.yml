@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main, develop, "copilot/**", "claude/**"]
+    branches: [main, develop]
   workflow_dispatch:
 
 permissions:
@@ -69,7 +69,11 @@ jobs:
           eas project:info
 
       - name: Build preview for Android and iOS (wait for result)
+        shell: bash
         run: |
+          # pipefail so the pipeline's exit code reflects eas, not tee.
+          set -o pipefail
+
           # Retry against transient Expo / GH Actions outages so a real
           # PR build failure is the only thing that fails this job.
           # Backoff covers ~8.5 min of unavailability before giving up.

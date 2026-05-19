@@ -77,12 +77,17 @@ jobs:
           fi
           printf '%s' "$APPLE_ASC_API_KEY_P8" > ./AuthKey_D5KG7J5R95.p8
 
-      - name: Build production with auto-submit (${{ matrix.platform }})
+      - name: Build production (${{ matrix.platform }})
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform }}
+        shell: bash
         run: |
-          # Retry against transient Expo / GH outages so a real failure
-          # is the only thing that fails this production deploy. Backoff
-          # covers ~15 min of unavailability before giving up.
+          # pipefail so the pipeline's exit code reflects eas, not tee.
+          set -o pipefail
+
+          # Retry against transient Expo / GH outages. Build only — no
+          # --auto-submit — so a retry never creates a duplicate store
+          # submission. Submission happens in the next step, once and
+          # only once, against the build that succeeded.
           attempt=1
           max_attempts=5
           sleeps="60 120 240 480"
@@ -91,7 +96,6 @@ jobs:
             if eas build \
               --platform ${{ matrix.platform }} \
               --profile production \
-              --auto-submit \
               --non-interactive 2>&1 | tee "$log"; then
               break
             fi
@@ -116,3 +120,18 @@ jobs:
             sleep "$sleep_for"
             attempt=$((attempt + 1))
           done
+
+      - name: Submit latest production build to store (${{ matrix.platform }})
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform }}
+        shell: bash
+        run: |
+          # No retry: eas submit is not idempotent, retrying could
+          # enqueue a duplicate store submission. A real submit failure
+          # surfaces here and fails the deploy loudly.
+          set -o pipefail
+          eas submit \
+            --platform ${{ matrix.platform }} \
+            --profile production \
+            --non-interactive \
+            --latest \
+            --wait
