@@ -45,14 +45,14 @@ export const storage = new Storage(client);
 export const functions = new Functions(client);
 
 // Session Management
+// The Appwrite React Native SDK persists its own session cookie internally.
+// saveSession/deleteSession mirror that lifecycle in SecureStore for any future
+// cross-SDK needs (e.g. passing session to a web view). getSession is intentionally
+// not exposed — use account.get() to check session validity instead.
 const SESSION_KEY = 'appwrite_session';
 
 export const saveSession = async (session: string): Promise<void> => {
   await SecureStore.setItemAsync(SESSION_KEY, session);
-};
-
-export const getSession = async (): Promise<string | null> => {
-  return await SecureStore.getItemAsync(SESSION_KEY);
 };
 
 export const deleteSession = async (): Promise<void> => {
