@@ -38,8 +38,8 @@ const MINIMAL_POM = `<?xml version="1.0" encoding="UTF-8"?>
   <packaging>aar</packaging>
 </project>`;
 
-// Injected into root build.gradle so ALL subprojects see the local repo,
-// even those that declare their own repositories block.
+// Injected into root build.gradle — adds resolutionStrategy.force so ALL subprojects
+// request our patched version. Repositories are handled via settings.gradle injection.
 const ALL_PROJECTS_BLOCK = `
 allprojects {
     // ── Patched react-android: Android 15 edge-to-edge deprecated API fix ──
@@ -53,10 +53,15 @@ allprojects {
     }
 }`;
 
-// Also inject into settings.gradle for projects that respect dependencyResolutionManagement
-const SETTINGS_MAVEN_BLOCK = `
-        // ── Patched react-android: Android 15 edge-to-edge deprecated API fix ──
-        maven { url new File(rootProject.projectDir, "local-aar").toURI() }`;
+// Injected into dependencyResolutionManagement.repositories in settings.gradle(.kts)
+// so all subprojects resolve our patched AAR from local-aar/.
+// Kotlin DSL syntax (url = ...) is used for .kts files; Groovy (url ...) for .gradle files.
+function buildSettingsMavenBlock(isKts) {
+  const mavenUrl = isKts
+    ? `maven { url = File(rootProject.projectDir, "local-aar").toURI() }`
+    : `maven { url new File(rootProject.projectDir, "local-aar").toURI() }`;
+  return `        // ── Patched react-android: Android 15 edge-to-edge deprecated API fix ──\n        ${mavenUrl}`;
+}
 
 module.exports = function withRNEdgeToEdgeFix(config) {
   // 1. Download the AAR from GitHub Release into android/local-aar/ during prebuild
@@ -84,18 +89,44 @@ module.exports = function withRNEdgeToEdgeFix(config) {
     },
   ]);
 
-  // 2. Add local-aar Maven repo to settings.gradle (for projects using dependencyResolutionManagement)
+  // 2. Add local-aar Maven repo to dependencyResolutionManagement.repositories in
+  //    settings.gradle(.kts) — this is the authoritative repo list when
+  //    repositoriesMode = PREFER_SETTINGS (the default in RN 0.73+ projects).
+  //    We must inject AFTER the `dependencyResolutionManagement {` block opens,
+  //    NOT into pluginManagement.repositories (which is for Gradle plugins only).
   config = withSettingsGradle(config, (config) => {
     const contents = config.modResults.contents;
     if (contents.includes('Patched react-android')) return config;
 
-    const mavenCentralIndex = contents.indexOf('mavenCentral()');
-    if (mavenCentralIndex < 0) return config;
+    // Detect syntax: .gradle.kts → Kotlin DSL, .gradle → Groovy DSL
+    const isKts = (config.modResults.path || '').endsWith('.kts');
+    const mavenBlock = buildSettingsMavenBlock(isKts);
+
+    // Find the `dependencyResolutionManagement` block so we inject into
+    // the RIGHT repositories section (not pluginManagement.repositories).
+    const depResIdx = contents.indexOf('dependencyResolutionManagement');
+    const searchFrom = depResIdx >= 0 ? depResIdx : 0;
+
+    // Insert our repo before the first google() or mavenCentral() that appears
+    // inside the dependencyResolutionManagement block.
+    const googleIdx = contents.indexOf('google()', searchFrom);
+    const mavenCentralIdx = contents.indexOf('mavenCentral()', searchFrom);
+
+    let insertAt = -1;
+    if (googleIdx >= 0 && mavenCentralIdx >= 0) {
+      insertAt = Math.min(googleIdx, mavenCentralIdx);
+    } else if (googleIdx >= 0) {
+      insertAt = googleIdx;
+    } else if (mavenCentralIdx >= 0) {
+      insertAt = mavenCentralIdx;
+    }
+
+    if (insertAt < 0) return config;
 
     config.modResults.contents =
-      contents.slice(0, mavenCentralIndex) +
-      SETTINGS_MAVEN_BLOCK + '\n' +
-      contents.slice(mavenCentralIndex);
+      contents.slice(0, insertAt) +
+      mavenBlock + '\n' +
+      contents.slice(insertAt);
     return config;
   });
 
