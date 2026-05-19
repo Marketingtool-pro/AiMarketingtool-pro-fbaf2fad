@@ -72,15 +72,22 @@ jobs:
             fi
             status="${PIPESTATUS[0]}"
             if [ "$attempt" -ge "$max_attempts" ]; then
-              # Surface the actual eas error and any build URLs so the
-              # annotation summary tells the user where to look.
+              # Surface the actual eas error so it shows in the
+              # annotation summary, not just the expandable log.
               echo "::group::Final eas build output (last 100 lines)"
               tail -n 100 "$log"
               echo "::endgroup::"
               if build_url=$(grep -oE 'https://expo\.dev/[^[:space:]]+/builds/[A-Za-z0-9-]+' "$log" | tail -n1); then
                 [ -n "$build_url" ] && echo "::notice::Last EAS build URL: ${build_url}"
               fi
-              echo "::error::eas build failed after ${attempt} attempts (exit ${status}); see grouped log above"
+              # Emit key error lines as ::error:: annotations so they
+              # appear in the run summary without needing to expand logs.
+              grep -iE '^(error|✖|✗|fail|⚠)|: error |: failed |fatal|cannot find|enoent|eaccess|enotfound|401|403|500|service unavailable' "$log" \
+                | tail -n 10 \
+                | while IFS= read -r line; do
+                    echo "::error::${line}"
+                  done
+              echo "::error::eas build failed after ${attempt} attempts (exit ${status})"
               exit "$status"
             fi
             sleep_for=$(echo "$sleeps" | cut -d' ' -f"$attempt")

@@ -103,7 +103,12 @@ jobs:
               if build_url=$(grep -oE 'https://expo\.dev/[^[:space:]]+/builds/[A-Za-z0-9-]+' "$log" | tail -n1); then
                 [ -n "$build_url" ] && echo "::notice::Last EAS build URL (${{ matrix.platform }}): ${build_url}"
               fi
-              echo "::error::eas build (${{ matrix.platform }}) failed after ${attempt} attempts (exit ${status}); see grouped log above"
+              grep -iE '^(error|✖|✗|fail|⚠)|: error |: failed |fatal|cannot find|enoent|eaccess|enotfound|401|403|500|service unavailable' "$log" \
+                | tail -n 10 \
+                | while IFS= read -r line; do
+                    echo "::error::${line}"
+                  done
+              echo "::error::eas build (${{ matrix.platform }}) failed after ${attempt} attempts (exit ${status})"
               exit "$status"
             fi
             sleep_for=$(echo "$sleeps" | cut -d' ' -f"$attempt")
