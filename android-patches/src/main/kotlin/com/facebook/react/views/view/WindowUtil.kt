@@ -7,6 +7,7 @@
 
 package com.facebook.react.views.view
 
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.view.Window
@@ -15,7 +16,6 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.facebook.react.views.common.UiModeUtils
 
 internal val LightNavigationBarColor = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
 internal val DarkNavigationBarColor = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
@@ -87,7 +87,8 @@ private fun Window.statusBarShow() {
 
 internal fun Window.enableEdgeToEdge() {
   WindowCompat.setDecorFitsSystemWindows(this, false)
-  val isDarkMode = UiModeUtils.isDarkMode(context)
+  val isDarkMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+      Configuration.UI_MODE_NIGHT_YES
 
   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
     isStatusBarContrastEnforced = false
