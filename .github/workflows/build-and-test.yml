@@ -35,10 +35,15 @@ jobs:
   eas-build-preview:
     runs-on: ubuntu-latest
     needs: test
+    # Dependabot PRs run with a read-only token and no access to
+    # EXPO_TOKEN, so excluded.
     if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')) ||
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+      github.actor != 'dependabot[bot]' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')) ||
+        (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+      )
     permissions:
       contents: read
     steps:
@@ -49,15 +54,8 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
-        with:
-          # Pin to the same eas-cli the production workflow uses
-          # ("latest" was resolving to 19.0.1 which fails at startup
-          # in the expo-github-action's eas --version probe — the
-          # "process eas failed with exit code 1" we were chasing).
-          eas-version: 18.13.1
-          token: ${{ secrets.EXPO_TOKEN }}
-          expo-cache: true
+      - name: Install eas-cli directly (bypass expo-github-action probe)
+        run: npm install -g eas-cli@18.13.1
 
       - name: Install dependencies
         run: npm ci
@@ -72,9 +70,6 @@ jobs:
             echo "::error::EXPO_TOKEN secret is empty; the preview build cannot authenticate to EAS."
             exit 1
           fi
-          # Run each command capturing its output and surface any
-          # failure as ::error:: annotations so the run summary tells
-          # us exactly which check broke.
           surface() {
             local label="$1"; shift
             local log; log="$(mktemp)"
@@ -88,18 +83,25 @@ jobs:
               return "$s"
             fi
           }
+          surface "eas --version" eas --version
           surface "eas whoami" eas whoami
           surface "eas project:info" eas project:info
 
       - name: Build preview for Android and iOS (wait for result)
         shell: bash
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          # pipefail so the pipeline's exit code reflects eas, not tee.
           set -o pipefail
 
-          # Retry against transient Expo / GH Actions outages so a real
-          # PR build failure is the only thing that fails this job.
-          # Backoff covers ~8.5 min of unavailability before giving up.
+          # Indicators of *transient* failures we should retry. Anything
+          # else (compile error, signing failure, config error, etc.) is
+          # deterministic and we exit on the first failure to avoid
+          # burning EAS build minutes on five identical failures.
+          is_transient() {
+            grep -qiE 'service unavailable|services aren'\''t available|cache service responded|enotfound|etimedout|econnreset|econnaborted|rate limit|getaddrinfo|socket hang up|502 bad gateway|503 service|504 gateway|network request failed|fetch failed' "$1"
+          }
+
           attempt=1
           max_attempts=5
           sleeps="30 60 120 240"
@@ -109,35 +111,32 @@ jobs:
               break
             fi
             status="${PIPESTATUS[0]}"
-            if [ "$attempt" -ge "$max_attempts" ]; then
-              # Surface the actual eas error so it shows in the
-              # annotation summary, not just the expandable log.
+            if [ "$attempt" -ge "$max_attempts" ] || ! is_transient "$log"; then
               echo "::group::Final eas build output (last 100 lines)"
               tail -n 100 "$log"
               echo "::endgroup::"
               if build_url=$(grep -oE 'https://expo\.dev/[^[:space:]]+/builds/[A-Za-z0-9-]+' "$log" | tail -n1); then
                 [ -n "$build_url" ] && echo "::notice::Last EAS build URL: ${build_url}"
               fi
-              # Emit every non-empty captured line as a warning
-              # annotation so even an "empty" eas log is fully visible
-              # in the summary without expanding any step.
               line_no=0
               while IFS= read -r line; do
                 [ -z "$line" ] && continue
                 line_no=$((line_no + 1))
-                # Cap at 50 lines so we don't flood the run with 100s
-                # of annotations from a long build log.
                 [ "$line_no" -gt 50 ] && break
                 echo "::warning::eas[${line_no}]: ${line}"
               done < <(tail -n 200 "$log")
               if [ "$line_no" -eq 0 ]; then
                 echo "::error::eas exited ${status} with no stdout/stderr — likely an auth failure (EXPO_TOKEN) or eas-cli crash before printing."
               fi
-              echo "::error::eas build failed after ${attempt} attempts (exit ${status})"
+              if ! is_transient "$log"; then
+                echo "::error::eas build failed (exit ${status}) with a deterministic error; not retrying"
+              else
+                echo "::error::eas build failed after ${attempt} attempts (exit ${status})"
+              fi
               exit "$status"
             fi
             sleep_for=$(echo "$sleeps" | cut -d' ' -f"$attempt")
-            echo "::warning::eas build attempt ${attempt} failed (exit ${status}); retrying in ${sleep_for}s"
+            echo "::warning::eas build attempt ${attempt} hit a transient failure (exit ${status}); retrying in ${sleep_for}s"
             sleep "$sleep_for"
             attempt=$((attempt + 1))
           done

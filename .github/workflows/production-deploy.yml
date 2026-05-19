@@ -25,8 +25,19 @@ concurrency:
 
 jobs:
   eas-build-production:
-    name: Build & Auto-Submit (${{ matrix.platform }})
+    name: Build & Submit (${{ matrix.platform }})
     runs-on: ubuntu-latest
+    # Job-level skip so a targeted workflow_dispatch (platform=android)
+    # leaves the iOS job marked as Skipped (not as a green "success" with
+    # all steps internally skipped). Same for dependabot which can't
+    # reach EXPO_TOKEN.
+    if: |
+      github.actor != 'dependabot[bot]' &&
+      (
+        github.event_name != 'workflow_dispatch' ||
+        github.event.inputs.platform == 'all' ||
+        github.event.inputs.platform == matrix.platform
+      )
     permissions:
       contents: read
     strategy:
@@ -41,11 +52,8 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
-        with:
-          eas-version: 18.13.1
-          token: ${{ secrets.EXPO_TOKEN }}
-          expo-cache: true
+      - name: Install eas-cli directly (bypass expo-github-action probe)
+        run: npm install -g eas-cli@18.13.1
 
       - name: Install dependencies
         run: npm ci
@@ -73,11 +81,12 @@ jobs:
               return "$s"
             fi
           }
+          surface "eas --version" eas --version
           surface "eas whoami" eas whoami
           surface "eas project:info" eas project:info
 
       - name: Write Google Play Service Account key (android)
-        if: ${{ matrix.platform == 'android' && (github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform) }}
+        if: matrix.platform == 'android'
         env:
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
         run: |
@@ -88,7 +97,7 @@ jobs:
           printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > ./.eas-google-play-sa.json
 
       - name: Write App Store Connect API key (ios)
-        if: ${{ matrix.platform == 'ios' && (github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform) }}
+        if: matrix.platform == 'ios'
         env:
           APPLE_ASC_API_KEY_P8: ${{ secrets.APPLE_ASC_API_KEY_P8 }}
         run: |
@@ -99,21 +108,29 @@ jobs:
           printf '%s' "$APPLE_ASC_API_KEY_P8" > ./AuthKey_D5KG7J5R95.p8
 
       - name: Build production (${{ matrix.platform }})
-        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform }}
+        id: build
         shell: bash
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          # pipefail so the pipeline's exit code reflects eas, not tee.
           set -o pipefail
 
-          # Retry against transient Expo / GH outages. Build only — no
-          # --auto-submit — so a retry never creates a duplicate store
-          # submission. Submission happens in the next step, once and
-          # only once, against the build that succeeded.
+          # Indicators of *transient* failures we should retry. Anything
+          # else (compile error, signing failure, config error, etc.) is
+          # deterministic and we fail immediately to avoid burning EAS
+          # build minutes on five identical failures.
+          is_transient() {
+            grep -qiE 'service unavailable|services aren'\''t available|cache service responded|enotfound|etimedout|econnreset|econnaborted|rate limit|getaddrinfo|socket hang up|502 bad gateway|503 service|504 gateway|network request failed|fetch failed' "$1"
+          }
+
           attempt=1
           max_attempts=5
           sleeps="60 120 240 480"
           log="$(mktemp)"
           while :; do
+            # Build only — no --auto-submit — so a retry never creates
+            # a duplicate store submission. Submit step below uses the
+            # build_id captured here.
             if eas build \
               --platform ${{ matrix.platform }} \
               --profile production \
@@ -121,7 +138,7 @@ jobs:
               break
             fi
             status="${PIPESTATUS[0]}"
-            if [ "$attempt" -ge "$max_attempts" ]; then
+            if [ "$attempt" -ge "$max_attempts" ] || ! is_transient "$log"; then
               echo "::group::Final eas build output (last 100 lines, ${{ matrix.platform }})"
               tail -n 100 "$log"
               echo "::endgroup::"
@@ -133,26 +150,50 @@ jobs:
                 | while IFS= read -r line; do
                     echo "::error::${line}"
                   done
-              echo "::error::eas build (${{ matrix.platform }}) failed after ${attempt} attempts (exit ${status})"
+              if ! is_transient "$log"; then
+                echo "::error::eas build (${{ matrix.platform }}) failed (exit ${status}) with a deterministic error; not retrying"
+              else
+                echo "::error::eas build (${{ matrix.platform }}) failed after ${attempt} attempts (exit ${status})"
+              fi
               exit "$status"
             fi
             sleep_for=$(echo "$sleeps" | cut -d' ' -f"$attempt")
-            echo "::warning::eas build attempt ${attempt} failed (exit ${status}); retrying in ${sleep_for}s"
+            echo "::warning::eas build attempt ${attempt} hit a transient failure (exit ${status}); retrying in ${sleep_for}s"
             sleep "$sleep_for"
             attempt=$((attempt + 1))
           done
 
-      - name: Submit latest production build to store (${{ matrix.platform }})
-        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform }}
+          # Pin the submit step to *this* build's id to avoid a race
+          # where another build of the same profile finishes first and
+          # `eas submit --latest` targets the wrong artifact.
+          build_id=$(grep -oE 'https://expo\.dev/[^[:space:]]+/builds/[A-Za-z0-9-]+' "$log" | tail -n1 | awk -F/ '{print $NF}')
+          if [ -z "$build_id" ]; then
+            echo "::error::Could not extract build_id from eas output; submit step will fall back to --latest"
+          fi
+          echo "build_id=${build_id}" >> "$GITHUB_OUTPUT"
+
+      - name: Submit production build to store (${{ matrix.platform }})
         shell: bash
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          BUILD_ID: ${{ steps.build.outputs.build_id }}
         run: |
           # No retry: eas submit is not idempotent, retrying could
           # enqueue a duplicate store submission. A real submit failure
           # surfaces here and fails the deploy loudly.
           set -o pipefail
-          eas submit \
-            --platform ${{ matrix.platform }} \
-            --profile production \
-            --non-interactive \
-            --latest \
-            --wait
+          if [ -n "$BUILD_ID" ]; then
+            eas submit \
+              --platform ${{ matrix.platform }} \
+              --profile production \
+              --non-interactive \
+              --id "$BUILD_ID" \
+              --wait
+          else
+            eas submit \
+              --platform ${{ matrix.platform }} \
+              --profile production \
+              --non-interactive \
+              --latest \
+              --wait
+          fi
