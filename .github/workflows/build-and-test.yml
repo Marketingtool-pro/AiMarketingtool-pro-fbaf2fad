@@ -57,5 +57,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build preview for Android and iOS
-        run: eas build --platform all --profile preview --non-interactive --no-wait
+      - name: Build preview for Android and iOS (wait for result)
+        run: eas build --platform all --profile preview --non-interactive
