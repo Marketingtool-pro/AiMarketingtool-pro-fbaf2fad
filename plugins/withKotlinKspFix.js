@@ -85,7 +85,7 @@ const withKotlinKspFix = (config, options) => {
         );
     }
 
-    const resolutionStrategy = `
+    const resolutionStrategyBlock = `
 allprojects {
     configurations.all {
         resolutionStrategy.eachDependency { DependencyResolveDetails details ->
@@ -109,21 +109,31 @@ allprojects {
         }
     }
 }
+`;
 
+    // Use Kotlin 1.9 language semantics with the KGP 2.1.20 compiler.
+    // Separate check so this is applied even when resolutionStrategy was already added.
+    // Uses afterEvaluate + compilerOptions (KGP 2.x API) instead of kotlinOptions (deprecated).
+    const languageVersionBlock = `
 // Use Kotlin 1.9 language semantics with the KGP 2.1.20 compiler.
-// This fixes "Overload resolution ambiguity" errors in react-native-nitro-modules
-// and other libraries that were written for Kotlin 1.9 overload resolution rules.
-allprojects {
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-        kotlinOptions {
-            languageVersion = "1.9"
-            jvmTarget = "17"
+// This fixes K2 strict mode errors in react-native-gesture-handler and react-native-screens.
+subprojects {
+    afterEvaluate {
+        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            compilerOptions {
+                languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)
+                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            }
         }
     }
 }
 `;
+
     if (!buildGradle.includes('resolutionStrategy.eachDependency')) {
-      buildGradle += resolutionStrategy;
+      buildGradle += resolutionStrategyBlock;
+    }
+    if (!buildGradle.includes('KotlinVersion.KOTLIN_1_9')) {
+      buildGradle += languageVersionBlock;
     }
 
     config.modResults.contents = buildGradle;

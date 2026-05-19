@@ -1,0 +1,45 @@
+diff --git a/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/SheetDelegate.kt b/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/SheetDelegate.kt
+index 972de61..ce11c0c 100644
+--- a/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/SheetDelegate.kt
++++ b/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/SheetDelegate.kt
+@@ -388,7 +388,7 @@ class SheetDelegate(
+                     this.configureBottomSheetBehaviour(it, KeyboardDidHide)
+                 } else if (keyboardState != KeyboardNotVisible) {
+                     this.configureBottomSheetBehaviour(it, KeyboardNotVisible)
+-                }
++                } else { }
+             }
+ 
+             keyboardState = KeyboardNotVisible
+diff --git a/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/TabScreenViewManager.kt b/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/TabScreenViewManager.kt
+index 9fd445d..3ee2caa 100644
+--- a/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/TabScreenViewManager.kt
++++ b/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/TabScreenViewManager.kt
+@@ -141,7 +141,7 @@ class TabScreenViewManager :
+         var scrollToTop = true
+         var popToRoot = true
+         if (value?.hasKey("repeatedTabSelection") ?: false) {
+-            value.getMap("repeatedTabSelection")?.let { repeatedTabSelectionConfig ->
++            value?.getMap("repeatedTabSelection")?.let { repeatedTabSelectionConfig ->
+                 if (repeatedTabSelectionConfig.hasKey("scrollToTop")) {
+                     scrollToTop =
+                         repeatedTabSelectionConfig.getBoolean("scrollToTop")
+diff --git a/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/safearea/SafeAreaView.kt b/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/safearea/SafeAreaView.kt
+index 89d8df9..a27b66e 100644
+--- a/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/safearea/SafeAreaView.kt
++++ b/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/safearea/SafeAreaView.kt
+@@ -104,11 +104,12 @@ class SafeAreaView(
+         view: View,
+         insets: WindowInsetsCompat,
+     ): WindowInsetsCompat {
+-        val newSystemInsets =
++        val newSystemInsets = EdgeInsets.fromInsets(
+             insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
++        )
+ 
+         if (newSystemInsets != currentSystemInsets) {
+-            currentSystemInsets = EdgeInsets.fromInsets(newSystemInsets)
++            currentSystemInsets = newSystemInsets
+ 
+             if (insetType.containsSystem()) {
+                 needsInsetsUpdate = true
