@@ -24,6 +24,8 @@ const { execSync } = require('child_process');
 const PATCHED_VERSION = '0.83.6-e2e.1';
 const AAR_RELEASE_URL =
   `https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/releases/download/react-android-${PATCHED_VERSION}/react-android-${PATCHED_VERSION}.aar`;
+const POM_RELEASE_URL =
+  `https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/releases/download/react-android-${PATCHED_VERSION}/react-android-${PATCHED_VERSION}.pom`;
 
 const LOCAL_AAR_SUBDIR = path.join('local-aar', 'com', 'facebook', 'react', 'react-android', PATCHED_VERSION);
 
@@ -74,7 +76,8 @@ module.exports = function withRNEdgeToEdgeFix(config) {
       }
 
       if (!fs.existsSync(pomFile)) {
-        fs.writeFileSync(pomFile, MINIMAL_POM);
+        // Download POM from release (has correct transitive deps from original react-android 0.83.6)
+        execSync(`curl -L --fail -o "${pomFile}" "${POM_RELEASE_URL}"`, { stdio: 'inherit' });
       }
 
       return config;

@@ -36,8 +36,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           AAR_VERSION="0.83.6-e2e.1"
+          ORIG_VERSION="0.83.6"
           AAR_FILE="android-patches/build/patched/react-android-${AAR_VERSION}.aar"
           TAG="react-android-${AAR_VERSION}"
+
+          # Download original POM from Maven Central and patch its version
+          curl -sL "https://repo.maven.apache.org/maven2/com/facebook/react/react-android/${ORIG_VERSION}/react-android-${ORIG_VERSION}.pom" \
+            | sed "s|<version>${ORIG_VERSION}</version>|<version>${AAR_VERSION}</version>|g" \
+            > /tmp/react-android-${AAR_VERSION}.pom
 
           # Delete existing release if present, then recreate
           gh release delete "${TAG}" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
@@ -47,7 +53,8 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --title "Patched react-android ${AAR_VERSION}" \
             --notes "Android 15 edge-to-edge deprecated API fix for react-android ${AAR_VERSION}" \
-            "${AAR_FILE}"
+            "${AAR_FILE}" \
+            "/tmp/react-android-${AAR_VERSION}.pom"
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
