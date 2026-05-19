@@ -27,17 +27,11 @@ jobs:
   eas-build-production:
     name: Build & Submit (${{ matrix.platform }})
     runs-on: ubuntu-latest
-    # Job-level skip so a targeted workflow_dispatch (platform=android)
-    # leaves the iOS job marked as Skipped (not as a green "success" with
-    # all steps internally skipped). Same for dependabot which can't
-    # reach EXPO_TOKEN.
-    if: |
-      github.actor != 'dependabot[bot]' &&
-      (
-        github.event_name != 'workflow_dispatch' ||
-        github.event.inputs.platform == 'all' ||
-        github.event.inputs.platform == matrix.platform
-      )
+    # Dependabot PRs run with a read-only token and no EXPO_TOKEN
+    # access, so excluded at job level. The platform-input filter must
+    # live at the step level because jobs.<id>.if is evaluated before
+    # the strategy matrix expands and matrix.* is not yet defined.
+    if: github.actor != 'dependabot[bot]'
     permissions:
       contents: read
     strategy:
@@ -91,7 +85,7 @@ jobs:
           surface "eas project:info" eas project:info
 
       - name: Write Google Play Service Account key (android)
-        if: matrix.platform == 'android'
+        if: ${{ matrix.platform == 'android' && (github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform) }}
         env:
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
         run: |
@@ -102,7 +96,7 @@ jobs:
           printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > ./.eas-google-play-sa.json
 
       - name: Write App Store Connect API key (ios)
-        if: matrix.platform == 'ios'
+        if: ${{ matrix.platform == 'ios' && (github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform) }}
         env:
           APPLE_ASC_API_KEY_P8: ${{ secrets.APPLE_ASC_API_KEY_P8 }}
         run: |
@@ -114,6 +108,7 @@ jobs:
 
       - name: Build production (${{ matrix.platform }})
         id: build
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform }}
         shell: bash
         env:
           EXPO_TOKEN_RAW: ${{ secrets.EXPO_TOKEN }}
@@ -172,14 +167,19 @@ jobs:
 
           # Pin the submit step to *this* build's id to avoid a race
           # where another build of the same profile finishes first and
-          # `eas submit --latest` targets the wrong artifact.
+          # `eas submit --latest` targets the wrong artifact. If we
+          # can't parse the id, fail the job — silently falling back
+          # to --latest would reintroduce the race we're protecting
+          # against.
           build_id=$(grep -oE 'https://expo\.dev/[^[:space:]]+/builds/[A-Za-z0-9-]+' "$log" | tail -n1 | awk -F/ '{print $NF}')
           if [ -z "$build_id" ]; then
-            echo "::error::Could not extract build_id from eas output; submit step will fall back to --latest"
+            echo "::error::eas build succeeded but build_id could not be parsed from its output; refusing to submit with --latest to avoid race with concurrent builds. Inspect the captured log above and update the URL-extraction grep."
+            exit 1
           fi
           echo "build_id=${build_id}" >> "$GITHUB_OUTPUT"
 
       - name: Submit production build to store (${{ matrix.platform }})
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform }}
         shell: bash
         env:
           EXPO_TOKEN_RAW: ${{ secrets.EXPO_TOKEN }}
@@ -191,18 +191,15 @@ jobs:
           set -o pipefail
           EXPO_TOKEN="$(printf '%s' "$EXPO_TOKEN_RAW" | tr -d '\r\n\t ' )"
           export EXPO_TOKEN
-          if [ -n "$BUILD_ID" ]; then
-            eas submit \
-              --platform ${{ matrix.platform }} \
-              --profile production \
-              --non-interactive \
-              --id "$BUILD_ID" \
-              --wait
-          else
-            eas submit \
-              --platform ${{ matrix.platform }} \
-              --profile production \
-              --non-interactive \
-              --latest \
-              --wait
+          # BUILD_ID is guaranteed non-empty by the previous step
+          # (it exits 1 if the id can't be parsed), so no fallback.
+          if [ -z "$BUILD_ID" ]; then
+            echo "::error::BUILD_ID output is empty; the build step should have failed earlier."
+            exit 1
           fi
+          eas submit \
+            --platform ${{ matrix.platform }} \
+            --profile production \
+            --non-interactive \
+            --id "$BUILD_ID" \
+            --wait
