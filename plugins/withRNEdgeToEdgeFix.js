@@ -31,9 +31,20 @@ const MAVEN_BLOCK = `
             }
         }`;
 
-const FORCE_BLOCK = `
+// Injected into allprojects{} in root build.gradle so it applies to ALL subprojects,
+// even those that declare their own repositories (which override settings.gradle repos).
+const ALL_PROJECTS_BLOCK = `
 allprojects {
-    // ── Force patched react-android version (edge-to-edge fix) ──
+    // ── Patched react-android: Android 15 edge-to-edge deprecated API fix ──
+    repositories {
+        maven {
+            url "${GITHUB_MAVEN_URL}"
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: "Marketingtool-pro"
+                password = System.getenv("GITHUB_TOKEN") ?: ""
+            }
+        }
+    }
     configurations.all {
         resolutionStrategy {
             force "com.facebook.react:react-android:${PATCHED_VERSION}"
@@ -54,7 +65,8 @@ function insertGithubRepoBeforeDependencyMavenCentral(contents) {
 }
 
 module.exports = function withRNEdgeToEdgeFix(config) {
-  // 1. Add GitHub Packages Maven repo to dependency resolution settings (before mavenCentral)
+  // 1. Add GitHub Packages Maven repo to settings.gradle (covers projects that
+  //    use dependencyResolutionManagement / don't declare their own repos)
   config = withSettingsGradle(config, (config) => {
     const contents = config.modResults.contents;
     if (contents.includes('Patched react-android')) return config;
@@ -62,11 +74,13 @@ module.exports = function withRNEdgeToEdgeFix(config) {
     return config;
   });
 
-  // 2. Force the patched version for all projects that resolve react-android
+  // 2. Add allprojects{repositories+force} to root build.gradle — this is what
+  //    actually works for subprojects that declare their own repositories, because
+  //    those subprojects ignore dependencyResolutionManagement in settings.gradle.
   config = withProjectBuildGradle(config, (config) => {
     const contents = config.modResults.contents;
-    if (contents.includes('Force patched react-android')) return config;
-    config.modResults.contents = `${contents.trimEnd()}\n${FORCE_BLOCK}\n`;
+    if (contents.includes('Patched react-android')) return config;
+    config.modResults.contents = `${contents.trimEnd()}\n${ALL_PROJECTS_BLOCK}\n`;
     return config;
   });
 
