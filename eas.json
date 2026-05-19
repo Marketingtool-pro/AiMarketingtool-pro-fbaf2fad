@@ -34,8 +34,7 @@
       },
       "android": {
         "track": "production",
-        "releaseStatus": "completed",
-        "serviceAccountKeyPath": "./.eas-google-play-sa.json"
+        "releaseStatus": "completed"
       }
     }
   }
