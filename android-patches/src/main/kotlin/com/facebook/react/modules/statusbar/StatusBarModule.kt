@@ -23,7 +23,6 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.UiThreadUtil
 import com.facebook.react.common.ReactConstants
 import com.facebook.react.module.annotations.ReactModule
-import com.facebook.react.uimanager.DisplayMetricsHolder.getStatusBarHeightPx
 import com.facebook.react.uimanager.PixelUtil
 import com.facebook.react.views.view.isEdgeToEdgeFeatureFlagOn
 import com.facebook.react.views.view.setStatusBarTranslucency
@@ -52,9 +51,16 @@ internal class StatusBarModule(reactContext: ReactApplicationContext?) :
           } ?: "black"
         }
     return mapOf(
-        HEIGHT_KEY to PixelUtil.toDIPFromPixel(getStatusBarHeightPx(currentActivity).toFloat()),
+        HEIGHT_KEY to PixelUtil.toDIPFromPixel(statusBarHeightPx(currentActivity).toFloat()),
         DEFAULT_BACKGROUND_COLOR_KEY to statusBarColor,
     )
+  }
+
+  /** Returns status bar height in pixels using the public Android resources API. */
+  private fun statusBarHeightPx(context: android.content.Context?): Int {
+    val res = context?.resources ?: android.content.res.Resources.getSystem()
+    val id = res.getIdentifier("status_bar_height", "dimen", "android")
+    return if (id > 0) res.getDimensionPixelSize(id) else 0
   }
 
   override fun setColor(colorDouble: Double, animated: Boolean) {

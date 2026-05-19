@@ -3,8 +3,8 @@ import groovy.xml.XmlParser
 buildscript {
     repositories { google(); mavenCentral() }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.5.2'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.25'
+        classpath 'com.android.tools.build:gradle:8.8.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20'
     }
 }
 
@@ -31,7 +31,7 @@ android {
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-    kotlinOptions { jvmTarget = '17' }
+    compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
 }
 
 repositories {
@@ -172,16 +172,11 @@ afterEvaluate {
                     extension = "aar"
                 }
                 pom {
-                    withXml {
-                        def origPom = new XmlParser().parseText(
-                            file("${buildDir}/patched/react-android-${patchedVersion}.pom").text
-                        )
-                        // Merge original POM dependencies into our publication POM
-                        def depsNode = origPom.dependencies[0]
-                        if (depsNode) {
-                            asNode().append(depsNode)
-                        }
-                    }
+                    // Dependencies are resolved transitively from react-android:0.83.6 at build time.
+                    // The withXml merge is intentionally omitted: the patched POM file is created
+                    // by assemblePatchedAAR at execution time, which runs after POM generation.
+                    // Consumers override only this AAR; all other transitive deps come from the
+                    // original react-android:0.83.6 coordinates already on the classpath.
                 }
             }
         }
