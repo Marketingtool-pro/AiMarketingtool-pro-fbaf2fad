@@ -136,8 +136,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   enable2FA: async (otp: string) => {
     set({ isLoading: true });
     try {
-      // Appwrite requires verifying the secret before enabling MFA
-      // The secret was already verified in the setup process
+      // Must verify the TOTP code before enabling MFA, otherwise any caller
+      // could enable MFA without proving they own the authenticator.
+      await authService.verify2FA(otp);
       await authService.update2FA(true);
       const user = await authService.getCurrentUser();
       set({ user, isLoading: false });
@@ -242,9 +243,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const cleaned = phoneNumber.replace(/\D/g, '');
       const formatted = phoneNumber.startsWith('+') ? phoneNumber : `+91${cleaned}`;
 
-      // Reviewer bypass — App Store review uses +919999999999 / 123456.
-      // Skip Firebase entirely so reviewers don't depend on real SMS delivery.
-      if (formatted === '+919999999999') {
+      // Reviewer bypass — App Store/Play review team uses a fixed test number.
+      // The number is read from a build-time env var so it never appears in source.
+      // Set EXPO_PUBLIC_REVIEWER_PHONE in .env / EAS secrets (e.g. +919999999999).
+      const reviewerPhone = process.env.EXPO_PUBLIC_REVIEWER_PHONE;
+      if (reviewerPhone && formatted === reviewerPhone) {
         if (__DEV__) console.log('[Auth] Reviewer bypass active for', formatted);
         set({ tempPhone: formatted, tempVerificationId: formatted });
         return formatted;
@@ -267,16 +270,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   verifyPhoneOTP: async (_userId: string, code: string) => {
     set({ error: null });
     try {
-      const phone = get().tempPhone || _userId;
+      const phone = get().tempPhone;
       if (!phone) {
+        // tempPhone is cleared on app restart — caller must re-trigger sendPhoneOTP.
         throw new Error('Verification session expired. Please request a new code.');
       }
 
       let firebaseUid: string;
 
-      // Reviewer bypass — accept fixed 123456 for the reviewer phone.
-      if (phone === '+919999999999' && code === '123456') {
-        firebaseUid = 'reviewer_bypass_919999999999';
+      // Reviewer bypass — accept fixed OTP for the configured reviewer phone.
+      const reviewerPhone = process.env.EXPO_PUBLIC_REVIEWER_PHONE;
+      const reviewerCode = process.env.EXPO_PUBLIC_REVIEWER_OTP ?? '123456';
+      if (reviewerPhone && phone === reviewerPhone && code === reviewerCode) {
+        firebaseUid = 'reviewer_bypass_' + reviewerPhone.replace(/\D/g, '');
       } else {
         if (__DEV__) console.log('[Auth] Verifying OTP via Firebase for', phone);
         const verifyResult = await firebaseVerifyOTP(code);
@@ -479,7 +485,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       ]);
 
       return newProfile as UserProfile;
-    } catch (error) {
+    } catch (error: any) {
+      // Surface network/timeout errors in state so the UI can show a warning.
+      // We still return a temporary defaultProfile so auth isn't blocked.
+      if (error?.message && !error.message.includes('Document with the requested ID')) {
+        console.warn('[AuthStore] fetchOrCreateProfile failed:', error.message);
+        set({ error: 'Profile load failed — some features may be limited.' });
+      }
       return defaultProfile;
     }
   },
