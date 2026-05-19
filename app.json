@@ -163,6 +163,7 @@
       "expo-web-browser",
       "expo-asset",
       "expo-tracking-transparency",
+      "./plugins/withRNEdgeToEdgeFix.js",
       "./plugins/withKotlinKspFix.js"
     ],
     "extra": {
