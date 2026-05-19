@@ -12,7 +12,7 @@ jobs:
   build-patched-aar:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -27,12 +27,38 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android-patches/gradlew
 
-      - name: Build and publish patched AAR
+      - name: Build patched AAR
         working-directory: android-patches
-        run: ./gradlew assemblePatchedAAR publish --no-daemon --stacktrace
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
+        run: ./gradlew assemblePatchedAAR --no-daemon --stacktrace
+
+      - name: Commit AAR as local Maven repository
+        run: |
+          AAR_VERSION="0.83.6-e2e.1"
+          AAR_GROUP_PATH="com/facebook/react/react-android"
+          LOCAL_MAVEN="android-patches/local-maven/${AAR_GROUP_PATH}/${AAR_VERSION}"
+          mkdir -p "${LOCAL_MAVEN}"
+
+          # Copy the patched AAR
+          cp android-patches/build/patched/react-android-${AAR_VERSION}.aar "${LOCAL_MAVEN}/"
+
+          # Write a minimal POM so Gradle resolves transitive deps via original coordinates
+          cat > "${LOCAL_MAVEN}/react-android-${AAR_VERSION}.pom" << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <project>
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.facebook.react</groupId>
+            <artifactId>react-android</artifactId>
+            <version>0.83.6-e2e.1</version>
+            <packaging>aar</packaging>
+          </project>
+          EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add android-patches/local-maven/
+          git diff --cached --quiet && echo "No changes to commit" || \
+            git commit -m "chore: update patched react-android AAR in local-maven [skip ci]"
+          git push
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
