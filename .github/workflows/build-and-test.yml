@@ -51,8 +51,13 @@ jobs:
 
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
         with:
-          eas-version: latest
+          # Pin to the same eas-cli the production workflow uses
+          # ("latest" was resolving to 19.0.1 which fails at startup
+          # in the expo-github-action's eas --version probe — the
+          # "process eas failed with exit code 1" we were chasing).
+          eas-version: 18.13.1
           token: ${{ secrets.EXPO_TOKEN }}
+          expo-cache: true
 
       - name: Install dependencies
         run: npm ci
