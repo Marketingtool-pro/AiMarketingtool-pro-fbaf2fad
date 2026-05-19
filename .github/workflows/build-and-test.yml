@@ -57,6 +57,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify Expo / EAS auth (auto-connect)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::EXPO_TOKEN secret is empty; the preview build cannot authenticate to EAS."
+            exit 1
+          fi
+          eas whoami
+          eas project:info
+
       - name: Build preview for Android and iOS (wait for result)
         run: |
           # Retry against transient Expo / GH Actions outages so a real
@@ -80,13 +91,21 @@ jobs:
               if build_url=$(grep -oE 'https://expo\.dev/[^[:space:]]+/builds/[A-Za-z0-9-]+' "$log" | tail -n1); then
                 [ -n "$build_url" ] && echo "::notice::Last EAS build URL: ${build_url}"
               fi
-              # Emit key error lines as ::error:: annotations so they
-              # appear in the run summary without needing to expand logs.
-              grep -iE '^(error|✖|✗|fail|⚠)|: error |: failed |fatal|cannot find|enoent|eaccess|enotfound|401|403|500|service unavailable' "$log" \
-                | tail -n 10 \
-                | while IFS= read -r line; do
-                    echo "::error::${line}"
-                  done
+              # Emit every non-empty captured line as a warning
+              # annotation so even an "empty" eas log is fully visible
+              # in the summary without expanding any step.
+              line_no=0
+              while IFS= read -r line; do
+                [ -z "$line" ] && continue
+                line_no=$((line_no + 1))
+                # Cap at 50 lines so we don't flood the run with 100s
+                # of annotations from a long build log.
+                [ "$line_no" -gt 50 ] && break
+                echo "::warning::eas[${line_no}]: ${line}"
+              done < <(tail -n 200 "$log")
+              if [ "$line_no" -eq 0 ]; then
+                echo "::error::eas exited ${status} with no stdout/stderr — likely an auth failure (EXPO_TOKEN) or eas-cli crash before printing."
+              fi
               echo "::error::eas build failed after ${attempt} attempts (exit ${status})"
               exit "$status"
             fi
