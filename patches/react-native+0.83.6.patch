@@ -1,3 +1,15 @@
+diff --git a/node_modules/react-native/.DS_Store b/node_modules/react-native/.DS_Store
+new file mode 100644
+index 0000000..62e227d
+Binary files /dev/null and b/node_modules/react-native/.DS_Store differ
+diff --git a/node_modules/react-native/ReactAndroid/.DS_Store b/node_modules/react-native/ReactAndroid/.DS_Store
+new file mode 100644
+index 0000000..83ea635
+Binary files /dev/null and b/node_modules/react-native/ReactAndroid/.DS_Store differ
+diff --git a/node_modules/react-native/ReactAndroid/src/.DS_Store b/node_modules/react-native/ReactAndroid/src/.DS_Store
+new file mode 100644
+index 0000000..1cba7b9
+Binary files /dev/null and b/node_modules/react-native/ReactAndroid/src/.DS_Store differ
 diff --git a/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/modules/statusbar/StatusBarModule.kt b/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/modules/statusbar/StatusBarModule.kt
 index 1e773ba..6ab5847 100644
 --- a/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/modules/statusbar/StatusBarModule.kt
@@ -142,7 +154,7 @@ index 1e773ba..6ab5847 100644
      private const val HEIGHT_KEY = "HEIGHT"
      private const val DEFAULT_BACKGROUND_COLOR_KEY = "DEFAULT_BACKGROUND_COLOR"
 diff --git a/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt b/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt
-index 0cff3bc..f91ef2f 100644
+index 0cff3bc..08d2c9b 100644
 --- a/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt
 +++ b/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt
 @@ -7,6 +7,7 @@
@@ -217,7 +229,7 @@ index 0cff3bc..f91ef2f 100644
        setDecorFitsSystemWindows(true)
      }
      addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN)
-@@ -102,26 +85,30 @@ private fun Window.statusBarShow() {
+@@ -102,36 +85,40 @@ private fun Window.statusBarShow() {
    }
  }
  
@@ -258,13 +270,18 @@ index 0cff3bc..f91ef2f 100644
      isAppearanceLightNavigationBars = !isDarkMode
    }
  
-@@ -130,7 +117,8 @@ internal fun Window.enableEdgeToEdge() {
-         when {
-           Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ->
-               WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
++    // LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS (API 31+ constant, value=3).
++    // Using the symbolic name avoids any reference to the deprecated SHORT_EDGES/DEFAULT
++    // constants. On API 28-30 the integer 3 is unknown to the framework and treated as
++    // DEFAULT, which is acceptable for edge-to-edge layouts on those older devices.
+     attributes.layoutInDisplayCutoutMode =
+-        when {
+-          Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ->
+-              WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
 -          else -> WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-+          else ->
-+              WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-         }
+-        }
++        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
    }
  }
+ 
