@@ -7,9 +7,8 @@ import Constants from 'expo-constants';
  *
  * Provider selection:
  *  - __DEV__ / IS_TESTING (Firebase Test Lab, emulators): debug provider
- *    → requires a debug token registered in Firebase Console → App Check
- *      → your Android app → Manage debug tokens.
- *    Set FIREBASE_APPCHECK_DEBUG_TOKEN in your CI/test environment.
+ *    → Register tokens in Firebase Console → App Check → your app → Manage debug tokens.
+ *    Set FIREBASE_APPCHECK_DEBUG_TOKEN_ANDROID / _IOS in your CI/test environment.
  *  - Production Android: Play Integrity
  *  - iOS: App Attest (with DeviceCheck fallback for pre-iOS-14 devices)
  *
@@ -26,17 +25,19 @@ export const initializeAppCheck = async () => {
     }
 
     const isTestEnvironment = __DEV__ || process.env.IS_TESTING === 'true';
-    const debugToken = process.env.FIREBASE_APPCHECK_DEBUG_TOKEN;
+    const androidDebugToken = process.env.FIREBASE_APPCHECK_DEBUG_TOKEN_ANDROID;
+    const iosDebugToken     = process.env.FIREBASE_APPCHECK_DEBUG_TOKEN_IOS;
 
     const provider = appCheck().newReactNativeFirebaseAppCheckProvider();
 
     provider.configure({
       android: {
         provider: isTestEnvironment ? 'debug' : 'playIntegrity',
-        ...(isTestEnvironment && debugToken ? { debugToken } : {}),
+        ...(isTestEnvironment && androidDebugToken ? { debugToken: androidDebugToken } : {}),
       },
       apple: {
-        provider: 'appAttestWithDeviceCheckFallback',
+        provider: isTestEnvironment ? 'debug' : 'appAttestWithDeviceCheckFallback',
+        ...(isTestEnvironment && iosDebugToken ? { debugToken: iosDebugToken } : {}),
       },
     });
 
