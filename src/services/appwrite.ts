@@ -39,7 +39,7 @@ const client = new Client()
   .setPlatform(APPWRITE_PLATFORM);
 
 // Set global timeout to 30s to prevent iOS 408 errors
-client.config.timeout = 30000;
+client.config.timeout = '30000';
 
 // Add simple retry logic for network/timeout errors
 const originalCall = client.call.bind(client);
