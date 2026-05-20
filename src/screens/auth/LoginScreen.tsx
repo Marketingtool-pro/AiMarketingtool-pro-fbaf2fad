@@ -309,13 +309,13 @@ const LoginScreen = () => {
               >
                 <Text style={styles.flagText}>{selectedCountry.flag}</Text>
                 <Text style={styles.codeText}>{selectedCountry.code}</Text>
-                <Feather name="chevron-down" size={14} color="#4A5568" />
+                <Feather name="chevron-down" size={14} color="#8896A5" />
               </TouchableOpacity>
 
               <TextInput
                 style={styles.phoneInput}
                 placeholder="Phone"
-                placeholderTextColor="#4A5568"
+                placeholderTextColor="#8896A5"
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
                 keyboardType="phone-pad"
@@ -379,7 +379,7 @@ const LoginScreen = () => {
                   <TextInput
                     style={[styles.otpInputInline, { letterSpacing: 8 }]}
                     placeholder="000000"
-                    placeholderTextColor="#4A5568"
+                    placeholderTextColor="#8896A5"
                     value={otpCode}
                     onChangeText={(text) => {
                       const digits = text.replace(/\D/g, '').slice(0, 6);
@@ -529,7 +529,7 @@ const LoginScreen = () => {
                 <TextInput
                   style={styles.modalInput}
                   placeholder="email@example.com"
-                  placeholderTextColor="#4A5568"
+                  placeholderTextColor="#8896A5"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -542,7 +542,7 @@ const LoginScreen = () => {
                 <TextInput
                   style={styles.modalInput}
                   placeholder="••••••••"
-                  placeholderTextColor="#4A5568"
+                  placeholderTextColor="#8896A5"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
@@ -603,7 +603,7 @@ const LoginScreen = () => {
               <TextInput
                 style={styles.otpInput}
                 placeholder="000000"
-                placeholderTextColor="#4A5568"
+                placeholderTextColor="#8896A5"
                 value={totpCode}
                 onChangeText={(text) => { setTotpCode(text); setTotpError(''); }}
                 keyboardType="number-pad"
@@ -650,11 +650,11 @@ const LoginScreen = () => {
               </TouchableOpacity>
             </View>
             <View style={styles.searchBox}>
-               <Feather name="search" size={18} color="#4A5568" />
+               <Feather name="search" size={18} color="#8896A5" />
                <TextInput 
                 style={styles.searchInput}
                 placeholder="Search country..."
-                placeholderTextColor="#4A5568"
+                placeholderTextColor="#8896A5"
                 value={countrySearch}
                 onChangeText={setCountrySearch}
                />
@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
   },
   orText: {
     fontSize: 12,
-    color: '#4A5568',
+    color: '#8896A5',
     letterSpacing: 1,
   },
   socialRow: {

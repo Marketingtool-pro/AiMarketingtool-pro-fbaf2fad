@@ -3,8 +3,19 @@ import appCheck from '@react-native-firebase/app-check';
 import Constants from 'expo-constants';
 
 /**
- * Initializes Firebase App Check with reCAPTCHA Enterprise.
- * This proves the app's identity to Google/Firebase and helps avoid "Spam" labels on OTPs.
+ * Initializes Firebase App Check.
+ *
+ * Provider selection:
+ *  - __DEV__ / IS_TESTING (Firebase Test Lab, emulators): debug provider
+ *    → requires a debug token registered in Firebase Console → App Check
+ *      → your Android app → Manage debug tokens.
+ *    Set FIREBASE_APPCHECK_DEBUG_TOKEN in your CI/test environment.
+ *  - Production Android: Play Integrity
+ *  - iOS: App Attest (with DeviceCheck fallback for pre-iOS-14 devices)
+ *
+ * NOTE: FCM token retrieval always fails on virtual Test Lab devices (no
+ * signed-in Google account). This is expected noise — not fixable on
+ * virtual devices. Use a real-device matrix for FCM coverage.
  */
 export const initializeAppCheck = async () => {
   try {
@@ -14,17 +25,15 @@ export const initializeAppCheck = async () => {
       return;
     }
 
+    const isTestEnvironment = __DEV__ || process.env.IS_TESTING === 'true';
+    const debugToken = process.env.FIREBASE_APPCHECK_DEBUG_TOKEN;
+
     const provider = appCheck().newReactNativeFirebaseAppCheckProvider();
 
-    // App Attest is the modern attestation provider (iOS 14+, free, no
-    // extra pod). Firebase Phone Auth uses App Check tokens for device
-    // verification — without this, Auth falls back to reCAPTCHA Enterprise
-    // SDK which isn't linked, producing "[auth/unknown] reCAPTCHA SDK is
-    // not linked" errors. deviceCheck stays as the fallback for the very
-    // small slice of devices where App Attest is unavailable.
     provider.configure({
       android: {
-        provider: 'playIntegrity',
+        provider: isTestEnvironment ? 'debug' : 'playIntegrity',
+        ...(isTestEnvironment && debugToken ? { debugToken } : {}),
       },
       apple: {
         provider: 'appAttestWithDeviceCheckFallback',
