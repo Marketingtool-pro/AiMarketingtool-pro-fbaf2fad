@@ -224,7 +224,7 @@ const LoginScreen = () => {
     }));
 
     try {
-      // Bird Verify (SMS) via Appwrite msg91-proxy function — see authStore.ts.
+      // Send OTP via Firebase Phone Auth
       const userId = await sendPhoneOTP(formattedPhone);
       setOtpUserId(userId);
       setOtpSent(true);

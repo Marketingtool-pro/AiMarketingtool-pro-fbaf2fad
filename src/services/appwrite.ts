@@ -38,6 +38,29 @@ const client = new Client()
   .setProject(APPWRITE_PROJECT_ID)
   .setPlatform(APPWRITE_PLATFORM);
 
+// Set global timeout to 30s to prevent iOS 408 errors
+client.config.timeout = 30000;
+
+// Add simple retry logic for network/timeout errors
+const originalCall = client.call.bind(client);
+client.call = async function(method, path, headers, params) {
+    let attempts = 0;
+    const maxAttempts = 3;
+    while (attempts < maxAttempts) {
+        try {
+            return await originalCall(method, path, headers, params);
+        } catch (error: any) {
+            attempts++;
+            const isTimeout = error.code === 408 || error.type === 'database_timeout' || error.message?.includes('timeout');
+            if (!isTimeout || attempts >= maxAttempts) {
+                throw error;
+            }
+            if (__DEV__) console.log(`[Appwrite] Request timed out, retrying attempt ${attempts}...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempts)); // Exponential backoff
+        }
+    }
+};
+
 // Initialize Services
 export const account = new Account(client);
 export const databases = new Databases(client);
