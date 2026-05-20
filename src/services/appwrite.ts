@@ -12,7 +12,7 @@ const APPWRITE_PROJECT_ID = '6952c8a0002d3365625d';
 const APPWRITE_PLATFORM = 'pro.marketingtool.app';
 
 // Database IDs
-export const DATABASE_ID = 'main';
+export const DATABASE_ID = 'marketingtool_db';
 export const COLLECTIONS = {
   USERS: 'users',
   TOOLS: 'tools',
