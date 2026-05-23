@@ -77,3 +77,38 @@ build
 
 # Ignore Kotlin plugin data
 .kotlin
+
+# Tool version managers
+.rbenv-gemsets
+.sdkmanrc
+rbenv-plugin/
+testing-chruby/
+mise-oci/
+
+# Package manager artifacts
+vcpkg/
+bats/
+bin/
+
+# Build/wrapper artifacts  
+gradle/wrapper/
+0.6
+find_large_files.sh
+install.sh
+
+# Config symlinks (likely pointing to versioned .yml files)
+docker-compose.dev
+docker-compose.prod
+docker-compose.test
+app.config
+babel.config
+react-native.config
+tamagui.config
+
+# Downloaded documentation
+www.ruby
+www.ruby-lang.org/
+
+# Language artifacts
+Node.js
+YAML
