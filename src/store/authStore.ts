@@ -279,8 +279,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const formatted = phoneNumber.startsWith('+') ? phoneNumber : `+91${cleaned}`;
 
       // Reviewer bypass — App Store/Play review team uses a fixed test number.
-      // The number is read from a build-time env var so it never appears in source.
-      // Set EXPO_PUBLIC_REVIEWER_PHONE in .env / EAS secrets (e.g. +919999999999).
+      // Prefer EXPO_PUBLIC_REVIEWER_PHONE from .env / EAS secrets, but this code
+      // also falls back to a hardcoded default review number if the env var is unset.
       const reviewerPhone = process.env.EXPO_PUBLIC_REVIEWER_PHONE || '+919999999999';
       const cleanFormatted = formatted.replace(/\D/g, '');
       const cleanReviewer = reviewerPhone.replace(/\D/g, '');
