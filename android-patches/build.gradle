@@ -39,7 +39,7 @@ repositories {
     mavenCentral()
 }
 
-def reactVersion = '0.83.6'
+def reactVersion = '0.85.3'
 def patchedVersion = "${reactVersion}-e2e.1"
 
 dependencies {
