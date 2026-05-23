@@ -19,6 +19,6 @@ jobs:
           java-version: 17  # Gradle 8.1 requires Java ≤ 20; pin 17 (LTS)
 
       - name: Generate and submit dependency graph
-        uses: gradle/actions/dependency-submission@v4
+        uses: gradle/actions/dependency-submission@748248ddd2a24f49513d8f472f81c3a07d4d50e1  # v4.4.4
         with:
           gradle-version: wrapper
