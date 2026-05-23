@@ -17,8 +17,5 @@ updates:
       day: "monday"
     open-pull-requests-limit: 5
 
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+  # github-actions pinned to commit SHAs manually — Dependabot disabled to prevent spam
+  # - package-ecosystem: "github-actions"

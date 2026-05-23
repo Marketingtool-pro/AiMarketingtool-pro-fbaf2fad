@@ -13,3 +13,4 @@ plugins {
 
 rootProject.name = 'MarketingTool_Phone'
 include('lib')
+include('android-patches')
