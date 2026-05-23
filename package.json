@@ -1,7 +1,11 @@
 {
-  "name": "marketingtoolapp",
+  "name": "@marketingtool-pro/aimarketingtool-pro",
   "version": "1.5.0",
   "license": "UNLICENSED",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
