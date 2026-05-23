@@ -1,6 +1,17 @@
 {
+<<<<<<< Updated upstream
   "name": "@marketingtool-pro/aimarketingtool-pro",
+=======
+  "name": "@marketingtool-pro/ai-marketingtool-pro-fbaf2fad",
+>>>>>>> Stashed changes
   "version": "1.5.0",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad.git"
+  },
   "license": "UNLICENSED",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com",
