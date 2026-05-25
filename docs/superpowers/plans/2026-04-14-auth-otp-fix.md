@@ -207,6 +207,7 @@ git commit -m "fix: validate OTP code before verify, show inline errors instead 
 
 In `src/navigation/AppNavigator.tsx`, replace the `AppNavigator` component (line 156):
 
+{% raw %}
 ```typescript
 const AppNavigator = () => {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -260,6 +261,7 @@ const AppNavigator = () => {
   );
 };
 ```
+{% endraw %}
 
 - [ ] **Step 2: Remove unused onboarding imports and state**
 
