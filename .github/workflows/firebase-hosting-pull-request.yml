@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - run: npm ci && npm run build
         continue-on-error: true
-      - uses: FirebaseExtended/action-hosting-deploy@001479188828943f11f44f128c772e0d37e3d09e # v0.7.1
+      - uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a # Latest HEAD
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MARKETING_TOOL_484720 }}'
