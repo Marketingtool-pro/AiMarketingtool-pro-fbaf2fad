@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "479",
+      "buildNumber": "480",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -99,7 +99,7 @@
         {
           "ios": {
             "useFrameworks": "static",
-            "deploymentTarget": "16.0",
+            "deploymentTarget": "16.4",
             "storeKitVersion": "2",
             "forceStaticLinking": [
               "RNFBApp",

@@ -159,11 +159,11 @@ const styles = StyleSheet.create({
     borderRadius: 175,
   },
   frostLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(13, 15, 28, 0.2)',
   },
   particlesContainer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     overflow: 'hidden',
   },
   particle: {

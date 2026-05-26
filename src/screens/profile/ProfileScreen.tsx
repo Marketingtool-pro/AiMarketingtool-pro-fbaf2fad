@@ -322,8 +322,8 @@ const styles = StyleSheet.create({
     paddingTop: 14,
   },
   heroSection: { height: 260, width: '100%' },
-  heroImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
-  heroGradient: { ...StyleSheet.absoluteFillObject },
+  heroImage: { ...StyleSheet.absoluteFill, width: '100%', height: '100%' },
+  heroGradient: { ...StyleSheet.absoluteFill },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
