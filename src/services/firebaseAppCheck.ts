@@ -1,20 +1,15 @@
 import { Platform } from 'react-native';
 import appCheck from '@react-native-firebase/app-check';
 import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 
 /**
  * Initializes Firebase App Check.
  *
  * Provider selection:
- *  - __DEV__ / IS_TESTING (Firebase Test Lab, emulators): debug provider
- *    → Register tokens in Firebase Console → App Check → your app → Manage debug tokens.
- *    Set FIREBASE_APPCHECK_DEBUG_TOKEN_ANDROID / _IOS in your CI/test environment.
+ *  - __DEV__ / Cloud Test (Firebase Test Lab): debug provider
  *  - Production Android: Play Integrity
- *  - iOS: App Attest (with DeviceCheck fallback for pre-iOS-14 devices)
- *
- * NOTE: FCM token retrieval always fails on virtual Test Lab devices (no
- * signed-in Google account). This is expected noise — not fixable on
- * virtual devices. Use a real-device matrix for FCM coverage.
+ *  - iOS: App Attest (with DeviceCheck fallback)
  */
 export const initializeAppCheck = async () => {
   try {
@@ -24,7 +19,10 @@ export const initializeAppCheck = async () => {
       return;
     }
 
-    const isTestEnvironment = __DEV__ || process.env.IS_TESTING === 'true';
+    // Detect if running in Firebase Test Lab or similar cloud environments
+    const isCloudTest = !Device.isDevice || (Platform.OS === 'android' && Device.modelName?.includes('google_sdk'));
+    const isTestEnvironment = __DEV__ || process.env.IS_TESTING === 'true' || isCloudTest;
+    
     const androidDebugToken = process.env.FIREBASE_APPCHECK_DEBUG_TOKEN_ANDROID;
     const iosDebugToken     = process.env.FIREBASE_APPCHECK_DEBUG_TOKEN_IOS;
 
@@ -46,7 +44,7 @@ export const initializeAppCheck = async () => {
       isTokenAutoRefreshEnabled: true,
     });
 
-    if (__DEV__) console.log('[AppCheck] Initialized successfully');
+    if (__DEV__) console.log('[AppCheck] Initialized successfully (Env:', isTestEnvironment ? 'Test/Debug' : 'Prod', ')');
   } catch (error: any) {
     if (__DEV__) console.error('[AppCheck] Initialization failed:', error.message);
   }
