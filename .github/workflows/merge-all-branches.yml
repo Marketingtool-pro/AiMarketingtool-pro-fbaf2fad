@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  merge-branches:
+  merge-and-cleanup:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -21,13 +21,37 @@ jobs:
           git config user.email "action@github.com"
           git config user.name "GitHub Actions"
 
-      - name: Merge all branches
+      - name: Merge all branches and delete them
         run: |
           git fetch --all
-          for BRANCH in "ai-findings-autofix/plugins-withKotlinKspFix.js" "ai-findings-autofix/scripts-total_rich_overhaul.sh" "Lokeninfinitypoint-patch-1" "mobile-overhaul-2026-04-14" "add-claude-github-actions-1776199121290" "copilot/set-up-copilot-instructions" "claude/review-issues-merge-prs-xsNTw"; do
-            echo "Merging $BRANCH..."
-            git merge "origin/$BRANCH" -X ours --no-edit -m "Merge into Master" || git merge --abort
+          MASTER_SHA=$(git rev-parse HEAD)
+          
+          BRANCHES=(
+            "ai-findings-autofix/plugins-withKotlinKspFix.js"
+            "ai-findings-autofix/scripts-total_rich_overhaul.sh"
+            "Lokeninfinitypoint-patch-1"
+            "mobile-overhaul-2026-04-14"
+            "add-claude-github-actions-1776199121290"
+            "copilot/set-up-copilot-instructions"
+            "claude/review-issues-merge-prs-xsNTw"
+            "master"
+            "codespace-bookish-invention-x5qp69vw94qvfp4vp"
+            "copilot/check-all-tasks-status"
+            "ai-findings-autofix/android-patches-src-main-kotlin-com-facebook-react-modules-statusbar-StatusBarModule.kt"
+            "finding-autofix-fc9f2c6e"
+            "Lokeninfinitypoint-patch-2"
+            "fix/android-sha1s-sync-from-firebase"
+            "fix/phone-session-jsonparse-bug"
+          )
+          
+          for BRANCH in "${BRANCHES[@]}"; do
+            echo "Processing branch: $BRANCH"
+            if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+              git push origin --delete "$BRANCH" || echo "Could not delete $BRANCH"
+            else
+              echo "Branch $BRANCH not found remotely, skipping"
+            fi
           done
 
-      - name: Push
+      - name: Push Master
         run: git push origin Master
