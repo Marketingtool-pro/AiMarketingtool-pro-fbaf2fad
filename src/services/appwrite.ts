@@ -289,6 +289,41 @@ export const authService = {
     }
   },
 
+  // OTP via Appwrite Function (MSG91 Proxy)
+  async sendOTPFunction(phone: string): Promise<any> {
+    try {
+      const execution = await functions.createExecution(
+        'msg91-proxy',
+        JSON.stringify({ action: 'sendOtp', identifier: phone }),
+        false,
+        '/'
+      );
+      const result = JSON.parse(execution.responseBody);
+      if (result.type === 'error') throw new Error(result.message || 'Failed to send OTP');
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  async verifyOTPFunction(phone: string, otp: string): Promise<any> {
+    try {
+      const execution = await functions.createExecution(
+        'msg91-proxy',
+        JSON.stringify({ action: 'verifyOtp', identifier: phone, otp }),
+        false,
+        '/'
+      );
+      const result = JSON.parse(execution.responseBody);
+      if (result.type === 'success') {
+        return { success: true, ...result };
+      }
+      return { success: false, message: result.message || 'Invalid OTP' };
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Get Current User
   async getCurrentUser(): Promise<Models.User<Models.Preferences> | null> {
     try {

@@ -1085,6 +1085,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  resendContainer: {
+    marginTop: Spacing.lg,
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  resendTimerText: {
+    color: Colors.textTertiary,
+    fontSize: 14,
+  },
+  resendLink: {
+    color: Colors.secondary,
+    fontSize: 14,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
 });
 
 export default LoginScreen;
