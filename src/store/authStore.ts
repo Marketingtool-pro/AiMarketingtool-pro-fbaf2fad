@@ -1,7 +1,25 @@
 import { create } from 'zustand';
-import { Models } from 'react-native-appwrite';
-import { authService, dbService, COLLECTIONS } from '../services/appwrite';
-import { sendPhoneOTP, verifyPhoneOTP } from '../services/firebaseAuth';
+import { Models, ExecutionMethod } from 'react-native-appwrite';
+import { authService, dbService, account, functions, COLLECTIONS, Query } from '../services/appwrite';
+import { biometricService } from '../services/biometric';
+import {
+  sendPhoneOTP as firebaseSendOTP,
+  verifyPhoneOTP as firebaseVerifyOTP,
+  signOutFirebase,
+} from '../services/firebaseAuth';
+
+// Appwrite Functions return responseBody as either an object (newer SDK)
+// OR as a JSON string (older SDK) OR as a plain text error message (4xx).
+// Always normalize to an object so consumers can read .success / .message safely.
+export function parseAppwriteResponse(rb: any): any {
+  if (!rb) return {};
+  if (typeof rb === 'object') return rb;
+  if (typeof rb === 'string') {
+    try { return JSON.parse(rb); }
+    catch { return { success: false, message: rb }; }
+  }
+  return {};
+}
 
 interface UserProfile {
   $id: string;
@@ -26,6 +44,9 @@ interface AuthState {
   isAuthenticated: boolean;
   error: string | null;
   tempPhone: string | null;
+  tempVerificationId: string | null;
+  biometricPending: boolean;
+  mfaPending: boolean;
 
   // Actions
   login: (email: string, password: string) => Promise<void>;
@@ -33,12 +54,19 @@ interface AuthState {
   loginWithGoogle: () => Promise<void>;
   loginWithApple: () => Promise<void>;
   loginWithFacebook: () => Promise<void>;
-  sendOTP: (phoneNumber: string) => Promise<void>;
-  verifyOTP: (code: string) => Promise<void>;
+  sendPhoneOTP: (phoneNumber: string) => Promise<string>;
+  verifyPhoneOTP: (userId: string, code: string) => Promise<void>;
+  clearOtpTemp: () => void;
+  verifyTOTP: (otp: string) => Promise<void>;
+  authenticateWithBiometric: () => Promise<boolean>;
+  setup2FA: () => Promise<any>;
+  enable2FA: (otp: string) => Promise<void>;
+  disable2FA: () => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  refreshProfile: () => Promise<void>;
   clearError: () => void;
   fetchOrCreateProfile: (user: Models.User<Models.Preferences>) => Promise<UserProfile>;
 }
@@ -50,40 +78,119 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   error: null,
   tempPhone: null,
+  tempVerificationId: null,
+  biometricPending: false,
+  mfaPending: false,
 
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
 
-    // Guest/Demo mode - bypass API for testing
-    if (email === 'guest@test.com' && password === 'guest123') {
-      const mockUser = { $id: 'guest', name: 'Guest User', email: 'guest@test.com' } as any;
-      const mockProfile = {
-        $id: 'guest-profile',
-        userId: 'guest',
-        subscription: 'pro',
-        generationsCount: 42,
-        savedCount: 15,
-        toolsUsed: 8,
-        avatar: null,
-      } as any;
-      set({ user: mockUser, profile: mockProfile, isAuthenticated: true, isLoading: false });
+    // Reviewer bypass for App Store / Play Store — allows entry even if
+    // Appwrite is unreachable or the demo account wasn't created.
+    if (email === 'demo@marketingtool.pro' && password === 'Reviewer123!') {
+      const mockUser = {
+        $id: 'reviewer_bypass',
+        name: 'App Store Reviewer',
+        email: 'demo@marketingtool.pro',
+        registration: new Date().toISOString(),
+        status: true,
+        passwordUpdate: new Date().toISOString(),
+        emailVerification: true,
+        phoneVerification: true,
+        prefs: {},
+      };
+      // Still try to fetch/create a real profile in Appwrite so the app
+      // behaves normally, but ignore errors so the reviewer isn't blocked.
+      try {
+        const profile = await get().fetchOrCreateProfile(mockUser as any);
+        set({ user: mockUser as any, profile, isAuthenticated: true, isLoading: false });
+      } catch (e) {
+        const fallbackProfile: UserProfile = {
+          $id: 'reviewer_bypass',
+          userId: 'reviewer_bypass',
+          name: 'App Store Reviewer',
+          email: 'demo@marketingtool.pro',
+          subscription: 'pro',
+          generationsUsed: 0,
+          generationsLimit: 9999,
+          createdAt: new Date().toISOString(),
+        };
+        set({ user: mockUser as any, profile: fallbackProfile, isAuthenticated: true, isLoading: false });
+      }
       return;
     }
 
     try {
-      // Add timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Login timeout')), 5000)
+        setTimeout(() => reject(new Error('Login timeout')), 30000)
       );
       await Promise.race([authService.login(email, password), timeoutPromise]);
       const user = await Promise.race([authService.getCurrentUser(), timeoutPromise]) as any;
       if (user) {
-        // Fetch or create user profile
         const profile = await get().fetchOrCreateProfile(user);
         set({ user, profile, isAuthenticated: true, isLoading: false });
+        
+        const bioAvailable = await biometricService.isBiometricAvailable();
+        if (bioAvailable) {
+          // Check if already enabled in settings before forcing it
+          const bioEnabled = await biometricService.isBiometricEnabled();
+          if (!bioEnabled) {
+             // We could prompt here, but let's keep it simple
+          }
+        }
       }
     } catch (error: any) {
+      if (error.type === 'user_mfa_required' || error.code === 401 && error.message?.includes('MFA')) {
+        set({ mfaPending: true, isLoading: false });
+        return;
+      }
       set({ error: error.message || 'Login failed', isLoading: false });
+      throw error;
+    }
+  },
+
+  verifyTOTP: async (otp: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await authService.verify2FA(otp);
+      const user = await authService.getCurrentUser();
+      if (user) {
+        const profile = await get().fetchOrCreateProfile(user);
+        set({ user, profile, isAuthenticated: true, isLoading: false, mfaPending: false });
+      }
+    } catch (error: any) {
+      set({ error: error.message || 'Invalid 2FA code', isLoading: false });
+      throw error;
+    }
+  },
+
+  setup2FA: async () => {
+    return await authService.createTOTP();
+  },
+
+  enable2FA: async (otp: string) => {
+    set({ isLoading: true });
+    try {
+      // Must verify the TOTP code before enabling MFA, otherwise any caller
+      // could enable MFA without proving they own the authenticator.
+      await authService.verify2FA(otp);
+      await authService.update2FA(true);
+      const user = await authService.getCurrentUser();
+      set({ user, isLoading: false });
+    } catch (error: any) {
+      set({ isLoading: false, error: error.message });
+      throw error;
+    }
+  },
+
+  disable2FA: async () => {
+    set({ isLoading: true });
+    try {
+      await authService.update2FA(false);
+      const user = await authService.getCurrentUser();
+      set({ user, isLoading: false });
+    } catch (error: any) {
+      set({ isLoading: false, error: error.message });
       throw error;
     }
   },
@@ -160,42 +267,128 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  sendOTP: async (phoneNumber: string) => {
-    set({ isLoading: true, error: null });
+  clearOtpTemp: () => set({ tempPhone: null, tempVerificationId: null }),
+
+  sendPhoneOTP: async (phoneNumber: string) => {
+    // Firebase Phone Auth — Google's SMS infrastructure (Uber/Ola pattern).
+    // Trusted by users; handles silent push on iOS / SMS auto-retrieval on
+    // Android automatically. firebaseAuth service is in services/firebaseAuth.ts.
+    set({ error: null });
     try {
-      await authService.sendOTPFunction(phoneNumber);
-      set({ isLoading: false, tempPhone: phoneNumber });
+      const cleaned = phoneNumber.replace(/\D/g, '');
+      const formatted = phoneNumber.startsWith('+') ? phoneNumber : `+91${cleaned}`;
+
+      // Reviewer bypass — App Store/Play review team uses a fixed test number.
+      // Prefer EXPO_PUBLIC_REVIEWER_PHONE from .env / EAS secrets, but this code
+      // also falls back to a hardcoded default review number if the env var is unset.
+      const reviewerPhone = process.env.EXPO_PUBLIC_REVIEWER_PHONE || '+919999999999';
+      const cleanFormatted = formatted.replace(/\D/g, '');
+      const cleanReviewer = reviewerPhone.replace(/\D/g, '');
+      
+      // Match if the last 10 digits are the same (handles +1 vs +91 vs no prefix)
+      const isReviewer = cleanFormatted.endsWith(cleanReviewer.slice(-10)) || formatted === reviewerPhone;
+
+      if (isReviewer) {
+        if (__DEV__) console.log('[Auth] Reviewer bypass active for', formatted);
+        set({ tempPhone: formatted, tempVerificationId: formatted });
+        return formatted;
+      }
+
+      if (__DEV__) console.log('[Auth] Sending OTP via Firebase to', formatted);
+      const result = await firebaseSendOTP(formatted);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send OTP');
+      }
+      set({ tempPhone: formatted, tempVerificationId: formatted });
+      return formatted;
     } catch (error: any) {
-      set({ error: error.message || 'Failed to send OTP', isLoading: false });
+      if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
+      set({ error: error.message || 'Failed to send OTP' });
       throw error;
     }
   },
 
-  verifyOTP: async (code: string) => {
-    const { tempPhone } = get();
-    if (!tempPhone) {
-      set({ error: 'Session expired. Please request a new code.' });
-      return;
-    }
-
-    set({ isLoading: true, error: null });
+  verifyPhoneOTP: async (_userId: string, code: string) => {
+    set({ error: null });
     try {
-      const result = await authService.verifyOTPFunction(tempPhone, code);
-      if (result.success) {
-        const mockUser = {
-          $id: `phone-${tempPhone.replace(/\+/g, '')}`,
-          name: tempPhone,
-          email: `${tempPhone}@phone.marketingtool.pro`,
-          phone: tempPhone,
-        } as any;
-        const profile = await get().fetchOrCreateProfile(mockUser);
-        set({ user: mockUser, profile, isAuthenticated: true, isLoading: false, tempPhone: null });
-      } else {
-        throw new Error(result.message || 'Invalid OTP');
+      const phone = get().tempPhone;
+      if (!phone) {
+        // tempPhone is cleared on app restart — caller must re-trigger sendPhoneOTP.
+        throw new Error('Verification session expired. Please request a new code.');
       }
+
+      let firebaseUid: string;
+
+      // Reviewer bypass — accept fixed OTP for the configured reviewer phone.
+      const reviewerPhone = process.env.EXPO_PUBLIC_REVIEWER_PHONE || '+919999999999';
+      const reviewerCode = process.env.EXPO_PUBLIC_REVIEWER_OTP ?? '123456';
+      
+      const cleanPhone = phone.replace(/\D/g, '');
+      const cleanReviewer = reviewerPhone.replace(/\D/g, '');
+      const isReviewer = cleanPhone.endsWith(cleanReviewer.slice(-10)) || phone === reviewerPhone;
+
+      if (isReviewer && code === reviewerCode) {
+        firebaseUid = 'reviewer_bypass_' + cleanPhone.slice(-10);
+      } else {
+        if (__DEV__) console.log('[Auth] Verifying OTP via Firebase for', phone);
+        const verifyResult = await firebaseVerifyOTP(code);
+        if (!verifyResult.success || !verifyResult.user) {
+          throw new Error(verifyResult.error || 'Invalid OTP. Please try again.');
+        }
+        firebaseUid = verifyResult.user.uid;
+      }
+
+      // Mint Appwrite session via phone-session function. The function takes
+      // firebaseUid + phone and returns a one-time secret we exchange for a
+      // session token. Sync execution — guests can't poll executions.read.
+      const sessionExec = await functions.createExecution(
+        'phone-session',
+        JSON.stringify({ firebaseUid, phone, displayName: '' }),
+        false, '/', ExecutionMethod.POST,
+        { 'Content-Type': 'application/json' }
+      );
+
+      const sessionResult = parseAppwriteResponse(sessionExec.responseBody);
+      if (!sessionResult.success || !sessionResult.userId || !sessionResult.secret) {
+        throw new Error(sessionResult.error || 'Failed to create session');
+      }
+
+      try { await account.deleteSession('current'); } catch (_e) {}
+      await account.createSession(sessionResult.userId, sessionResult.secret);
+
+      const user = await authService.getCurrentUser();
+      if (!user) throw new Error('Session created but could not fetch user');
+
+      const profile = await get().fetchOrCreateProfile(user);
+      set({ user, profile, isAuthenticated: true, tempPhone: null, tempVerificationId: null });
+      return;
     } catch (error: any) {
-      set({ error: error.message || 'Invalid OTP', isLoading: false });
+      if (__DEV__) console.log('[Auth] Verify OTP error:', error.message);
+      set({ error: error.message || 'Invalid OTP' });
       throw error;
+    }
+  },
+
+  authenticateWithBiometric: async () => {
+    try {
+      const bioEnabled = await biometricService.isBiometricEnabled();
+      if (!bioEnabled) return false;
+
+      const success = await biometricService.authenticate('Login with biometrics');
+      if (success) {
+        set({ isLoading: true });
+        const user = await authService.getCurrentUser();
+        if (user) {
+          const profile = await get().fetchOrCreateProfile(user);
+          set({ user, profile, isAuthenticated: true, isLoading: false, biometricPending: false });
+          return true;
+        }
+        set({ isLoading: false });
+      }
+      return false;
+    } catch (error) {
+      set({ isLoading: false });
+      return false;
     }
   },
 
@@ -203,11 +396,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     try {
       await authService.logout();
+      // Sign out of Firebase too — phone-auth users have a Firebase session
+      // alongside the Appwrite one. Failing to sign out leaves the Firebase
+      // user logged in and triggers stale-state behavior on next login.
+      try { await signOutFirebase(); } catch (_e) {}
       set({
         user: null,
         profile: null,
         isAuthenticated: false,
         isLoading: false,
+        biometricPending: false,
       });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
@@ -217,9 +415,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   checkAuth: async () => {
     set({ isLoading: true });
     try {
+      // Check if biometric is enabled
+      const bioEnabled = await biometricService.isBiometricEnabled();
+      if (bioEnabled) {
+        set({ biometricPending: true });
+      }
+
       // Add timeout to prevent hanging on unreachable API
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Auth check timeout')), 5000)
+        setTimeout(() => reject(new Error('Auth check timeout')), 30000)
       );
       const user = await Promise.race([
         authService.getCurrentUser(),
@@ -266,48 +470,75 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  refreshProfile: async () => {
+    const { user } = get();
+    if (!user) return;
+    try {
+      const profile = await get().fetchOrCreateProfile(user);
+      set({ profile });
+    } catch (error) {
+      console.error('[AuthStore] Refresh profile failed:', error);
+    }
+  },
+
   clearError: () => set({ error: null }),
 
-  // Helper function to fetch or create user profile
   fetchOrCreateProfile: async (user: Models.User<Models.Preferences>): Promise<UserProfile> => {
+    const defaultProfile: UserProfile = {
+      $id: user.$id,
+      userId: user.$id,
+      name: user.name || '',
+      email: user.email,
+      subscription: 'free',
+      generationsUsed: 0,
+      generationsLimit: 10,
+      createdAt: new Date().toISOString(),
+    };
+
     try {
-      // Try to fetch existing profile
-      const profiles = await dbService.listDocuments<UserProfile & Models.Document>(
-        COLLECTIONS.USERS,
-        [`userId=${user.$id}`]
+      const profileTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 30000)
       );
+
+      // Try to fetch existing profile
+      const profiles = await Promise.race([
+        dbService.listDocuments<UserProfile & Models.Document>(
+          COLLECTIONS.USERS,
+          [Query.equal('userId', user.$id)]
+        ),
+        profileTimeout,
+      ]);
 
       if (profiles.documents.length > 0) {
         return profiles.documents[0] as UserProfile;
       }
 
       // Create new profile
-      const newProfile = await dbService.createDocument<UserProfile & Models.Document>(
-        COLLECTIONS.USERS,
-        {
-          userId: user.$id,
-          name: user.name || '',
-          email: user.email,
-          subscription: 'free',
-          generationsUsed: 0,
-          generationsLimit: 10,
-          createdAt: new Date().toISOString(),
-        }
-      );
+      const newProfile = await Promise.race([
+        dbService.createDocument<UserProfile & Models.Document>(
+          COLLECTIONS.USERS,
+          {
+            userId: user.$id,
+            name: user.name || '',
+            email: user.email,
+            subscription: 'free',
+            generationsUsed: 0,
+            generationsLimit: 10,
+            createdAt: new Date().toISOString(),
+          }
+        ),
+        profileTimeout,
+      ]);
 
       return newProfile as UserProfile;
-    } catch (error) {
-      // Return a default profile if database operations fail
-      return {
-        $id: user.$id,
-        userId: user.$id,
-        name: user.name || '',
-        email: user.email,
-        subscription: 'free',
-        generationsUsed: 0,
-        generationsLimit: 10,
-        createdAt: new Date().toISOString(),
-      };
+    } catch (error: any) {
+      // Surface network/timeout errors in state so the UI can show a warning.
+      // We still return a temporary defaultProfile so auth isn't blocked.
+      if (error?.message && !error.message.includes('Document with the requested ID')) {
+        console.warn('[AuthStore] fetchOrCreateProfile failed:', error.message);
+        set({ error: 'Profile load failed — some features may be limited.' });
+      }
+      return defaultProfile;
     }
   },
 }));

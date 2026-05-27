@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,441 +6,387 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Dimensions,
-  FlatList,
   Image,
-  Animated,
-  Easing,
+  ImageBackground,
+  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/AppNavigator';
-import { useToolsStore, TOOL_CATEGORIES, PLATFORMS, Tool } from '../../store/toolsStore';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
-import AnimatedBackground from '../../components/common/AnimatedBackground';
+import { useToolsStore, Tool, TOOL_CATEGORIES, PLATFORMS } from '../../store/toolsStore';
+import { useAuthStore } from '../../store/authStore';
+import { Colors } from '../../constants/theme';
+import { getToolIcon } from '../../constants/toolIcons';
+import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
-
-// Screen images
-const ScreenImages = {
-  toolsHero: require('../../assets/images/screens/tools-hero.jpg'),
-  marketingTools: require('../../assets/images/screens/marketing-tools.jpg'),
-};
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+const CARD_WIDTH = (width - 48 - 16) / 3;
 
 const ToolsScreen = () => {
-  const navigation = useNavigation<NavigationProp>();
-  const { tools, searchTools, getToolsByCategory } = useToolsStore();
+  const navigation = useNavigation<any>();
+  const { tools } = useToolsStore();
+  const { profile } = useAuthStore();
+  const isFreeUser = !profile?.subscription || profile.subscription === 'free';
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [activePlatform, setActivePlatform] = useState('All');
+  const [activeSubcategory, setActiveSubcategory] = useState('All');
 
-  const filteredCategories = useMemo(() => {
-    if (!selectedPlatform) return TOOL_CATEGORIES;
-    return TOOL_CATEGORIES.filter(cat => cat.platform === selectedPlatform || cat.platform === 'all');
-  }, [selectedPlatform]);
+  // 7 canonical platforms from app.marketingtool.pro web sidebar
+  const PLATFORM_CATEGORIES: Record<string, string[]> = {
+    'Google Ads': ['google-ads'],
+    'Meta / Facebook': ['facebook-ads', 'meta-content'],
+    'Social Media': ['social-media', 'instagram', 'tiktok', 'youtube', 'linkedin', 'twitter', 'pinterest'],
+    'Content & SEO': ['google-seo', 'google-content', 'content-creation', 'copywriting'],
+    'An-Analytics': ['google-analytics'],
+    'E-commerce': ['shopify-products', 'shopify-ads', 'email-marketing', 'ecommerce-seo'],
+    'AI Tools': ['ai-agents'],
+  };
+
+  const subcategories = useMemo(() => {
+    if (activePlatform === 'All') return [];
+    const ids = PLATFORM_CATEGORIES[activePlatform] || [];
+    return TOOL_CATEGORIES.filter((c) => ids.includes(c.id));
+  }, [activePlatform]);
 
   const filteredTools = useMemo(() => {
     let result = tools;
-
+    if (activePlatform !== 'All') {
+      const ids = PLATFORM_CATEGORIES[activePlatform] || [];
+      result = result.filter((t) => ids.includes(t.category));
+    }
+    if (activeSubcategory !== 'All') {
+      result = result.filter((t) => t.category === activeSubcategory);
+    }
     if (searchQuery) {
-      return searchTools(searchQuery);
+      result = result.filter((t) =>
+        t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
-
-    if (selectedCategory) {
-      result = getToolsByCategory(selectedCategory);
-    } else if (selectedPlatform) {
-      const platformCategories = TOOL_CATEGORIES.filter(c => c.platform === selectedPlatform).map(c => c.id);
-      result = tools.filter(t => platformCategories.includes(t.category));
-    }
-
     return result;
-  }, [searchQuery, selectedPlatform, selectedCategory, tools]);
+  }, [tools, activePlatform, activeSubcategory, searchQuery]);
 
-  const handleToolPress = (tool: Tool) => {
-    if (tool.slug === 'meme-generator') {
-      navigation.navigate('MemeGenerator');
-    } else {
-      navigation.navigate('ToolDetail', { toolSlug: tool.slug });
-    }
-  };
-
-  const renderToolCard = ({ item }: { item: Tool }) => (
-    <TouchableOpacity
-      style={styles.toolCard}
-      onPress={() => handleToolPress(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.toolHeader}>
-        <View style={[styles.toolIcon, { backgroundColor: Colors.secondary + '15' }]}>
-          <Feather name={item.icon as any} size={22} color={Colors.secondary} />
-        </View>
-        <View style={styles.toolBadges}>
-          {item.isNew && (
-            <View style={[styles.badge, { backgroundColor: Colors.success }]}>
-              <Text style={styles.badgeText}>NEW</Text>
-            </View>
-          )}
-          {item.isPro && (
-            <View style={[styles.badge, { backgroundColor: Colors.gold }]}>
-              <Text style={styles.badgeText}>PRO</Text>
-            </View>
-          )}
-          {item.isTrending && (
-            <View style={[styles.badge, { backgroundColor: Colors.secondary }]}>
-              <Feather name="trending-up" size={10} color={Colors.white} />
-            </View>
-          )}
-        </View>
-      </View>
-
-      <Text style={styles.toolName}>{item.name}</Text>
-      <Text style={styles.toolDescription} numberOfLines={2}>{item.shortDescription}</Text>
-
-      <View style={styles.toolFooter}>
-        <View style={styles.toolStats}>
-          <Feather name="users" size={12} color={Colors.textTertiary} />
-          <Text style={styles.toolStatText}>{(item.usageCount / 1000).toFixed(1)}k</Text>
-        </View>
-        <View style={styles.toolRating}>
-          <Feather name="star" size={12} color={Colors.gold} />
-          <Text style={styles.toolStatText}>{item.rating}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+  const platformTabs = [
+    { name: 'All', img: null },
+    { name: 'Google Ads', img: require('../../../assets/images/platforms/plat-google.webp') },
+    { name: 'Meta / Facebook', img: require('../../../assets/images/platforms/plat-meta.webp') },
+    { name: 'Social Media', img: require('../../../assets/images/platforms/plat-social.webp') },
+    { name: 'Content & SEO', img: require('../../../assets/images/platforms/plat-seo.webp') },
+    { name: 'An-Analytics', img: require('../../../assets/images/platforms/plat-analytics.webp') },
+    { name: 'E-commerce', img: require('../../../assets/images/platforms/plat-ecommerce.webp') },
+    { name: 'AI Tools', img: require('../../../assets/images/platforms/plat-ai.webp') },
+  ];
 
   return (
-    <AnimatedBackground variant="tools" showParticles={true}>
-      {/* Hero Banner */}
-      <View style={styles.heroBanner}>
-        <Image source={ScreenImages.toolsHero} style={styles.heroImage} resizeMode="cover" />
-        <LinearGradient
-          colors={['transparent', 'rgba(13, 15, 28, 0.7)', 'rgba(13, 15, 28, 0.95)']}
-          style={styles.heroGradient}
+    <View style={styles.screenContainer}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} stickyHeaderIndices={[]}>
+        {/* Hero Banner */}
+        <ImageBackground
+          source={require('../../../assets/images/screens/tools-hero.webp')}
+          style={styles.heroBanner}
+          resizeMode="cover"
         >
-          <View style={styles.heroContent}>
-            <View style={styles.heroBadge}>
-              <Feather name="zap" size={12} color={Colors.gold} />
-              <Text style={styles.heroBadgeText}>206+ AI Tools</Text>
+          <LinearGradient
+            colors={['rgba(13,15,28,0.3)', 'rgba(13,15,28,0.85)']}
+            style={styles.heroOverlay}
+          >
+            <View style={styles.heroContent}>
+              <View style={styles.aiBadge}>
+                <Feather name="zap" size={12} color="#F59E0B" />
+                <Text style={styles.aiBadgeText}>AI Tools</Text>
+              </View>
+              <Text style={styles.heroTitle}>Marketing AI Tools</Text>
+              <Text style={styles.heroSubtitle}>Google · Meta · Social · SEO · Analytics · E-com · AI</Text>
             </View>
-            <Text style={styles.heroTitle}>AI Marketing Tools</Text>
-            <Text style={styles.heroSubtitle}>Google • Meta • Shopify</Text>
-          </View>
-        </LinearGradient>
-      </View>
+          </LinearGradient>
+        </ImageBackground>
 
-      {/* Header */}
-      <View style={styles.header}>
-        {/* Search */}
+        {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <Feather name="search" size={20} color={Colors.textTertiary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search 206+ tools..."
-            placeholderTextColor={Colors.textTertiary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Feather name="x" size={20} color={Colors.textTertiary} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </View>
-
-      {/* Platform Tabs */}
-      <View style={styles.platformTabs}>
-        <TouchableOpacity
-          style={[styles.platformTab, !selectedPlatform && styles.platformTabActive]}
-          onPress={() => { setSelectedPlatform(null); setSelectedCategory(null); }}
-        >
-          <Text style={[styles.platformTabText, !selectedPlatform && styles.platformTabTextActive]}>All</Text>
-        </TouchableOpacity>
-        {PLATFORMS.map((platform) => (
-          <TouchableOpacity
-            key={platform.id}
-            style={[styles.platformTab, selectedPlatform === platform.id && styles.platformTabActive]}
-            onPress={() => { setSelectedPlatform(platform.id); setSelectedCategory(null); }}
-          >
-            <Feather
-              name={platform.icon as any}
-              size={16}
-              color={selectedPlatform === platform.id ? Colors.white : Colors.textSecondary}
+          <View style={styles.searchBar}>
+            <Feather name="search" size={18} color={Colors.textTertiary} />
+            <TextInput
+              placeholder="Search tools..."
+              placeholderTextColor={Colors.textTertiary}
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
             />
-            <Text style={[styles.platformTabText, selectedPlatform === platform.id && styles.platformTabTextActive]}>
-              {platform.name.split('/')[0]}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Categories */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoriesScroll}
-        contentContainerStyle={styles.categoriesContent}
-      >
-        <TouchableOpacity
-          style={[styles.categoryChip, !selectedCategory && styles.categoryChipActive]}
-          onPress={() => setSelectedCategory(null)}
-        >
-          <Text style={[styles.categoryChipText, !selectedCategory && styles.categoryChipTextActive]}>
-            All
-          </Text>
-        </TouchableOpacity>
-
-        {filteredCategories.map((category) => (
-          <TouchableOpacity
-            key={category.id}
-            style={[styles.categoryChip, selectedCategory === category.id && styles.categoryChipActive]}
-            onPress={() => setSelectedCategory(category.id)}
-          >
-            <Text style={[styles.categoryChipText, selectedCategory === category.id && styles.categoryChipTextActive]}>
-              {category.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Tools Grid */}
-      <FlatList
-        data={filteredTools}
-        renderItem={renderToolCard}
-        keyExtractor={(item) => item.$id}
-        numColumns={2}
-        columnWrapperStyle={styles.toolsRow}
-        contentContainerStyle={styles.toolsContainer}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Feather name="search" size={48} color={Colors.textTertiary} />
-            <Text style={styles.emptyText}>No tools found</Text>
-            <Text style={styles.emptySubtext}>Try a different search term</Text>
           </View>
-        }
-      />
-    </AnimatedBackground>
+        </View>
+
+        {/* Platform Tabs */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.platformRow}
+        >
+          {platformTabs.map((tab) => (
+            <TouchableOpacity
+              key={tab.name}
+              style={[styles.platformChip, activePlatform === tab.name && styles.platformChipActive]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setActivePlatform(tab.name);
+                setActiveSubcategory('All');
+              }}
+            >
+              {tab.img && <Image source={tab.img} style={{ width: 18, height: 18 }} resizeMode="contain" />}
+              <Text style={[styles.platformText, activePlatform === tab.name && styles.platformTextActive]}>{tab.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Subcategory Chips */}
+        {subcategories.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.subRow}
+          >
+            <TouchableOpacity
+              style={[styles.subChip, activeSubcategory === 'All' && styles.subChipActive]}
+              onPress={() => { Haptics.selectionAsync(); setActiveSubcategory('All'); }}
+            >
+              <Text style={[styles.subText, activeSubcategory === 'All' && styles.subTextActive]}>All</Text>
+            </TouchableOpacity>
+            {subcategories.map((s) => (
+              <TouchableOpacity
+                key={s.id}
+                style={[styles.subChip, activeSubcategory === s.id && styles.subChipActive]}
+                onPress={() => { Haptics.selectionAsync(); setActiveSubcategory(s.id); }}
+              >
+                <Text style={[styles.subText, activeSubcategory === s.id && styles.subTextActive]}>{s.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
+        {/* Spacer */}
+        <View style={{ height: 8 }} />
+
+        {/* 3-Column Grid */}
+        <View style={styles.grid}>
+          {filteredTools.map((tool) => (
+            <TouchableOpacity
+              key={tool.$id}
+              style={styles.card}
+              activeOpacity={0.75}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                navigation.navigate('ToolDetail', { toolSlug: tool.slug });
+              }}
+            >
+              <View style={styles.iconLiquid}>
+                <View style={styles.iconGlow} />
+                <Image source={getToolIcon(tool.slug)} style={styles.cardIcon} resizeMode="contain" />
+                {tool.isPro && isFreeUser && (
+                  <View style={styles.lockOverlay}>
+                    <Feather name="lock" size={20} color="#FFF" />
+                  </View>
+                )}
+              </View>
+              <View style={styles.badgeRow}>
+                {tool.isPro && (
+                  <View style={styles.proBadge}><Text style={styles.proBadgeText}>PRO</Text></View>
+                )}
+              </View>
+              <Text style={styles.cardName} numberOfLines={2}>{tool.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <View style={{ height: 120 }} />
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screenContainer: {
     flex: 1,
+    backgroundColor: '#0D0F1C',
   },
   heroBanner: {
-    height: 180,
-    marginTop: 50,
-    marginHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.xl,
-    overflow: 'hidden',
-  },
-  heroImage: {
     width: '100%',
-    height: '100%',
-    position: 'absolute',
+    height: 200,
+    marginTop: 44,
   },
-  heroGradient: {
+  heroOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    padding: Spacing.lg,
+    padding: 20,
   },
-  heroContent: {
-    alignItems: 'flex-start',
-  },
-  heroBadge: {
+  heroContent: {},
+  aiBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(253, 151, 7, 0.2)',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.4)',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: BorderRadius.full,
-    gap: 6,
-    marginBottom: Spacing.sm,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
   },
-  heroBadgeText: {
+  aiBadgeText: {
     fontSize: 12,
+    color: '#F59E0B',
     fontWeight: '600',
-    color: Colors.gold,
   },
   heroTitle: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: Colors.white,
-    marginBottom: 4,
+    color: '#FFFFFF',
   },
   heroSubtitle: {
     fontSize: 14,
-    color: Colors.textSecondary,
-  },
-  header: {
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    backgroundColor: Colors.background,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 4,
   },
   searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 46,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   searchInput: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: Spacing.sm,
+    color: '#FFFFFF',
+    marginLeft: 10,
     fontSize: 15,
-    color: Colors.white,
   },
-  platformTabs: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    gap: Spacing.sm,
+  platformRow: {
+    paddingHorizontal: 16,
+    gap: 8,
+    marginBottom: 8,
   },
-  platformTab: {
+  platformChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.surface,
-    paddingVertical: 10,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.md,
     gap: 6,
-  },
-  platformTabActive: {
-    backgroundColor: Colors.secondary,
-  },
-  platformTabText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-  },
-  platformTabTextActive: {
-    color: Colors.white,
-  },
-  categoriesScroll: {
-    maxHeight: 44,
-  },
-  categoriesContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.xs,
-    gap: Spacing.sm,
-  },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: BorderRadius.full,
-    marginRight: Spacing.sm,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  categoryChipActive: {
+  platformChipActive: {
     backgroundColor: Colors.secondary,
+    borderColor: Colors.secondary,
   },
-  categoryChipText: {
-    fontSize: 13,
+  platformText: {
     color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '600',
   },
-  categoryChipTextActive: {
-    color: Colors.white,
+  platformTextActive: {
+    color: '#FFFFFF',
+  },
+  subRow: {
+    paddingHorizontal: 16,
+    gap: 8,
+    marginBottom: 8,
+  },
+  subChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  subChipActive: {
+    backgroundColor: 'rgba(124,58,237,0.2)',
+  },
+  subText: {
+    color: Colors.textTertiary,
+    fontSize: 12,
     fontWeight: '500',
   },
-  toolsContainer: {
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    paddingBottom: 100,
+  subTextActive: {
+    color: Colors.secondary,
   },
-  toolsRow: {
-    justifyContent: 'space-between',
-  },
-  toolCard: {
-    width: (width - Spacing.md * 3) / 2,
-    backgroundColor: Colors.card,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
-  },
-  toolHeader: {
+  grid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.sm,
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    gap: 8,
   },
-  toolIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.md,
+  card: {
+    width: CARD_WIDTH,
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    borderRadius: 16,
+    padding: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  iconLiquid: {
+    width: 68,
+    height: 68,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 6,
   },
-  toolBadges: {
+  iconGlow: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(124,58,237,0.15)',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  cardIcon: {
+    width: 56,
+    height: 56,
+  },
+  lockOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 16,
+    zIndex: 5,
+  },
+  badgeRow: {
     flexDirection: 'row',
-    gap: 4,
+    alignItems: 'center',
+    gap: 3,
+    marginBottom: 4,
+    minHeight: 16,
   },
-  badge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  proBadge: {
+    backgroundColor: 'rgba(253,151,7,0.25)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
     borderRadius: 4,
   },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: Colors.white,
+  proBadgeText: { fontSize: 8, color: '#FD9707', fontWeight: 'bold' },
+  newBadge: {
+    backgroundColor: 'rgba(34,197,94,0.25)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
   },
-  toolName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.white,
-    marginBottom: 4,
-  },
-  toolDescription: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    lineHeight: 16,
-    marginBottom: Spacing.sm,
-  },
-  toolFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  toolStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  toolRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  toolStatText: {
+  newBadgeText: { fontSize: 8, color: '#22C55E', fontWeight: 'bold' },
+  cardName: {
     fontSize: 11,
-    color: Colors.textTertiary,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xxl,
-  },
-  emptyText: {
-    fontSize: 18,
     fontWeight: '600',
-    color: Colors.white,
-    marginTop: Spacing.md,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginTop: 4,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    lineHeight: 14,
   },
 });
 

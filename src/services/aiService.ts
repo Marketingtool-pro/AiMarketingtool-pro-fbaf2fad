@@ -3,6 +3,8 @@
 // NO direct Windmill calls — clients never talk to Windmill directly
 
 import { functions, account } from './appwrite';
+import { ExecutionMethod } from 'react-native-appwrite';
+import { getString } from './firebaseRemoteConfig';
 
 const TOOL_EXECUTOR_FUNCTION_ID = 'tool-executor';
 const NEXTJS_API_BASE = 'https://app.marketingtool.pro';
@@ -41,6 +43,10 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
   try {
     if (__DEV__) console.log(`[AI] Executing tool-executor for: ${toolSlug}`);
 
+    // Read model from Remote Config (falls back to 'gemini-2.5-flash-lite' if not fetched)
+    const geminiModel = getString('gemini_model');
+
+    // 🚨 ANR FIX: Set async=true to prevent blocking the main thread during execution
     const execution = await functions.createExecution(
       TOOL_EXECUTOR_FUNCTION_ID,
       JSON.stringify({
@@ -51,21 +57,35 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         output_count: outputCount,
         user_id: userId,
         options: { tone: tone || 'professional', language: language || 'English' },
+        model: geminiModel,
       }),
-      false,  // async = false (wait for result)
+      true,  // async = true (DO NOT BLOCK)
       '/',    // path
-      'POST', // method
+      ExecutionMethod.POST, // method
     );
 
-    if (execution.responseStatusCode >= 200 && execution.responseStatusCode < 300) {
-      const result = parseExecutionResponse(execution.responseBody, outputCount);
-      if (result.success && result.outputs.length > 0) {
-        if (__DEV__) console.log(`[AI] Function success: ${result.outputs.length} outputs`);
-        return result;
+    // Polling for the result
+    let status = execution.status;
+    let executionId = execution.$id;
+    let attempts = 0;
+    const maxAttempts = 45; // Longer timeout for complex tools
+
+    while ((status === 'waiting' || status === 'processing') && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const updatedExecution = await functions.getExecution(TOOL_EXECUTOR_FUNCTION_ID, executionId);
+      status = updatedExecution.status;
+      
+      if (status === 'completed') {
+        const result = parseExecutionResponse(updatedExecution.responseBody, outputCount);
+        if (result.success && result.outputs.length > 0) {
+          if (__DEV__) console.log(`[AI] Function success: ${result.outputs.length} outputs`);
+          return result;
+        }
       }
+      attempts++;
     }
 
-    if (__DEV__) console.log(`[AI] Function returned status ${execution.responseStatusCode}, trying fallback`);
+    if (__DEV__) console.log(`[AI] Function timed out or failed with status ${status}, trying fallback`);
   } catch (error: any) {
     if (__DEV__) console.log(`[AI] Function error: ${error.message}, trying fallback`);
   }
@@ -86,6 +106,7 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         tool: toolSlug,
         input: userPrompt,
         options: { tone: tone || 'professional', language: language || 'English' },
+        model: getString('gemini_model'),
       }),
     });
 

@@ -1,60 +1,68 @@
-// MarketingTool Theme - Dark Mode (Liquide Design System)
+// MarketingTool Theme - Dark Mode (Vision UI Pro inspired)
 export const Colors = {
-  // Primary Brand Colors (Deep Purple)
-  primary: '#16132B',
-  primaryLight: '#1E1A3D',
-  primaryDark: '#0C0B18',
+  // Primary Brand Colors (Deep Navy)
+  primary: '#0f1535',
+  primaryLight: '#131538',
+  primaryDark: '#0D0F1C',
 
-  // Secondary Colors (Orange/Gold - CTAs)
-  secondary: '#F7541E',
-  secondaryLight: '#FF6B35',
-  secondaryDark: '#E34512',
+  // Secondary Colors (Purple - CTAs & accents)
+  secondary: '#7C3AED',
+  secondaryLight: '#8B5CF6',
+  secondaryDark: '#6D28D9',
 
   // Accent Colors (Purple/Violet)
-  accent: '#6441A5',
-  accentLight: '#851EFF',
-  accentDark: '#570BE4',
+  accent: '#7C3AED',
+  accentLight: '#A78BFA',
+  accentDark: '#6D28D9',
 
-  // Success/Error/Warning (Liquide palette)
-  success: '#33D37D',
-  successLight: '#40D946',
-  error: '#FF4B4B',
+  // Success/Error/Warning
+  success: '#01B574',
+  successLight: '#34D399',
+  error: '#E31A1A',
   errorLight: '#FF5166',
-  warning: '#F39C12',
+  warning: '#FFB547',
   warningLight: '#FBC04C',
-  info: '#2196F3',
+  info: '#0075FF',
 
-  // Background Colors (Dark Theme - Liquide)
-  background: '#0C0B18',
-  backgroundSecondary: '#121212',
-  backgroundTertiary: '#1D1D1D',
-  card: '#1A1A2E',
-  cardHover: '#2C2C2C',
+  // Background Colors (Vision UI Dark)
+  background: '#0D0F1C',
+  backgroundSecondary: '#0f1535',
+  backgroundTertiary: '#131538',
+  card: 'rgba(22, 24, 36, 0.8)',
+  cardHover: 'rgba(22, 24, 36, 0.7)',
 
   // Surface Colors
-  surface: '#121212',
-  surfaceLight: '#1D1D1D',
-  surfaceDark: '#0C0B18',
+  surface: 'rgba(40, 40, 40, 0.7)', // SimpleSocial $bg-surface
+  surfaceLight: 'rgba(255, 255, 255, 0.05)',
+  surfaceDark: '#121212', // SimpleSocial $n4
 
   // Text Colors
-  text: '#FFFFFF',
-  textSecondary: '#B3B3B3',
-  textTertiary: '#808080',
-  textMuted: '#4D4D4D',
-  textInverse: '#0C0B18',
+  text: 'rgba(248, 248, 248, 0.95)', // SimpleSocial $text-primary
+  textSecondary: 'rgba(248, 248, 248, 0.7)', // SimpleSocial $text-secondary
+  textTertiary: 'rgba(248, 248, 248, 0.5)', // SimpleSocial $text-tertiary
+  textMuted: '#4A5568',
+  textInverse: '#060b28',
 
   // Border Colors
-  border: '#2A2A2A',
-  borderLight: '#3D3D3D',
-  borderFocus: '#F7541E',
+  border: 'rgba(255, 255, 255, 0.06)',
+  borderLight: 'rgba(255, 255, 255, 0.08)',
+  borderFocus: '#7C3AED',
 
   // Gradient Colors
-  gradientStart: '#16132B',
-  gradientEnd: '#3D2914',
+  gradientStart: '#0D0F1C',
+  gradientEnd: '#131538',
 
   // Overlay
   overlay: 'rgba(0, 0, 0, 0.7)',
   overlayLight: 'rgba(0, 0, 0, 0.5)',
+
+  // Glassmorphism (Vision UI style)
+  glass: 'rgba(255, 255, 255, 0.05)',
+  glassBorder: 'rgba(255, 255, 255, 0.06)',
+  glassLight: 'rgba(255, 255, 255, 0.08)',
+  glassDark: 'rgba(0, 0, 0, 0.3)',
+  glassCard: 'rgba(22, 24, 36, 0.55)',
+  glassAccent: 'rgba(124, 58, 237, 0.12)',
 
   // Transparent
   transparent: 'transparent',
@@ -63,25 +71,25 @@ export const Colors = {
   white: '#FFFFFF',
   black: '#000000',
 
-  // Additional Liquide Colors
-  gold: '#FD9707',
-  green: '#02b875',
-  purple: '#AF15C3',
-  blue: '#007AFF',
+  // Additional Colors
+  gold: '#FFB547',
+  green: '#01B574',
+  purple: '#7C3AED',
+  blue: '#0075FF',
   cyan: '#00D9FF',
 };
 
 export const Gradients: Record<string, readonly [string, string, ...string[]]> = {
-  primary: ['#16132B', '#0C0B18'] as const,
-  secondary: ['#F7541E', '#E34512'] as const,
-  accent: ['#6441A5', '#851EFF'] as const,
-  card: ['#1A1A2E', '#121212'] as const,
-  button: ['#F7541E', '#FF6B35'] as const,
-  success: ['#33D37D', '#02b875'] as const,
-  dark: ['#0C0B18', '#16132B'] as const,
-  premium: ['#3D2914', '#16132B'] as const,
-  gold: ['#FD9707', '#F39C12'] as const,
-  purple: ['#6441A5', '#AF15C3'] as const,
+  primary: ['#0f1535', '#060b28'] as const,
+  secondary: ['#7C3AED', '#6D28D9'] as const,
+  accent: ['#7C3AED', '#A78BFA'] as const,
+  card: ['rgba(22, 24, 36, 0.55)', 'rgba(22, 24, 36, 0.4)'] as const,
+  button: ['#7C3AED', '#8B5CF6'] as const,
+  success: ['#01B574', '#34D399'] as const,
+  dark: ['#060b28', '#0f1535'] as const,
+  premium: ['#131538', '#0f1535'] as const,
+  gold: ['#FFB547', '#F39C12'] as const,
+  purple: ['#7C3AED', '#A78BFA'] as const,
 };
 
 export const Spacing = {
@@ -146,25 +154,64 @@ export const Shadow = {
     elevation: 8,
   },
   glow: {
-    shadowColor: '#F7541E',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 16,
     elevation: 10,
   },
   glowPurple: {
-    shadowColor: '#6441A5',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 16,
     elevation: 10,
   },
   glowGreen: {
-    shadowColor: '#33D37D',
+    shadowColor: '#01B574',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 16,
     elevation: 10,
+  },
+  glass: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  glassSubtle: {
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+};
+
+// Glassmorphism style helper (Vision UI style)
+export const GlassStyle = {
+  card: {
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backdropFilter: 'blur(20px)',
+  },
+  cardLight: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  input: {
+    backgroundColor: 'rgba(22, 24, 36, 0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  button: {
+    backgroundColor: 'rgba(124, 58, 237, 0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
 };
 

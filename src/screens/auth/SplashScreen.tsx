@@ -1,12 +1,16 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, Animated, Dimensions } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, Animated, Dimensions, Image } from 'react-native';
 import { Colors } from '../../constants/theme';
 
 const { width, height } = Dimensions.get('window');
 
+// App logo - MarketingTool M+signal icon
+const AppLogo = require('../../../assets/images/logo-icon.webp');
+
 const SplashScreen = () => {
-  const fadeAnim = new Animated.Value(0);
-  const scaleAnim = new Animated.Value(0.8);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const glowAnim = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -22,6 +26,22 @@ const SplashScreen = () => {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Glow pulse
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 0.8,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0.4,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
   }, []);
 
   return (
@@ -35,12 +55,14 @@ const SplashScreen = () => {
           },
         ]}
       >
-        <View style={styles.logoWrapper}>
-          <View style={styles.logoShape}>
-            <View style={styles.logoInner}>
-              <View style={styles.logoTopLeft} />
-              <View style={styles.logoBottomRight} />
-            </View>
+        <View style={styles.logoGlowWrapper}>
+          <Animated.View style={[styles.logoGlow, { opacity: glowAnim }]} />
+          <View style={styles.logoWrapper}>
+            <Image
+              source={AppLogo}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
         </View>
         <Animated.Text style={styles.brandText}>MarketingTool</Animated.Text>
@@ -55,51 +77,43 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#16132B',
+    backgroundColor: '#060b28',
   },
   logoContainer: {
     alignItems: 'center',
   },
+  logoGlowWrapper: {
+    width: 160,
+    height: 160,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  logoGlow: {
+    position: 'absolute',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: '#7C3AED',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 40,
+    elevation: 20,
+  },
   logoWrapper: {
     width: 100,
     height: 100,
-    marginBottom: 24,
+    borderRadius: 24,
+    backgroundColor: '#060b28',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(124, 58, 237, 0.3)',
   },
-  logoShape: {
-    width: 80,
-    height: 80,
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    transform: [{ rotate: '-5deg' }],
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoInner: {
-    width: 50,
-    height: 50,
-    position: 'relative',
-  },
-  logoTopLeft: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 30,
-    height: 30,
-    borderTopWidth: 6,
-    borderLeftWidth: 6,
-    borderColor: '#16132B',
-    borderTopLeftRadius: 8,
-  },
-  logoBottomRight: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 30,
-    height: 40,
-    backgroundColor: '#16132B',
-    borderTopLeftRadius: 8,
+  logoImage: {
+    width: 70,
+    height: 70,
   },
   brandText: {
     fontSize: 28,

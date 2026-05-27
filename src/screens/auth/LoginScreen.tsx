@@ -15,430 +15,493 @@ import {
   Easing,
   Image,
   Modal,
+  FlatList,
+  AppState,
 } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import * as LocalAuthentication from 'expo-local-authentication';
-import LottieView from 'lottie-react-native';
 import { AuthStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
+import { biometricService, BiometricType } from '../../services/biometric';
+import { clearVerification as clearFirebaseVerification } from '../../services/firebaseAuth';
 
-const { width, height } = Dimensions.get('window');
+import * as AppleAuthentication from 'expo-apple-authentication';
 
-// Login method options
-interface LoginMethod {
-  id: string;
+const { width } = Dimensions.get('window');
+
+// Country data for phone login
+interface Country {
   name: string;
-  icon: string;
-  color: string;
-  gradient: string[];
-  description: string;
+  code: string;
+  flag: string;
 }
 
-const loginMethods: LoginMethod[] = [
-  {
-    id: 'phone',
-    name: 'Phone',
-    icon: 'phone',
-    color: '#10B981',
-    gradient: ['#10B981', '#059669'],
-    description: 'Sign in with OTP',
-  },
-  {
-    id: 'google',
-    name: 'Google',
-    icon: 'chrome',
-    color: '#4285F4',
-    gradient: ['#4285F4', '#34A853'],
-    description: 'Sign in with your Google account',
-  },
-  {
-    id: 'apple',
-    name: 'Apple',
-    icon: 'command',
-    color: '#000000',
-    gradient: ['#1D1D1F', '#555555'],
-    description: 'Sign in with your Apple ID',
-  },
-  {
-    id: 'facebook',
-    name: 'Facebook',
-    icon: 'facebook',
-    color: '#1877F2',
-    gradient: ['#1877F2', '#3B5998'],
-    description: 'Sign in with Facebook',
-  },
-  {
-    id: 'email',
-    name: 'Email',
-    icon: 'mail',
-    color: '#FF6B6B',
-    gradient: ['#FF6B6B', '#EE5A5A'],
-    description: 'Sign in with email & password',
-  },
-  {
-    id: 'biometric',
-    name: 'Face ID',
-    icon: 'smartphone',
-    color: '#34D399',
-    gradient: ['#34D399', '#10B981'],
-    description: 'Use Face ID or Touch ID',
-  },
+const COUNTRIES: Country[] = [
+  { name: 'United States', code: '+1', flag: '🇺🇸' },
+  { name: 'India', code: '+91', flag: '🇮🇳' },
+  { name: 'Canada', code: '+1', flag: '🇨🇦' },
+  { name: 'United Kingdom', code: '+44', flag: '🇬🇧' },
 ];
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { login, loginWithGoogle, loginWithApple, loginWithFacebook, sendOTP, verifyOTP, isLoading, error, clearError } = useAuthStore();
+  const {
+    login, loginWithGoogle, loginWithApple, loginWithFacebook,
+    sendPhoneOTP, verifyPhoneOTP, verifyTOTP, authenticateWithBiometric, isLoading, 
+    mfaPending, clearError,
+  } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[1]);
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [otp, setOtp] = useState('');
-  const [phoneStep, setPhoneStep] = useState<'phone' | 'otp'>('phone');
-  const [phoneError, setPhoneError] = useState('');
-  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState(0);
-  const [canResend, setCanResend] = useState(true);
+  const [otpCode, setOtpCode] = useState('');
+  const [totpCode, setTotpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpUserId, setOtpUserId] = useState('');
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [totpError, setTotpError] = useState('');
+  const [otpSending, setOtpSending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Guards against handleVerifyOTP being invoked twice (auto-verify on 6th
+  // digit + manual button tap). The second call would arrive after Firebase
+  // has consumed verificationId, throwing auth/missing-verification-code.
+  const verifyingRef = useRef(false);
+  // Blocks verify while a send (or resend) is mid-flight. iOS SMS auto-fill
+  // can drop the new code into the input before Firebase returns the new
+  // verificationId, causing the auto-verify timeout to fire against the
+  // stale ID. Ref (not state) so setTimeout reads the live value.
+  const sendingRef = useRef(false);
 
-  // Timer for OTP cooldown
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (countdown > 0) {
-      setCanResend(false);
-      timer = setInterval(() => {
-        setCountdown((prev) => prev - 1);
-      }, 1000);
-    } else {
-      setCanResend(true);
-    }
-    return () => clearInterval(timer);
-  }, [countdown]);
-
-  // Animations
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const [isBioAvailable, setIsBioAvailable] = useState(false);
+  const [bioType, setBioType] = useState<BiometricType>('none');
+  const [isBioEnabled, setIsBioEnabled] = useState(false);
 
   useEffect(() => {
-    // Entrance animations
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 800,
-        easing: Easing.out(Easing.back(1.2)),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Pulse animation for logo
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.05,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
+    const checkBio = async () => {
+      const available = await biometricService.isBiometricAvailable();
+      const enabled = await biometricService.isBiometricEnabled();
+      const type = await biometricService.getBiometricType();
+      setIsBioAvailable(available);
+      setIsBioEnabled(enabled);
+      setBioType(type);
+    };
+    checkBio();
   }, []);
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return emailRegex.test(email.trim().toLowerCase());
+  const handleBiometricLogin = async () => {
+    const success = await authenticateWithBiometric();
+    if (!success) {
+      Alert.alert('Authentication Failed', 'Could not authenticate biometrically.');
+    }
   };
 
-  const sanitizeInput = (text: string) => {
-    return text.replace(/[<>\"\'&]/g, '');
+  const handleVerifyTOTP = async () => {
+    setTotpError('');
+    try {
+      await verifyTOTP(totpCode);
+    } catch (err: any) {
+      setTotpError(err.message || 'Invalid 2FA code');
+    }
   };
+
+  // Cooldown timer for resend button (60 seconds)
+  const startCooldown = () => {
+    setResendCooldown(60);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown(prev => {
+        if (prev <= 1) {
+          if (cooldownRef.current) clearInterval(cooldownRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  useEffect(() => {
+    return () => { if (cooldownRef.current) clearInterval(cooldownRef.current); };
+  }, []);
+
+  // If user changes phone number or country AFTER OTP was sent, the cached
+  // verificationId points to the old session — using it causes Firebase to
+  // throw auth/missing-verification-code on verify. Drop OTP state so the
+  // user is forced to re-send for the new identifier.
+  useEffect(() => {
+    if (!otpSent) return;
+    setOtpSent(false);
+    setOtpCode('');
+    setOtpError('');
+    setShowOtpModal(false);
+    useAuthStore.getState().clearOtpTemp();
+    clearFirebaseVerification();
+    SecureStore.deleteItemAsync('pendingOTP').catch(() => {});
+  }, [phoneNumber, selectedCountry.code]);
+
+  // Restore OTP modal across app foreground/background — pendingOTP is written
+  // before sendPhoneOTP so a kill/relaunch mid-flow doesn't leave the user stuck
+  // on the phone-entry screen.
+  useEffect(() => {
+    SecureStore.getItemAsync('pendingOTP').then(pending => {
+      if (pending) {
+        try {
+          const { phone, countryCode } = JSON.parse(pending);
+          setPhoneNumber(phone);
+          setOtpSent(true);
+          setShowOtpModal(true);
+          const country = COUNTRIES.find(c => c.code === countryCode);
+          if (country) setSelectedCountry(country);
+        } catch {}
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && !showOtpModal) {
+        SecureStore.getItemAsync('pendingOTP').then(pending => {
+          if (pending) {
+            try {
+              const { phone, countryCode } = JSON.parse(pending);
+              setPhoneNumber(phone);
+              setOtpSent(true);
+              setShowOtpModal(true);
+              const country = COUNTRIES.find(c => c.code === countryCode);
+              if (country) setSelectedCountry(country);
+            } catch {}
+          }
+        });
+      }
+    });
+    return () => sub.remove();
+  }, [showOtpModal]);
 
   const handleLogin = async () => {
-    clearError();
-    setEmailError('');
-    setPasswordError('');
-
-    const sanitizedEmail = email.trim().toLowerCase();
-
-    if (!sanitizedEmail) {
-      setEmailError('Email is required');
-      return;
-    }
-    if (!validateEmail(sanitizedEmail)) {
-      setEmailError('Please enter a valid email address');
-      return;
-    }
-    if (!password) {
-      setPasswordError('Password is required');
-      return;
-    }
-    if (password.length < 8) {
-      setPasswordError('Password must be at least 8 characters');
-      return;
-    }
-
     try {
-      await login(sanitizedEmail, password);
+      await login(email, password);
     } catch (err: any) {
       Alert.alert('Login Failed', err.message || 'Please check your credentials');
     }
   };
 
-  const handleBiometricAuth = async () => {
-    const hasHardware = await LocalAuthentication.hasHardwareAsync();
-    if (!hasHardware) {
-      Alert.alert('Biometric authentication not available');
-      return;
-    }
-
-    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-    if (!isEnrolled) {
-      Alert.alert('No biometrics enrolled');
-      return;
-    }
-
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Login to MarketingTool',
-      fallbackLabel: 'Use password',
-    });
-
-    if (result.success) {
-      Alert.alert('Biometric login', 'Feature coming soon');
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      if (__DEV__) console.log('[Login] Starting Google OAuth...');
-      await loginWithGoogle();
-      if (__DEV__) console.log('[Login] Google OAuth completed');
-    } catch (err: any) {
-      if (__DEV__) console.error('[Login] Google OAuth error:', err);
-      Alert.alert(
-        'Google Login Failed',
-        err.message || 'Please check your internet connection and try again'
-      );
-    }
-  };
-
-  const handleAppleLogin = async () => {
-    try {
-      await loginWithApple();
-    } catch (err: any) {
-      Alert.alert('Apple Login Failed', err.message);
-    }
-  };
-
-  const handleFacebookLogin = async () => {
-    try {
-      if (loginWithFacebook) {
-        await loginWithFacebook();
-      } else {
-        Alert.alert('Coming Soon', 'Facebook login will be available soon');
-      }
-    } catch (err: any) {
-      Alert.alert('Facebook Login Failed', err.message);
-    }
-  };
-
   const handleSendOTP = async () => {
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
-    if (!cleanPhone || cleanPhone.length < 10) {
-      setPhoneError('Please enter a valid 10-digit phone number');
+    if (!phoneNumber) {
+      Alert.alert('Invalid Number', 'Please enter a phone number');
       return;
     }
+    if (resendCooldown > 0) return;
 
-    if (!canResend) {
-      setPhoneError(`Please wait ${countdown} seconds before requesting a new code`);
-      return;
-    }
+    const formattedPhone = `${selectedCountry.code}${phoneNumber}`;
+    setOtpError('');
+    setOtpCode('');
+    setOtpSending(true);
+    sendingRef.current = true;
 
-    clearError();
-    setPhoneError('');
+    // Drop the stale verificationId atomically BEFORE the new send so any
+    // SMS-autofill verify that races in during the network round-trip fails
+    // fast with "no pending verification" instead of hitting Firebase with
+    // a stale ID and showing a misleading "Invalid OTP".
+    await clearFirebaseVerification();
+
+    // Save BEFORE the network call so a foreground/background swap mid-OTP
+    // can re-open the modal on relaunch.
+    await SecureStore.setItemAsync('pendingOTP', JSON.stringify({
+      phone: phoneNumber,
+      countryCode: selectedCountry.code,
+    }));
+
     try {
-      await sendOTP(cleanPhone);
-      setPhoneStep('otp');
-      setCountdown(60); // Start 60s cooldown
+      // Send OTP via Firebase Phone Auth
+      const userId = await sendPhoneOTP(formattedPhone);
+      setOtpUserId(userId);
+      setOtpSent(true);
+      setShowOtpModal(true);
+      startCooldown();
     } catch (err: any) {
-      setPhoneError(err.message || 'Failed to send OTP');
+      await SecureStore.deleteItemAsync('pendingOTP');
+      Alert.alert('OTP Failed', err.message || 'Failed to send OTP. Please try again.');
+    } finally {
+      setOtpSending(false);
+      sendingRef.current = false;
     }
   };
 
   const handleVerifyOTP = async () => {
-    const cleanOtp = otp.trim().replace(/\D/g, '');
-    if (!cleanOtp || cleanOtp.length !== 6) {
-      setPhoneError('Please enter a valid 6-digit code');
-      return;
-    }
-    clearError();
-    setPhoneError('');
+    if (verifyingRef.current) return;
+    // Refuse to verify while a send/resend is in flight — the new
+    // verificationId hasn't landed yet and using the old one would fail.
+    if (sendingRef.current) return;
+    if (otpCode.length < 6) return;
+    verifyingRef.current = true;
+    setOtpError('');
     try {
-      await verifyOTP(cleanOtp);
-      setShowPhoneModal(false);
+      await verifyPhoneOTP(otpUserId, otpCode);
+      await SecureStore.deleteItemAsync('pendingOTP');
+      setShowOtpModal(false);
     } catch (err: any) {
-      setPhoneError(err.message || 'Invalid OTP. Please check the code and try again.');
+      setOtpError(err.message || 'Invalid OTP. Please check and try again.');
+    } finally {
+      verifyingRef.current = false;
     }
   };
 
-  const handleLoginMethod = (methodId: string) => {
-    setSelectedMethod(methodId);
-    switch (methodId) {
-      case 'phone':
-        setShowPhoneModal(true);
-        setPhoneStep('phone');
-        setPhoneNumber('');
-        setOtp('');
-        setPhoneError('');
-        break;
-      case 'google':
-        handleGoogleLogin();
-        break;
-      case 'apple':
-        handleAppleLogin();
-        break;
-      case 'facebook':
-        handleFacebookLogin();
-        break;
-      case 'email':
-        setShowEmailModal(true);
-        break;
-      case 'biometric':
-        handleBiometricAuth();
-        break;
-    }
-    setTimeout(() => setSelectedMethod(null), 1000);
+  const handleCloseOtpModal = async () => {
+    setShowOtpModal(false);
+    setOtpSent(false);
+    setOtpCode('');
+    setOtpError('');
+    useAuthStore.getState().clearOtpTemp();
+    await clearFirebaseVerification();
+    await SecureStore.deleteItemAsync('pendingOTP');
   };
+
+  const filteredCountries = countrySearch
+    ? COUNTRIES.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()))
+    : COUNTRIES;
 
   return (
-    <AnimatedBackground variant="default" showParticles={true}>
+    <AnimatedBackground variant="default">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        style={{ flex: 1 }}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
         >
-          {/* Animated Header */}
-          <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-            <Animated.View style={[styles.logoContainer, { transform: [{ scale: pulseAnim }] }]}>
-              <LinearGradient
-                colors={['#FF6B35', '#F7931E']}
-                style={styles.logoGradient}
-              >
-                <Feather name="zap" size={36} color={Colors.white} />
-              </LinearGradient>
-            </Animated.View>
+          {/* Logo Section */}
+          <View style={styles.logoSection}>
+            <View style={styles.logoIconBg}>
+               <Image
+                  source={require('../../../assets/images/logo-icon.webp')}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
+            </View>
             <Text style={styles.title}>MarketingTool</Text>
-            <Text style={styles.subtitle}>206+ AI Marketing Tools</Text>
-          </Animated.View>
+            <Text style={styles.subtitle}>AI-Powered Marketing Platform</Text>
+          </View>
 
-          {/* Login Methods Grid */}
-          <Animated.View style={[styles.methodsSection, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-            <Text style={styles.methodsTitle}>Choose how to sign in</Text>
-            <View style={styles.methodsGrid}>
-              {loginMethods.map((method, index) => {
-                // Skip Apple on Android
-                if (method.id === 'apple' && Platform.OS !== 'ios') return null;
+          {/* Quick Login */}
+          <View style={styles.quickLoginContainer}>
+            <View style={styles.quickLoginHeader}>
+              <Feather name="smartphone" size={16} color="#9D4EDD" />
+              <Text style={styles.quickLoginText}>Phone Login</Text>
+            </View>
 
-                return (
+            <View style={styles.phoneRow}>
+              <TouchableOpacity
+                style={styles.countrySelector}
+                onPress={() => setShowCountryPicker(true)}
+              >
+                <Text style={styles.flagText}>{selectedCountry.flag}</Text>
+                <Text style={styles.codeText}>{selectedCountry.code}</Text>
+                <Feather name="chevron-down" size={14} color="#8896A5" />
+              </TouchableOpacity>
+
+              <TextInput
+                style={styles.phoneInput}
+                placeholder="Phone"
+                placeholderTextColor="#8896A5"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                keyboardType="phone-pad"
+                editable={!otpSent}
+              />
+
+              {!otpSent ? (
+                <TouchableOpacity
+                  style={[styles.arrowBtn, otpSending && { opacity: 0.5 }]}
+                  onPress={handleSendOTP}
+                  disabled={otpSending}
+                >
+                  <LinearGradient
+                    colors={['#3D2914', '#16132B']}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={styles.arrowCircle}>
+                    {otpSending ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <Feather name="arrow-right" size={20} color="#FFFFFF" />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.arrowBtn}
+                  onPress={() => {
+                    setOtpSent(false); setOtpCode(''); setOtpError('');
+                    useAuthStore.getState().clearOtpTemp();
+                    clearFirebaseVerification();
+                    SecureStore.deleteItemAsync('pendingOTP').catch(() => {});
+                  }}
+                >
+                  <LinearGradient
+                    colors={['#3D2914', '#16132B']}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={[styles.arrowCircle, { backgroundColor: '#4A5568' }]}>
+                    <Feather name="edit-2" size={16} color="#FFFFFF" />
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* OTP Section - Inline */}
+            {otpSent && (
+              <View style={styles.otpSection}>
+                <Text style={styles.otpSentText}>
+                  Enter the 6-digit code sent via SMS to {selectedCountry.code} {phoneNumber}
+                </Text>
+
+                {!!otpError && (
+                  <View style={styles.errorBox}>
+                    <Feather name="alert-circle" size={16} color="#FF6B6B" />
+                    <Text style={styles.errorText}>{otpError}</Text>
+                  </View>
+                )}
+
+                <View style={styles.otpRow}>
+                  <TextInput
+                    style={[styles.otpInputInline, { letterSpacing: 8 }]}
+                    placeholder="000000"
+                    placeholderTextColor="#8896A5"
+                    value={otpCode}
+                    onChangeText={(text) => {
+                      const digits = text.replace(/\D/g, '').slice(0, 6);
+                      setOtpCode(digits);
+                      setOtpError('');
+                      // Uber-style auto-verify when 6 digits filled (e.g. via iOS SMS autofill)
+                      if (digits.length === 6) {
+                        setTimeout(() => handleVerifyOTP(), 100);
+                      }
+                    }}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    autoFocus
+                    textContentType="oneTimeCode"
+                    autoComplete="sms-otp"
+                  />
                   <TouchableOpacity
-                    key={method.id}
-                    style={[
-                      styles.methodCard,
-                      selectedMethod === method.id && styles.methodCardActive
-                    ]}
-                    onPress={() => handleLoginMethod(method.id)}
-                    activeOpacity={0.8}
-                    disabled={isLoading}
+                    style={[styles.verifyBtn, otpCode.length < 6 && { opacity: 0.5 }]}
+                    onPress={handleVerifyOTP}
+                    disabled={isLoading || otpCode.length < 6}
                   >
                     <LinearGradient
-                      colors={method.gradient as [string, string]}
-                      style={styles.methodGradient}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
+                      colors={['#9D4EDD', '#7B2CBF']}
+                      style={styles.verifyBtnGrad}
                     >
-                      {isLoading && selectedMethod === method.id ? (
-                        <ActivityIndicator color={Colors.white} size="small" />
+                      {isLoading ? (
+                        <ActivityIndicator color="#FFFFFF" size="small" />
                       ) : (
-                        <Feather name={method.icon as any} size={28} color={Colors.white} />
+                        <Feather name="check" size={20} color="#FFFFFF" />
                       )}
                     </LinearGradient>
-                    <Text style={styles.methodName}>{method.name}</Text>
-                    <Text style={styles.methodDesc} numberOfLines={1}>{method.description}</Text>
                   </TouchableOpacity>
-                );
-              })}
-            </View>
-          </Animated.View>
+                </View>
 
-          {/* Quick Email Login (collapsed by default) */}
-          <Animated.View style={[styles.quickEmailSection, { opacity: fadeAnim }]}>
-            <TouchableOpacity
-              style={styles.quickEmailToggle}
-              onPress={() => setShowEmailModal(true)}
-            >
-              <View style={styles.quickEmailLeft}>
-                <Feather name="mail" size={20} color={Colors.secondary} />
-                <Text style={styles.quickEmailText}>Sign in with email & password</Text>
+                <TouchableOpacity
+                  onPress={handleSendOTP}
+                  disabled={isLoading || resendCooldown > 0}
+                  style={{ alignSelf: 'center', marginTop: 12 }}
+                >
+                  <Text style={[styles.resendInlineText, resendCooldown > 0 && { opacity: 0.5 }]}>
+                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Didn't get code? Resend"}
+                  </Text>
+                </TouchableOpacity>
               </View>
-              <Feather name="chevron-right" size={20} color={Colors.textSecondary} />
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* Features Banner */}
-          <View style={styles.featuresBanner}>
-            <View style={styles.featureItem}>
-              <Feather name="zap" size={18} color={Colors.gold} />
-              <Text style={styles.featureText}>206+ Tools</Text>
-            </View>
-            <View style={styles.featureDivider} />
-            <View style={styles.featureItem}>
-              <Feather name="shield" size={18} color={Colors.success} />
-              <Text style={styles.featureText}>Secure</Text>
-            </View>
-            <View style={styles.featureDivider} />
-            <View style={styles.featureItem}>
-              <Feather name="clock" size={18} color={Colors.cyan} />
-              <Text style={styles.featureText}>7-Day Trial</Text>
-            </View>
+            )}
           </View>
 
-          {/* Register Link */}
+          {/* Email login entry — promoted above the fold so iPad reviewers
+              see it without scrolling past biometric/social. Apple rejected
+              v1.5.0 on iPad Air 11" because the bottom button was hidden
+              below the keyboard. Keep BOTH this and the bottom one visible. */}
+          <TouchableOpacity
+             activeOpacity={0.7}
+             onPress={() => setShowEmailModal(true)}
+             style={styles.emailLoginButtonTop}
+             accessibilityLabel="Sign in with email and password"
+          >
+             <Feather name="mail" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+             <Text style={styles.emailLoginText}>Sign in with Email</Text>
+          </TouchableOpacity>
+
+          {isBioEnabled && isBioAvailable && (
+            <TouchableOpacity 
+              style={styles.biometricBtn} 
+              onPress={handleBiometricLogin}
+            >
+              <LinearGradient
+                colors={['rgba(157, 78, 221, 0.1)', 'rgba(157, 78, 221, 0.05)']}
+                style={styles.biometricBtnGrad}
+              >
+                <Ionicons
+                  name={bioType === 'face' ? 'scan-circle' : 'finger-print'}
+                  size={32}
+                  color="#9D4EDD"
+                />
+                <Text style={styles.biometricText}>
+                  Quick Login with {bioType === 'face' ? 'Face ID' : 'Touch ID'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.orContainer}>
+            <Text style={styles.orText}>OR CONTINUE WITH</Text>
+          </View>
+
+          <View style={styles.socialRow}>
+             <TouchableOpacity activeOpacity={0.7} onPress={loginWithGoogle}>
+                <Image source={require('../../../assets/images/platforms/google.webp')} style={{ width: 56, height: 56 }} resizeMode="contain" />
+             </TouchableOpacity>
+             <TouchableOpacity activeOpacity={0.7} onPress={loginWithFacebook}>
+                <Image source={require('../../../assets/images/platforms/facebook.webp')} style={{ width: 56, height: 56 }} resizeMode="contain" />
+             </TouchableOpacity>
+             {Platform.OS === 'ios' && (
+               <AppleAuthentication.AppleAuthenticationButton
+                 buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                 buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE}
+                 cornerRadius={16}
+                 style={{ width: 56, height: 56 }}
+                 onPress={loginWithApple}
+               />
+             )}
+          </View>
+
+          {/* Explicit Email login button — App Store reviewer fallback when
+              phone OTP can't be tested. Labelled clearly per review notes. */}
+          <TouchableOpacity
+             activeOpacity={0.7}
+             onPress={() => setShowEmailModal(true)}
+             style={styles.emailLoginButton}
+          >
+             <Feather name="mail" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+             <Text style={styles.emailLoginText}>Sign in with Email</Text>
+          </TouchableOpacity>
+
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.registerLink}>Sign Up Free</Text>
-            </TouchableOpacity>
+             <Text style={styles.footerText}>Don't have an account? </Text>
+             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                <Text style={styles.signupText}>Sign Up Free</Text>
+             </TouchableOpacity>
           </View>
+
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -447,489 +510,580 @@ const LoginScreen = () => {
         visible={showEmailModal}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowEmailModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Sign in with Email</Text>
-              <TouchableOpacity onPress={() => setShowEmailModal(false)} style={styles.modalClose}>
-                <Feather name="x" size={24} color={Colors.white} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalBody}>
-              <View style={[styles.inputContainer, emailError && styles.inputError]}>
-                <Feather name="mail" size={20} color={Colors.textTertiary} style={styles.inputIcon} />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContent, { height: '80%', paddingBottom: 40 }]}>
+            <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Email Login</Text>
+                <TouchableOpacity onPress={() => setShowEmailModal(false)}>
+                  <Feather name="x" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Email Address</Text>
                 <TextInput
-                  style={styles.input}
-                  placeholder="Email address"
-                  placeholderTextColor={Colors.textTertiary}
+                  style={styles.modalInput}
+                  placeholder="email@example.com"
+                  placeholderTextColor="#8896A5"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  autoCorrect={false}
                 />
               </View>
-              {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
-              <View style={[styles.inputContainer, passwordError && styles.inputError]}>
-                <Feather name="lock" size={20} color={Colors.textTertiary} style={styles.inputIcon} />
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Password</Text>
                 <TextInput
-                  style={styles.input}
-                  placeholder="Password"
-                  placeholderTextColor={Colors.textTertiary}
+                  style={styles.modalInput}
+                  placeholder="••••••••"
+                  placeholderTextColor="#8896A5"
                   value={password}
                   onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
+                  secureTextEntry
                 />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color={Colors.textTertiary} />
-                </TouchableOpacity>
               </View>
-              {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
-              <TouchableOpacity
-                onPress={() => {
-                  setShowEmailModal(false);
-                  navigation.navigate('ForgotPassword');
-                }}
-                style={styles.forgotPassword}
-              >
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => {
-                  handleLogin();
-                }}
+              <TouchableOpacity 
+                style={styles.primaryBtn}
+                onPress={handleLogin}
                 disabled={isLoading}
-                style={styles.modalLoginBtn}
               >
                 <LinearGradient
-                  colors={['#FF6B35', '#F7931E']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.loginButtonGradient}
+                  colors={['#9D4EDD', '#7B2CBF']}
+                  style={styles.btnGradient}
                 >
                   {isLoading ? (
-                    <ActivityIndicator color={Colors.white} />
+                    <ActivityIndicator color="#FFFFFF" />
                   ) : (
-                    <Text style={styles.loginButtonText}>Sign In</Text>
+                    <Text style={styles.btnText}>Login</Text>
                   )}
                 </LinearGradient>
               </TouchableOpacity>
-            </View>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
-      {/* Phone OTP Modal */}
+      {/* 2FA TOTP Modal */}
       <Modal
-        visible={showPhoneModal}
+        visible={mfaPending}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowPhoneModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {phoneStep === 'phone' ? 'Sign in with Phone' : 'Verify OTP'}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContent, { height: '80%', paddingBottom: 40 }]}>
+            <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Two-Factor Auth</Text>
+                <TouchableOpacity onPress={() => useAuthStore.setState({ mfaPending: false })}>
+                  <Feather name="x" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+              
+              <Text style={styles.modalSubtitle}>
+                Enter the 6-digit code from your authenticator app to continue.
               </Text>
-              <TouchableOpacity onPress={() => setShowPhoneModal(false)} style={styles.modalClose}>
-                <Feather name="x" size={24} color={Colors.white} />
+
+              {!!totpError && (
+                <View style={styles.errorBox}>
+                  <Feather name="alert-circle" size={16} color="#FF6B6B" />
+                  <Text style={styles.errorText}>{totpError}</Text>
+                </View>
+              )}
+
+              <TextInput
+                style={styles.otpInput}
+                placeholder="000000"
+                placeholderTextColor="#8896A5"
+                value={totpCode}
+                onChangeText={(text) => { setTotpCode(text); setTotpError(''); }}
+                keyboardType="number-pad"
+                maxLength={6}
+                autoFocus
+              />
+
+              <TouchableOpacity 
+                style={styles.primaryBtn}
+                onPress={handleVerifyTOTP}
+                disabled={isLoading || totpCode.length < 6}
+              >
+                <LinearGradient
+                  colors={['#9D4EDD', '#7B2CBF']}
+                  style={styles.btnGradient}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.btnText}>Verify & Login</Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Country Picker Modal */}
+      <Modal
+        visible={showCountryPicker}
+        animationType="slide"
+        transparent={true}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContent, { height: '85%', paddingBottom: 20 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Country</Text>
+              <TouchableOpacity onPress={() => setShowCountryPicker(false)}>
+                <Feather name="x" size={24} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
-
-            <View style={styles.modalBody}>
-              {phoneStep === 'phone' ? (
-                <>
-                  <Text style={styles.phoneLabel}>Enter your phone number</Text>
-                  <View style={styles.phoneInputRow}>
-                    <View style={styles.countryCode}>
-                      <Text style={styles.countryCodeText}>+91</Text>
-                    </View>
-                    <View style={[styles.inputContainer, { flex: 1, marginBottom: 0 }]}>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="9999999999"
-                        placeholderTextColor={Colors.textTertiary}
-                        value={phoneNumber}
-                        onChangeText={setPhoneNumber}
-                        keyboardType="phone-pad"
-                        maxLength={10}
-                      />
-                    </View>
+            <View style={styles.searchBox}>
+               <Feather name="search" size={18} color="#8896A5" />
+               <TextInput 
+                style={styles.searchInput}
+                placeholder="Search country..."
+                placeholderTextColor="#8896A5"
+                value={countrySearch}
+                onChangeText={setCountrySearch}
+               />
+            </View>
+            <FlatList
+              data={filteredCountries}
+              keyExtractor={(item) => item.name}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.countryItem}
+                  onPress={() => {
+                    setSelectedCountry(item);
+                    setShowCountryPicker(false);
+                  }}
+                >
+                  <View style={styles.countryInfo}>
+                    <Text style={styles.countryFlagLarge}>{item.flag}</Text>
+                    <Text style={styles.countryName}>{item.name}</Text>
                   </View>
-                  {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
-
-                  <TouchableOpacity onPress={handleSendOTP} disabled={isLoading} style={styles.modalLoginBtn}>
-                    <LinearGradient
-                      colors={['#10B981', '#059669']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.loginButtonGradient}
-                    >
-                      {isLoading ? (
-                        <ActivityIndicator color={Colors.white} />
-                      ) : (
-                        <Text style={styles.loginButtonText}>Send OTP</Text>
-                      )}
-                    </LinearGradient>
-                  </TouchableOpacity>
-
-                  <Text style={styles.testNote}>Test: +91 99999 99999 / Code: 123456</Text>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.phoneLabel}>Enter 6-digit OTP sent to +91 {phoneNumber}</Text>
-                  <View style={[styles.inputContainer, styles.otpInputContainer]}>
-                    <TextInput
-                      style={[styles.input, styles.otpInput]}
-                      placeholder="000000"
-                      placeholderTextColor={Colors.textTertiary}
-                      value={otp}
-                      onChangeText={setOtp}
-                      keyboardType="number-pad"
-                      maxLength={6}
-                    />
-                  </View>
-                  {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
-
-                  <TouchableOpacity onPress={handleVerifyOTP} disabled={isLoading} style={styles.modalLoginBtn}>
-                    <LinearGradient
-                      colors={['#10B981', '#059669']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.loginButtonGradient}
-                    >
-                      {isLoading ? (
-                        <ActivityIndicator color={Colors.white} />
-                      ) : (
-                        <Text style={styles.loginButtonText}>Verify OTP</Text>
-                      )}
-                    </LinearGradient>
-                  </TouchableOpacity>
-
-                  <View style={styles.resendContainer}>
-                    {countdown > 0 ? (
-                      <Text style={styles.resendTimerText}>Resend code in {countdown}s</Text>
-                    ) : (
-                      <TouchableOpacity onPress={handleSendOTP} disabled={isLoading}>
-                        <Text style={styles.resendLink}>Resend Code</Text>
-                      </TouchableOpacity>
+                  <View style={styles.countryCodeRow}>
+                    <Text style={styles.countryCodeValue}>{item.code}</Text>
+                    {selectedCountry.name === item.name && (
+                      <Feather name="check" size={18} color="#9D4EDD" style={{ marginLeft: 10 }} />
                     )}
                   </View>
-
-                  <TouchableOpacity onPress={() => setPhoneStep('phone')} style={styles.changePhoneBtn}>
-                    <Text style={styles.changePhoneText}>Change Phone Number</Text>
-                  </TouchableOpacity>
-                </>
+                </TouchableOpacity>
               )}
-            </View>
+            />
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </AnimatedBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#16132B',
-  },
-  keyboardView: {
-    flex: 1,
-  },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: 80,
-    paddingBottom: 40,
-  },
-  header: {
+    paddingHorizontal: 24,
+    // Tablet-friendly top inset: 100 was iPhone-tuned and stole ~100pt of
+    // visible viewport on iPad, hiding the email login below the keyboard.
+    paddingTop: Platform.OS === 'ios' && (Dimensions.get('window').width >= 768) ? 48 : 100,
+    paddingBottom: 24,
     alignItems: 'center',
-    marginBottom: Spacing.xl,
   },
-  logoContainer: {
-    marginBottom: Spacing.md,
+  logoSection: {
+    alignItems: 'center',
+    marginBottom: 60,
   },
-  logoGradient: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
+  logoIconBg: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(157, 78, 221, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 10,
+    marginBottom: 20,
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: Colors.white,
-    marginBottom: 4,
+    color: '#FFFFFF',
   },
   subtitle: {
-    fontSize: 16,
-    color: Colors.textSecondary,
+    fontSize: 14,
+    color: '#A0AEC0',
+    marginTop: 8,
   },
-  // Login Methods Grid
-  methodsSection: {
-    marginBottom: Spacing.xl,
-  },
-  methodsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.white,
-    marginBottom: Spacing.md,
-    textAlign: 'center',
-  },
-  methodsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: Spacing.md,
-  },
-  methodCard: {
-    width: (width - Spacing.lg * 2 - Spacing.md) / 2,
+  quickLoginContainer: {
+    width: '100%',
     backgroundColor: Colors.card,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 40,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  quickLoginHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
+    marginBottom: 20,
+    gap: 8,
   },
-  methodCardActive: {
-    borderColor: Colors.secondary,
+  quickLoginText: {
+    fontSize: 16,
+    color: '#A0AEC0',
+    fontWeight: '600',
   },
-  methodGradient: {
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  countrySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0A0A0A',
+    paddingHorizontal: 12,
+    height: 56,
+    borderRadius: 16,
+    gap: 6,
+  },
+  flagText: {
+    fontSize: 20,
+  },
+  codeText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  phoneInput: {
+    flex: 1,
+    backgroundColor: '#0A0A0A',
+    height: 56,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  arrowBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  arrowCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#9D4EDD',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  orContainer: {
+    marginBottom: 24,
+  },
+  orText: {
+    fontSize: 12,
+    color: '#8896A5',
+    letterSpacing: 1,
+  },
+  socialRow: {
+    flexDirection: 'row',
+    gap: 20,
+    marginBottom: 20,
+  },
+  emailLoginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: 'rgba(157, 78, 221, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(157, 78, 221, 0.45)',
+    marginBottom: 40,
+    minWidth: 240,
+  },
+  // Above-the-fold variant shown right under the phone-login row.
+  // Solid purple fill so reviewers can't miss it on iPad Air 11".
+  emailLoginButtonTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: 'rgba(157, 78, 221, 0.35)',
+    borderWidth: 1,
+    borderColor: 'rgba(157, 78, 221, 0.7)',
+    marginTop: 16,
+    marginBottom: 16,
+    minWidth: 240,
+    alignSelf: 'center',
+  },
+  emailLoginText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  socialBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#161824',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  socialBtnImg: {
     width: 56,
     height: 56,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  methodName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.white,
-    marginBottom: 2,
-  },
-  methodDesc: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
-  // Quick Email Section
-  quickEmailSection: {
-    marginBottom: Spacing.xl,
-  },
-  quickEmailToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  quickEmailLeft: {
+  googleG: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#4285F4',
+  },
+  footer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
   },
-  quickEmailText: {
-    fontSize: 15,
-    color: Colors.white,
+  footerText: {
+    color: '#A0AEC0',
   },
-  // Features Banner
-  featuresBanner: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    marginBottom: Spacing.xl,
+  signupText: {
+    color: '#9D4EDD',
+    fontWeight: 'bold',
   },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: Spacing.md,
-  },
-  featureText: {
-    fontSize: 13,
-    color: Colors.white,
-    fontWeight: '500',
-  },
-  featureDivider: {
-    width: 1,
-    height: 20,
-    backgroundColor: Colors.border,
-  },
-  // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: Colors.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: 40,
+    backgroundColor: '#161824',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    height: '70%',
+    padding: 24,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: Spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    marginBottom: 24,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: Colors.white,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
-  modalClose: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalBody: {
-    padding: Spacing.lg,
-  },
-  modalLoginBtn: {
-    borderRadius: BorderRadius.md,
-    overflow: 'hidden',
-  },
-  // Form Inputs
-  inputContainer: {
+  searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: Spacing.md,
-    paddingHorizontal: Spacing.md,
+    backgroundColor: '#0A0A0A',
+    height: 50,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    marginBottom: 20,
   },
-  inputError: {
-    borderColor: Colors.error,
-  },
-  inputIcon: {
-    marginRight: Spacing.sm,
-  },
-  input: {
+  searchInput: {
     flex: 1,
+    marginLeft: 12,
+    color: '#FFFFFF',
+  },
+  countryItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  countryInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  countryFlagLarge: {
+    fontSize: 24,
+  },
+  countryName: {
     fontSize: 16,
-    color: Colors.white,
-  },
-  eyeIcon: {
-    padding: Spacing.sm,
-  },
-  errorText: {
-    color: Colors.error,
-    fontSize: 12,
-    marginTop: -8,
-    marginBottom: Spacing.sm,
-    marginLeft: Spacing.sm,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: Spacing.lg,
-  },
-  forgotPasswordText: {
-    color: Colors.secondary,
-    fontSize: 14,
+    color: '#FFFFFF',
     fontWeight: '500',
   },
-  loginButtonGradient: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderRadius: BorderRadius.md,
-  },
-  loginButtonText: {
-    color: Colors.white,
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  footer: {
+  countryCodeRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+  },
+  countryCodeValue: {
+    fontSize: 16,
+    color: '#A0AEC0',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#A0AEC0',
+    marginBottom: 32,
+    lineHeight: 20,
+  },
+  inputGroup: {
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  modalInput: {
+    backgroundColor: '#0A0A0A',
+    height: 56,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  primaryBtn: {
+    height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginTop: 16,
+  },
+  btnGradient: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  footerText: {
-    color: Colors.textSecondary,
-    fontSize: 15,
-  },
-  registerLink: {
-    color: Colors.secondary,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  // Phone OTP styles
-  phoneLabel: {
-    fontSize: 15,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.md,
-  },
-  phoneInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-    gap: Spacing.sm,
-  },
-  countryCode: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingVertical: 16,
-    paddingHorizontal: Spacing.md,
-  },
-  countryCodeText: {
+  btnText: {
+    color: '#FFFFFF',
     fontSize: 16,
-    color: Colors.white,
-    fontWeight: '500',
+    fontWeight: 'bold',
   },
-  otpInputContainer: {
-    marginBottom: Spacing.md,
+  otpContainer: {
+    marginBottom: 32,
   },
   otpInput: {
-    fontSize: 24,
-    letterSpacing: 8,
+    backgroundColor: '#0A0A0A',
+    height: 70,
+    borderRadius: 16,
     textAlign: 'center',
+    fontSize: 32,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    borderWidth: 1,
+    borderColor: '#9D4EDD',
   },
-  testNote: {
-    fontSize: 12,
-    color: Colors.textTertiary,
-    textAlign: 'center',
-    marginTop: Spacing.md,
-  },
-  changePhoneBtn: {
-    marginTop: Spacing.md,
+  resendBtn: {
     alignItems: 'center',
+    marginTop: 24,
   },
-  changePhoneText: {
-    color: Colors.secondary,
+  resendText: {
+    color: '#9D4EDD',
     fontSize: 14,
     fontWeight: '500',
+  },
+  otpSection: {
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.06)',
+    paddingTop: 16,
+  },
+  otpSentText: {
+    fontSize: 13,
+    color: '#A0AEC0',
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  otpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  otpInputInline: {
+    flex: 1,
+    backgroundColor: '#0A0A0A',
+    height: 56,
+    borderRadius: 16,
+    textAlign: 'center',
+    fontSize: 24,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    borderWidth: 1,
+    borderColor: '#9D4EDD',
+  },
+  verifyBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  verifyBtnGrad: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  resendInlineText: {
+    color: '#9D4EDD',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 13,
+    flex: 1,
+    lineHeight: 18,
+  },
+  biometricBtn: {
+    width: '100%',
+    marginBottom: 24,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(157, 78, 221, 0.2)',
+  },
+  biometricBtnGrad: {
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  biometricText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   resendContainer: {
     marginTop: Spacing.lg,
@@ -949,3 +1103,4 @@ const styles = StyleSheet.create({
 });
 
 export default LoginScreen;
+

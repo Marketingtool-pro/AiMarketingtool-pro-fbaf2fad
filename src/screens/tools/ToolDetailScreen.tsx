@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -19,7 +20,8 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore, Tool, ToolInput } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
-import AnimatedBackground from '../../components/common/AnimatedBackground';
+import { getToolIcon } from '../../constants/toolIcons';
+
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteType = RouteProp<RootStackParamList, 'ToolDetail'>;
@@ -27,16 +29,17 @@ type RouteType = RouteProp<RootStackParamList, 'ToolDetail'>;
 const ToolDetailScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
-  const { toolSlug } = route.params;
+  const { toolSlug, prefillInputs } = route.params;
   const { tools, generateContent, isGenerating } = useToolsStore();
-  const { profile, updateProfile } = useAuthStore();
+  const { profile } = useAuthStore();
 
   const [tool, setTool] = useState<Tool | null>(null);
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
   const [selectedTone, setSelectedTone] = useState('professional');
   const [selectedLanguage, setSelectedLanguage] = useState('English');
   const [outputCount, setOutputCount] = useState(3);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const tones = ['Professional', 'Casual', 'Friendly', 'Persuasive', 'Formal', 'Creative'];
   const languages = ['English', 'Spanish', 'French', 'German', 'Hindi', 'Chinese', 'Japanese'];
@@ -45,10 +48,10 @@ const ToolDetailScreen = () => {
     const foundTool = tools.find(t => t.slug === toolSlug);
     if (foundTool) {
       setTool(foundTool);
-      // Initialize input values
+      // Initialize input values (prefill if coming from regenerate)
       const initialValues: Record<string, string> = {};
       foundTool.inputs.forEach(input => {
-        initialValues[input.name] = '';
+        initialValues[input.name] = prefillInputs?.[input.name] || '';
       });
       setInputValues(initialValues);
     }
@@ -56,23 +59,6 @@ const ToolDetailScreen = () => {
 
   const handleInputChange = (name: string, value: string) => {
     setInputValues(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleToggleFavorite = async () => {
-    if (!tool || !profile) return;
-
-    try {
-      setIsFavorite(!isFavorite);
-      // TODO: Implement Appwrite favorite toggle when backend is ready
-      // await dbService.toggleFavorite(tool.slug, profile.$id);
-      Alert.alert(
-        isFavorite ? 'Removed from Favorites' : 'Added to Favorites',
-        isFavorite ? `${tool.name} removed from your favorites` : `${tool.name} added to your favorites`
-      );
-    } catch (error) {
-      setIsFavorite(isFavorite); // Revert on error
-      Alert.alert('Error', 'Failed to update favorites');
-    }
   };
 
   const validateInputs = () => {
@@ -87,20 +73,39 @@ const ToolDetailScreen = () => {
   };
 
   const handleGenerate = async () => {
-    if (!validateInputs() || !tool) return;
+    if (!validateInputs() || !tool || isGenerating) return;
 
-    // Check if user has credits (for free users)
-    if (profile?.subscription === 'free' && (profile?.credits || 0) <= 0) {
+    // PRO LOCK: gate Pro tools for free users
+    if (tool.isPro && profile?.subscription === 'free') {
       Alert.alert(
-        'No Credits',
-        'You have no credits remaining. Upgrade to Pro for unlimited generations.',
+        '🔒 Pro Tool Locked',
+        `${tool.name} is a Professional plan feature. Upgrade to unlock 500+ generations/month, advanced automation, and cross-platform intelligence.`,
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Upgrade', onPress: () => navigation.navigate('Subscription') },
+          { text: 'Upgrade to Pro', onPress: () => navigation.navigate('Subscription') },
         ]
       );
       return;
     }
+
+    // QUOTA: free trial = 3/day, Starter = 200/mo, Pro = 500/mo
+    if (profile?.subscription === 'free' && (profile?.credits || 0) <= 0) {
+      Alert.alert(
+        'Daily Limit Reached',
+        'Free trial allows 3 generations per day. Upgrade to Starter ($29/mo, 200 generations) or Pro ($59/mo, 500 generations).',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'See Plans', onPress: () => navigation.navigate('Subscription') },
+        ]
+      );
+      return;
+    }
+
+    // Start elapsed timer
+    setElapsedSeconds(0);
+    timerRef.current = setInterval(() => {
+      setElapsedSeconds(s => s + 1);
+    }, 1000);
 
     try {
       const result = await generateContent(tool.$id, {
@@ -110,28 +115,18 @@ const ToolDetailScreen = () => {
         outputCount,
       });
 
-      // Deduct credit for free users after successful generation
-      if (profile?.subscription === 'free' && result.success) {
-        const currentCredits = profile?.credits || 0;
-        if (currentCredits > 0) {
-          // TODO: Update credits in Appwrite database
-          // await dbService.updateDocument(COLLECTIONS.USERS, profile.$id, {
-          //   credits: currentCredits - 1
-          // });
-          
-          // Update local profile state
-          updateProfile({ credits: currentCredits - 1 });
-          
-          if (__DEV__) console.log(`Credit deducted. Remaining: ${currentCredits - 1}`);
-        }
-      }
-
       navigation.navigate('ToolResult', {
         toolSlug: tool.slug,
         result,
+        inputs: inputValues,
       });
     } catch (error: any) {
       Alert.alert('Generation Failed', error.message || 'Please try again');
+    } finally {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
   };
 
@@ -218,13 +213,13 @@ const ToolDetailScreen = () => {
   if (!tool) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+        <ActivityIndicator size="large" color={Colors.secondary} />
       </View>
     );
   }
 
   return (
-    <AnimatedBackground variant="tools" showParticles={true}>
+    <View style={styles.screenContainer}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -235,26 +230,26 @@ const ToolDetailScreen = () => {
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
               <Feather name="arrow-left" size={24} color={Colors.white} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.favoriteButton} onPress={handleToggleFavorite}>
-              <Feather 
-                name="heart"
-                size={24} 
-                color={isFavorite ? Colors.error : Colors.white}
-              />
-            </TouchableOpacity>
+            <View style={styles.favoriteButton}>
+              <Feather name="heart" size={24} color={Colors.white} />
+            </View>
           </View>
 
           <View style={styles.toolInfo}>
-            <View style={[styles.toolIcon, { backgroundColor: Colors.primary + '20' }]}>
-              <Feather name={tool.icon as any} size={32} color={Colors.primary} />
+            {/* Use the same getToolIcon image source as ToolsScreen / Dashboard
+                / ChatScreen so the icon stays identical across the entire app.
+                The Feather fallback was a placeholder that always rendered
+                'zap' because Tool.icon is hardcoded to 'zap' in toolsStore. */}
+            <View style={[styles.toolIcon, { backgroundColor: Colors.secondary + '20' }]}>
+              <Image source={getToolIcon(tool.slug)} style={{ width: 48, height: 48 }} resizeMode="contain" />
+              {tool.isPro && profile?.subscription === 'free' && (
+                <View style={styles.lockOverlay}>
+                  <Feather name="lock" size={18} color="#FFF" />
+                </View>
+              )}
             </View>
             <View style={styles.toolMeta}>
               <View style={styles.toolBadges}>
-                {tool.isNew && (
-                  <View style={[styles.badge, { backgroundColor: Colors.success }]}>
-                    <Text style={styles.badgeText}>NEW</Text>
-                  </View>
-                )}
                 {tool.isPro && (
                   <View style={[styles.badge, { backgroundColor: Colors.accent }]}>
                     <Text style={styles.badgeText}>PRO</Text>
@@ -267,14 +262,6 @@ const ToolDetailScreen = () => {
           </View>
 
           <View style={styles.toolStats}>
-            <View style={styles.statItem}>
-              <Feather name="users" size={16} color={Colors.textSecondary} />
-              <Text style={styles.statText}>{(tool.usageCount / 1000).toFixed(1)}k uses</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Feather name="star" size={16} color={Colors.warning} />
-              <Text style={styles.statText}>{tool.rating} rating</Text>
-            </View>
             <View style={styles.statItem}>
               <Feather name="clock" size={16} color={Colors.textSecondary} />
               <Text style={styles.statText}>~10 sec</Text>
@@ -389,34 +376,54 @@ const ToolDetailScreen = () => {
           <View style={{ height: 120 }} />
         </ScrollView>
 
-        {/* Generate Button */}
+        {/* Generate Button — switches to "Upgrade to Pro" CTA when the
+            current tool is Pro-locked for a free user. handleGenerate
+            already routes to Subscription in that case; this just makes
+            the visual state match (lock icon + amber gradient) so the
+            user knows BEFORE tapping. */}
         <View style={styles.generateContainer}>
-          <TouchableOpacity
-            onPress={handleGenerate}
-            disabled={isGenerating}
-            style={styles.generateButton}
-          >
-            <LinearGradient colors={Gradients.primary} style={styles.generateGradient}>
-              {isGenerating ? (
-                <View style={styles.generatingContent}>
-                  <ActivityIndicator color={Colors.white} />
-                  <Text style={styles.generateText}>Generating...</Text>
-                </View>
-              ) : (
-                <View style={styles.generateContent}>
-                  <Feather name="zap" size={24} color={Colors.white} />
-                  <Text style={styles.generateText}>Generate Content</Text>
-                </View>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
+          {(() => {
+            const isLockedForUser = tool.isPro && profile?.subscription === 'free';
+            return (
+              <TouchableOpacity
+                onPress={handleGenerate}
+                disabled={isGenerating}
+                style={styles.generateButton}
+              >
+                <LinearGradient
+                  colors={isLockedForUser ? ['#F59E0B', '#D97706'] : Gradients.primary}
+                  style={styles.generateGradient}
+                >
+                  {isGenerating ? (
+                    <View style={styles.generatingContent}>
+                      <ActivityIndicator color={Colors.white} />
+                      <Text style={styles.generateText}>
+                        {elapsedSeconds >= 5 ? `Still generating... ${elapsedSeconds}s` : `Generating... ${elapsedSeconds}s`}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.generateContent}>
+                      <Feather name={isLockedForUser ? 'lock' : 'zap'} size={24} color={Colors.white} />
+                      <Text style={styles.generateText}>
+                        {isLockedForUser ? 'Upgrade to Pro' : 'Generate Content'}
+                      </Text>
+                    </View>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            );
+          })()}
         </View>
       </KeyboardAvoidingView>
-    </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#0D0F1C',
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -467,6 +474,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
+    // Required so the absolutely-positioned lockOverlay anchors here.
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  lockOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: BorderRadius.lg,
   },
   toolMeta: {
     flex: 1,
@@ -560,8 +581,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   selectOptionActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.secondary,
+    borderColor: Colors.secondary,
   },
   selectOptionText: {
     fontSize: 14,
@@ -586,8 +607,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   outputCountBtnActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.secondary,
+    borderColor: Colors.secondary,
   },
   outputCountText: {
     fontSize: 16,
@@ -613,7 +634,7 @@ const styles = StyleSheet.create({
   upgradeLink: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.primary,
+    color: Colors.secondary,
   },
   generateContainer: {
     position: 'absolute',

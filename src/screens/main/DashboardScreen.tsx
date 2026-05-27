@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,215 +10,156 @@ import {
   Image,
   Animated,
   Easing,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+// Skia removed - using cross-platform LinearGradient instead for iOS compatibility
+import AnimatedRN, { 
+  useAnimatedStyle, 
+  useSharedValue, 
+  withRepeat, 
+  withTiming, 
+  withSequence,
+  Easing as EasingRN
+} from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
-import { Colors, Gradients, Spacing, BorderRadius, Shadow } from '../../constants/theme';
-import AnimatedBackground from '../../components/common/AnimatedBackground';
+import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { getToolIcon } from '../../constants/toolIcons';
 import LottieView from 'lottie-react-native';
-
-// Lottie animations
-const Animations = {
-  aiRobot: require('../../assets/animations/ai-robot.json'),
-  pulseGlow: require('../../assets/animations/pulse-glow.json'),
-  loadingDots: require('../../assets/animations/loading-dots.json'),
-  liquidWave: require('../../assets/animations/liquid-wave.json'),
-};
+import Glass3DLogo from '../../components/common/Glass3DLogo';
 
 const { width } = Dimensions.get('window');
-const { height } = Dimensions.get('window');
+
+const isVisionOS = (Platform.OS as any) === 'visionos';
+
+const Animations = {
+  aiRobot: require('../../../assets/animations/ai-robot.js'),
+  pulseGlow: require('../../../assets/animations/pulse-glow.js'),
+  loadingDots: require('../../../assets/animations/loading-dots.js'),
+  liquidWave: require('../../../assets/animations/liquid-wave.js'),
+};
 
 const DashboardImages = {
-  aiRobot: require('../../assets/images/dashboard/ai-robot.jpg'),
-  aiDashboard: require('../../assets/images/dashboard/ai-dashboard.jpg'),
-  analyticsCharacter: require('../../assets/images/dashboard/analytics-character.jpg'),
-  seoRobot: require('../../assets/images/dashboard/seo-robot.jpg'),
-  webAnalytics: require('../../assets/images/dashboard/web-analytics.jpg'),
+  aiRobot: require('../../../assets/images/dashboard/ai-robot.webp'),
+  aiDashboard: require('../../../assets/images/dashboard/ai-dashboard.webp'),
+  analyticsCharacter: require('../../../assets/images/dashboard/analytics-character.webp'),
+  seoRobot: require('../../../assets/images/dashboard/seo-robot.webp'),
+  webAnalytics: require('../../../assets/images/dashboard/web-analytics.webp'),
 };
 
-// LOCAL Category images - guaranteed to work
 const CategoryImageAssets = {
-  'google-ads': require('../../assets/images/categories/google-ads.jpg'),
-  'google-seo': require('../../assets/images/categories/google-seo.jpg'),
-  'google-analytics': require('../../assets/images/categories/google-analytics.jpg'),
-  'google-content': require('../../assets/images/categories/google-content.jpg'),
-  'facebook-ads': require('../../assets/images/categories/facebook-ads.jpg'),
-  'instagram': require('../../assets/images/categories/instagram.jpg'),
-  'social-media': require('../../assets/images/categories/social-media.jpg'),
-  'meta-content': require('../../assets/images/categories/meta-content.jpg'),
-  'shopify-products': require('../../assets/images/categories/shopify-products.jpg'),
-  'shopify-ads': require('../../assets/images/categories/shopify-ads.jpg'),
-  'email-marketing': require('../../assets/images/categories/email-marketing.jpg'),
-  'ecommerce-seo': require('../../assets/images/categories/ecommerce-seo.jpg'),
-  'ai-agents': require('../../assets/images/categories/ai-agents.jpg'),
-  'content-creation': require('../../assets/images/categories/content-creation.jpg'),
+  'google-ads': require('../../../assets/images/categories/google-ads.webp'),
+  'google-seo': require('../../../assets/images/categories/google-seo.webp'),
+  'google-analytics': require('../../../assets/images/categories/google-analytics.webp'),
+  'google-content': require('../../../assets/images/categories/google-content.webp'),
+  'facebook-ads': require('../../../assets/images/categories/facebook-ads.webp'),
+  'instagram': require('../../../assets/images/categories/instagram.webp'),
+  'social-media': require('../../../assets/images/categories/social-media.webp'),
+  'meta-content': require('../../../assets/images/categories/meta-content.webp'),
+  'shopify-products': require('../../../assets/images/categories/shopify-products.webp'),
+  'shopify-ads': require('../../../assets/images/categories/shopify-ads.webp'),
+  'email-marketing': require('../../../assets/images/categories/email-marketing.webp'),
+  'ecommerce-seo': require('../../../assets/images/categories/ecommerce-seo.webp'),
+  'ai-agents': require('../../../assets/images/categories/ai-agents.webp'),
+  'content-creation': require('../../../assets/images/categories/content-creation.webp'),
 };
 
-// Banner images for horizontal scroll
 const BannerImages = {
-  banner1: require('../../assets/images/banners/banner-1.jpg'),
-  banner2: require('../../assets/images/banners/banner-2.jpg'),
-  banner3: require('../../assets/images/banners/banner-3.jpg'),
-  banner4: require('../../assets/images/banners/banner-4.jpg'),
-  banner5: require('../../assets/images/banners/banner-5.jpg'),
+  banner1: require('../../../assets/images/banners/banner-1.webp'),
+  banner2: require('../../../assets/images/banners/banner-2.webp'),
+  banner3: require('../../../assets/images/banners/banner-3.webp'),
+  banner4: require('../../../assets/images/banners/banner-4.webp'),
+  banner5: require('../../../assets/images/banners/banner-5.webp'),
 };
 
-// Category images mapping with gradients
 const CategoryImages: Record<string, { image: any; gradient: string[] }> = {
-  'google-ads': {
-    image: CategoryImageAssets['google-ads'],
-    gradient: ['#4285F4', '#1A73E8']
-  },
-  'google-seo': {
-    image: CategoryImageAssets['google-seo'],
-    gradient: ['#34A853', '#1E8E3E']
-  },
-  'google-analytics': {
-    image: CategoryImageAssets['google-analytics'],
-    gradient: ['#F9AB00', '#E37400']
-  },
-  'google-content': {
-    image: CategoryImageAssets['google-content'],
-    gradient: ['#EA4335', '#C5221F']
-  },
-  'facebook-ads': {
-    image: CategoryImageAssets['facebook-ads'],
-    gradient: ['#1877F2', '#0C5DC7']
-  },
-  'instagram': {
-    image: CategoryImageAssets['instagram'],
-    gradient: ['#E4405F', '#C13584']
-  },
-  'social-media': {
-    image: CategoryImageAssets['social-media'],
-    gradient: ['#833AB4', '#5851DB']
-  },
-  'meta-content': {
-    image: CategoryImageAssets['meta-content'],
-    gradient: ['#0088FF', '#00C6FF']
-  },
-  'shopify-products': {
-    image: CategoryImageAssets['shopify-products'],
-    gradient: ['#96BF48', '#5E8E3E']
-  },
-  'shopify-ads': {
-    image: CategoryImageAssets['shopify-ads'],
-    gradient: ['#5C6BC0', '#3949AB']
-  },
-  'email-marketing': {
-    image: CategoryImageAssets['email-marketing'],
-    gradient: ['#FF6B6B', '#EE5A5A']
-  },
-  'ecommerce-seo': {
-    image: CategoryImageAssets['ecommerce-seo'],
-    gradient: ['#00BFA5', '#00897B']
-  },
-  'ai-agents': {
-    image: CategoryImageAssets['ai-agents'],
-    gradient: ['#FF6B35', '#F7931E']
-  },
-  'content-creation': {
-    image: CategoryImageAssets['content-creation'],
-    gradient: ['#7C4DFF', '#651FFF']
-  },
+  'google-ads': { image: CategoryImageAssets['google-ads'], gradient: ['#4285F4', '#1A73E8'] },
+  'google-seo': { image: CategoryImageAssets['google-seo'], gradient: ['#34A853', '#1E8E3E'] },
+  'google-analytics': { image: CategoryImageAssets['google-analytics'], gradient: ['#F9AB00', '#E37400'] },
+  'google-content': { image: CategoryImageAssets['google-content'], gradient: ['#EA4335', '#C5221F'] },
+  'facebook-ads': { image: CategoryImageAssets['facebook-ads'], gradient: ['#1877F2', '#0C5DC7'] },
+  'instagram': { image: CategoryImageAssets['instagram'], gradient: ['#E4405F', '#C13584'] },
+  'social-media': { image: CategoryImageAssets['social-media'], gradient: ['#833AB4', '#5851DB'] },
+  'meta-content': { image: CategoryImageAssets['meta-content'], gradient: ['#0088FF', '#00C6FF'] },
+  'shopify-products': { image: CategoryImageAssets['shopify-products'], gradient: ['#96BF48', '#5E8E3E'] },
+  'shopify-ads': { image: CategoryImageAssets['shopify-ads'], gradient: ['#5C6BC0', '#3949AB'] },
+  'email-marketing': { image: CategoryImageAssets['email-marketing'], gradient: ['#FF6B6B', '#EE5A5A'] },
+  'ecommerce-seo': { image: CategoryImageAssets['ecommerce-seo'], gradient: ['#00BFA5', '#00897B'] },
+  'ai-agents': { image: CategoryImageAssets['ai-agents'], gradient: ['#FF6B35', '#F7931E'] },
+  'content-creation': { image: CategoryImageAssets['content-creation'], gradient: ['#7C4DFF', '#651FFF'] },
 };
 
-// Category gradient colors for fallback
-const getCategoryGradient = (categoryId: string): string[] => {
-  return CategoryImages[categoryId]?.gradient || [Colors.secondary, Colors.accent];
-};
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Animated Stat Card with pulse effect - NOW CLICKABLE
+// Cross-platform Glass Bento Card (works on iOS + Android)
+const GlassBentoCard = ({ children, color }: { children: React.ReactNode, color: string }) => (
+  <View style={[styles.glassBentoContainer, {
+    borderWidth: 1,
+    borderColor: color + '30',
+    shadowColor: color,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  }]}>
+    <LinearGradient
+      colors={[color + '20', 'rgba(22, 24, 36, 0.55)']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={StyleSheet.absoluteFill}
+    />
+    <View style={styles.glassBentoContent}>
+      {children}
+    </View>
+  </View>
+);
+
 const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; onPress: () => void }) => {
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const scale = useSharedValue(1);
+  const floating = useSharedValue(0);
 
   useEffect(() => {
-    // Staggered pulse animation
-    const startAnimation = () => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(index * 300),
-          Animated.parallel([
-            Animated.sequence([
-              Animated.timing(pulseAnim, {
-                toValue: 1.05,
-                duration: 1000,
-                easing: Easing.inOut(Easing.ease),
-                useNativeDriver: true,
-              }),
-              Animated.timing(pulseAnim, {
-                toValue: 1,
-                duration: 1000,
-                easing: Easing.inOut(Easing.ease),
-                useNativeDriver: true,
-              }),
-            ]),
-            Animated.sequence([
-              Animated.timing(glowAnim, {
-                toValue: 1,
-                duration: 1000,
-                useNativeDriver: true,
-              }),
-              Animated.timing(glowAnim, {
-                toValue: 0,
-                duration: 1000,
-                useNativeDriver: true,
-              }),
-            ]),
-          ]),
-        ])
-      ).start();
-    };
-    startAnimation();
+    floating.value = withRepeat(
+      withTiming(1, { duration: 2000 + index * 200, easing: EasingRN.bezier(0.4, 0, 0.2, 1) }),
+      -1,
+      true
+    );
   }, []);
 
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.92, useNativeDriver: true }).start();
-  };
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: scale.value },
+      { translateY: floating.value * -5 }
+    ] as any
+  }));
 
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    scale.value = withSequence(withTiming(0.9, { duration: 100 }), withTiming(1, { duration: 100 }));
+    onPress();
   };
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      activeOpacity={0.9}
-    >
-      <Animated.View style={[styles.statCard, { transform: [{ scale: Animated.multiply(pulseAnim, scaleAnim) }] }]}>
-        <Animated.View
-          style={[
-            styles.statGlow,
-            {
-              backgroundColor: stat.color,
-              opacity: glowAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, 0.25]
-              })
-            }
-          ]}
-        />
-        <View style={[styles.statIcon, { backgroundColor: stat.color + '20' }]}>
-          <Feather name={stat.icon as any} size={20} color={stat.color} />
-        </View>
-        <Text style={styles.statValue}>{stat.value}</Text>
-        <Text style={styles.statLabel}>{stat.label}</Text>
-        {stat.badge && (
-          <View style={[styles.statBadge, { backgroundColor: stat.color + '20' }]}>
-            <Text style={[styles.statBadgeText, { color: stat.color }]}>{stat.badge}</Text>
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.9}>
+      <AnimatedRN.View style={[styles.statCardWrapper, animatedStyle]}>
+        <GlassBentoCard color={stat.color}>
+          <View style={[styles.statIcon, { backgroundColor: stat.color + '20' }]}>
+            {stat.img ? (
+              <Image source={stat.img} style={{ width: 28, height: 28 }} resizeMode="contain" />
+            ) : (
+              <Feather name={stat.icon as any} size={18} color={stat.color} />
+            )}
           </View>
-        )}
-      </Animated.View>
+          <Text style={styles.statValue}>{stat.value}</Text>
+          <Text style={styles.statLabel} numberOfLines={1}>{stat.label}</Text>
+        </GlassBentoCard>
+      </AnimatedRN.View>
     </TouchableOpacity>
   );
 };
@@ -226,7 +167,7 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
 const DashboardScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user, profile } = useAuthStore();
-  const { tools, featuredTools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
+  const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
   const [refreshing, setRefreshing] = React.useState(false);
   const [campaignsCount, setCampaignsCount] = React.useState<number>(0);
   const [generationsCount, setGenerationsCount] = React.useState<number>(0);
@@ -261,10 +202,10 @@ const DashboardScreen = () => {
   };
 
   const stats = [
-    { label: 'AI Tools', value: '206+', icon: 'zap', color: Colors.secondary, badge: '+12 new', screen: 'Tools' },
-    { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
-    { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
-    { label: 'Success', value: '98%', icon: 'trending-up', color: Colors.gold, badge: '+5%', screen: 'History' },
+    { label: 'AI Tools', value: 'All', icon: 'zap', img: require('../../../assets/images/tool-icons-v2/ai-3d.webp'), color: Colors.secondary, badge: 'New', screen: 'Tools' },
+    { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', img: require('../../../assets/images/tool-icons-v2/analytics-3d.webp'), color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
+    { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', img: require('../../../assets/images/tool-icons-v2/rocket.webp'), color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
+    { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', img: require('../../../assets/images/tool-icons-v2/trophy.webp'), color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },
   ];
 
   // Horizontal banner data
@@ -277,25 +218,45 @@ const DashboardScreen = () => {
   ];
 
   const quickActions = [
-    { label: 'AI Chat', icon: 'message-circle', color: Colors.accent, screen: 'Chat' },
-    { label: 'Meme Gen', icon: 'smile', color: Colors.secondary, screen: 'MemeGenerator' },
-    { label: 'All Tools', icon: 'grid', color: Colors.success, screen: 'Tools' },
-    { label: 'Reports', icon: 'bar-chart-2', color: Colors.gold, screen: 'History' },
+    { label: 'AI Chat', icon: 'message-circle', img: require('../../../assets/images/platforms/messenger.webp'), color: Colors.accent, screen: 'Chat' },
+    { label: 'Meme Gen', icon: 'smile', img: require('../../../assets/images/platforms/instagram.webp'), color: Colors.secondary, screen: 'MemeGenerator' },
+    { label: 'All Tools', icon: 'grid', img: require('../../../assets/images/platforms/google.webp'), color: Colors.success, screen: 'Tools' },
+    { label: 'Reports', icon: 'bar-chart-2', img: require('../../../assets/images/platforms/youtube.webp'), color: Colors.gold, screen: 'History' },
   ];
 
-  const popularTools = [
-    { name: 'Instagram Caption', slug: 'instagram-captions', uses: '22k', icon: 'instagram', trending: true },
-    { name: 'Facebook Ad Copy', slug: 'facebook-ad-copy', uses: '18.5k', icon: 'facebook', trending: true },
-    { name: 'Product Description', slug: 'product-descriptions', uses: '16.8k', icon: 'shopping-bag', trending: true },
-    { name: 'Instagram Reels Script', slug: 'instagram-reels', uses: '15.6k', icon: 'film', trending: true },
-    { name: 'Shopify Product Title', slug: 'shopify-titles', uses: '14.5k', icon: 'tag', trending: false },
-    { name: 'Email Subject Lines', slug: 'email-subjects', uses: '13.5k', icon: 'mail', trending: false },
-    { name: 'Google Ads Headline', slug: 'google-ads-headline', uses: '15.2k', icon: 'target', trending: true },
-    { name: 'Meme Generator', slug: 'meme-generator', uses: '28.5k', icon: 'smile', trending: true },
-  ];
+  // Recommendations derived from the real tool catalog — picks one representative
+  // tool from each major platform so links never orphan when tools.json changes.
+  // Includes the Meme Generator as a special-case entry (separate screen).
+  const popularTools = useMemo(() => {
+    const categoryPicks: Array<{ cat: string; color: string }> = [
+      { cat: 'google-ads', color: '#4285F4' },
+      { cat: 'facebook-ads', color: '#1877F2' },
+      { cat: 'instagram', color: '#E4405F' },
+      { cat: 'shopify-products', color: '#96BF48' },
+      { cat: 'email-marketing', color: '#EF4444' },
+      { cat: 'google-seo', color: '#4285F4' },
+      { cat: 'ai-agents', color: '#EC4899' },
+    ];
+    const picks = categoryPicks
+      .map(({ cat, color }) => {
+        const match = tools.find((t) => t.category === cat);
+        return match
+          ? { name: match.name, slug: match.slug, category: match.category, color }
+          : null;
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+    // Meme Generator has its own dedicated screen (not ToolDetail).
+    picks.push({
+      name: 'Meme Generator',
+      slug: 'meme-generator',
+      category: 'Creative',
+      color: '#EC4899',
+    });
+    return picks;
+  }, [tools]);
 
   return (
-    <AnimatedBackground variant="dashboard" showParticles={true}>
+    <View style={styles.screenContainer}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.secondary} />}
@@ -310,18 +271,18 @@ const DashboardScreen = () => {
                   style={styles.avatarGradient}
                 >
                   <Text style={styles.avatarText}>
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    {user?.name && !/^\+?\d+$/.test(user.name) ? user.name.charAt(0).toUpperCase() : 'U'}
                   </Text>
                 </LinearGradient>
               </View>
               <View>
-                <Text style={styles.greeting}>Hi, {user?.name?.split(' ')[0] || 'User'}</Text>
+                <Text style={styles.greeting}>Hi, {user?.name && !/^\+?\d+$/.test(user.name) ? user.name.split(' ')[0] : 'User'}</Text>
                 <Text style={styles.subGreeting}>Welcome back</Text>
               </View>
             </View>
             <TouchableOpacity
               style={styles.notificationBtn}
-              onPress={() => navigation.navigate('Main', { screen: 'History' } as any)}
+              onPress={() => navigation.navigate('Notifications')}
             >
               <Feather name="bell" size={22} color={Colors.white} />
               <View style={styles.notificationDot} />
@@ -350,19 +311,20 @@ const DashboardScreen = () => {
             />
           </View>
           <LinearGradient
-            colors={['transparent', 'rgba(13, 15, 28, 0.8)', 'rgba(13, 15, 28, 0.95)']}
+            colors={['transparent', 'rgba(6, 11, 40, 0.8)', 'rgba(6, 11, 40, 0.95)']}
             style={styles.heroGradient}
           >
             <View style={styles.heroContent}>
+              <Glass3DLogo type="ai" size={80} />
               <View style={styles.heroTitleRow}>
-                <Text style={styles.heroTitle}>AI Marketing Assistant</Text>
+                <Text style={styles.heroTitle}>Marketing AI Assistant</Text>
                 <View style={styles.liveBadge}>
                   <View style={styles.liveDot} />
                   <Text style={styles.liveText}>LIVE</Text>
                 </View>
               </View>
               <Text style={styles.heroSubtitle}>
-                Create ads, blogs, emails & more with 206+ AI tools
+                Create ads, blogs, emails & more with AI tools
               </Text>
               <View style={styles.heroButton}>
                 <LottieView
@@ -421,7 +383,7 @@ const DashboardScreen = () => {
               >
                 <Image source={slide.image} style={styles.bannerImage} resizeMode="cover" />
                 <LinearGradient
-                  colors={['transparent', `${slide.color}CC`, slide.color]}
+                  colors={['transparent', 'transparent', `${slide.color}99`]}
                   style={styles.bannerGradient}
                 >
                   <Text style={styles.bannerTitle}>{slide.title}</Text>
@@ -465,7 +427,11 @@ const DashboardScreen = () => {
                 }}
               >
                 <View style={[styles.quickActionIcon, { backgroundColor: action.color + '15' }]}>
-                  <Feather name={action.icon as any} size={24} color={action.color} />
+                  {(action as any).img ? (
+                    <Image source={(action as any).img} style={{ width: 32, height: 32 }} resizeMode="contain" />
+                  ) : (
+                    <Feather name={action.icon as any} size={24} color={action.color} />
+                  )}
                 </View>
                 <Text style={styles.quickActionLabel}>{action.label}</Text>
               </TouchableOpacity>
@@ -533,7 +499,7 @@ const DashboardScreen = () => {
                     </View>
                     <Text style={styles.categoryName}>{category.name}</Text>
                     <View style={styles.categoryCountBadge}>
-                      <Text style={styles.categoryCountText}>{category.count} tools</Text>
+                      <Feather name="chevron-right" size={14} color={Colors.textSecondary} />
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -552,7 +518,7 @@ const DashboardScreen = () => {
           </View>
 
           <View style={styles.popularList}>
-            {popularTools.map((tool, index) => (
+            {popularTools.map((tool: typeof popularTools[number], index: number) => (
               <TouchableOpacity
                 key={index}
                 style={[
@@ -568,19 +534,30 @@ const DashboardScreen = () => {
                 }}
               >
                 <View style={styles.popularInfo}>
-                  <View style={[styles.popularIcon, { backgroundColor: Colors.secondary + '15' }]}>
-                    <Feather name={tool.icon as any} size={18} color={Colors.secondary} />
+                  <View style={[styles.popularIcon, { backgroundColor: tool.color + '20' }]}>
+                    <Image
+                      source={(tool as any).img || getToolIcon(tool.slug, tool.category)}
+                      style={{ width: 32, height: 32 }}
+                      resizeMode="contain"
+                    />
+                    {/* Same Pro lock visual as ToolsScreen / ToolDetailScreen
+                        so locked state is consistent across every screen. */}
+                    {(tool as any).isPro && profile?.subscription === 'free' && (
+                      <View style={styles.dashLockOverlay}>
+                        <Feather name="lock" size={14} color="#FFF" />
+                      </View>
+                    )}
                   </View>
                   <View>
                     <View style={styles.popularNameRow}>
                       <Text style={styles.popularName}>{tool.name}</Text>
-                      {tool.trending && (
-                        <View style={styles.trendingBadge}>
-                          <Feather name="trending-up" size={10} color={Colors.success} />
+                      {(tool as any).isPro && (
+                        <View style={styles.dashProBadge}>
+                          <Text style={styles.dashProBadgeText}>PRO</Text>
                         </View>
                       )}
                     </View>
-                    <Text style={styles.popularUsesText}>{tool.uses} uses</Text>
+                    <Text style={styles.popularUsesText}>{tool.category}</Text>
                   </View>
                 </View>
                 <Feather name="chevron-right" size={20} color={Colors.textTertiary} />
@@ -591,14 +568,38 @@ const DashboardScreen = () => {
 
         <View style={{ height: 100 }} />
       </ScrollView>
-    </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#0D0F1C',
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  glassBentoContainer: {
+    position: 'relative',
+    width: (width - Spacing.lg * 2 - Spacing.sm * 3) / 4,
+    height: 100,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  skiaCanvas: {
+    ...StyleSheet.absoluteFill,
+  },
+  glassBentoContent: {
+    flex: 1,
+    padding: Spacing.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statCardWrapper: {
+    width: (width - Spacing.lg * 2 - Spacing.sm * 3) / 4,
+    height: 100,
   },
   header: {
     paddingTop: 60,
@@ -662,7 +663,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
     borderRadius: BorderRadius.xl,
     overflow: 'hidden',
-    height: 180,
+    height: 220,
   },
   heroImage: {
     width: '100%',
@@ -928,11 +929,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   categoriesScroll: {
+    paddingLeft: Spacing.lg,
     paddingRight: Spacing.lg,
   },
   categoryCard: {
-    width: 150,
-    height: 180,
+    width: (width - Spacing.lg * 2 - Spacing.md) / 2,
+    height: 220,
     marginRight: Spacing.md,
     borderRadius: BorderRadius.xl,
     overflow: 'hidden',
@@ -1036,6 +1038,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  dashLockOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: BorderRadius.sm,
+  },
+  dashProBadge: {
+    marginLeft: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    backgroundColor: '#F59E0B',
+    borderRadius: 4,
+  },
+  dashProBadgeText: {
+    color: '#000',
+    fontSize: 9,
+    fontWeight: '700',
   },
   popularNameRow: {
     flexDirection: 'row',
