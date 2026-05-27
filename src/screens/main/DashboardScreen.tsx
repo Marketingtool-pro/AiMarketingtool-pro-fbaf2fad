@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   skiaCanvas: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   glassBentoContent: {
     flex: 1,

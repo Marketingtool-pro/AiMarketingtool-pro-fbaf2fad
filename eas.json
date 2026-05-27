@@ -6,10 +6,19 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "development"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "preview"
+    },
+    "simulator": {
+      "channel": "production",
+      "environment": "production",
+      "ios": {
+        "simulator": true
+      }
     },
     "production": {
       "autoIncrement": true,
@@ -26,14 +35,13 @@
       "ios": {
         "ascAppId": "6758618412",
         "appleId": "help@marketingtool.pro",
-        "ascApiKeyPath": "./AuthKey_D5KG7J5R95.p8",
-        "ascApiKeyId": "D5KG7J5R95",
+        "ascApiKeyPath": "./AuthKey_TRHCFN47J6.p8",
+        "ascApiKeyId": "TRHCFN47J6",
         "ascApiKeyIssuerId": "313ffa8d-5aed-4aad-a012-b1057717634c"
       },
       "android": {
         "track": "production",
-        "releaseStatus": "completed",
-        "serviceAccountKeyPath": "./.eas-google-play-sa.json"
+        "releaseStatus": "completed"
       }
     }
   }

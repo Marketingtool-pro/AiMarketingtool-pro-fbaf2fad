@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "479",
+      "buildNumber": "481",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -59,7 +59,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 489,
+      "versionCode": 490,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -99,7 +99,7 @@
         {
           "ios": {
             "useFrameworks": "static",
-            "deploymentTarget": "16.0",
+            "deploymentTarget": "16.4",
             "storeKitVersion": "2",
             "forceStaticLinking": [
               "RNFBApp",

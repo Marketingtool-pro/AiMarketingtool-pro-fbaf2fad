@@ -15,9 +15,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  eas-build-production:
+  build-android:
     name: Build (android)
     runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    outputs:
+      build-id: ${{ steps.build.outputs.build-id }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
@@ -35,12 +40,20 @@ jobs:
         run: npm ci
 
       - name: Build production (android)
-        run: eas build --platform android --profile production --non-interactive
+        id: build
+        run: |
+          eas build --platform android --profile production --non-interactive 2>&1 | tee /tmp/eas-build.log
+          BUILD_ID=$(grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' /tmp/eas-build.log | head -1)
+          echo "build-id=$BUILD_ID" >> $GITHUB_OUTPUT
+          echo "Captured EAS Build ID: $BUILD_ID"
 
-  eas-submit:
+  submit-android:
     name: Submit (android)
     runs-on: ubuntu-latest
-    needs: eas-build-production
+    needs: build-android
+    timeout-minutes: 30
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
@@ -57,8 +70,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Write Google Play Service Account key
-        run: echo '${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}' > ./.eas-google-play-sa.json
-
       - name: Submit to Play Store
-        run: eas submit --platform android --profile production --non-interactive --latest
+        continue-on-error: true
+        run: |
+          BUILD_ID="${{ needs.build-android.outputs.build-id }}"
+          if [ -n "$BUILD_ID" ]; then
+            echo "Submitting build ID: $BUILD_ID"
+            eas submit --platform android --profile production --non-interactive --id "$BUILD_ID"
+          else
+            echo "No build ID captured, falling back to --latest"
+            eas submit --platform android --profile production --non-interactive --latest
+          fi

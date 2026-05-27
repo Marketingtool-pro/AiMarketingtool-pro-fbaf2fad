@@ -12,7 +12,7 @@ const APPWRITE_PROJECT_ID = '6952c8a0002d3365625d';
 const APPWRITE_PLATFORM = 'pro.marketingtool.app';
 
 // Database IDs
-export const DATABASE_ID = 'main';
+export const DATABASE_ID = 'marketingtool_db';
 export const COLLECTIONS = {
   USERS: 'users',
   TOOLS: 'tools',
@@ -38,6 +38,30 @@ const client = new Client()
   .setProject(APPWRITE_PROJECT_ID)
   .setPlatform(APPWRITE_PLATFORM);
 
+// Set global timeout to 30s to prevent iOS 408 errors.
+// Cast needed because the config type is a fixed interface in older SDK versions.
+(client.config as Record<string, string>).timeout = '30000';
+
+// Add simple retry logic for network/timeout errors
+const originalCall = client.call.bind(client);
+client.call = async function(method, path, headers, params) {
+    let attempts = 0;
+    const maxAttempts = 3;
+    while (attempts < maxAttempts) {
+        try {
+            return await originalCall(method, path, headers, params);
+        } catch (error: any) {
+            attempts++;
+            const isTimeout = error.code === 408 || error.type === 'database_timeout' || error.message?.includes('timeout');
+            if (!isTimeout || attempts >= maxAttempts) {
+                throw error;
+            }
+            if (__DEV__) console.log(`[Appwrite] Request timed out, retrying attempt ${attempts}...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempts)); // Exponential backoff
+        }
+    }
+};
+
 // Initialize Services
 export const account = new Account(client);
 export const databases = new Databases(client);
@@ -45,14 +69,14 @@ export const storage = new Storage(client);
 export const functions = new Functions(client);
 
 // Session Management
+// The Appwrite React Native SDK persists its own session cookie internally.
+// saveSession/deleteSession mirror that lifecycle in SecureStore for any future
+// cross-SDK needs (e.g. passing session to a web view). getSession is intentionally
+// not exposed — use account.get() to check session validity instead.
 const SESSION_KEY = 'appwrite_session';
 
 export const saveSession = async (session: string): Promise<void> => {
   await SecureStore.setItemAsync(SESSION_KEY, session);
-};
-
-export const getSession = async (): Promise<string | null> => {
-  return await SecureStore.getItemAsync(SESSION_KEY);
 };
 
 export const deleteSession = async (): Promise<void> => {
