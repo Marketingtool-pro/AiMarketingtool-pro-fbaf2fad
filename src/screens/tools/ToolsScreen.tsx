@@ -68,13 +68,13 @@ const ToolsScreen = () => {
 
   const platformTabs = [
     { name: 'All', img: null },
-    { name: 'Google Ads', img: require('../../../assets/images/platforms/plat-google.webp') },
-    { name: 'Meta / Facebook', img: require('../../../assets/images/platforms/plat-meta.webp') },
-    { name: 'Social Media', img: require('../../../assets/images/platforms/plat-social.webp') },
-    { name: 'Content & SEO', img: require('../../../assets/images/platforms/plat-seo.webp') },
-    { name: 'An-Analytics', img: require('../../../assets/images/platforms/plat-analytics.webp') },
-    { name: 'E-commerce', img: require('../../../assets/images/platforms/plat-ecommerce.webp') },
-    { name: 'AI Tools', img: require('../../../assets/images/platforms/plat-ai.webp') },
+    { name: 'Google Ads', img: require('../../../assets/images/platforms/plat-google.png') },
+    { name: 'Meta / Facebook', img: require('../../../assets/images/platforms/plat-meta.png') },
+    { name: 'Social Media', img: require('../../../assets/images/platforms/plat-social.png') },
+    { name: 'Content & SEO', img: require('../../../assets/images/platforms/plat-seo.png') },
+    { name: 'An-Analytics', img: require('../../../assets/images/platforms/plat-analytics.png') },
+    { name: 'E-commerce', img: require('../../../assets/images/platforms/plat-ecommerce.png') },
+    { name: 'AI Tools', img: require('../../../assets/images/platforms/plat-ai.png') },
   ];
 
   return (
@@ -82,7 +82,7 @@ const ToolsScreen = () => {
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} stickyHeaderIndices={[]}>
         {/* Hero Banner */}
         <ImageBackground
-          source={require('../../../assets/images/screens/tools-hero.webp')}
+          source={require('../../../assets/images/screens/tools-hero.jpg')}
           style={styles.heroBanner}
           resizeMode="cover"
         >
