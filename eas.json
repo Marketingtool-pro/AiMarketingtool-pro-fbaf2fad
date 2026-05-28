@@ -20,15 +20,11 @@
     "production": {
       "ios": {
         "ascAppId": "6758618412",
-        "appleId": "help@marketingtool.pro",
-        "ascApiKeyPath": "./AuthKey_D5KG7J5R95.p8",
-        "ascApiKeyId": "D5KG7J5R95",
-        "ascApiKeyIssuerId": "313ffa8d-5aed-4aad-a012-b1057717634c"
+        "appleId": "help@marketingtool.pro"
       },
       "android": {
         "track": "production",
-        "releaseStatus": "completed",
-        "serviceAccountKeyPath": "./.eas-google-play-sa.json"
+        "releaseStatus": "completed"
       }
     }
   }
