@@ -85,7 +85,7 @@ const withKotlinKspFix = (config, options) => {
         );
     }
 
-    const resolutionStrategy = `
+    const resolutionStrategyBlock = `
 allprojects {
     configurations.all {
         resolutionStrategy.eachDependency { DependencyResolveDetails details ->
@@ -110,8 +110,9 @@ allprojects {
     }
 }
 `;
+
     if (!buildGradle.includes('resolutionStrategy.eachDependency')) {
-      buildGradle += resolutionStrategy;
+      buildGradle += resolutionStrategyBlock;
     }
 
     config.modResults.contents = buildGradle;

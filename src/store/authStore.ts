@@ -85,9 +85,44 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
 
+    // Reviewer bypass for App Store / Play Store — allows entry even if
+    // Appwrite is unreachable or the demo account wasn't created.
+    if (email === 'demo@marketingtool.pro' && password === 'Reviewer123!') {
+      const mockUser = {
+        $id: 'reviewer_bypass',
+        name: 'App Store Reviewer',
+        email: 'demo@marketingtool.pro',
+        registration: new Date().toISOString(),
+        status: true,
+        passwordUpdate: new Date().toISOString(),
+        emailVerification: true,
+        phoneVerification: true,
+        prefs: {},
+      };
+      // Still try to fetch/create a real profile in Appwrite so the app
+      // behaves normally, but ignore errors so the reviewer isn't blocked.
+      try {
+        const profile = await get().fetchOrCreateProfile(mockUser as any);
+        set({ user: mockUser as any, profile, isAuthenticated: true, isLoading: false });
+      } catch (e) {
+        const fallbackProfile: UserProfile = {
+          $id: 'reviewer_bypass',
+          userId: 'reviewer_bypass',
+          name: 'App Store Reviewer',
+          email: 'demo@marketingtool.pro',
+          subscription: 'pro',
+          generationsUsed: 0,
+          generationsLimit: 9999,
+          createdAt: new Date().toISOString(),
+        };
+        set({ user: mockUser as any, profile: fallbackProfile, isAuthenticated: true, isLoading: false });
+      }
+      return;
+    }
+
     try {
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Login timeout')), 10000)
+        setTimeout(() => reject(new Error('Login timeout')), 30000)
       );
       await Promise.race([authService.login(email, password), timeoutPromise]);
       const user = await Promise.race([authService.getCurrentUser(), timeoutPromise]) as any;
@@ -136,8 +171,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   enable2FA: async (otp: string) => {
     set({ isLoading: true });
     try {
-      // Appwrite requires verifying the secret before enabling MFA
-      // The secret was already verified in the setup process
+      // Must verify the TOTP code before enabling MFA, otherwise any caller
+      // could enable MFA without proving they own the authenticator.
+      await authService.verify2FA(otp);
       await authService.update2FA(true);
       const user = await authService.getCurrentUser();
       set({ user, isLoading: false });
@@ -242,9 +278,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const cleaned = phoneNumber.replace(/\D/g, '');
       const formatted = phoneNumber.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
 
-      // Reviewer bypass — App Store review uses +919999999999 / 123456.
-      // Skip Firebase entirely so reviewers don't depend on real SMS delivery.
-      if (formatted === '+919999999999') {
+      // Reviewer bypass — App Store/Play review team uses a fixed test number.
+      // Prefer EXPO_PUBLIC_REVIEWER_PHONE from .env / EAS secrets, but this code
+      // also falls back to a hardcoded default review number if the env var is unset.
+      const reviewerPhone = process.env.EXPO_PUBLIC_REVIEWER_PHONE || '+919999999999';
+      const cleanFormatted = formatted.replace(/\D/g, '');
+      const cleanReviewer = reviewerPhone.replace(/\D/g, '');
+      
+      // Match if the last 10 digits are the same (handles +1 vs +91 vs no prefix)
+      const isReviewer = cleanFormatted.endsWith(cleanReviewer.slice(-10)) || formatted === reviewerPhone;
+
+      if (isReviewer) {
         if (__DEV__) console.log('[Auth] Reviewer bypass active for', formatted);
         set({ tempPhone: formatted, tempVerificationId: formatted });
         return formatted;
@@ -277,9 +321,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       let firebaseUid: string;
 
-      // Reviewer bypass — accept fixed 123456 for the reviewer phone.
-      if (phone === '+919999999999' && code === '123456') {
-        firebaseUid = 'reviewer_bypass_919999999999';
+      // Reviewer bypass — accept fixed OTP for the configured reviewer phone.
+      const reviewerPhone = process.env.EXPO_PUBLIC_REVIEWER_PHONE || '+919999999999';
+      const reviewerCode = process.env.EXPO_PUBLIC_REVIEWER_OTP ?? '123456';
+      
+      const cleanPhone = phone.replace(/\D/g, '');
+      const cleanReviewer = reviewerPhone.replace(/\D/g, '');
+      const isReviewer = cleanPhone.endsWith(cleanReviewer.slice(-10)) || phone === reviewerPhone;
+
+      if (isReviewer && code === reviewerCode) {
+        firebaseUid = 'reviewer_bypass_' + cleanPhone.slice(-10);
       } else {
         if (__DEV__) console.log('[Auth] Verifying OTP via Firebase for', phone);
         const verifyResult = await firebaseVerifyOTP(code);
@@ -374,7 +425,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Add timeout to prevent hanging on unreachable API
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Auth check timeout')), 5000)
+        setTimeout(() => reject(new Error('Auth check timeout')), 30000)
       );
       const user = await Promise.race([
         authService.getCurrentUser(),
@@ -448,7 +499,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     try {
       const profileTimeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 30000)
       );
 
       // Try to fetch existing profile
@@ -482,7 +533,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       ]);
 
       return newProfile as UserProfile;
-    } catch (error) {
+    } catch (error: any) {
+      // Surface network/timeout errors in state so the UI can show a warning.
+      // We still return a temporary defaultProfile so auth isn't blocked.
+      if (error?.message && !error.message.includes('Document with the requested ID')) {
+        console.warn('[AuthStore] fetchOrCreateProfile failed:', error.message);
+        set({ error: 'Profile load failed — some features may be limited.' });
+      }
       return defaultProfile;
     }
   },

@@ -52,6 +52,7 @@ const toolExecutorFlow = ai.defineFlow(
       input: z.string().optional(),
       outputCount: z.number().default(3),
       userId: z.string().optional(),
+      model: z.string().optional(), // override from Remote Config
     }),
     outputSchema: z.object({
       outputs: z.array(z.string()),
@@ -61,11 +62,11 @@ const toolExecutorFlow = ai.defineFlow(
       toolSlug: z.string(),
     }),
   },
-  async ({ toolSlug, toolName, inputs, input, outputCount, userId }) => {
-    // Choose model based on tool complexity
-    const model = COMPLEX_TOOLS.has(toolSlug)
-      ? googleAI.model("gemini-2.5-flash")
-      : googleAI.model("gemini-2.5-flash-lite");
+  async ({ toolSlug, toolName, inputs, input, outputCount, userId, model: modelOverride }) => {
+    // Choose model: Remote Config override → complexity-based default
+    const modelId = modelOverride
+      ?? (COMPLEX_TOOLS.has(toolSlug) ? "gemini-2.5-flash" : "gemini-2.5-flash-lite");
+    const model = googleAI.model(modelId);
 
     const systemPrompt = `You are an expert marketing AI. Generate ${outputCount} high-quality ${toolName} outputs.
 - Be specific, actionable, and professional
@@ -105,7 +106,7 @@ const toolExecutorFlow = ai.defineFlow(
           input: inputs || { prompt: input },
           output: outputs.join("\n\n---\n\n"),
           outputType: "text",
-          model: typeof model === "string" ? model : "gemini-2.5-flash",
+        model: modelId,
           tokensUsed: response.usage?.totalTokens ?? 0,
           isFavorite: false,
           createdAt: FieldValue.serverTimestamp(),
@@ -118,7 +119,7 @@ const toolExecutorFlow = ai.defineFlow(
     return {
       outputs,
       success: true,
-      model: typeof model === "string" ? model : "gemini-2.5-flash",
+      model: modelId,
       tokensUsed: response.usage?.totalTokens ?? 0,
       toolSlug,
     };

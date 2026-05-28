@@ -1460,7 +1460,7 @@ export const ToolIconImages: Record<string, any> = {
   "wealth-9-modern-bank": require("../assets/images/tool-icons-v2/wealth-9-modern-bank.png"),
 };
 
-const DEFAULT_ICON = ToolIconImages["1-seo"] || Object.values(ToolIconImages)[0];
+const DEFAULT_ICON = Object.values(ToolIconImages)[0];
 
 export const ToolIconImagesKeys = Object.keys(ToolIconImages);
 

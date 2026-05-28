@@ -5,63 +5,79 @@ on:
     branches: [main]
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  eas-build-production:
-    name: Build (${{ matrix.platform }})
+  build-android:
+    name: Build (android)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        # Re-enabled android for auto-submit
-        platform: [ios, android]
+    timeout-minutes: 120
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    outputs:
+      build-id: ${{ steps.build.outputs.build-id }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '20'
           cache: 'npm'
 
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
         with:
-          eas-version: latest
+          eas-version: 18.13.1
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build production
-        env:
-          PLATFORM: ${{ matrix.platform }}
-        run: eas build --platform "$PLATFORM" --profile production --non-interactive
+      - name: Build production (android)
+        id: build
+        run: |
+          eas build --platform android --profile production --non-interactive 2>&1 | tee /tmp/eas-build.log
+          BUILD_ID=$(grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' /tmp/eas-build.log | head -1)
+          echo "build-id=$BUILD_ID" >> $GITHUB_OUTPUT
+          echo "Captured EAS Build ID: $BUILD_ID"
 
-  eas-submit:
-    name: Submit (${{ matrix.platform }})
+  submit-android:
+    name: Submit (android)
     runs-on: ubuntu-latest
-    needs: eas-build-production
-    strategy:
-      fail-fast: false
-      matrix:
-        # Re-enabled android for auto-submit
-        platform: [ios, android]
+    needs: build-android
+    timeout-minutes: 30
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '20'
           cache: 'npm'
 
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
         with:
-          eas-version: latest
+          eas-version: 18.13.1
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Submit to store
-        env:
-          PLATFORM: ${{ matrix.platform }}
-        run: eas submit --platform "$PLATFORM" --profile production --non-interactive --latest
+      - name: Submit to Play Store
+        continue-on-error: true
+        run: |
+          BUILD_ID="${{ needs.build-android.outputs.build-id }}"
+          if [ -n "$BUILD_ID" ]; then
+            echo "Submitting build ID: $BUILD_ID"
+            eas submit --platform android --profile production --non-interactive --id "$BUILD_ID"
+          else
+            echo "No build ID captured, falling back to --latest"
+            eas submit --platform android --profile production --non-interactive --latest
+          fi

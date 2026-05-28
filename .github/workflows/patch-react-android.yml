@@ -1,0 +1,62 @@
+name: Patch react-android AAR
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - android-patches/**
+  workflow_dispatch:
+
+jobs:
+  build-patched-aar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9  # v4
+        with:
+          java-version: '17'
+          distribution: temurin
+
+      - name: Make gradlew executable
+        run: chmod +x android-patches/gradlew
+
+      - name: Build patched AAR
+        working-directory: android-patches
+        run: ./gradlew assemblePatchedAAR --no-daemon --stacktrace
+
+      - name: Publish AAR to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          AAR_VERSION="0.83.6-e2e.1"
+          ORIG_VERSION="0.83.6"
+          AAR_FILE="android-patches/build/patched/react-android-${AAR_VERSION}.aar"
+          TAG="react-android-${AAR_VERSION}"
+
+          # Download original POM from Maven Central and patch its version
+          curl -sL "https://repo.maven.apache.org/maven2/com/facebook/react/react-android/${ORIG_VERSION}/react-android-${ORIG_VERSION}.pom" \
+            | sed "s|<version>${ORIG_VERSION}</version>|<version>${AAR_VERSION}</version>|g" \
+            > /tmp/react-android-${AAR_VERSION}.pom
+
+          # Delete existing release if present, then recreate
+          gh release delete "${TAG}" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
+          git push origin ":refs/tags/${TAG}" 2>/dev/null || true
+
+          gh release create "${TAG}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Patched react-android ${AAR_VERSION}" \
+            --notes "Android 15 edge-to-edge deprecated API fix for react-android ${AAR_VERSION}" \
+            "${AAR_FILE}" \
+            "/tmp/react-android-${AAR_VERSION}.pom"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: react-android-patched
+          path: android-patches/build/patched/react-android-0.83.6-e2e.1.aar

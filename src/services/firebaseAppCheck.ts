@@ -1,10 +1,15 @@
 import { Platform } from 'react-native';
 import appCheck from '@react-native-firebase/app-check';
 import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 
 /**
- * Initializes Firebase App Check with reCAPTCHA Enterprise.
- * This proves the app's identity to Google/Firebase and helps avoid "Spam" labels on OTPs.
+ * Initializes Firebase App Check.
+ *
+ * Provider selection:
+ *  - __DEV__ / Cloud Test (Firebase Test Lab): debug provider
+ *  - Production Android: Play Integrity
+ *  - iOS: App Attest (with DeviceCheck fallback)
  */
 export const initializeAppCheck = async () => {
   try {
@@ -14,20 +19,23 @@ export const initializeAppCheck = async () => {
       return;
     }
 
+    // Detect if running in Firebase Test Lab or similar cloud environments
+    const isCloudTest = !Device.isDevice || (Platform.OS === 'android' && Device.modelName?.includes('google_sdk'));
+    const isTestEnvironment = __DEV__ || process.env.IS_TESTING === 'true' || isCloudTest;
+    
+    const androidDebugToken = process.env.FIREBASE_APPCHECK_DEBUG_TOKEN_ANDROID;
+    const iosDebugToken     = process.env.FIREBASE_APPCHECK_DEBUG_TOKEN_IOS;
+
     const provider = appCheck().newReactNativeFirebaseAppCheckProvider();
 
-    // App Attest is the modern attestation provider (iOS 14+, free, no
-    // extra pod). Firebase Phone Auth uses App Check tokens for device
-    // verification — without this, Auth falls back to reCAPTCHA Enterprise
-    // SDK which isn't linked, producing "[auth/unknown] reCAPTCHA SDK is
-    // not linked" errors. deviceCheck stays as the fallback for the very
-    // small slice of devices where App Attest is unavailable.
     provider.configure({
       android: {
-        provider: 'playIntegrity',
+        provider: isTestEnvironment ? 'debug' : 'playIntegrity',
+        ...(isTestEnvironment && androidDebugToken ? { debugToken: androidDebugToken } : {}),
       },
       apple: {
-        provider: 'appAttestWithDeviceCheckFallback',
+        provider: isTestEnvironment ? 'debug' : 'appAttestWithDeviceCheckFallback',
+        ...(isTestEnvironment && iosDebugToken ? { debugToken: iosDebugToken } : {}),
       },
     });
 
@@ -36,7 +44,7 @@ export const initializeAppCheck = async () => {
       isTokenAutoRefreshEnabled: true,
     });
 
-    if (__DEV__) console.log('[AppCheck] Initialized successfully');
+    if (__DEV__) console.log('[AppCheck] Initialized successfully (Env:', isTestEnvironment ? 'Test/Debug' : 'Prod', ')');
   } catch (error: any) {
     if (__DEV__) console.error('[AppCheck] Initialization failed:', error.message);
   }

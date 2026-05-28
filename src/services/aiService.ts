@@ -4,6 +4,7 @@
 
 import { functions, account } from './appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
+import { getString } from './firebaseRemoteConfig';
 
 const TOOL_EXECUTOR_FUNCTION_ID = 'tool-executor';
 const NEXTJS_API_BASE = 'https://app.marketingtool.pro';
@@ -42,6 +43,9 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
   try {
     if (__DEV__) console.log(`[AI] Executing tool-executor for: ${toolSlug}`);
 
+    // Read model from Remote Config (falls back to 'gemini-2.5-flash-lite' if not fetched)
+    const geminiModel = getString('gemini_model');
+
     // 🚨 ANR FIX: Set async=true to prevent blocking the main thread during execution
     const execution = await functions.createExecution(
       TOOL_EXECUTOR_FUNCTION_ID,
@@ -53,6 +57,7 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         output_count: outputCount,
         user_id: userId,
         options: { tone: tone || 'professional', language: language || 'English' },
+        model: geminiModel,
       }),
       true,  // async = true (DO NOT BLOCK)
       '/',    // path
@@ -101,6 +106,7 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         tool: toolSlug,
         input: userPrompt,
         options: { tone: tone || 'professional', language: language || 'English' },
+        model: getString('gemini_model'),
       }),
     });
 
