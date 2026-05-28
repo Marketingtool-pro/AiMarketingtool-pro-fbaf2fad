@@ -240,7 +240,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ error: null });
     try {
       const cleaned = phoneNumber.replace(/\D/g, '');
-      const formatted = phoneNumber.startsWith('+') ? phoneNumber : `+91${cleaned}`;
+      const formatted = phoneNumber.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
 
       // Reviewer bypass — App Store review uses +919999999999 / 123456.
       // Skip Firebase entirely so reviewers don't depend on real SMS delivery.
@@ -267,10 +267,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   verifyPhoneOTP: async (_userId: string, code: string) => {
     set({ error: null });
     try {
-      const phone = get().tempPhone || _userId;
-      if (!phone) {
+      const rawPhone = get().tempPhone || _userId;
+      if (!rawPhone) {
         throw new Error('Verification session expired. Please request a new code.');
       }
+
+      const cleaned = rawPhone.replace(/\D/g, '');
+      const phone = rawPhone.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
 
       let firebaseUid: string;
 
