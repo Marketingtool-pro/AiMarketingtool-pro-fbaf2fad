@@ -23,9 +23,7 @@
     "doctor": "npx expo-doctor",
     "ship": "eas build --platform all --profile production --auto-submit --non-interactive",
     "ship:ios": "eas build --platform ios --profile production --auto-submit --non-interactive",
-    "ship:android": "eas build --platform android --profile production --auto-submit --non-interactive",
-    "prepare": "husky",
-    "push": "HUSKY=0 git add -A && HUSKY=0 git commit -m \"${npm_config_m:-chore: update}\n\nCo-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>\" && git push origin main"
+    "ship:android": "eas build --platform android --profile production --auto-submit --non-interactive"
   },
   "expo": {
     "doctor": {

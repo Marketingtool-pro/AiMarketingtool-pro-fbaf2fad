@@ -59,7 +59,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 490,
+      "versionCode": 500,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -126,8 +126,10 @@
             "targetSdkVersion": 35,
             "minSdkVersion": 24,
             "windowSoftInputMode": "adjustResize",
-            "enableProguardInReleaseBuilds": true,
-            "enableShrinkResources": true
+            "useMemoryPageSize16KB": true,
+            "ndkVersion": "27.1.12297006",
+            "kotlinVersion": "2.1.20",
+            "kspVersion": "2.1.20-1.0.32"
           }
         }
       ],

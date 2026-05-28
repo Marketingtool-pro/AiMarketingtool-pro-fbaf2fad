@@ -20,6 +20,11 @@
         "simulator": true
       }
     },
+    "simulator": {
+      "ios": {
+        "simulator": true
+      }
+    },
     "production": {
       "autoIncrement": true,
       "channel": "production",
@@ -34,10 +39,7 @@
     "production": {
       "ios": {
         "ascAppId": "6758618412",
-        "appleId": "help@marketingtool.pro",
-        "ascApiKeyPath": "./AuthKey_TRHCFN47J6.p8",
-        "ascApiKeyId": "TRHCFN47J6",
-        "ascApiKeyIssuerId": "313ffa8d-5aed-4aad-a012-b1057717634c"
+        "appleId": "help@marketingtool.pro"
       },
       "android": {
         "track": "production",

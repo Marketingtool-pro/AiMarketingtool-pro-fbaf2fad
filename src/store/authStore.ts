@@ -276,7 +276,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ error: null });
     try {
       const cleaned = phoneNumber.replace(/\D/g, '');
-      const formatted = phoneNumber.startsWith('+') ? phoneNumber : `+91${cleaned}`;
+      const formatted = phoneNumber.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
 
       // Reviewer bypass — App Store/Play review team uses a fixed test number.
       // Prefer EXPO_PUBLIC_REVIEWER_PHONE from .env / EAS secrets, but this code
@@ -311,11 +311,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   verifyPhoneOTP: async (_userId: string, code: string) => {
     set({ error: null });
     try {
-      const phone = get().tempPhone;
-      if (!phone) {
-        // tempPhone is cleared on app restart — caller must re-trigger sendPhoneOTP.
+      const rawPhone = get().tempPhone || _userId;
+      if (!rawPhone) {
         throw new Error('Verification session expired. Please request a new code.');
       }
+
+      const cleaned = rawPhone.replace(/\D/g, '');
+      const phone = rawPhone.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
 
       let firebaseUid: string;
 

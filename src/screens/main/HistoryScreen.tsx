@@ -25,7 +25,7 @@ import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme'
 const { width } = Dimensions.get('window');
 
 // History hero image
-const HistoryHeroImage = require('../../../assets/images/screens/history-hero.webp');
+const HistoryHeroImage = require('../../../assets/images/screens/history-hero.jpg');
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 

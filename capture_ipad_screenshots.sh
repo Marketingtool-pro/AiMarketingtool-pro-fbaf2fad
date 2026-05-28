@@ -2,8 +2,8 @@
 # Capture iPad screenshots for App Store Connect
 # Required dimensions: 2064×2752px or 2732×2048px
 
-DEVICE_ID="19B86174-29FE-46A3-BB8A-5EBC98860AD8"  # iPad Pro 13-inch (M4)
-OUTPUT_DIR="/Users/anshsingh/Desktop/Developer/AiMarketingtool-pro-fbaf2fad/app-store-screenshots"
+DEVICE_ID="65A19854-601B-4A10-A312-3C75AF1CF288"  # iPad Pro 13-inch (M4) (iOS 26.4)
+OUTPUT_DIR="/Users/loken/Developer/New Folder With Items/AiMarketingtool-pro-fbaf2fad/app-store-screenshots"
 
 mkdir -p "$OUTPUT_DIR"
 
