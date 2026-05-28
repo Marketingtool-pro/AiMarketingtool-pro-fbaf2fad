@@ -59,7 +59,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 500,
+      "versionCode": 501,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -108,6 +108,7 @@
               "RNFBAnalytics",
               "RNFBCrashlytics",
               "RNFBFirestore",
+              "RNFBPerf",
               "RNIap"
             ],
             "extraPods": [

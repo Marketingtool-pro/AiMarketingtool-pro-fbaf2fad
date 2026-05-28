@@ -35,6 +35,8 @@
     }
   },
   "dependencies": {
+    "@actions/core": "^3.0.1",
+    "@actions/github": "^9.1.1",
     "@expo/vector-icons": "^15.0.3",
     "@genkit-ai/firebase": "^1.36.0",
     "@genkit-ai/google-genai": "^1.36.0",
