@@ -124,7 +124,7 @@ jobs:
           - target_arch: aarch64-unknown-linux-musl
             os: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
 
