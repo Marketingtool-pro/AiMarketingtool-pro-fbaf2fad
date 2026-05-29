@@ -1,0 +1,21 @@
+{
+  "name": "marketingtool-pro",
+  "owner": {
+    "name": "Marketingtool-pro",
+    "url": "https://github.com/Marketingtool-pro"
+  },
+  "metadata": {
+    "description": "Claude Code plugins for the AiMarketingtool-pro React Native app.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "marketingtool-rn-mcp",
+      "source": "./plugin-rn-mcp",
+      "description": "Drive, inspect, and debug the running AiMarketingtool-pro React Native app on an Android device via a vendored offline react-native-mcp-kit MCP server.",
+      "version": "1.5.0",
+      "category": "testing",
+      "strict": false
+    }
+  ]
+}
