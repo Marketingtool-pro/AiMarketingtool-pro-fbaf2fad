@@ -19,8 +19,16 @@ export const initializeAppCheck = async () => {
       return;
     }
 
-    // Detect if running in Firebase Test Lab or similar cloud environments
-    const isCloudTest = !Device.isDevice || (Platform.OS === 'android' && Device.modelName?.includes('google_sdk'));
+    // Detect if running in Firebase Test Lab or similar cloud/emulator environments
+    const modelName = Device.modelName?.toLowerCase() ?? '';
+    const isLikelyCloudOrEmulatorAndroid =
+      Platform.OS === 'android' &&
+      (modelName.includes('generic') ||
+        modelName.includes('gce') ||
+        modelName.includes('emulator') ||
+        modelName.includes('sdk'));
+    const isFirebaseTestLab = process.env.FIREBASE_TEST_LAB === 'true';
+    const isCloudTest = !Device.isDevice || isFirebaseTestLab || isLikelyCloudOrEmulatorAndroid;
     const isTestEnvironment = __DEV__ || process.env.IS_TESTING === 'true' || isCloudTest;
     
     const androidDebugToken = process.env.FIREBASE_APPCHECK_DEBUG_TOKEN_ANDROID;
