@@ -16,8 +16,10 @@ Hybrid React Native application using **Appwrite** for core Auth/Data and **Fire
 - `developer_project_scanner.rb`: Project and Firebase config audit.
 
 ## 📦 Deployment
+
 - **Android:** Automated via EAS (production profile).
-- **Web:** Automated via GitHub Actions on merge to main.
+- - **Apple:** Automated via EAS (production profile).
+- **Web:** Automated via GitHub Actions on merge to master.
 
 ---
 *Maintained by Marketingtool-pro*
