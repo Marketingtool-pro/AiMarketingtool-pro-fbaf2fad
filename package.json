@@ -1,5 +1,5 @@
 {
-  "name": "@marketingtool-pro/ai-marketingtool-pro-fbaf2fad",
+  "name": "@marketingtool-pro/marketingtool",
   "version": "1.5.0",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com",
@@ -131,7 +131,6 @@
     "lint-staged": "17.0.5",
     "typescript": "6.0.3"
   },
-  "private": true,
   "overrides": {
     "expo-file-system": "$expo-file-system",
     "@tootallnate/once": "^3.0.1",

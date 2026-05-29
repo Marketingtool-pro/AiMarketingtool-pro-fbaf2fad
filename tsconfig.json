@@ -3,15 +3,15 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
-    "App.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "App.tsx"
   ],
   "exclude": [
     "node_modules",
