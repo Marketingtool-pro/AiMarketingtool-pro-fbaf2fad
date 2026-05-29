@@ -23,7 +23,8 @@
     "doctor": "npx expo-doctor",
     "ship": "eas build --platform all --profile production --auto-submit --non-interactive",
     "ship:ios": "eas build --platform ios --profile production --auto-submit --non-interactive",
-    "ship:android": "eas build --platform android --profile production --auto-submit --non-interactive"
+    "ship:android": "eas build --platform android --profile production --auto-submit --non-interactive",
+    "build": "expo export --platform web"
   },
   "expo": {
     "doctor": {

@@ -25,6 +25,7 @@ credentials/
 !tsconfig.json
 !google-services.json
 !GoogleService-Info.plist
+!firebase.json
 !assets/animations/*.json
 !src/assets/animations/*.json
 
