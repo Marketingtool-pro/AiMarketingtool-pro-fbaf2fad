@@ -116,3 +116,14 @@ YAML
 actions-runner-osx-arm64-*.tar.gz
 env.sh
 .cargo-features-manager-wwAJS2/
+
+# ── Claude Code plugin: marketingtool-rn-mcp ──────────────────────────────
+# These negations must stay at the END of this file so they win as the
+# last-matching .gitignore rule over the broad `*.json` (line 21) and
+# `node_modules/` (line 2) guards above. The plugin's MCP server is vendored
+# offline, so its node_modules is intentionally committed.
+!.claude-plugin/marketplace.json
+!plugin-rn-mcp/.claude-plugin/plugin.json
+!plugin-rn-mcp/.mcp.json
+!plugin-rn-mcp/server/node_modules/
+!plugin-rn-mcp/server/node_modules/**

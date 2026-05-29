@@ -1,0 +1,21 @@
+{
+  "name": "marketingtool-rn-mcp",
+  "version": "1.5.0",
+  "description": "Drive, inspect, and debug the running AiMarketingtool-pro React Native app (pro.marketingtool.app) on an Android device from Claude Code, via a vendored offline react-native-mcp-kit MCP server. Runs with no install step after clone (Apple Silicon / arm64).",
+  "author": {
+    "name": "Marketingtool-pro",
+    "url": "https://github.com/Marketingtool-pro"
+  },
+  "homepage": "https://marketingtool-pro.github.io/AiMarketingtool-pro-fbaf2fad/",
+  "repository": "https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad",
+  "license": "MIT",
+  "keywords": [
+    "react-native",
+    "mcp",
+    "android",
+    "automation",
+    "e2e",
+    "debugging",
+    "marketingtool"
+  ]
+}

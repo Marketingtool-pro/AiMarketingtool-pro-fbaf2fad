@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "rn-mcp-kit": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/server/node_modules/react-native-mcp-kit/dist/server/cli.js"
+      ],
+      "env": {
+        "APP_ID": "pro.marketingtool.app",
+        "PLATFORM": "android"
+      }
+    }
+  }
+}
