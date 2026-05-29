@@ -11,18 +11,13 @@
       "ios",
       "android"
     ],
-    "splash": {
-      "image": "./assets/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#060b28"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "481",
+      "buildNumber": "478",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -59,7 +54,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 501,
+      "versionCode": 478,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -109,7 +104,7 @@
               "RNFBCrashlytics",
               "RNFBFirestore",
               "RNFBPerf",
-              "RNIap"
+              "NitroIap"
             ],
             "extraPods": [
               {
@@ -153,6 +148,14 @@
       ],
       "./plugins/withAndroid15EdgeToEdge.js",
       "./plugins/withFirebaseDeferredInit.js",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#060b28"
+        }
+      ],
       "expo-notifications",
       "react-native-iap",
       "expo-secure-store",
@@ -172,7 +175,7 @@
         "reCaptchaIos": "6LegEWIsAAAAAOgbGP08ISyfgJWExxSRV9iLuanX"
       },
       "eas": {
-        "projectId": "ffae945b-fa43-4a10-8876-0a4199d38aed"
+        "projectId": "93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
       }
     },
     "owner": "aimarketintool-2-2-2",

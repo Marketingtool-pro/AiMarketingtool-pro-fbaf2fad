@@ -39,7 +39,7 @@
 
 - Backend code is split across two server packages:
   - `functions/`: Firebase Functions v2 + Genkit + Firestore
-  - `appwrite-functions/msg91-proxy`: Appwrite function for Bird-backed OTP flows
+  - `appwrite-functions/phone-session`: Appwrite function that mints an Appwrite session from a verified Firebase Phone Auth UID
 
 - Do not assume a single backend owns all state. Profiles and Appwrite sessions live in Appwrite, while some AI/chat code writes to Firestore, and the mobile client still contains Appwrite-first AI and auth wiring.
 
@@ -77,7 +77,7 @@
 
 - Appwrite function responses are not uniform in this codebase: they may arrive as an object, a JSON string, or plain text. Reuse the normalization pattern in `src/store/authStore.ts` / `src/services/aiService.ts` instead of assuming one response shape.
 
-- The reviewer bypass values for phone auth are intentional and must stay aligned across client and backend code. `src/store/authStore.ts` and `appwrite-functions/msg91-proxy/src/main.js` both depend on the review test phone / OTP flow.
+- The reviewer bypass values for phone auth are intentional. They live in `src/store/authStore.ts` (EXPO_PUBLIC_REVIEWER_PHONE / EXPO_PUBLIC_REVIEWER_OTP) for the App Store / Play Store review test phone / OTP flow.
 
 - Keep secrets out of source. Firebase Genkit uses Secret Manager (`defineSecret(...)` in `functions/src/index.ts`), and the Appwrite function expects env vars instead of inline credentials.
 

@@ -88,8 +88,13 @@ const ToolDetailScreen = () => {
       return;
     }
 
-    // QUOTA: free trial = 3/day, Starter = 200/mo, Pro = 500/mo
-    if (profile?.subscription === 'free' && (profile?.credits || 0) <= 0) {
+    // QUOTA: gate on real usage fields (generationsUsed/generationsLimit) that
+    // authStore actually populates. The old check used profile.credits, which is
+    // never set, so it evaluated to 0<=0 and blocked EVERY free generation.
+    if (
+      profile?.subscription === 'free' &&
+      (profile?.generationsUsed ?? 0) >= (profile?.generationsLimit ?? 10)
+    ) {
       Alert.alert(
         'Daily Limit Reached',
         'Free trial allows 3 generations per day. Upgrade to Starter ($29/mo, 200 generations) or Pro ($59/mo, 500 generations).',
@@ -365,7 +370,7 @@ const ToolDetailScreen = () => {
             <View style={styles.creditsInfo}>
               <Feather name="zap" size={20} color={Colors.warning} />
               <Text style={styles.creditsText}>
-                {profile?.credits || 0} credits remaining
+                {Math.max(0, (profile?.generationsLimit ?? 10) - (profile?.generationsUsed ?? 0))} generations remaining
               </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Subscription')}>
                 <Text style={styles.upgradeLink}>Upgrade</Text>

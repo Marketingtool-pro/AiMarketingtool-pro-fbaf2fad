@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import * as Haptics from 'expo-haptics';
-import { billingService } from '../../services/billingService';
+import { billingService, PURCHASE_CANCELLED } from '../../services/billingService';
 import { functions } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 
@@ -41,13 +41,37 @@ const SubscriptionScreen = () => {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [selectedPlan, setSelectedPlan] = useState<string>('pro');
   const [isLoading, setIsLoading] = useState(false);
+  // Tracks what the in-flight purchase is, so the (async) listener can show the
+  // right success message. v15 delivers the outcome via listeners, not inline.
+  const pendingKindRef = useRef<'subscription' | 'consumable' | null>(null);
 
   useEffect(() => {
-    if (Platform.OS !== 'web') {
-      billingService.initialize().catch(err => console.error('[Billing] Init failed:', err));
-    }
+    if (Platform.OS === 'web') return;
+    billingService.initialize().catch(err => console.error('[Billing] Init failed:', err));
+    billingService.startListeners({
+      onSuccess: () => {
+        setIsLoading(false);
+        const kind = pendingKindRef.current;
+        pendingKindRef.current = null;
+        if (kind === 'consumable') {
+          Alert.alert('Success', 'Your account has been topped up!', [
+            { text: 'OK', onPress: () => { refreshProfile(); } },
+          ]);
+        } else {
+          Alert.alert('Success', 'Your subscription is now active!', [
+            { text: 'OK', onPress: () => { refreshProfile(); navigation.goBack(); } },
+          ]);
+        }
+      },
+      onError: (message: string) => {
+        setIsLoading(false);
+        pendingKindRef.current = null;
+        if (message === PURCHASE_CANCELLED) return; // user cancelled — no alert
+        Alert.alert('Purchase Failed', message || 'Could not complete the purchase. Please try again.');
+      },
+    });
     return () => {
-      if (Platform.OS !== 'web') billingService.end().catch(() => {});
+      billingService.end().catch(() => {});
     };
   }, []);
 
@@ -151,19 +175,17 @@ const SubscriptionScreen = () => {
     }
 
     setIsLoading(true);
+    pendingKindRef.current = 'consumable';
     try {
       const result = await billingService.requestPurchase(sku, userId!);
-      if (result.success) {
-        Alert.alert('Success', 'Your account has been topped up!', [
-          { text: 'OK', onPress: () => { refreshProfile(); } },
-        ]);
-      } else if (result.error !== 'Purchase cancelled') {
-        Alert.alert('Purchase Failed', result.error || 'Could not complete the purchase.');
-      }
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Could not process purchase.');
-    } finally {
+      if (result.pending) return; // outcome arrives via listener (onSuccess/onError)
+      pendingKindRef.current = null;
       setIsLoading(false);
+      Alert.alert('Purchase Failed', result.error || 'Could not start the purchase.');
+    } catch (err: any) {
+      pendingKindRef.current = null;
+      setIsLoading(false);
+      Alert.alert('Error', err.message || 'Could not process purchase.');
     }
   };
 
@@ -195,15 +217,12 @@ const SubscriptionScreen = () => {
           return;
         }
         const sku = billingPeriod === 'monthly' ? skuInfo.monthly : skuInfo.yearly;
+        pendingKindRef.current = 'subscription';
         const result = await billingService.requestPurchase(sku, userId!);
-        if (result.success) {
-          Alert.alert('Success', 'Your subscription is now active!', [
-            { text: 'OK', onPress: () => { refreshProfile(); navigation.goBack(); } },
-          ]);
-          return;
-        }
-        if (result.error === 'Purchase cancelled') return;
-        Alert.alert('Purchase Failed', result.error || 'Could not complete the purchase. Please try again.');
+        if (result.pending) return; // outcome arrives via listener (onSuccess/onError)
+        pendingKindRef.current = null;
+        setIsLoading(false);
+        Alert.alert('Purchase Failed', result.error || 'Could not start the purchase. Please try again.');
         return;
       }
 
@@ -405,8 +424,9 @@ const SubscriptionScreen = () => {
           })}
         </View>
 
-        {/* Apple 3.1.1: no Consumable IAP for tokens registered yet. Render card only on Android (Play has SKU "tokens" — 100 Extra Generations product, active in 173 countries) to avoid "misleading UI" rejection on iOS. */}
-        <TouchableOpacity 
+        {/* Apple 3.1.1: no Consumable IAP for tokens registered yet. Render card only on Android (Play has SKU "tokens" — 100 Extra Generations product, active in 173 countries) to avoid "misleading UI"/2.1(b) rejection on iOS where the SKU is not registered. */}
+        {Platform.OS !== 'ios' && (
+        <TouchableOpacity
           style={{ paddingHorizontal: 20, marginTop: 28 }}
           onPress={() => handlePurchase('tokens')}
           activeOpacity={0.7}
@@ -424,6 +444,7 @@ const SubscriptionScreen = () => {
             <Text style={{ color: '#A78BFA', fontSize: 22, fontWeight: '900' }}>$3</Text>
           </View>
         </TouchableOpacity>
+        )}
 
         {/* Restore + Manage — Apple 3.1.1 / Google Play Billing policy */}
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 24 }}>
