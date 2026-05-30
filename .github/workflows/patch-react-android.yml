@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9  # v4
         with:
-          java-version: '17'
+          java-version: '21.0.5'
           distribution: temurin
 
       - name: Make gradlew executable
@@ -33,7 +33,7 @@ jobs:
 
       - name: Publish AAR to GitHub Release
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.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 }}
         run: |
           AAR_VERSION="0.83.6-e2e.1"
           ORIG_VERSION="0.83.6"
