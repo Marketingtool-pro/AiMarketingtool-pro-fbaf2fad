@@ -33,6 +33,28 @@
           "react-native-iap"
         ]
       }
+    },
+    "install": {
+      "exclude": [
+        "react-native-reanimated",
+        "react-native-safe-area-context",
+        "react-native-worklets",
+        "@shopify/react-native-skia",
+        "expo",
+        "expo-auth-session",
+        "expo-build-properties",
+        "expo-dev-client",
+        "expo-image-picker",
+        "expo-insights",
+        "expo-linking",
+        "expo-location",
+        "expo-notifications",
+        "expo-sharing",
+        "react",
+        "react-dom",
+        "react-native-keyboard-controller",
+        "react-native-svg"
+      ]
     }
   },
   "dependencies": {
