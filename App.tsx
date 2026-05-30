@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import '@tamagui/native/setup-zeego';
 // expo-status-bar removed: it routes through deprecated APIs on Android 15
 // (StatusBarModule -> Window.setStatusBarColor). react-native-edge-to-edge's
 // <SystemBars /> replaces it cleanly on both platforms.
