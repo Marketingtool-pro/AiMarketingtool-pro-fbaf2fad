@@ -75,7 +75,7 @@ const STROKE_COLORS = [
 
 const MemeGeneratorScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const viewShotRef = useRef<ViewShot>(null);
+  const viewShotRef = useRef<any>(null);
 
   // State
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
