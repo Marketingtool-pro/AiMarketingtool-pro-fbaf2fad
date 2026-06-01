@@ -15,7 +15,12 @@ Older versions may not receive security fixes.
 
 If you discover a security vulnerability, please do **not** open a public GitHub issue.
 
-Instead, report it privately to the maintainers using the appropriate private contact channel for this project.
+Instead, report it privately via one of the following channels:
+
+- Email: **security@example.com**
+- GitHub Security Advisories: use the repository's **Security** tab and click **Report a vulnerability**
+
+(Project maintainers: replace `security@example.com` with the real monitored security contact address.)
 
 When reporting, please include:
 
