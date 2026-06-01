@@ -38,6 +38,9 @@ jobs:
           registry-url: https://npm.pkg.github.com/
           scope: '@marketingtool-pro'
       - run: npm ci
-      - run: npm publish
+      - run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
+          echo "@marketingtool-pro:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
