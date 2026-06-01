@@ -39,8 +39,12 @@ export default function App() {
 
         // Run fonts and auth in parallel, each with its own timeout.
         // Cap at 1.5s to prevent slow auth/network from gating the splash.
-        const withTimeout = <T,>(p: Promise<T>, ms: number) =>
-          Promise.race([p, new Promise(resolve => setTimeout(resolve, ms))]);
+        const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T | undefined> => {
+          const timeoutPromise: Promise<undefined> = new Promise(resolve =>
+            setTimeout(() => resolve(undefined), ms)
+          );
+          return Promise.race([p, timeoutPromise]);
+        };
 
         // App Check must be ready BEFORE the user reaches the login screen.
         // Firebase Phone Auth on iOS uses the App Check token to verify the
