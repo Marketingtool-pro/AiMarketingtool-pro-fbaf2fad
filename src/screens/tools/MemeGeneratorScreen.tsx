@@ -75,7 +75,7 @@ const STROKE_COLORS = [
 
 const MemeGeneratorScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const viewShotRef = useRef<ViewShot>(null);
+  const viewShotRef = useRef<any>(null);
 
   // State
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -161,6 +161,9 @@ const MemeGeneratorScreen = () => {
       Alert.alert('No Image', 'Please select an image first');
       return;
     }
+
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
 
     setIsLoading(true);
     try {

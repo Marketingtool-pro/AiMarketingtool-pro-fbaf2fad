@@ -25,7 +25,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
-import { Colors } from '../../constants/theme';
+import { Colors, Spacing } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 import { biometricService, BiometricType } from '../../services/biometric';
 import { clearVerification as clearFirebaseVerification } from '../../services/firebaseAuth';
