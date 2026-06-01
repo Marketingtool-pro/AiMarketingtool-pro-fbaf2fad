@@ -162,6 +162,9 @@ const MemeGeneratorScreen = () => {
       return;
     }
 
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
     setIsLoading(true);
     try {
       // Capture the meme view
