@@ -43,12 +43,12 @@ internal class StatusBarModule(reactContext: ReactApplicationContext?) :
     val currentActivity = reactApplicationContext.currentActivity
     val statusBarColor =
         if (Build.VERSION.SDK_INT >= 35) {
-          cachedStatusBarColor?.let { String.format("#%06X", 0xFFFFFF and it) } ?: "black"
+          cachedStatusBarColor?.let { String.format("#%06X", 0xFFFFFF and it) } ?: "#000000"
         } else {
           @Suppress("DEPRECATION")
           currentActivity?.window?.statusBarColor?.let { color ->
             String.format("#%06X", 0xFFFFFF and color)
-          } ?: "black"
+          } ?: "#000000"
         }
     return mapOf(
         HEIGHT_KEY to PixelUtil.toDIPFromPixel(statusBarHeightPx(currentActivity).toFloat()),
