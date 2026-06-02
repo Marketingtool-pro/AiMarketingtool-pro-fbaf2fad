@@ -38,9 +38,14 @@ jobs:
           registry-url: https://npm.pkg.github.com/
           scope: '@marketingtool-pro'
       - run: npm ci
-      - run: |
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
-          echo "@marketingtool-pro:registry=https://npm.pkg.github.com" >> ~/.npmrc
-          npm publish
+      - name: Publish package (skip if version already exists)
+        run: |
+          PKG=$(node -p "require('./package.json').name")
+          VER=$(node -p "require('./package.json').version")
+          if npm view "${PKG}@${VER}" version >/dev/null 2>&1; then
+            echo "${PKG}@${VER} already published — skipping."
+          else
+            npm publish
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -33,7 +33,7 @@ jobs:
 
       - name: Publish AAR to GitHub Release
         env:
-          GH_TOKEN: ${{ secrets.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 }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           AAR_VERSION="0.83.6-e2e.1"
           ORIG_VERSION="0.83.6"
@@ -45,16 +45,19 @@ jobs:
             | sed "s|<version>${ORIG_VERSION}</version>|<version>${AAR_VERSION}</version>|g" \
             > /tmp/react-android-${AAR_VERSION}.pom
 
-          # Delete existing release if present, then recreate
-          gh release delete "${TAG}" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
-          git push origin ":refs/tags/${TAG}" 2>/dev/null || true
-
-          gh release create "${TAG}" \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "Patched react-android ${AAR_VERSION}" \
-            --notes "Android 15 edge-to-edge deprecated API fix for react-android ${AAR_VERSION}" \
-            "${AAR_FILE}" \
-            "/tmp/react-android-${AAR_VERSION}.pom"
+          # Releases in this repo are immutable and tag creation is restricted,
+          # so an existing release/tag cannot be deleted or recreated. Only
+          # create the release when it does not already exist.
+          if gh release view "${TAG}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists and is immutable — nothing to do."
+          else
+            gh release create "${TAG}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Patched react-android ${AAR_VERSION}" \
+              --notes "Android 15 edge-to-edge deprecated API fix for react-android ${AAR_VERSION}" \
+              "${AAR_FILE}" \
+              "/tmp/react-android-${AAR_VERSION}.pom"
+          fi
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
