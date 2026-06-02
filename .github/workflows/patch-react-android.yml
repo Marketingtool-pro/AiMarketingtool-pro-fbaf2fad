@@ -3,6 +3,7 @@ name: Patch react-android AAR
 on:
   push:
     branches:
+      - Master
       - main
     paths:
       - android-patches/**
