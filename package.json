@@ -123,8 +123,8 @@
     "genkit": "^1.36.0",
     "lottie-react-native": "~7.3.8",
     "material-symbols": "^0.44.10",
-    "react": "19.2.6",
-    "react-dom": "19.2.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.85.3",
     "react-native-appwrite": "0.31.0",
     "react-native-edge-to-edge": "^1.8.1",
@@ -169,7 +169,9 @@
     "@opentelemetry/auto-instrumentations-node": ">=0.75.0",
     "@opentelemetry/sdk-node": ">=0.217.0",
     "@opentelemetry/exporter-prometheus": ">=0.217.0",
-    "ws": "^8.21.0"
+    "ws": "^8.21.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   },
   "resolutions": {
     "expo-file-system": "~55.0.10",
@@ -180,7 +182,9 @@
     "semver": "^7.7.4",
     "send": "^0.19.0",
     "tar": "^7.5.13",
-    "ws": "^8.21.0"
+    "ws": "^8.21.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
