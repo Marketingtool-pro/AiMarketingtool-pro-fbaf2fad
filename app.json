@@ -11,18 +11,13 @@
       "ios",
       "android"
     ],
-    "splash": {
-      "image": "./assets/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#060b28"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "479",
+      "buildNumber": "482",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -59,7 +54,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 501,
+      "versionCode": 491,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -99,7 +94,7 @@
         {
           "ios": {
             "useFrameworks": "static",
-            "deploymentTarget": "16.0",
+            "deploymentTarget": "16.4",
             "storeKitVersion": "2",
             "forceStaticLinking": [
               "RNFBApp",
@@ -108,7 +103,6 @@
               "RNFBAnalytics",
               "RNFBCrashlytics",
               "RNFBFirestore",
-              "RNFBPerf",
               "RNIap"
             ],
             "extraPods": [
@@ -125,13 +119,11 @@
           "android": {
             "compileSdkVersion": 35,
             "targetSdkVersion": 35,
-            "buildToolsVersion": "35.0.0",
             "minSdkVersion": 24,
             "windowSoftInputMode": "adjustResize",
-            "useMemoryPageSize16KB": true,
-            "ndkVersion": "27.1.12297006",
-            "kotlinVersion": "2.1.20",
-            "kspVersion": "2.1.20-1.0.32"
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResources": true,
+            "enableMinifyInReleaseBuilds": true
           }
         }
       ],
@@ -161,6 +153,14 @@
       "expo-sharing",
       "expo-web-browser",
       "expo-asset",
+      "expo-tracking-transparency",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ],
       "./plugins/withKotlinKspFix.js"
     ],
     "extra": {

@@ -25,7 +25,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Spacing } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 import { biometricService, BiometricType } from '../../services/biometric';
 import { clearVerification as clearFirebaseVerification } from '../../services/firebaseAuth';
@@ -224,7 +224,7 @@ const LoginScreen = () => {
     }));
 
     try {
-      // Bird Verify (SMS) via Appwrite msg91-proxy function — see authStore.ts.
+      // Send OTP via Firebase Phone Auth
       const userId = await sendPhoneOTP(formattedPhone);
       setOtpUserId(userId);
       setOtpSent(true);
@@ -286,7 +286,7 @@ const LoginScreen = () => {
           <View style={styles.logoSection}>
             <View style={styles.logoIconBg}>
                <Image
-                  source={require('../../../assets/images/logo-icon.png')}
+                  source={require('../../../assets/images/logo-icon.webp')}
                   style={styles.logoImage}
                   resizeMode="contain"
                 />
@@ -309,13 +309,13 @@ const LoginScreen = () => {
               >
                 <Text style={styles.flagText}>{selectedCountry.flag}</Text>
                 <Text style={styles.codeText}>{selectedCountry.code}</Text>
-                <Feather name="chevron-down" size={14} color="#4A5568" />
+                <Feather name="chevron-down" size={14} color="#8896A5" />
               </TouchableOpacity>
 
               <TextInput
                 style={styles.phoneInput}
                 placeholder="Phone"
-                placeholderTextColor="#4A5568"
+                placeholderTextColor="#8896A5"
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
                 keyboardType="phone-pad"
@@ -379,7 +379,7 @@ const LoginScreen = () => {
                   <TextInput
                     style={[styles.otpInputInline, { letterSpacing: 8 }]}
                     placeholder="000000"
-                    placeholderTextColor="#4A5568"
+                    placeholderTextColor="#8896A5"
                     value={otpCode}
                     onChangeText={(text) => {
                       const digits = text.replace(/\D/g, '').slice(0, 6);
@@ -468,10 +468,10 @@ const LoginScreen = () => {
 
           <View style={styles.socialRow}>
              <TouchableOpacity activeOpacity={0.7} onPress={loginWithGoogle}>
-                <Image source={require('../../../assets/images/platforms/google.png')} style={{ width: 56, height: 56 }} resizeMode="contain" />
+                <Image source={require('../../../assets/images/platforms/google.webp')} style={{ width: 56, height: 56 }} resizeMode="contain" />
              </TouchableOpacity>
              <TouchableOpacity activeOpacity={0.7} onPress={loginWithFacebook}>
-                <Image source={require('../../../assets/images/platforms/facebook.png')} style={{ width: 56, height: 56 }} resizeMode="contain" />
+                <Image source={require('../../../assets/images/platforms/facebook.webp')} style={{ width: 56, height: 56 }} resizeMode="contain" />
              </TouchableOpacity>
              {Platform.OS === 'ios' && (
                <AppleAuthentication.AppleAuthenticationButton
@@ -511,58 +511,63 @@ const LoginScreen = () => {
         animationType="slide"
         transparent={true}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Email Login</Text>
-              <TouchableOpacity onPress={() => setShowEmailModal(false)}>
-                <Feather name="x" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Email Address</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="email@example.com"
-                placeholderTextColor="#4A5568"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContent, { height: '80%', paddingBottom: 40 }]}>
+            <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Email Login</Text>
+                <TouchableOpacity onPress={() => setShowEmailModal(false)}>
+                  <Feather name="x" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Email Address</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="email@example.com"
+                  placeholderTextColor="#8896A5"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="••••••••"
-                placeholderTextColor="#4A5568"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-              />
-            </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Password</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="••••••••"
+                  placeholderTextColor="#8896A5"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                />
+              </View>
 
-            <TouchableOpacity 
-              style={styles.primaryBtn}
-              onPress={handleLogin}
-              disabled={isLoading}
-            >
-              <LinearGradient
-                colors={['#9D4EDD', '#7B2CBF']}
-                style={styles.btnGradient}
+              <TouchableOpacity 
+                style={styles.primaryBtn}
+                onPress={handleLogin}
+                disabled={isLoading}
               >
-                {isLoading ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.btnText}>Login</Text>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
+                <LinearGradient
+                  colors={['#9D4EDD', '#7B2CBF']}
+                  style={styles.btnGradient}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.btnText}>Login</Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* 2FA TOTP Modal */}
@@ -571,55 +576,60 @@ const LoginScreen = () => {
         animationType="slide"
         transparent={true}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Two-Factor Auth</Text>
-              <TouchableOpacity onPress={() => useAuthStore.setState({ mfaPending: false })}>
-                <Feather name="x" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-            
-            <Text style={styles.modalSubtitle}>
-              Enter the 6-digit code from your authenticator app to continue.
-            </Text>
-
-            {!!totpError && (
-              <View style={styles.errorBox}>
-                <Feather name="alert-circle" size={16} color="#FF6B6B" />
-                <Text style={styles.errorText}>{totpError}</Text>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContent, { height: '80%', paddingBottom: 40 }]}>
+            <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Two-Factor Auth</Text>
+                <TouchableOpacity onPress={() => useAuthStore.setState({ mfaPending: false })}>
+                  <Feather name="x" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
               </View>
-            )}
+              
+              <Text style={styles.modalSubtitle}>
+                Enter the 6-digit code from your authenticator app to continue.
+              </Text>
 
-            <TextInput
-              style={styles.otpInput}
-              placeholder="000000"
-              placeholderTextColor="#4A5568"
-              value={totpCode}
-              onChangeText={(text) => { setTotpCode(text); setTotpError(''); }}
-              keyboardType="number-pad"
-              maxLength={6}
-              autoFocus
-            />
+              {!!totpError && (
+                <View style={styles.errorBox}>
+                  <Feather name="alert-circle" size={16} color="#FF6B6B" />
+                  <Text style={styles.errorText}>{totpError}</Text>
+                </View>
+              )}
 
-            <TouchableOpacity 
-              style={styles.primaryBtn}
-              onPress={handleVerifyTOTP}
-              disabled={isLoading || totpCode.length < 6}
-            >
-              <LinearGradient
-                colors={['#9D4EDD', '#7B2CBF']}
-                style={styles.btnGradient}
+              <TextInput
+                style={styles.otpInput}
+                placeholder="000000"
+                placeholderTextColor="#8896A5"
+                value={totpCode}
+                onChangeText={(text) => { setTotpCode(text); setTotpError(''); }}
+                keyboardType="number-pad"
+                maxLength={6}
+                autoFocus
+              />
+
+              <TouchableOpacity 
+                style={styles.primaryBtn}
+                onPress={handleVerifyTOTP}
+                disabled={isLoading || totpCode.length < 6}
               >
-                {isLoading ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.btnText}>Verify & Login</Text>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
+                <LinearGradient
+                  colors={['#9D4EDD', '#7B2CBF']}
+                  style={styles.btnGradient}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.btnText}>Verify & Login</Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Country Picker Modal */}
@@ -628,8 +638,11 @@ const LoginScreen = () => {
         animationType="slide"
         transparent={true}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContent, { height: '85%', paddingBottom: 20 }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Country</Text>
               <TouchableOpacity onPress={() => setShowCountryPicker(false)}>
@@ -637,11 +650,11 @@ const LoginScreen = () => {
               </TouchableOpacity>
             </View>
             <View style={styles.searchBox}>
-               <Feather name="search" size={18} color="#4A5568" />
+               <Feather name="search" size={18} color="#8896A5" />
                <TextInput 
                 style={styles.searchInput}
                 placeholder="Search country..."
-                placeholderTextColor="#4A5568"
+                placeholderTextColor="#8896A5"
                 value={countrySearch}
                 onChangeText={setCountrySearch}
                />
@@ -671,7 +684,7 @@ const LoginScreen = () => {
               )}
             />
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </AnimatedBackground>
   );
@@ -786,7 +799,7 @@ const styles = StyleSheet.create({
   },
   orText: {
     fontSize: 12,
-    color: '#4A5568',
+    color: '#8896A5',
     letterSpacing: 1,
   },
   socialRow: {
@@ -1071,6 +1084,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  resendContainer: {
+    marginTop: Spacing.lg,
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  resendTimerText: {
+    color: Colors.textTertiary,
+    fontSize: 14,
+  },
+  resendLink: {
+    color: Colors.secondary,
+    fontSize: 14,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
 

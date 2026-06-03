@@ -1,0 +1,9 @@
+apiVersion: policy.gradle.com/v1
+kind: PolicyScanDefinition
+metadata:
+  name: build
+spec:
+  description: Validate the software package against the build gate policies.
+  policy-selector:
+    match-labels:
+      gate: build

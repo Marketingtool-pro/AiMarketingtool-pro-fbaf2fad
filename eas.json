@@ -6,26 +6,38 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "development"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "preview"
     },
     "simulator": {
+      "channel": "production",
+      "environment": "production",
       "ios": {
         "simulator": true
       }
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production"
+      "channel": "production",
+      "environment": "production",
+      "resourceClass": "large",
+      "android": {
+        "resourceClass": "large"
+      }
     }
   },
   "submit": {
     "production": {
       "ios": {
         "ascAppId": "6758618412",
-        "appleId": "help@marketingtool.pro"
+        "appleId": "help@marketingtool.pro",
+        "ascApiKeyPath": "./AuthKey_TRHCFN47J6.p8",
+        "ascApiKeyId": "TRHCFN47J6",
+        "ascApiKeyIssuerId": "313ffa8d-5aed-4aad-a012-b1057717634c"
       },
       "android": {
         "track": "production",

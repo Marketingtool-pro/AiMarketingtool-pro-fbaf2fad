@@ -1,0 +1,12 @@
+apiVersion: policy.gradle.com/v1
+kind: AttestationsExist
+metadata:
+  name: require-build-tool
+  labels:
+    gate: build
+spec:
+  description: Ensure Build Tool attestation exists
+  remediation: Fix build
+  matchingStrategy: must-match
+  expectedPredicates:
+    - https://gradle.com/attestation/build-tool/v1

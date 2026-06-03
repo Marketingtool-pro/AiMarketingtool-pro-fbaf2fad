@@ -1,0 +1,15 @@
+apiVersion: policy.gradle.com/v1
+kind: AccessControl
+metadata:
+  name: admin-full-access
+spec:
+  identityMatchingStrategy:
+    withBasicIdentity:
+      - withName: "admin"
+  canPerform:
+    - publish-attestations
+    - publish-policy-scans
+    - read-attestations
+  withResources:
+    - "s3:local-s3/*"
+    - "pkg:maven/*/*"  # Matches any Maven package (namespace + artifact). "pkg:maven/*" alone does not match namespaced coordinates like pkg:maven/com.example/acme-app.

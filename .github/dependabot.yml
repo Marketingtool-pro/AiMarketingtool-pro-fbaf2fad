@@ -1,15 +1,21 @@
-# Dependabot version updates — keeps npm deps and GitHub Actions current.
-# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
 updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+    groups:
+      dependencies:
+        patterns: ["*"]
     open-pull-requests-limit: 5
 
-  - package-ecosystem: "github-actions"
+  - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+
+  # github-actions pinned to commit SHAs manually — Dependabot disabled to prevent spam
+  # - package-ecosystem: "github-actions"

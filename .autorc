@@ -1,0 +1,9 @@
+{
+  "plugins": [
+    "git-tag"
+  ],
+  "owner": "marketingtool-pro",
+  "repo": "AiMarketingtool-pro-fbaf2fad",
+  "name": "marketingtool",
+  "email": "help@marketingtool.pro"
+}

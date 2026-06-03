@@ -2,20 +2,48 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+The currently supported production version line for this repository is:
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| Version | Supported |
+| ------- | --------- |
+| 1.5.x   | ✅ |
+| < 1.5   | ❌ |
+
+Older versions may not receive security fixes.
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+If you discover a security vulnerability, please do **not** open a public GitHub issue.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Instead, report it privately to the maintainers using the appropriate private contact channel for this project.
+
+When reporting, please include:
+
+- A clear description of the issue
+- Steps to reproduce
+- Affected files, components, or endpoints
+- Potential impact
+- Any suggested remediation, if known
+
+## What to Expect
+
+After a report is received, maintainers should:
+
+1. Acknowledge receipt as soon as practical
+2. Validate and assess the report
+3. Work on a fix for confirmed vulnerabilities
+4. Coordinate disclosure after remediation, when appropriate
+
+## Scope
+
+This repository includes:
+
+- The React Native / Expo mobile application
+- Firebase Functions code under `functions/`
+- Appwrite function code under `appwrite-functions/`
+
+## Secrets and Sensitive Data
+
+Please do not include secrets, access tokens, API keys, credentials, or personal user data in reports or pull requests.
+
+Project maintainers should keep secrets out of source control and use environment variables or secret-management systems where applicable.

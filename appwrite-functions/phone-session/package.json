@@ -1,0 +1,8 @@
+{
+  "name": "phone-session",
+  "version": "1.1.0",
+  "main": "src/main.js",
+  "dependencies": {
+    "node-appwrite": "^14.0.0"
+  }
+}

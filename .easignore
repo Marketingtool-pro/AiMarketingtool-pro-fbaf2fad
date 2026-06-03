@@ -65,4 +65,21 @@ gemini-cli/
 !GoogleService-Info.plist
 !src/**/*.json
 
+# Tool version managers & build artifacts (from .gitignore)
+rbenv-plugin/
+testing-chruby/
+mise-oci/
+vcpkg/
+bats/
+gradle/
+www.ruby-lang.org/
+android-patches/
+platform-tools/
+gems/
+AiMarketingtool-pro-fbaf2fad/
+copilot-demo/
+auto/
+code./
+plugin/
+
 

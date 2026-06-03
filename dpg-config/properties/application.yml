@@ -1,0 +1,12 @@
+develocity:
+  instances:
+    main:
+      uri: "https://develocity.example.com"
+
+s3:
+  instances:
+    local-s3:
+      region: "us-east-1"
+      endpoint: "http://localstack:4566"
+      bucket-name: "dpg-bucket"
+      path-style-access: true

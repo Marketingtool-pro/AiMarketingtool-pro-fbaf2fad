@@ -2,7 +2,21 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "resolveJsonModule": true
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
   },
-  "exclude": ["node_modules", "functions", "appwrite-functions", "dist", "ios", "android"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "App.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "functions",
+    "appwrite-functions",
+    "index.ts"
+  ]
 }

@@ -1,0 +1,178 @@
+
+name: Self-Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  merge_group:
+
+jobs:
+  self-build-with-build-version:
+    name: Self-Build-With-build-version
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      matrix:
+        include:
+          - target_arch: x86_64-pc-windows-msvc
+            os: windows-latest
+          - target_arch: aarch64-pc-windows-msvc
+            os: windows-latest
+          - target_arch: x86_64-apple-darwin
+            os: macos-latest
+          - target_arch: aarch64-apple-darwin
+            os: macos-latest
+          - target_arch: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target_arch: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+          - target_arch: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target_arch: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+          - target_arch: armv7-unknown-linux-gnueabihf
+            os: ubuntu-latest
+          - target_arch: armv7-unknown-linux-musleabihf
+            os: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install latest rust
+        run: rustup toolchain install stable --no-self-update --profile minimal
+
+      - uses: ./.github/actions/cache-cargo-install
+
+      - name: Build Thyself
+        env:
+          TARGET_ARCH: ${{ matrix.target_arch }}
+        run: |
+          set -euxo pipefail
+          VERSION="$(
+            curl \
+              --user-agent "cargo-quickinstall build pipeline (alsuren@gmail.com)" \
+              --fail "https://crates.io/api/v1/crates/cargo-quickinstall" \
+              | jq -r '.crate|.max_stable_version'
+          )"
+          VERSION="$VERSION" ./build-version.sh cargo-quickinstall
+          ALWAYS_BUILD=1 VERSION="$VERSION" ./build-version.sh cargo-quickinstall
+  self-build:
+    name: Self-Build
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      matrix:
+        include:
+          - target_arch: x86_64-pc-windows-msvc
+            os: windows-latest
+          - target_arch: x86_64-apple-darwin
+            os: macos-latest
+          - target_arch: aarch64-apple-darwin
+            os: macos-latest
+          - target_arch: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target_arch: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+          - target_arch: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Install latest rust
+        run: rustup toolchain install stable --no-self-update --profile minimal
+      - uses: ./.github/actions/cache-cargo-install
+      - name: Install Thyself
+        run: cargo install --path cargo-quickinstall
+      - name: Install Thyself with Thyself (or fallback to sensei on windows)
+        run: cargo quickinstall cargo-quickinstall || cargo quickinstall sensei
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-needing-cc:
+    name: Build package that needs CC
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      matrix:
+        include:
+          - target_arch: x86_64-pc-windows-msvc
+            os: windows-latest
+          - target_arch: armv7-unknown-linux-gnueabihf
+            os: ubuntu-latest
+          - target_arch: armv7-unknown-linux-musleabihf
+            os: ubuntu-latest
+          - target_arch: x86_64-apple-darwin
+            os: macos-latest
+          - target_arch: aarch64-apple-darwin
+            os: macos-latest
+          - target_arch: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target_arch: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+          - target_arch: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target_arch: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install latest rust
+        run: rustup toolchain install stable --no-self-update --profile minimal
+
+      - uses: ./.github/actions/cache-cargo-install
+ 
+      # FIXME: find a package that needs a working CC but doesn't take quite so long to build.
+      - name: Build cargo-deny
+        env:
+          TARGET_ARCH: ${{ matrix.target_arch }}
+        run: |
+          set -euxo pipefail
+          touch .env
+          VERSION="$(
+            curl \
+              --user-agent "cargo-quickinstall build pipeline (alsuren@gmail.com)" \
+              --fail "https://crates.io/api/v1/crates/cargo-deny" \
+              | jq -r '.crate|.max_stable_version'
+          )"
+          ALWAYS_BUILD=1 VERSION="$VERSION" TARGET_ARCH="$TARGET_ARCH" ./build-version.sh cargo-deny
+  build-package-test:
+    name: Build package test
+    uses: ./.github/workflows/build-package.yml
+    secrets: inherit
+    with:
+      crate: cargo-quickinstall
+      version: 0.2.9
+      target_arch: x86_64-unknown-linux-gnu
+      build_os: ubuntu-latest
+      branch: ${{ github.head_ref }}
+      always_build: 1
+      skip_upload: true
+      skip_signing: ${{ github.event_name == 'pull_request' }}
+
+  # Dummy job to have a stable name for the "all tests pass" requirement
+  selfbuild-tests-pass:
+    name: selfbuild tests pass
+    needs:
+      - self-build-with-build-version
+      - self-build
+      - build-needing-cc
+      - build-package-test
+    if: always() # always run even if dependencies fail
+    runs-on: ubuntu-latest
+    steps:
+      # fail if ANY dependency has failed or cancelled
+      - if: "contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')"
+        run: exit 1
+      - run: exit 0
