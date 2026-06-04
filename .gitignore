@@ -135,3 +135,6 @@ spring-petclinic-migration/
 !plugin-rn-mcp/.mcp.json
 !plugin-rn-mcp/server/node_modules/
 !plugin-rn-mcp/server/node_modules/**
+
+# Stray Android Compose codelab clone — not part of this app
+codelab-android-compose/
