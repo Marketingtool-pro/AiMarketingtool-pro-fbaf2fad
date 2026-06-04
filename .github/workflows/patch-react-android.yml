@@ -33,7 +33,7 @@ jobs:
 
       - name: Publish AAR to GitHub Release
         env:
-          GH_TOKEN: ${{ secrets.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 }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           AAR_VERSION="0.83.6-e2e.1"
           ORIG_VERSION="0.83.6"
