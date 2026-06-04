@@ -1,6 +1,6 @@
 This workflow builds a Java project using Maven and caches or restores dependencies to enhance execution speed. For more details, please refer to: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
 
-This workflow employs actions not certified by GitHub. These are provided by a third party and are governed by separate terms of service, privacy policy and support documentation.
+
 
 Name: Java CI with Maven
 
@@ -18,21 +18,19 @@ Jobs:
     Runs on: Ubuntu latest
 
     Steps:
-    - Uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      Name: Set up JDK 21
-        Uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
-        With:
-          - java-version: ’21’
-          - distribution: ‘temurin’
-          - cache: maven
-    - Uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6
-      Name: Update dependency graph
-    - Run: mvn -B package —file backend/pom.xml
+    -  Action: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+  Name: Set up JDK 21
+  Uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 #
+    - Java version: ’21’
+- Distribution: ‘temurin’
+- Uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6
+  - Name: Update dependency graph
+- Run: mvn -B package —file backend/pom.xml
 
 - Set up JDK 21:
   Uses: actions/setup-java@v4
   With:
-    - java-version: ’21’
+    - java-version: ’21’̨
     - distribution: ‘temurin’
     - cache: maven
     - cache-dependency-path: backend/pom.xml
