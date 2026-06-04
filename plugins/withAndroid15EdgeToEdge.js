@@ -31,8 +31,7 @@ module.exports = function withAndroid15EdgeToEdge(config, options = {}) {
     const lang = config.modResults.language;
     if (lang !== 'kt' && lang !== 'kotlin') {
       if (lang === 'java') {
-        console.warn('[withAndroid15EdgeToEdge] MainActivity is Java; this plugin only patches Kotlin. Convert MainActivity to Kotlin or add enableEdgeToEdge() in onCreate manually.');
-      }
+        console.warn('[withAndroid15EdgeToEdge] MainActivity is Java; this plugin only patches Kotlin. Convert MainActivity to Kotlin or add enableEdgeToEdge() in onCreate manually.');      }
       return config;
     }
 
