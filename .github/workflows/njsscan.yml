@@ -40,3 +40,10 @@ jobs:
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: results.sarif
+
+
+  -      uses: actions/checkout@v4
+    +      uses: actions/checkout@<FULL_40_CHAR_SHA_FOR_V4>
+
+-      uses: github/codeql-action/upload-sarif@v3
++      uses: github/codeql-action/upload-sarif@<FULL_40_CHAR_SHA_FOR_V3>
