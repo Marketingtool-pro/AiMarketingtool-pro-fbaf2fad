@@ -1,0 +1,54 @@
+FROM ubuntu:22.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    git \
+    jq \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create runner user
+RUN useradd -m -s /bin/bash runner && usermod -aG sudo runner
+
+WORKDIR /home/runner
+
+# Download and extract runner
+RUN curl -o actions-runner.tar.gz -L https://github.com/actions/runner/releases/download/v2.311.0/actions-runner-linux-x64-2.311.0.tar.gz \
+    && tar xzf actions-runner.tar.gz \
+    && rm actions-runner.tar.gz \
+    && chown -R runner:runner /home/runner
+
+USER runner
+
+# Configure and run
+ENTRYPOINT ["./run.sh"]
+version: '3.8'
+
+services:
+  github-runner:
+    build: .
+    container_name: github-actions-runner
+    environment:
+      RUNNER_NAME: "docker-desktop-runner"
+      RUNNER_TOKEN: ${RUNNER_TOKEN}
+      RUNNER_REPOSITORY: ${RUNNER_REPOSITORY}
+      RUNNER_WORK: "/home/runner/work"
+      RUNNER_LABELS: "docker,desktop"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runner-work:/home/runner/work
+    restart: unless-stopped
+
+volumes:
+  runner-work:
+.github/workflows/example.yml:
+
+jobs:
+  build:
+    runs-on: [self-hosted, docker, desktop]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t myapp .
+      - run: docker run myapp
