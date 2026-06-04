@@ -10,3 +10,8 @@
 # Binary files should be left untouched
 *.jar           binary
 
+cli/* merge=text
+copilot-cli/* merge=text
+gh-cli/* merge=text
+mcpb/* merge=text
+runc/* merge=text
