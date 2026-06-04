@@ -191,7 +191,10 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     try {
-      await login(email, password);
+      // Trim email (passwords are left intact — they may legitimately contain
+      // spaces). iOS autofill/QuickType often appends a trailing space to the
+      // email field, which otherwise breaks exact-match login + the demo bypass.
+      await login(email.trim(), password);
     } catch (err: any) {
       Alert.alert('Login Failed', err.message || 'Please check your credentials');
     }

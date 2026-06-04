@@ -87,7 +87,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     // Reviewer bypass for App Store / Play Store — allows entry even if
     // Appwrite is unreachable or the demo account wasn't created.
-    if (email === 'demo@marketingtool.pro' && password === 'Reviewer123!') {
+    // Normalize email (trim + lowercase) and trim the password so iOS autofill
+    // whitespace or an auto-capitalized first letter can never defeat the match.
+    if (
+      email.trim().toLowerCase() === 'demo@marketingtool.pro' &&
+      password.trim() === 'Reviewer123!'
+    ) {
       const mockUser = {
         $id: 'reviewer_bypass',
         name: 'App Store Reviewer',
