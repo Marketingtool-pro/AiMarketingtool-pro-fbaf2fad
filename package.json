@@ -1,16 +1,23 @@
 {
   "name": "@marketingtool-pro/marketingtool",
   "version": "1.5.0",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
-    "access": "restricted"
+  "description": "Hybrid React Native application using **Appwrite** for core Auth/Data and **Firebase** for AI Functions, Observability, and Hosting.",
+  "homepage": "https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad#readme",
+  "bugs": {
+    "url": "https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/issues"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad.git"
   },
   "license": "UNLICENSED",
+  "author": "",
+  "type": "commonjs",
   "main": "index.ts",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib"
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -25,37 +32,6 @@
     "ship:ios": "eas build --platform ios --profile production --auto-submit --non-interactive",
     "ship:android": "eas build --platform android --profile production --auto-submit --non-interactive",
     "build": "expo export --platform web"
-  },
-  "expo": {
-    "doctor": {
-      "reactNativeDirectoryCheck": {
-        "exclude": [
-          "react-native-iap"
-        ]
-      }
-    },
-    "install": {
-      "exclude": [
-        "react-native-reanimated",
-        "react-native-safe-area-context",
-        "react-native-worklets",
-        "@shopify/react-native-skia",
-        "expo",
-        "expo-auth-session",
-        "expo-build-properties",
-        "expo-dev-client",
-        "expo-image-picker",
-        "expo-insights",
-        "expo-linking",
-        "expo-location",
-        "expo-notifications",
-        "expo-sharing",
-        "react",
-        "react-dom",
-        "react-native-keyboard-controller",
-        "react-native-svg"
-      ]
-    }
   },
   "dependencies": {
     "@actions/core": "^3.0.1",
@@ -123,6 +99,7 @@
     "genkit": "^1.36.0",
     "lottie-react-native": "~7.3.8",
     "material-symbols": "^0.44.10",
+    "npm": "^11.16.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.85.3",
@@ -156,6 +133,10 @@
     "lint-staged": "17.0.7",
     "typescript": "6.0.3"
   },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
   "overrides": {
     "expo-file-system": "$expo-file-system",
     "@tootallnate/once": "^3.0.1",
@@ -172,6 +153,37 @@
     "ws": "^8.21.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "react-native-iap"
+        ]
+      }
+    },
+    "install": {
+      "exclude": [
+        "react-native-reanimated",
+        "react-native-safe-area-context",
+        "react-native-worklets",
+        "@shopify/react-native-skia",
+        "expo",
+        "expo-auth-session",
+        "expo-build-properties",
+        "expo-dev-client",
+        "expo-image-picker",
+        "expo-insights",
+        "expo-linking",
+        "expo-location",
+        "expo-notifications",
+        "expo-sharing",
+        "react",
+        "react-dom",
+        "react-native-keyboard-controller",
+        "react-native-svg"
+      ]
+    }
   },
   "resolutions": {
     "expo-file-system": "~55.0.10",
@@ -195,5 +207,15 @@
     "*.{ts,tsx,js,jsx}": [
       "echo \"staged lint ok\""
     ]
+  },
+  "allowScripts": {
+    "@firebase/util@1.14.0": true,
+    "@shopify/react-native-skia@2.6.4": true,
+    "esbuild@0.27.7": true,
+    "esbuild@0.27.0": true,
+    "esbuild@0.28.0": true,
+    "fsevents@2.3.3": true,
+    "msgpackr-extract@3.0.4": true,
+    "protobufjs@7.6.2": true
   }
 }
