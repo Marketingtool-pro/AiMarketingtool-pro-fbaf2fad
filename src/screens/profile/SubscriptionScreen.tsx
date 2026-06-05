@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import * as Haptics from 'expo-haptics';
-import { billingService, PURCHASE_CANCELLED } from '../../services/billingService';
+import { billingService, PURCHASE_CANCELLED, TOKENS_SKU } from '../../services/billingService';
 import { functions } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 
@@ -428,7 +428,7 @@ const SubscriptionScreen = () => {
         {Platform.OS !== 'ios' && (
         <TouchableOpacity
           style={{ paddingHorizontal: 20, marginTop: 28 }}
-          onPress={() => handlePurchase('tokens')}
+          onPress={() => handlePurchase(TOKENS_SKU)}
           activeOpacity={0.7}
         >
           <Text style={{ fontSize: 22, fontWeight: '900', color: '#FFF', marginBottom: 6 }}>Need More Generations?</Text>
