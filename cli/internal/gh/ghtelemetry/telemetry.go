@@ -29,4 +29,4 @@ type Service interface {
 	Flush()
 }
 
-const SAMPLE_ALL = 100
+const SampleAll = 100
