@@ -46,10 +46,7 @@
       "associatedDomains": [
         "applinks:marketingtool.pro",
         "applinks:app.marketingtool.pro"
-      ],
-            "entitlements": {
-                      "com.apple.developer.in-app-payments": ["pro.marketingtool.app"]
-            }
+      ]
     },
     "android": {
       "adaptiveIcon": {

@@ -15,7 +15,11 @@ export const PLAN_TO_SKU: Record<Exclude<PlanId, 'free' | 'agency'>, { monthly: 
 const SUBSCRIPTION_SKUS = new Set(
   Object.values(PLAN_TO_SKU).flatMap(p => [p.monthly, p.yearly])
 );
-const CONSUMABLE_SKUS = ['tokens'];
+// Consumable "100 Extra Generations" product ID differs per store:
+//   App Store = pro.marketingtool.tokens   |   Google Play = tokens
+// Using the wrong ID on iOS returns "product not available", so resolve per platform.
+export const TOKENS_SKU = Platform.OS === 'ios' ? 'pro.marketingtool.tokens' : 'tokens';
+const CONSUMABLE_SKUS = [TOKENS_SKU];
 
 // Sentinel the UI checks for to silently ignore user-cancelled purchases.
 export const PURCHASE_CANCELLED = '__PURCHASE_CANCELLED__';
