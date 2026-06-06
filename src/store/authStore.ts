@@ -95,7 +95,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // If the env var is unset, the bypass is disabled and login falls through to Appwrite.
     const REVIEWER_PASSWORDS = (process.env.EXPO_PUBLIC_REVIEWER_PASSWORDS || '')
       .split(',')
-      .map((p) => p.trim())
+      .map((p: string) => p.trim())
       .filter(Boolean);
     if (
       email.trim().toLowerCase() === 'demo@marketingtool.pro' &&

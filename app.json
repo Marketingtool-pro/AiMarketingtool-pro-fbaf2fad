@@ -18,7 +18,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "484",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -46,7 +45,8 @@
       "associatedDomains": [
         "applinks:marketingtool.pro",
         "applinks:app.marketingtool.pro"
-      ]
+      ],
+      "appleTeamId": "N465W7879Z"
     },
     "android": {
       "adaptiveIcon": {
@@ -55,7 +55,6 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 491,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -104,7 +103,6 @@
               "RNFBAnalytics",
               "RNFBCrashlytics",
               "RNFBFirestore",
-              "RNFBPerf",
               "NitroIap"
             ],
             "extraPods": [
@@ -135,7 +133,6 @@
       "@react-native-firebase/messaging",
       "@react-native-firebase/app-check",
       "@react-native-firebase/crashlytics",
-      "@react-native-firebase/perf",
       "./plugins/withEasPodfileFix.js",
       "./plugins/withIosFirebaseSwiftFix.js",
       [

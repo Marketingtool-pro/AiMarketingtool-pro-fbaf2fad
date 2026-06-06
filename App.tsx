@@ -15,7 +15,9 @@ import { useAuthStore } from './src/store/authStore';
 import { Colors } from './src/constants/theme';
 import { matomo } from './src/services/matomo';
 import { initializeAppCheck } from './src/services/firebaseAppCheck';
-import perf from '@react-native-firebase/perf';
+// Firebase Performance removed: RNFBPerf with useFrameworks:static crashes iOS
+// on cold start, and the Android deferred-init workaround doesn't cover iOS.
+// Perf is non-essential monitoring — dropped to ship a stable IAP build.
 import crashlytics from '@react-native-firebase/crashlytics';
 import analytics from '@react-native-firebase/analytics';
 import messaging from '@react-native-firebase/messaging';
@@ -91,9 +93,6 @@ export default function App() {
       crashlytics().setCrashlyticsCollectionEnabled(true)
         .then(() => crashlytics().log('App started'))
         .catch(e => console.warn('Crashlytics init error:', e));
-
-      perf().setPerformanceCollectionEnabled(true)
-        .catch(e => console.warn('Perf init error:', e));
 
       analytics().setAnalyticsCollectionEnabled(true)
         .then(() => analytics().logAppOpen())
