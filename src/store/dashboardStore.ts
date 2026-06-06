@@ -97,8 +97,8 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       const dailyGenerationCounts = new Map<string, number>();
       for (const generation of generations) {
         if (typeof generation.createdAt !== 'string') continue;
+        if (generation.createdAt.length < 10) continue;
         const dateKey = generation.createdAt.slice(0, 10);
-        if (!dateKey) continue;
         dailyGenerationCounts.set(dateKey, (dailyGenerationCounts.get(dateKey) ?? 0) + 1);
       }
 
