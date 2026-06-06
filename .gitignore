@@ -138,3 +138,9 @@ spring-petclinic-migration/
 
 # Stray Android Compose codelab clone — not part of this app
 codelab-android-compose/
+
+# Local-only Ruby/fastlane tooling — keep out of the EAS build archive
+# (EAS fails "inconsistent filename casing" on vendored gems: yaml/YAML).
+vendor/
+.bundle/
+fastlane/
