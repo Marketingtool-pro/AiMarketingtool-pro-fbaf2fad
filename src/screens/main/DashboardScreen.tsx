@@ -213,7 +213,6 @@ const DashboardScreen = () => {
     { id: 1, image: BannerImages.banner1, title: 'AI Marketing Pro', subtitle: 'Create stunning ads in seconds', color: '#6C5CE7' },
     { id: 2, image: BannerImages.banner2, title: 'Smart Content', subtitle: 'AI-powered writing assistant', color: '#00B894' },
     { id: 3, image: BannerImages.banner3, title: 'ROI Boost', subtitle: 'Data-driven strategies', color: '#E17055' },
-    { id: 4, image: BannerImages.banner4, title: 'Digital Growth', subtitle: 'Scale your business faster', color: '#0984E3' },
     { id: 5, image: BannerImages.banner5, title: 'Marketing Suite', subtitle: 'All tools in one place', color: '#A29BFE' },
   ];
 

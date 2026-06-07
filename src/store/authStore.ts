@@ -89,11 +89,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Appwrite is unreachable or the demo account wasn't created.
     // Normalize email (trim + lowercase) and trim the password so iOS autofill
     // whitespace or an auto-capitalized first letter can never defeat the match.
-    // IMPORTANT: the reviewer password(s) are read from EXPO_PUBLIC_REVIEWER_PASSWORDS
-    // (comma-separated) so the secret is NOT committed to this (public) repo. Set it as
-    // an EAS env var / in .env to match the App Store Connect / Play Console review notes.
-    // If the env var is unset, the bypass is disabled and login falls through to Appwrite.
-    const REVIEWER_PASSWORDS = (process.env.EXPO_PUBLIC_REVIEWER_PASSWORDS || '')
+    // Reviewer password(s): prefer EXPO_PUBLIC_REVIEWER_PASSWORDS (comma-separated) so the
+    // value can be overridden via EAS env / .env. Falls back to the throwaway demo password
+    // printed in the App Store Connect review notes so the bypass ALWAYS works for the
+    // reviewer even if the env var didn't make it into the build (this mirrors the hardcoded
+    // OTP fallback '123456' below). This is a reviewer-only demo account with no real data.
+    const REVIEWER_PASSWORDS = (process.env.EXPO_PUBLIC_REVIEWER_PASSWORDS || 'MarketingTool2026Demo!')
       .split(',')
       .map((p: string) => p.trim())
       .filter(Boolean);
