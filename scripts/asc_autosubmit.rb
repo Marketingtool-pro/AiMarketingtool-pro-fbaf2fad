@@ -118,7 +118,14 @@ abort "❌ create reviewSubmission failed #{code}: #{rs}" unless [200, 201].incl
 rs_id = rs['data']['id']
 puts "✔ review submission #{rs_id} created"
 
-# 5) add each item
+# 5) add each item. NOTE: the ASC API's reviewSubmissionItems resource only
+#    supports appStoreVersion / appEvent / appCustomProductPageVersion /
+#    appStoreVersionExperiment relationships — NOT subscription or
+#    inAppPurchase. So IAP/subscription items CANNOT be attached via the API;
+#    they must be added in the App Store Connect web UI. We still try, but we
+#    track failures and REFUSE to submit a binary-only bundle (that is exactly
+#    the 2.1(b) auto-reject that hit all 14 prior submissions).
+failures = []
 items.each do |it|
   code, r = req(:post, '/v1/reviewSubmissionItems',
     { data: { type: 'reviewSubmissionItems',
@@ -126,10 +133,20 @@ items.each do |it|
                 reviewSubmission: { data: { type: 'reviewSubmissions', id: rs_id } },
                 it[:type].sub(/s$/, '').to_sym => { data: { type: it[:type], id: it[:id] } }
               } } })
-  puts "  #{[200,201].include?(code) ? '✔' : '✗ ' + code.to_s} item #{it[:type]} #{it[:id]}"
+  ok = [200, 201].include?(code)
+  detail = (r['errors'] || []).map { |e| e['detail'] }.join(' | ')
+  puts "  #{ok ? '✔' : '✗ ' + code.to_s} item #{it[:type]} #{it[:id]}#{ok ? '' : " — #{detail}"}"
+  failures << it unless ok
 end
 
-# 6) submit
+# 6) submit — ONLY if the full bundle (build + every IAP) attached. Otherwise
+#    abort so we never auto-submit a binary-only review (→ guaranteed 2.1(b)).
+unless failures.empty?
+  warn "\n❌ ABORT: #{failures.size}/#{items.size} items could not be attached via the API " \
+       "(IAPs are not API-attachable). NOT submitting — a binary-only submission would be auto-rejected. " \
+       "Attach the IAPs + build in the App Store Connect web UI and submit there instead."
+  exit 1
+end
 code, _ = req(:patch, "/v1/reviewSubmissions/#{rs_id}",
   { data: { type: 'reviewSubmissions', id: rs_id, attributes: { submitted: true } } })
 abort "❌ submit failed #{code}" unless [200, 204].include?(code)
