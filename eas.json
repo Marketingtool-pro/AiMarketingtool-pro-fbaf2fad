@@ -5,8 +5,9 @@
   },
   "build": {
     "production": {
-      "autoIncrement": true,
-      "channel": "production"
+      "autoIncrement": false,
+      "channel": "production",
+      "image": "latest"
     }
   },
   "submit": {
