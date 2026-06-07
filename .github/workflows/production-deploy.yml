@@ -108,21 +108,24 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps --no-audit --no-fund
 
+      # Write the ASC API key FIRST, at the path eas.json's ascApiKeyPath expects,
+      # so `eas submit` can authenticate (the .p8 is gitignored, not in the checkout).
+      - name: Restore App Store Connect API key
+        env:
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+        run: |
+          printf '%s' "$ASC_API_KEY_BASE64" | base64 -d > AuthKey_69JDXUCPU3.p8
+          test -s AuthKey_69JDXUCPU3.p8 && echo "ASC key restored" || (echo "ASC key empty — set ASC_API_KEY_BASE64 secret" && exit 1)
+
       - name: Build production (iOS)
         run: eas build --platform ios --profile production --non-interactive --wait
 
       - name: Upload binary to App Store Connect (TestFlight)
         run: eas submit --platform ios --profile production --non-interactive --latest
 
-      - name: Restore App Store Connect API key
-        env:
-          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
-        run: |
-          printf '%s' "$ASC_API_KEY_BASE64" | base64 -d > "$RUNNER_TEMP/AuthKey.p8"
-
       - name: Submit for review WITH in-app purchases
         env:
-          ASC_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
+          ASC_KEY_PATH: ./AuthKey_69JDXUCPU3.p8
           DRY_RUN: 'false'
         run: |
           gem install jwt --no-document
