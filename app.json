@@ -3,6 +3,7 @@
     "name": "MarketingTool",
     "slug": "marketingtool",
     "version": "1.5.0",
+    "newArchEnabled": true,
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
