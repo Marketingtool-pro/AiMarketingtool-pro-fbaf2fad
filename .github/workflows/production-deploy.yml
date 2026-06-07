@@ -128,5 +128,5 @@ jobs:
           ASC_KEY_PATH: ./AuthKey_69JDXUCPU3.p8
           DRY_RUN: 'false'
         run: |
-          gem install jwt --no-document
+          sudo gem install jwt --no-document
           ruby scripts/asc_autosubmit.rb
