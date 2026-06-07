@@ -117,6 +117,9 @@ actions-runner-osx-arm64-*.tar.gz
 env.sh
 .cargo-features-manager-wwAJS2/
 
+# Local-only doc with plaintext secrets — keep on disk, never publish to GitHub
+SESSION_SUMMARY.md
+
 # Nested git repos that were accidentally committed as broken submodules
 # (no .gitmodules backing them) and broke every CI checkout with exit 128.
 # Untracked here; files remain on local disk.
