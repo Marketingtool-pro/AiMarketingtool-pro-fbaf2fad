@@ -92,7 +92,9 @@ bats/
 bin/
 
 # Build/wrapper artifacts  
-gradle/wrapper/
+gradle/wrapper/*
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
 0.6
 find_large_files.sh
 install.sh
