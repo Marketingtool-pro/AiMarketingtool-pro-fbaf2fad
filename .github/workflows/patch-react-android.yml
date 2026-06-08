@@ -33,7 +33,10 @@ jobs:
 
       - name: Publish AAR to GitHub Release
         env:
-          GH_TOKEN: ${{ secrets.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 }}
+          # Built-in token; the job already declares `permissions: contents: write`,
+          # which is all `gh release create` + tag delete need. (The previous custom
+          # PAT secret name was malformed and resolved to empty -> publish failed.)
+          GH_TOKEN: ${{ github.token }}
         run: |
           AAR_VERSION="0.85.3-e2e.1"
           ORIG_VERSION="0.85.3"
