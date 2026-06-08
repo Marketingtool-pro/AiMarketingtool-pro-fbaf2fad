@@ -24,6 +24,10 @@ concurrency:
 jobs:
   build-android:
     name: Build (android)
+    # iOS-only on tag pushes. Play Store is already live, so rebuilding Android on
+    # every v*.*.* tag just burns EAS build minutes. Android now ONLY builds on a
+    # manual run (Actions → Production Deploy → Run workflow).
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -55,6 +59,7 @@ jobs:
 
   submit-android:
     name: Submit (android)
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     needs: build-android
     timeout-minutes: 30
@@ -89,6 +94,10 @@ jobs:
 
   build-submit-ios:
     name: Build + Submit (iOS, with IAPs)
+    # iOS builds ONLY on a version tag push (v*.*.*). A manual run
+    # (workflow_dispatch) is Android-only — so "build Android" never also burns an
+    # iOS build. To ship iOS, push a tag.
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
