@@ -125,7 +125,20 @@ If you discover a security issue, please do **not** open a public issue. Follow 
 
 ## License
 
-This repository is currently marked `UNLICENSED` in `package.json`. If the project is intended to be open source for reuse, add an explicit open-source license file and update the package metadata accordingly.
+This project is licensed under the [MIT License](LICENSE).
+
+### Third-party dependencies
+
+This project uses third-party open-source software, including:
+
+- React Native (MIT)
+- Expo SDK (MIT)
+- Zustand (MIT)
+- React Navigation (MIT)
+- Appwrite SDK (BSD-3-Clause)
+- Lottie React Native (Apache-2.0)
+
+Full license details available at marketingtool.pro.
 
 ---
 
