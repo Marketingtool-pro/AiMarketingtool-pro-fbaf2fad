@@ -23,18 +23,24 @@ const lib = (): any => {
   return _mod;
 };
 
-// Real unit ids go here. While they are the Google TEST ids the SDK serves test
-// ads; replace the right-hand strings with your apps.admob.com ad unit ids.
+// Real apps.admob.com ad unit ids (publisher pub-2789940907288323, app
+// ca-app-pub-2789940907288323~8551339904). In __DEV__ the SDK still serves Google
+// TEST ads (never click real units while testing — AdMob bans for invalid traffic).
 const REAL = {
-  banner: '',        // e.g. 'ca-app-pub-XXXX/XXXX'
+  banner: '',        // create a Banner unit if you want a banner placement
   interstitial: '',
   rewarded: '',
+  native: 'ca-app-pub-2789940907288323/9522084642', // Native Advanced unit
 };
+
+// Google's official TEST native unit (used in dev builds).
+const TEST_NATIVE = 'ca-app-pub-3940256099942544/2247696110';
 
 export const adUnit = {
   get banner() { const m = lib(); if (!m) return ''; return (!__DEV__ && REAL.banner) || m.TestIds.BANNER; },
   get interstitial() { const m = lib(); if (!m) return ''; return (!__DEV__ && REAL.interstitial) || m.TestIds.INTERSTITIAL; },
   get rewarded() { const m = lib(); if (!m) return ''; return (!__DEV__ && REAL.rewarded) || m.TestIds.REWARDED; },
+  get native() { if (!ANDROID) return ''; return __DEV__ ? TEST_NATIVE : REAL.native; },
 };
 
 let initialized = false;
