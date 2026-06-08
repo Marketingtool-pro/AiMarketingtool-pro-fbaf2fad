@@ -29,8 +29,10 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.UiThreadUtil
 import com.facebook.react.common.ReactConstants
 import com.facebook.react.module.annotations.ReactModule
-import com.facebook.react.uimanager.DisplayMetricsHolder.getStatusBarHeightPx
 import com.facebook.react.uimanager.PixelUtil
+// NOTE: DisplayMetricsHolder.getStatusBarHeightPx is `internal` in react-android and
+// can't be referenced from this separately-compiled patch module. The status-bar
+// height is read from the platform "status_bar_height" dimen resource instead.
 import com.facebook.react.views.view.isEdgeToEdgeFeatureFlagOn
 import com.facebook.react.views.view.setStatusBarTranslucency
 import com.facebook.react.views.view.setStatusBarVisibility
@@ -41,11 +43,15 @@ internal class StatusBarModule(reactContext: ReactApplicationContext?) :
     NativeStatusBarManagerAndroidSpec(reactContext) {
 
   override fun getTypedExportedConstants(): Map<String, Any> {
-    val currentActivity = reactApplicationContext.currentActivity
-    // Patched: do NOT read window.statusBarColor (deprecated Window.getStatusBarColor,
-    // flagged by Google Play on Android 15). DEFAULT_BACKGROUND_COLOR is informational.
+    // Patched: status-bar height via the platform dimen resource instead of the
+    // internal DisplayMetricsHolder.getStatusBarHeightPx helper. And do NOT read
+    // window.statusBarColor (deprecated Window.getStatusBarColor, flagged by Google
+    // Play on Android 15). DEFAULT_BACKGROUND_COLOR is informational only.
+    val res = (reactApplicationContext.currentActivity ?: reactApplicationContext).resources
+    val resId = res.getIdentifier("status_bar_height", "dimen", "android")
+    val heightPx = if (resId > 0) res.getDimensionPixelSize(resId) else 0
     return mapOf(
-        HEIGHT_KEY to PixelUtil.toDIPFromPixel(getStatusBarHeightPx(currentActivity).toFloat()),
+        HEIGHT_KEY to PixelUtil.toDIPFromPixel(heightPx.toFloat()),
         DEFAULT_BACKGROUND_COLOR_KEY to "black",
     )
   }
