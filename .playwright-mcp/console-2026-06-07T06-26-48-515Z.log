@@ -1,0 +1,5 @@
+[   35430ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:0
+[   35430ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://appstoreconnect.apple.com/access/static/css/container.7fbc0d67e278723d.css:0
+[   35430ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://appstoreconnect.apple.com/access/static/assets/manifest.json:0
+[   35470ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://appstoreconnect.apple.com/access/static/assets/manifest.json:0
+[   35470ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://appstoreconnect.apple.com/apps/6758618412/distribution/reviewsubmissions/details/e0a01330-8ceb-4cde-ba26-70687dfb8a3a:0

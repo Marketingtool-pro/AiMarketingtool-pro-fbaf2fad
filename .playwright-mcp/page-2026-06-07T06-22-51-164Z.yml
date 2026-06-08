@@ -1,0 +1,169 @@
+- generic [active] [ref=e1]:
+  - banner "App Store Connect" [ref=e3]:
+    - generic [ref=e4]:
+      - heading "App Store Connect" [level=1] [ref=e20]:
+        - link "App Store Connect" [ref=e21] [cursor=pointer]:
+          - /url: /
+      - navigation "Global" [ref=e7]:
+        - list [ref=e23]:
+          - listitem [ref=e24]:
+            - link "Apps" [ref=e25] [cursor=pointer]:
+              - /url: /apps
+          - listitem [ref=e26]:
+            - link "Trends" [ref=e27] [cursor=pointer]:
+              - /url: /trends
+          - listitem [ref=e28]:
+            - link "Reports" [ref=e29] [cursor=pointer]:
+              - /url: /itc/payments_and_financial_reports
+          - listitem [ref=e30]:
+            - link "Business" [ref=e31] [cursor=pointer]:
+              - /url: /business
+          - listitem [ref=e32]:
+            - link "Users and Access" [ref=e33] [cursor=pointer]:
+              - /url: /access/users
+      - button "lokendra singh saingar Lokendra Singh Saingar Account name menu" [ref=e35] [cursor=pointer]:
+        - generic:
+          - generic: lokendra singh saingar
+          - generic: Lokendra Singh Saingar
+          - img [ref=e36]
+  - generic [ref=e41]:
+    - button "Apps menu, MarketingTool - AI Marketing, selected" [ref=e46] [cursor=pointer]:
+      - generic [ref=e47]:
+        - generic "MarketingTool - AI Marketing" [ref=e48]:
+          - img "MarketingTool - AI Marketing" [ref=e49]
+        - generic [ref=e50]: MarketingTool - AI Marketing
+      - img [ref=e52]
+    - navigation "Apps" [ref=e55]:
+      - list [ref=e56]:
+        - listitem [ref=e57]:
+          - link "Distribution" [ref=e58] [cursor=pointer]:
+            - /url: /apps/6758618412/distribution
+        - listitem [ref=e59]:
+          - link "Analytics" [ref=e60] [cursor=pointer]:
+            - /url: /apps/6758618412/analytics
+        - listitem [ref=e61]:
+          - link "TestFlight" [ref=e62] [cursor=pointer]:
+            - /url: /teams/313ffa8d-5aed-4aad-a012-b1057717634c/apps/6758618412/testflight
+        - listitem [ref=e63]:
+          - link "Xcode Cloud" [ref=e64] [cursor=pointer]:
+            - /url: /teams/313ffa8d-5aed-4aad-a012-b1057717634c/apps/6758618412/ci
+  - main [ref=e68]:
+    - generic [ref=e73]:
+      - navigation "Distribution" [ref=e197]:
+        - list [ref=e198]:
+          - listitem [ref=e199]:
+            - generic [ref=e200]:
+              - heading "iOS App" [level=2] [ref=e202]
+              - list [ref=e203]:
+                - listitem [ref=e204]:
+                  - link "1.5.0 Ready for Review" [ref=e205] [cursor=pointer]:
+                    - /url: /apps/6758618412/distribution/ios/version/inflight
+                    - generic [ref=e206]:
+                      - img [ref=e207]
+                      - text: 1.5.0 Ready for Review
+            - button "Add Platform" [ref=e209] [cursor=pointer]
+          - listitem [ref=e210]:
+            - separator [ref=e211]
+          - listitem [ref=e212]:
+            - heading "General" [level=2] [ref=e214]
+            - list [ref=e215]:
+              - listitem [ref=e216]:
+                - link "App Information" [ref=e217] [cursor=pointer]:
+                  - /url: /apps/6758618412/distribution/info
+                  - generic [ref=e218]: App Information
+              - listitem [ref=e219]:
+                - link "App Review" [ref=e220] [cursor=pointer]:
+                  - /url: /apps/6758618412/distribution/reviewsubmissions
+                  - generic [ref=e222]:
+                    - img [ref=e223]
+                    - text: App Review
+              - listitem [ref=e225]:
+                - link "History" [ref=e226] [cursor=pointer]:
+                  - /url: /apps/6758618412/distribution/activity/ios/versions
+                  - generic [ref=e227]: History
+          - listitem [ref=e228]:
+            - separator [ref=e229]
+          - listitem [ref=e230]:
+            - heading "App Store" [level=2] [ref=e232]
+            - generic [ref=e233]:
+              - heading "Trust & Safety" [level=3] [ref=e235]
+              - list [ref=e236]:
+                - listitem [ref=e237]:
+                  - link "App Privacy" [ref=e238] [cursor=pointer]:
+                    - /url: /apps/6758618412/distribution/privacy
+                    - generic [ref=e239]: App Privacy
+                - listitem [ref=e240]:
+                  - link "App Accessibility" [ref=e241] [cursor=pointer]:
+                    - /url: /apps/6758618412/distribution/accessibility
+                    - generic [ref=e242]: App Accessibility
+                - listitem [ref=e243]:
+                  - link "Ratings and Reviews" [ref=e244] [cursor=pointer]:
+                    - /url: /apps/6758618412/distribution/ratings/ios
+                    - generic [ref=e245]: Ratings and Reviews
+            - generic [ref=e246]:
+              - heading "Growth & Marketing" [level=3] [ref=e248]
+              - list [ref=e249]:
+                - listitem [ref=e250]:
+                  - link "In-App Events" [ref=e251] [cursor=pointer]:
+                    - /url: /apps/6758618412/distribution/events
+                    - generic [ref=e252]: In-App Events
+                - listitem [ref=e253]:
+                  - link "Custom Product Pages" [ref=e254] [cursor=pointer]:
+                    - /url: /apps/6758618412/distribution/productpages
+                    - generic [ref=e255]: Custom Product Pages
+                - listitem [ref=e256]:
+                  - link "Product Page Optimization" [ref=e257] [cursor=pointer]:
+                    - /url: /apps/6758618412/distribution/optimization
+                    - generic [ref=e258]: Product Page Optimization
+                - listitem [ref=e259]:
+                  - link "Promo Codes" [ref=e260] [cursor=pointer]:
+                    - /url: /apps/6758618412/distribution/promo_codes/generate
+                    - generic [ref=e261]: Promo Codes
+                - listitem [ref=e262]:
+                  - link "Game Center" [ref=e263] [cursor=pointer]:
+                    - /url: /apps/6758618412/distribution/gamecenter
+                    - generic [ref=e264]: Game Center
+            - generic [ref=e265]:
+              - heading "Monetization" [level=3] [ref=e267]
+              - list [ref=e268]:
+                - listitem [ref=e269]:
+                  - link "Pricing and Availability" [ref=e270] [cursor=pointer]:
+                    - /url: /apps/6758618412/distribution/pricing
+                    - generic [ref=e271]: Pricing and Availability
+                - listitem [ref=e272]:
+                  - link "In-App Purchases" [ref=e273] [cursor=pointer]:
+                    - /url: /apps/6758618412/distribution/iaps
+                    - generic [ref=e274]: In-App Purchases
+                - listitem [ref=e275]:
+                  - link "Subscriptions" [ref=e276] [cursor=pointer]:
+                    - /url: /apps/6758618412/distribution/subscriptions
+                    - generic [ref=e277]: Subscriptions
+            - generic [ref=e278]:
+              - heading "Featuring" [level=3] [ref=e280]
+              - list [ref=e281]:
+                - listitem [ref=e282]:
+                  - link "Nominations" [ref=e283] [cursor=pointer]:
+                    - /url: /apps/6758618412/distribution/nominations
+                    - generic [ref=e284]: Nominations
+      - generic [ref=e286]:
+        - heading "App Review" [level=2] [ref=e289]
+        - paragraph
+  - contentinfo [ref=e10]:
+    - generic [ref=e11]:
+      - list [ref=e180]:
+        - listitem [ref=e181]:
+          - link "App Store Connect" [ref=e182] [cursor=pointer]:
+            - /url: /apps
+      - list [ref=e12]:
+        - listitem [ref=e13]: Copyright © 2026 Apple Inc. All rights reserved. |
+        - listitem [ref=e14]:
+          - link "Terms of Service" [ref=e15] [cursor=pointer]:
+            - /url: /WebObjects/iTunesConnect.woa/wa/termsOfService
+          - text: "|"
+        - listitem [ref=e16]:
+          - link "Privacy Policy" [ref=e17] [cursor=pointer]:
+            - /url: https://www.apple.com/legal/privacy
+          - text: "|"
+        - listitem [ref=e18]:
+          - link "Contact Us" [ref=e19] [cursor=pointer]:
+            - /url: /contact-us

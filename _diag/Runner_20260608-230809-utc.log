@@ -1,0 +1,97 @@
+[2026-06-08 23:08:09Z INFO HostContext] No proxy settings were found based on environmental variables (http_proxy/https_proxy/HTTP_PROXY/HTTPS_PROXY)
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Bin': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/bin'
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Root': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad'
+[2026-06-08 23:08:09Z INFO HostContext] Well known config file 'Credentials': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/.credentials'
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Bin': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/bin'
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Root': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad'
+[2026-06-08 23:08:09Z INFO HostContext] Well known config file 'Runner': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/.runner'
+[2026-06-08 23:08:09Z INFO Listener] Runner is built for OSX (Arm64) - osx-arm64.
+[2026-06-08 23:08:09Z INFO Listener] RuntimeInformation: Darwin 25.6.0 Darwin Kernel Version 25.6.0: Fri May 15 01:56:36 PDT 2026; root:xnu-12377.160.49.0.1~42/RELEASE_ARM64_T8132.
+[2026-06-08 23:08:09Z INFO Listener] Version: 2.334.0
+[2026-06-08 23:08:09Z INFO Listener] Commit: f1995ede5d885c997d13d8eca5467c4ce97fe69c
+[2026-06-08 23:08:09Z INFO Listener] Culture: en-US
+[2026-06-08 23:08:09Z INFO Listener] UI Culture: en-US
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Bin': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/bin'
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Root': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad'
+[2026-06-08 23:08:09Z INFO Listener] Validating directory permissions for: '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad'
+[2026-06-08 23:08:09Z INFO CommandLineParser] Parse
+[2026-06-08 23:08:09Z INFO CommandLineParser] Parsing 5 args
+[2026-06-08 23:08:09Z INFO CommandLineParser] parsing argument
+[2026-06-08 23:08:09Z INFO CommandLineParser] HasArgs: False
+[2026-06-08 23:08:09Z INFO CommandLineParser] Adding Command: configure
+[2026-06-08 23:08:09Z INFO CommandLineParser] parsing argument
+[2026-06-08 23:08:09Z INFO CommandLineParser] HasArgs: True
+[2026-06-08 23:08:09Z INFO CommandLineParser] arg: url
+[2026-06-08 23:08:09Z INFO CommandLineParser] parsing argument
+[2026-06-08 23:08:09Z INFO CommandLineParser] HasArgs: True
+[2026-06-08 23:08:09Z INFO CommandLineParser] Adding option 'url': 'https://github.com'
+[2026-06-08 23:08:09Z INFO CommandLineParser] parsing argument
+[2026-06-08 23:08:09Z INFO CommandLineParser] HasArgs: True
+[2026-06-08 23:08:09Z INFO CommandLineParser] arg: token
+[2026-06-08 23:08:09Z INFO CommandLineParser] parsing argument
+[2026-06-08 23:08:09Z INFO CommandLineParser] HasArgs: True
+[2026-06-08 23:08:09Z INFO CommandLineParser] Adding option 'token': '***'
+[2026-06-08 23:08:09Z INFO Listener] Arguments parsed
+[2026-06-08 23:08:09Z INFO Runner] ExecuteCommand
+[2026-06-08 23:08:09Z INFO ConfigurationStore] currentAssemblyLocation: /Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/bin/Runner.Listener.dll
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Bin': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/bin'
+[2026-06-08 23:08:09Z INFO ConfigurationStore] binPath: /Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/bin
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Bin': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/bin'
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Root': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad'
+[2026-06-08 23:08:09Z INFO ConfigurationStore] RootFolder: /Users/loken/Developer/AiMarketingtool-pro-fbaf2fad
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Bin': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/bin'
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Root': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad'
+[2026-06-08 23:08:09Z INFO HostContext] Well known config file 'Runner': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/.runner'
+[2026-06-08 23:08:09Z INFO ConfigurationStore] ConfigFilePath: /Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/.runner
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Bin': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/bin'
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Root': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad'
+[2026-06-08 23:08:09Z INFO HostContext] Well known config file 'MigratedRunner': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/.runner_migrated'
+[2026-06-08 23:08:09Z INFO ConfigurationStore] MigratedConfigFilePath: /Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/.runner_migrated
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Bin': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/bin'
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Root': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad'
+[2026-06-08 23:08:09Z INFO HostContext] Well known config file 'Credentials': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/.credentials'
+[2026-06-08 23:08:09Z INFO ConfigurationStore] CredFilePath: /Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/.credentials
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Bin': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/bin'
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Root': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad'
+[2026-06-08 23:08:09Z INFO HostContext] Well known config file 'MigratedCredentials': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/.credentials_migrated'
+[2026-06-08 23:08:09Z INFO ConfigurationStore] MigratedCredFilePath: /Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/.credentials_migrated
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Bin': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/bin'
+[2026-06-08 23:08:09Z INFO HostContext] Well known directory 'Root': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad'
+[2026-06-08 23:08:09Z INFO HostContext] Well known config file 'Service': '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/.service'
+[2026-06-08 23:08:09Z INFO ConfigurationStore] ServiceConfigFilePath: /Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/.service
+[2026-06-08 23:08:09Z INFO CommandSettings] Flag 'help': 'False'
+[2026-06-08 23:08:09Z INFO CommandSettings] Flag 'version': 'False'
+[2026-06-08 23:08:09Z INFO CommandSettings] Flag 'commit': 'False'
+[2026-06-08 23:08:09Z INFO CommandSettings] Flag 'check': 'False'
+[2026-06-08 23:08:09Z INFO CommandSettings] Command 'configure': 'True'
+[2026-06-08 23:08:09Z INFO Terminal] WRITE LINE: 
+[2026-06-08 23:08:09Z INFO Terminal] WRITE LINE: --------------------------------------------------------------------------------
+[2026-06-08 23:08:09Z INFO Terminal] WRITE LINE: |        ____ _ _   _   _       _          _        _   _                      |
+[2026-06-08 23:08:09Z INFO Terminal] WRITE LINE: |       / ___(_) |_| | | |_   _| |__      / \   ___| |_(_) ___  _ __  ___      |
+[2026-06-08 23:08:09Z INFO Terminal] WRITE LINE: |      | |  _| | __| |_| | | | | '_ \    / _ \ / __| __| |/ _ \| '_ \/ __|     |
+[2026-06-08 23:08:09Z INFO Terminal] WRITE LINE: |      | |_| | | |_|  _  | |_| | |_) |  / ___ \ (__| |_| | (_) | | | \__ \     |
+[2026-06-08 23:08:09Z INFO Terminal] WRITE LINE: |       \____|_|\__|_| |_|\__,_|_.__/  /_/   \_\___|\__|_|\___/|_| |_|___/     |
+[2026-06-08 23:08:09Z INFO Terminal] WRITE LINE: |                                                                              |
+[2026-06-08 23:08:09Z INFO Terminal] WRITE: |                       
+[2026-06-08 23:08:09Z INFO Terminal] WRITE: Self-hosted runner registration
+[2026-06-08 23:08:09Z INFO Terminal] WRITE LINE:                         |
+[2026-06-08 23:08:09Z INFO Terminal] WRITE LINE: |                                                                              |
+[2026-06-08 23:08:09Z INFO Terminal] WRITE LINE: --------------------------------------------------------------------------------
+[2026-06-08 23:08:09Z INFO ConfigurationManager] ConfigureAsync
+[2026-06-08 23:08:09Z INFO CommandSettings] Flag 'generateServiceConfig': 'False'
+[2026-06-08 23:08:09Z INFO ConfigurationStore] IsConfigured()
+[2026-06-08 23:08:09Z INFO ConfigurationStore] IsConfigured: False
+[2026-06-08 23:08:09Z INFO ConfigurationManager] Is configured: False
+[2026-06-08 23:08:09Z INFO CommandSettings] Arg 'url': 'https://github.com'
+[2026-06-08 23:08:09Z INFO CommandSettings] Remove url from Arg dictionary.
+[2026-06-08 23:08:09Z INFO CommandSettings] Arg 'token': '***'
+[2026-06-08 23:08:09Z INFO CommandSettings] Remove token from Arg dictionary.
+[2026-06-08 23:08:09Z ERR  Terminal] WRITE ERROR: Http response code: NotFound from 'POST https://api.github.com/actions/runner-registration' (Request Id: E95E:1466CD:CBA572:DB63F0:6A274B59)
+[2026-06-08 23:08:09Z ERR  Terminal] WRITE ERROR: {"message":"Not Found","documentation_url":"https://docs.github.com/rest","status":"404"}
+[2026-06-08 23:08:09Z ERR  Runner] System.Net.Http.HttpRequestException: Response status code does not indicate success: 404 (Not Found).
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at GitHub.Runner.Listener.Configuration.ConfigurationManager.GetTenantCredential(String githubUrl, String githubToken, String runnerEvent)
+   at GitHub.Runner.Listener.Configuration.ConfigurationManager.ConfigureAsync(CommandSettings command)
+   at GitHub.Runner.Listener.Runner.ExecuteCommand(CommandSettings command)
+[2026-06-08 23:08:09Z ERR  Terminal] WRITE ERROR: Response status code does not indicate success: 404 (Not Found).
+[2026-06-08 23:08:09Z INFO Listener] Runner execution has finished with return code 1

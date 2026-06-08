@@ -1,0 +1,296 @@
+- generic [ref=e1]:
+  - banner "App Store Connect" [ref=e3]:
+    - generic [ref=e4]:
+      - heading "App Store Connect" [level=1] [ref=e6]:
+        - link "App Store Connect" [ref=e7] [cursor=pointer]:
+          - /url: /
+      - navigation "Global" [ref=e8]:
+        - list [ref=e10]:
+          - listitem [ref=e11]:
+            - link "Apps" [ref=e12] [cursor=pointer]:
+              - /url: /apps
+          - listitem [ref=e13]:
+            - link "Trends" [ref=e14] [cursor=pointer]:
+              - /url: /trends
+          - listitem [ref=e15]:
+            - link "Reports" [ref=e16] [cursor=pointer]:
+              - /url: /itc/payments_and_financial_reports
+          - listitem [ref=e17]:
+            - link "Business" [ref=e18] [cursor=pointer]:
+              - /url: /business
+          - listitem [ref=e19]:
+            - link "Users and Access" [ref=e20] [cursor=pointer]:
+              - /url: /access/users
+      - button "lokendra singh saingar Lokendra Singh Saingar Account name menu" [ref=e22] [cursor=pointer]:
+        - generic:
+          - generic: lokendra singh saingar
+          - generic: Lokendra Singh Saingar
+          - img [ref=e23]
+  - generic [ref=e28]:
+    - button "Apps menu, MarketingTool - AI Marketing, selected" [ref=e33] [cursor=pointer]:
+      - generic [ref=e34]:
+        - generic "MarketingTool - AI Marketing" [ref=e35]:
+          - img "MarketingTool - AI Marketing" [ref=e36]
+        - generic [ref=e37]: MarketingTool - AI Marketing
+      - img [ref=e39]
+    - navigation "Apps" [ref=e42]:
+      - list [ref=e43]:
+        - listitem [ref=e44]:
+          - link "Distribution" [ref=e45] [cursor=pointer]:
+            - /url: /apps/6758618412/distribution
+        - listitem [ref=e46]:
+          - link "Analytics" [ref=e47] [cursor=pointer]:
+            - /url: /apps/6758618412/analytics
+        - listitem [ref=e48]:
+          - link "TestFlight" [ref=e49] [cursor=pointer]:
+            - /url: /teams/313ffa8d-5aed-4aad-a012-b1057717634c/apps/6758618412/testflight
+        - listitem [ref=e50]:
+          - link "Xcode Cloud" [ref=e51] [cursor=pointer]:
+            - /url: /teams/313ffa8d-5aed-4aad-a012-b1057717634c/apps/6758618412/ci
+  - generic [ref=e55]:
+    - main [ref=e56]:
+      - generic [ref=e59]:
+        - generic [ref=e61]:
+          - navigation "Distribution" [ref=e63]:
+            - list [ref=e64]:
+              - listitem [ref=e65]:
+                - generic [ref=e66]:
+                  - heading "iOS App" [level=2] [ref=e68]
+                  - list [ref=e69]:
+                    - listitem [ref=e70]:
+                      - link "1.5.0 Ready for Review" [ref=e71] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/ios/version/inflight
+                        - generic [ref=e72]:
+                          - img [ref=e73]
+                          - text: 1.5.0 Ready for Review
+                - button "Add Platform" [ref=e75] [cursor=pointer]
+              - listitem [ref=e76]:
+                - separator [ref=e77]
+              - listitem [ref=e78]:
+                - heading "General" [level=2] [ref=e80]
+                - list [ref=e81]:
+                  - listitem [ref=e82]:
+                    - link "App Information" [ref=e83] [cursor=pointer]:
+                      - /url: /apps/6758618412/distribution/info
+                      - generic [ref=e84]: App Information
+                  - listitem [ref=e85]:
+                    - link "App Review" [ref=e86] [cursor=pointer]:
+                      - /url: /apps/6758618412/distribution/reviewsubmissions
+                      - generic [ref=e88]:
+                        - img [ref=e89]
+                        - text: App Review
+                  - listitem [ref=e91]:
+                    - link "History" [ref=e92] [cursor=pointer]:
+                      - /url: /apps/6758618412/distribution/activity/ios/versions
+                      - generic [ref=e93]: History
+              - listitem [ref=e94]:
+                - separator [ref=e95]
+              - listitem [ref=e96]:
+                - heading "App Store" [level=2] [ref=e98]
+                - generic [ref=e99]:
+                  - heading "Trust & Safety" [level=3] [ref=e101]
+                  - list [ref=e102]:
+                    - listitem [ref=e103]:
+                      - link "App Privacy" [ref=e104] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/privacy
+                        - generic [ref=e105]: App Privacy
+                    - listitem [ref=e106]:
+                      - link "App Accessibility" [ref=e107] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/accessibility
+                        - generic [ref=e108]: App Accessibility
+                    - listitem [ref=e109]:
+                      - link "Ratings and Reviews" [ref=e110] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/ratings/ios
+                        - generic [ref=e111]: Ratings and Reviews
+                - generic [ref=e112]:
+                  - heading "Growth & Marketing" [level=3] [ref=e114]
+                  - list [ref=e115]:
+                    - listitem [ref=e116]:
+                      - link "In-App Events" [ref=e117] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/events
+                        - generic [ref=e118]: In-App Events
+                    - listitem [ref=e119]:
+                      - link "Custom Product Pages" [ref=e120] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/productpages
+                        - generic [ref=e121]: Custom Product Pages
+                    - listitem [ref=e122]:
+                      - link "Product Page Optimization" [ref=e123] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/optimization
+                        - generic [ref=e124]: Product Page Optimization
+                    - listitem [ref=e125]:
+                      - link "Promo Codes" [ref=e126] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/promo_codes/generate
+                        - generic [ref=e127]: Promo Codes
+                    - listitem [ref=e128]:
+                      - link "Game Center" [ref=e129] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/gamecenter
+                        - generic [ref=e130]: Game Center
+                - generic [ref=e131]:
+                  - heading "Monetization" [level=3] [ref=e133]
+                  - list [ref=e134]:
+                    - listitem [ref=e135]:
+                      - link "Pricing and Availability" [ref=e136] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/pricing
+                        - generic [ref=e137]: Pricing and Availability
+                    - listitem [ref=e138]:
+                      - link "In-App Purchases" [ref=e139] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/iaps
+                        - generic [ref=e140]: In-App Purchases
+                    - listitem [ref=e141]:
+                      - link "Subscriptions" [ref=e142] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/subscriptions
+                        - generic [ref=e143]: Subscriptions
+                - generic [ref=e144]:
+                  - heading "Featuring" [level=3] [ref=e146]
+                  - list [ref=e147]:
+                    - listitem [ref=e148]:
+                      - link "Nominations" [ref=e149] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/nominations
+                        - generic [ref=e150]: Nominations
+          - generic [ref=e531]:
+            - heading "Subscriptions" [level=2] [ref=e536]
+            - separator [ref=e538]
+            - generic [ref=e539]:
+              - img [ref=e540]
+              - paragraph [ref=e542]: One or more subscription groups below require your attention.
+            - generic [ref=e543]:
+              - img [ref=e544]
+              - paragraph [ref=e546]:
+                - generic [ref=e547]:
+                  - text: Your first subscription must be submitted with a new app version. Create your subscription, then select it from the app’s In-App Purchases and Subscriptions section on the version page before submitting the version to App Review.
+                  - text: Once your binary has been uploaded and your first subscription has been submitted for review, additional subscriptions can be submitted from the Subscriptions section.
+                  - link "Learn More" [ref=e548] [cursor=pointer]:
+                    - /url: https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/submit-for-review
+            - heading "Auto-Renewable Subscriptions" [level=3] [ref=e549]
+            - paragraph [ref=e550]:
+              - generic [ref=e551]:
+                - text: A subscription is a product that allows users to purchase dynamic content for a set period. This type of subscription renews automatically unless cancelled by the user. Once your binary has been uploaded and your first subscription has been submitted for review, additional subscriptions can be submitted using the table below.
+                - link "Learn More" [ref=e552] [cursor=pointer]:
+                  - /url: https://developer.apple.com/help/app-store-connect/manage-subscriptions/offer-auto-renewable-subscriptions
+            - generic [ref=e553]:
+              - generic [ref=e554]:
+                - generic [ref=e555]:
+                  - generic [ref=e556]:
+                    - heading "Subscription Groups" [level=3] [ref=e557]
+                    - button "Create Subscription Group" [ref=e558] [cursor=pointer]:
+                      - img [ref=e559]
+                  - paragraph [ref=e561]:
+                    - generic [ref=e562]:
+                      - text: You can create a subscription after you create a subscription group. All subscriptions must be a part of a group. Users can only subscribe to one subscription in a group at a time, but can change to another subscription in the same group. If they do, you'll still receive 85% of the proceeds in the second year (after tax, if applicable).
+                      - link "Learn More" [ref=e563] [cursor=pointer]:
+                        - /url: https://developer.apple.com/help/app-store-connect/manage-subscriptions/offer-auto-renewable-subscriptions
+                - button [ref=e565] [cursor=pointer]:
+                  - img [ref=e566]
+              - generic [ref=e572]:
+                - generic:
+                  - generic:
+                    - grid:
+                      - row "[object Object] Subscriptions" [ref=e573]:
+                        - columnheader "[object Object]" [ref=e574] [cursor=pointer]:
+                          - text: Subscription Group Reference Name
+                          - generic [ref=e575]: 
+                        - columnheader "Subscriptions" [ref=e576]
+                      - rowgroup "grid" [ref=e577]:
+                        - rowgroup [ref=e578]:
+                          - row "MarketingTool Pro Plans 6" [ref=e579]:
+                            - gridcell "MarketingTool Pro Plans" [ref=e580]:
+                              - generic [ref=e582]:
+                                - link "MarketingTool Pro Plans" [ref=e583] [cursor=pointer]:
+                                  - /url: /apps/6758618412/distribution/subscription-groups/21973573
+                                - img [ref=e584]
+                            - gridcell "6" [ref=e586]:
+                              - generic [ref=e588]: "6"
+            - generic [ref=e589]:
+              - generic [ref=e590]:
+                - heading "Billing Grace Period" [level=5] [ref=e591]
+                - paragraph [ref=e592]:
+                  - button "Edit" [ref=e593] [cursor=pointer]
+              - paragraph [ref=e594]:
+                - generic [ref=e595]:
+                  - text: A billing grace period lets subscribers retain access to your app's paid content even after their subscription expires due to a billing issue. If Apple successfully recovers the subscription during this grace period, you will not experience any interruption in your revenue.
+                  - link "Learn more" [ref=e596] [cursor=pointer]:
+                    - /url: https://developer.apple.com/help/app-store-connect/manage-subscriptions/enable-billing-grace-period-for-auto-renewable-subscriptions
+              - generic [ref=e597]:
+                - generic [ref=e598]:
+                  - generic [ref=e599]:
+                    - generic [ref=e600]: Grace Period Duration
+                    - button "More information" [ref=e602] [cursor=pointer]: "?"
+                  - paragraph [ref=e603]: 16 days
+                - generic [ref=e604]:
+                  - generic [ref=e605]:
+                    - generic [ref=e606]: Eligible Subscribers
+                    - button "More information" [ref=e608] [cursor=pointer]: "?"
+                  - paragraph [ref=e609]: Only Paid-to-Paid Renewals
+                - generic [ref=e610]:
+                  - generic [ref=e611]: Server Environments
+                  - paragraph [ref=e612]: Production and Sandbox Environment
+            - generic [ref=e613]:
+              - heading "Streamlined Purchasing" [level=5] [ref=e614]
+              - paragraph [ref=e615]:
+                - generic [ref=e616]:
+                  - text: Streamlined purchasing lets customers buy subscriptions from outside your app. You can turn it off for subscriptions with contingent pricing or win-back offers.
+                  - link "Learn More" [ref=e617] [cursor=pointer]:
+                    - /url: https://developer.apple.com/help/app-store-connect/manage-subscriptions/manage-streamlined-purchasing
+              - generic [ref=e618]:
+                - paragraph [ref=e619]: Turned On
+                - paragraph [ref=e620]:
+                  - button "Edit" [ref=e621] [cursor=pointer]
+            - separator [ref=e622]
+            - heading "Non-Renewing Subscriptions" [level=3] [ref=e623]
+            - paragraph [ref=e624]: Users can purchase access to services or content for a limited duration, such as a season pass to in-game content. This type of subscription doesn't renew automatically, so users need to purchase a new subscription once it concludes if they wish to retain access.
+            - paragraph [ref=e625]:
+              - link "Manage" [ref=e626] [cursor=pointer]:
+                - /url: /apps/6758618412/distribution/non-renewing-subscriptions
+        - region "Draft Submissions" [ref=e510]:
+          - button "Draft Submissions (4)" [ref=e627] [cursor=pointer]:
+            - generic [ref=e512]:
+              - text: Draft Submissions (4)
+              - img [ref=e513]
+    - dialog "Draft Submission Started by API user Today at 10:48 PM" [active] [ref=e681]:
+      - document [ref=e630]:
+        - generic [ref=e631]:
+          - generic [ref=e632]:
+            - generic [ref=e633]:
+              - navigation [ref=e682]:
+                - link "Submissions" [ref=e683] [cursor=pointer]:
+                  - link "Submissions" [ref=e684]:
+                    - img [ref=e685]
+                    - text: Submissions
+              - heading "Draft Submission Started by API user Today at 10:48 PM" [level=2] [ref=e687]:
+                - paragraph [ref=e688]: Draft Submission
+                - paragraph [ref=e689]: Started by API user Today at 10:48 PM
+            - button "Close" [ref=e635] [cursor=pointer]:
+              - img [ref=e636]
+          - generic [ref=e690]:
+            - generic [ref=e691]: Items added below will be reviewed together with your latest version of the selected platform.
+            - combobox "Select submission platform" [ref=e695]:
+              - option "iOS" [selected]
+              - option "macOS"
+              - option "tvOS"
+              - option "visionOS"
+          - generic [ref=e696]:
+            - heading "Items Ready to Submit (0)" [level=5] [ref=e697]
+            - generic [ref=e699]:
+              - paragraph [ref=e700]: No Items
+              - paragraph [ref=e701]: There are no items in this submission. To add an item, click Add for Review on the item's page.
+              - button "Delete Submission" [ref=e702] [cursor=pointer]
+            - button "Submit for Review" [disabled] [ref=e704]
+  - contentinfo [ref=e516]:
+    - generic [ref=e517]:
+      - list [ref=e518]:
+        - listitem [ref=e519]:
+          - link "App Store Connect" [ref=e520] [cursor=pointer]:
+            - /url: /apps
+      - list [ref=e521]:
+        - listitem [ref=e522]: Copyright © 2026 Apple Inc. All rights reserved. |
+        - listitem [ref=e523]:
+          - link "Terms of Service" [ref=e524] [cursor=pointer]:
+            - /url: /WebObjects/iTunesConnect.woa/wa/termsOfService
+          - text: "|"
+        - listitem [ref=e525]:
+          - link "Privacy Policy" [ref=e526] [cursor=pointer]:
+            - /url: https://www.apple.com/legal/privacy
+          - text: "|"
+        - listitem [ref=e527]:
+          - link "Contact Us" [ref=e528] [cursor=pointer]:
+            - /url: /contact-us

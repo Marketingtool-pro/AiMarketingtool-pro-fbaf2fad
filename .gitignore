@@ -149,3 +149,5 @@ codelab-android-compose/
 vendor/
 .bundle/
 fastlane/
+gradle-user-home/
+gradle-user-home/

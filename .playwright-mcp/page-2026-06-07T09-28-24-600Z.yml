@@ -1,0 +1,21 @@
+- generic [ref=e2]:
+  - navigation [ref=e4]:
+    - list [ref=e6]:
+      - listitem [ref=e7]:
+        - link [ref=e8]:
+          - /url: "#/"
+      - listitem [ref=e9]:
+        - link [ref=e10] [cursor=pointer]:
+          - /url: "#tax"
+      - listitem [ref=e11]:
+        - link [ref=e12] [cursor=pointer]:
+          - /url: "#banking"
+      - listitem [ref=e13]:
+        - link [ref=e14] [cursor=pointer]:
+          - /url: "#contacts"
+      - listitem [ref=e15]:
+        - link [ref=e16] [cursor=pointer]:
+          - /url: "#invoices"
+  - generic [ref=e19]:
+    - generic:
+      - generic:              

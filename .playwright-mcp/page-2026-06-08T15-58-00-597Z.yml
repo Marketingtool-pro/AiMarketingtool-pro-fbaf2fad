@@ -1,0 +1,63 @@
+- generic [active] [ref=e1]:
+  - banner "App Store Connect" [ref=e3]:
+    - generic [ref=e4]:
+      - heading "App Store Connect" [level=1] [ref=e6]:
+        - link "App Store Connect" [ref=e7] [cursor=pointer]:
+          - /url: /
+      - navigation "Global" [ref=e8]:
+        - list [ref=e10]:
+          - listitem [ref=e11]:
+            - link "Apps" [ref=e12] [cursor=pointer]:
+              - /url: /apps
+          - listitem [ref=e13]:
+            - link "Trends" [ref=e14] [cursor=pointer]:
+              - /url: /trends
+          - listitem [ref=e15]:
+            - link "Reports" [ref=e16] [cursor=pointer]:
+              - /url: /itc/payments_and_financial_reports
+          - listitem [ref=e17]:
+            - link "Business" [ref=e18] [cursor=pointer]:
+              - /url: /business
+          - listitem [ref=e19]:
+            - link "Users and Access" [ref=e20] [cursor=pointer]:
+              - /url: /access/users
+      - button "lokendra singh saingar Lokendra Singh Saingar Account name menu" [ref=e22] [cursor=pointer]:
+        - generic:
+          - generic: lokendra singh saingar
+          - generic: Lokendra Singh Saingar
+          - img [ref=e23]
+  - generic [ref=e28]:
+    - generic [ref=e34] [cursor=pointer]: Users and Access
+    - navigation "Users and Access" [ref=e36]:
+      - list [ref=e37]:
+        - listitem [ref=e38]:
+          - link "People" [ref=e39] [cursor=pointer]:
+            - /url: /access/users
+        - listitem [ref=e40]:
+          - link "Sandbox" [ref=e41] [cursor=pointer]:
+            - /url: /access/users/sandbox
+        - listitem [ref=e42]:
+          - link "Integrations" [ref=e43] [cursor=pointer]:
+            - /url: /access/integrations
+        - listitem [ref=e44]:
+          - link "Xcode Cloud" [ref=e45] [cursor=pointer]:
+            - /url: /teams/313ffa8d-5aed-4aad-a012-b1057717634c/access/ci
+  - contentinfo [ref=e48]:
+    - generic [ref=e49]:
+      - list [ref=e50]:
+        - listitem [ref=e51]:
+          - link "App Store Connect" [ref=e52] [cursor=pointer]:
+            - /url: /apps
+      - list [ref=e53]:
+        - listitem [ref=e54]: Copyright © 2026 Apple Inc. All rights reserved. |
+        - listitem [ref=e55]:
+          - link "Terms of Service" [ref=e56] [cursor=pointer]:
+            - /url: /WebObjects/iTunesConnect.woa/wa/termsOfService
+          - text: "|"
+        - listitem [ref=e57]:
+          - link "Privacy Policy" [ref=e58] [cursor=pointer]:
+            - /url: https://www.apple.com/legal/privacy
+          - text: "|"
+        - listitem [ref=e59]:
+          - link "Contact Us" [ref=e60] [cursor=pointer]:
+            - /url: /contact-us

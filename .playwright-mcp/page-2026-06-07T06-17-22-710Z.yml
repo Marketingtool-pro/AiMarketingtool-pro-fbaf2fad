@@ -1,0 +1,273 @@
+- generic [ref=e1]:
+  - banner "App Store Connect" [ref=e3]:
+    - generic [ref=e4]:
+      - heading "App Store Connect" [level=1] [ref=e6]:
+        - link "App Store Connect" [ref=e7] [cursor=pointer]:
+          - /url: /
+      - navigation "Global" [ref=e8]:
+        - list [ref=e10]:
+          - listitem [ref=e11]:
+            - link "Apps" [ref=e12] [cursor=pointer]:
+              - /url: /apps
+          - listitem [ref=e13]:
+            - link "Trends" [ref=e14] [cursor=pointer]:
+              - /url: /trends
+          - listitem [ref=e15]:
+            - link "Reports" [ref=e16] [cursor=pointer]:
+              - /url: /itc/payments_and_financial_reports
+          - listitem [ref=e17]:
+            - link "Business" [ref=e18] [cursor=pointer]:
+              - /url: /business
+          - listitem [ref=e19]:
+            - link "Users and Access" [ref=e20] [cursor=pointer]:
+              - /url: /access/users
+      - button "lokendra singh saingar Lokendra Singh Saingar Account name menu" [ref=e22] [cursor=pointer]:
+        - generic:
+          - generic: lokendra singh saingar
+          - generic: Lokendra Singh Saingar
+          - img [ref=e23]
+  - generic [ref=e28]:
+    - button "Apps menu, MarketingTool - AI Marketing, selected" [ref=e55] [cursor=pointer]:
+      - generic [ref=e56]:
+        - generic "MarketingTool - AI Marketing" [ref=e57]:
+          - img "MarketingTool - AI Marketing" [ref=e58]
+        - generic [ref=e59]: MarketingTool - AI Marketing
+      - img [ref=e61]
+    - navigation "Apps" [ref=e30]:
+      - list [ref=e31]:
+        - listitem [ref=e63]:
+          - link "Distribution" [ref=e64] [cursor=pointer]:
+            - /url: /apps/6758618412/distribution
+        - listitem [ref=e65]:
+          - link "Analytics" [ref=e66] [cursor=pointer]:
+            - /url: /apps/6758618412/analytics
+        - listitem [ref=e67]:
+          - link "TestFlight" [ref=e68] [cursor=pointer]:
+            - /url: /teams/313ffa8d-5aed-4aad-a012-b1057717634c/apps/6758618412/testflight
+        - listitem [ref=e69]:
+          - link "Xcode Cloud" [ref=e70] [cursor=pointer]:
+            - /url: /teams/313ffa8d-5aed-4aad-a012-b1057717634c/apps/6758618412/ci
+  - generic [ref=e73]:
+    - main [ref=e74]:
+      - generic [ref=e81]:
+        - generic [ref=e85]:
+          - link "Subscriptions" [ref=e89] [cursor=pointer]:
+            - /url: /apps/6758618412/distribution/subscriptions
+            - generic [ref=e90]:
+              - img [ref=e91]
+              - text: Subscriptions
+          - heading "MarketingTool Pro Plans" [level=2] [ref=e94]:
+            - heading "MarketingTool Pro Plans" [level=2] [ref=e95]
+        - generic [ref=e96]:
+          - paragraph [ref=e97]:
+            - generic [ref=e98]:
+              - text: You can create a subscription after you create a subscription group. All subscriptions must be a part of a group. Users can only subscribe to one subscription in a group at a time, but can change to another subscription in the same group. If they do, you'll still receive 85% of the proceeds in the second year (after tax, if applicable).
+              - link "Learn More" [ref=e99] [cursor=pointer]:
+                - /url: https://developer.apple.com/help/app-store-connect/manage-subscriptions/offer-auto-renewable-subscriptions
+          - generic [ref=e100]:
+            - img [ref=e101]
+            - paragraph [ref=e103]:
+              - generic [ref=e104]:
+                - text: Your subscription requires attention. When it's ready, submit it again. For more information, see the
+                - link "Notes from App Review." [ref=e105] [cursor=pointer]:
+                  - /url: javascript:void(0)
+          - generic [ref=e106]:
+            - img [ref=e107]
+            - paragraph [ref=e109]:
+              - generic [ref=e110]:
+                - text: Your first subscription must be submitted with a new app version. Create your subscription, then select it from the app’s In-App Purchases and Subscriptions section on the version page before submitting the version to App Review.
+                - text: Once your binary has been uploaded and your first subscription has been submitted for review, additional subscriptions can be submitted from the Subscriptions section.
+                - link "Learn More" [ref=e111] [cursor=pointer]:
+                  - /url: https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/submit-for-review
+          - generic [ref=e112]:
+            - generic [ref=e113]:
+              - generic [ref=e114]:
+                - generic [ref=e115]:
+                  - heading "Subscriptions" [level=3] [ref=e116]
+                  - button "Create Subscription" [ref=e117] [cursor=pointer]:
+                    - img [ref=e118]
+                - paragraph [ref=e120]:
+                  - generic [ref=e121]:
+                    - text: Arrange your subscriptions in descending order, starting with the option that offers the highest level of service. You can add more than one subscription to each level. This order will determine your subscription's upgrade and downgrade options.
+                    - link "Learn more about subscription upgrades and downgrades." [ref=e122] [cursor=pointer]:
+                      - /url: https://developer.apple.com/go/?id=subscriptions-overview
+              - button "Edit Level" [ref=e125] [cursor=pointer]
+            - generic [ref=e129]:
+              - generic:
+                - generic:
+                  - grid:
+                    - row "Level Reference Name Product ID Duration Status" [ref=e130]:
+                      - columnheader "Level" [ref=e131]
+                      - columnheader "Reference Name" [ref=e132]
+                      - columnheader "Product ID" [ref=e133]
+                      - columnheader "Duration" [ref=e134]
+                      - columnheader "Status" [ref=e135]
+                    - rowgroup "grid" [ref=e136]:
+                      - rowgroup [ref=e137]:
+                        - row "1 Growth Monthly pro.marketingtool.growth.monthly 1 month Developer Action Needed" [ref=e138]:
+                          - gridcell "1" [ref=e139]:
+                            - generic [ref=e141]: "1"
+                          - gridcell "Growth Monthly" [ref=e142]:
+                            - link "Growth Monthly" [ref=e145] [cursor=pointer]:
+                              - /url: /apps/6758618412/distribution/subscriptions/6760442919
+                          - gridcell "pro.marketingtool.growth.monthly" [ref=e146]:
+                            - generic [ref=e148]: pro.marketingtool.growth.monthly
+                          - gridcell "1 month" [ref=e149]:
+                            - generic [ref=e151]: 1 month
+                          - gridcell "Developer Action Needed" [ref=e152]:
+                            - generic [ref=e154]:
+                              - img [ref=e155]
+                              - text: Developer Action Needed
+                        - row "2 Starter Monthly pro.marketingtool.starter.monthly 1 month Developer Action Needed" [ref=e157]:
+                          - gridcell "2" [ref=e158]:
+                            - generic [ref=e160]: "2"
+                          - gridcell "Starter Monthly" [ref=e161]:
+                            - link "Starter Monthly" [ref=e164] [cursor=pointer]:
+                              - /url: /apps/6758618412/distribution/subscriptions/6760486886
+                          - gridcell "pro.marketingtool.starter.monthly" [ref=e165]:
+                            - generic [ref=e167]: pro.marketingtool.starter.monthly
+                          - gridcell "1 month" [ref=e168]:
+                            - generic [ref=e170]: 1 month
+                          - gridcell "Developer Action Needed" [ref=e171]:
+                            - generic [ref=e173]:
+                              - img [ref=e174]
+                              - text: Developer Action Needed
+                        - row "3 Starter Yearly pro.marketingtool.starter.yearly 1 year Developer Action Needed" [ref=e176]:
+                          - gridcell "3" [ref=e177]:
+                            - generic [ref=e179]: "3"
+                          - gridcell "Starter Yearly" [ref=e180]:
+                            - link "Starter Yearly" [ref=e183] [cursor=pointer]:
+                              - /url: /apps/6758618412/distribution/subscriptions/6760490715
+                          - gridcell "pro.marketingtool.starter.yearly" [ref=e184]:
+                            - generic [ref=e186]: pro.marketingtool.starter.yearly
+                          - gridcell "1 year" [ref=e187]:
+                            - generic [ref=e189]: 1 year
+                          - gridcell "Developer Action Needed" [ref=e190]:
+                            - generic [ref=e192]:
+                              - img [ref=e193]
+                              - text: Developer Action Needed
+                        - row "4 Pro Monthly pro.marketingtool.pro.monthly 1 month Developer Action Needed" [ref=e195]:
+                          - gridcell "4" [ref=e196]:
+                            - generic [ref=e198]: "4"
+                          - gridcell "Pro Monthly" [ref=e199]:
+                            - link "Pro Monthly" [ref=e202] [cursor=pointer]:
+                              - /url: /apps/6758618412/distribution/subscriptions/6760491034
+                          - gridcell "pro.marketingtool.pro.monthly" [ref=e203]:
+                            - generic [ref=e205]: pro.marketingtool.pro.monthly
+                          - gridcell "1 month" [ref=e206]:
+                            - generic [ref=e208]: 1 month
+                          - gridcell "Developer Action Needed" [ref=e209]:
+                            - generic [ref=e211]:
+                              - img [ref=e212]
+                              - text: Developer Action Needed
+                        - row "5 Pro Yearly pro.marketingtool.pro.yearly 1 year Developer Action Needed" [ref=e214]:
+                          - gridcell "5" [ref=e215]:
+                            - generic [ref=e217]: "5"
+                          - gridcell "Pro Yearly" [ref=e218]:
+                            - link "Pro Yearly" [ref=e221] [cursor=pointer]:
+                              - /url: /apps/6758618412/distribution/subscriptions/6760491514
+                          - gridcell "pro.marketingtool.pro.yearly" [ref=e222]:
+                            - generic [ref=e224]: pro.marketingtool.pro.yearly
+                          - gridcell "1 year" [ref=e225]:
+                            - generic [ref=e227]: 1 year
+                          - gridcell "Developer Action Needed" [ref=e228]:
+                            - generic [ref=e230]:
+                              - img [ref=e231]
+                              - text: Developer Action Needed
+                        - row "6 Growth Yearly pro.marketingtool.growth.yearly 1 year Developer Action Needed" [ref=e233]:
+                          - gridcell "6" [ref=e234]:
+                            - generic [ref=e236]: "6"
+                          - gridcell "Growth Yearly" [ref=e237]:
+                            - link "Growth Yearly" [ref=e240] [cursor=pointer]:
+                              - /url: /apps/6758618412/distribution/subscriptions/6760492298
+                          - gridcell "pro.marketingtool.growth.yearly" [ref=e241]:
+                            - generic [ref=e243]: pro.marketingtool.growth.yearly
+                          - gridcell "1 year" [ref=e244]:
+                            - generic [ref=e246]: 1 year
+                          - gridcell "Developer Action Needed" [ref=e247]:
+                            - generic [ref=e249]:
+                              - img [ref=e250]
+                              - text: Developer Action Needed
+          - generic [ref=e252]:
+            - generic [ref=e255]:
+              - heading "Localization" [level=3] [ref=e256]
+              - button [ref=e257] [cursor=pointer]:
+                - img [ref=e258]
+            - paragraph [ref=e261]:
+              - generic [ref=e262]:
+                - text: You can use different subscription group display names and app name display options for each localization. Users will see these names when they manage subscriptions on their devices.
+                - link "Learn More" [ref=e263] [cursor=pointer]:
+                  - /url: https://developer.apple.com/help/app-store-connect/manage-subscriptions/offer-auto-renewable-subscriptions
+            - generic [ref=e267]:
+              - generic:
+                - generic:
+                  - grid:
+                    - row "Localizations Subscription Group Display Name App Name Status" [ref=e268]:
+                      - columnheader "Localizations" [ref=e269]
+                      - columnheader "Subscription Group Display Name" [ref=e270]
+                      - columnheader "App Name" [ref=e271]
+                      - columnheader "Status" [ref=e272]:
+                        - generic [ref=e273]: Status
+                      - columnheader
+                    - rowgroup "grid" [ref=e274]:
+                      - rowgroup [ref=e275]:
+                        - row "English (U.S.) MarketingTool Pro Plans MarketingTool - AI Marketing Rejected" [ref=e276]:
+                          - gridcell "English (U.S.)" [ref=e277]:
+                            - button "English (U.S.)" [ref=e280] [cursor=pointer]
+                          - gridcell "MarketingTool Pro Plans" [ref=e281]:
+                            - generic [ref=e283]: MarketingTool Pro Plans
+                          - gridcell "MarketingTool - AI Marketing" [ref=e284]:
+                            - generic [ref=e286]: MarketingTool - AI Marketing
+                          - gridcell "Rejected" [ref=e287]:
+                            - generic [ref=e289]:
+                              - img [ref=e290]
+                              - text: Rejected
+                          - gridcell [ref=e292]
+          - heading "Subscription Group ID" [level=6] [ref=e294]
+          - paragraph [ref=e295]: "21973573"
+          - paragraph [ref=e296]:
+            - button "Edit Subscription Group" [ref=e297] [cursor=pointer]
+    - dialog "Notes from App Review" [ref=e298]:
+      - generic [ref=e300]:
+        - generic [ref=e301]:
+          - heading "Notes from App Review" [level=2] [ref=e302]
+          - generic [ref=e303]:
+            - separator [ref=e304]
+            - generic [ref=e306]:
+              - heading "Guideline 2.1(b) - Performance - App Completeness" [level=3] [ref=e307]
+              - paragraph [ref=e308]: Issue Description
+              - paragraph [ref=e309]: We have returned the In-App Purchase products as the required binary was not submitted.
+              - paragraph [ref=e310]: Next Steps
+              - paragraph [ref=e311]: Once you have resolved all the outstanding issues that were identified and are ready to submit the binary, resubmit the In-App Purchase products with the binary.
+              - paragraph [ref=e312]: Resources
+              - paragraph [ref=e313]:
+                - text: "- Learn more about app completeness requirements in"
+                - link "guideline 2.1" [ref=e314] [cursor=pointer]:
+                  - /url: https://developer.apple.com/app-store/review/guidelines/#2.1
+                - text: .
+              - paragraph [ref=e315]:
+                - text: "- Learn more about"
+                - link "offering In-App Purchases" [ref=e316] [cursor=pointer]:
+                  - /url: https://developer.apple.com/help/app-store-connect/configure-in-app-purchase-settings/overview-for-configuring-in-app-purchases/
+                - text: in App Store Connect Help.
+            - separator [ref=e317]
+        - button "OK" [active] [ref=e321] [cursor=pointer]
+  - contentinfo [ref=e38]:
+    - generic [ref=e39]:
+      - list [ref=e40]:
+        - listitem [ref=e41]:
+          - link "App Store Connect" [ref=e42] [cursor=pointer]:
+            - /url: /apps
+      - list [ref=e43]:
+        - listitem [ref=e44]: Copyright © 2026 Apple Inc. All rights reserved. |
+        - listitem [ref=e45]:
+          - link "Terms of Service" [ref=e46] [cursor=pointer]:
+            - /url: /WebObjects/iTunesConnect.woa/wa/termsOfService
+          - text: "|"
+        - listitem [ref=e47]:
+          - link "Privacy Policy" [ref=e48] [cursor=pointer]:
+            - /url: https://www.apple.com/legal/privacy
+          - text: "|"
+        - listitem [ref=e49]:
+          - link "Contact Us" [ref=e50] [cursor=pointer]:
+            - /url: /contact-us

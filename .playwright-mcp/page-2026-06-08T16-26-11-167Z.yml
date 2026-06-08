@@ -1,0 +1,247 @@
+- generic [active] [ref=e1]:
+  - banner "App Store Connect" [ref=e3]:
+    - generic [ref=e4]:
+      - heading "App Store Connect" [level=1] [ref=e20]:
+        - link "App Store Connect" [ref=e21] [cursor=pointer]:
+          - /url: /
+      - navigation "Global" [ref=e7]:
+        - list [ref=e23]:
+          - listitem [ref=e24]:
+            - link "Apps" [ref=e25] [cursor=pointer]:
+              - /url: /apps
+          - listitem [ref=e26]:
+            - link "Trends" [ref=e27] [cursor=pointer]:
+              - /url: /trends
+          - listitem [ref=e28]:
+            - link "Reports" [ref=e29] [cursor=pointer]:
+              - /url: /itc/payments_and_financial_reports
+          - listitem [ref=e30]:
+            - link "Business" [ref=e31] [cursor=pointer]:
+              - /url: /business
+          - listitem [ref=e32]:
+            - link "Users and Access" [ref=e33] [cursor=pointer]:
+              - /url: /access/users
+      - button "lokendra singh saingar Lokendra Singh Saingar Account name menu" [ref=e35] [cursor=pointer]:
+        - generic:
+          - generic: lokendra singh saingar
+          - generic: Lokendra Singh Saingar
+          - img [ref=e36]
+  - generic [ref=e41]:
+    - button "Apps menu, MarketingTool - AI Marketing, selected" [ref=e46] [cursor=pointer]:
+      - generic [ref=e47]:
+        - generic "MarketingTool - AI Marketing" [ref=e48]:
+          - img "MarketingTool - AI Marketing" [ref=e49]
+        - generic [ref=e50]: MarketingTool - AI Marketing
+      - img [ref=e52]
+    - navigation "Apps" [ref=e55]:
+      - list [ref=e56]:
+        - listitem [ref=e57]:
+          - link "Distribution" [ref=e58] [cursor=pointer]:
+            - /url: /apps/6758618412/distribution
+        - listitem [ref=e59]:
+          - link "Analytics" [ref=e60] [cursor=pointer]:
+            - /url: /apps/6758618412/analytics
+        - listitem [ref=e61]:
+          - link "TestFlight" [ref=e62] [cursor=pointer]:
+            - /url: /teams/313ffa8d-5aed-4aad-a012-b1057717634c/apps/6758618412/testflight
+        - listitem [ref=e63]:
+          - link "Xcode Cloud" [ref=e64] [cursor=pointer]:
+            - /url: /teams/313ffa8d-5aed-4aad-a012-b1057717634c/apps/6758618412/ci
+  - main [ref=e68]:
+    - generic [ref=e71]:
+      - generic [ref=e75]:
+        - generic [ref=e79]:
+          - link "Subscriptions" [ref=e83] [cursor=pointer]:
+            - /url: /apps/6758618412/distribution/subscription-groups/21973573
+            - generic [ref=e84]:
+              - img [ref=e85]
+              - text: Subscriptions
+          - generic [ref=e87]:
+            - heading "Growth Monthly" [level=2] [ref=e88]
+            - generic [ref=e89]:
+              - button "Save" [disabled] [ref=e90]
+              - button "Submit for Review" [ref=e91] [cursor=pointer]
+        - generic [ref=e92]:
+          - generic [ref=e248]:
+            - img [ref=e249]
+            - paragraph [ref=e251]:
+              - generic [ref=e252]:
+                - text: Your subscription requires attention. When it's ready, submit it again. For more information, see the
+                - link "Notes from App Review." [ref=e253] [cursor=pointer]:
+                  - /url: javascript:void(0)
+          - generic [ref=e254]:
+            - img [ref=e255]
+            - paragraph [ref=e257]:
+              - generic [ref=e258]:
+                - text: Your first subscription must be submitted with a new app version. Create your subscription, then select it from the app’s In-App Purchases and Subscriptions section on the version page before submitting the version to App Review.
+                - text: Once your binary has been uploaded and your first subscription has been submitted for review, additional subscriptions can be submitted from the Subscriptions section.
+                - link "Learn More" [ref=e259] [cursor=pointer]:
+                  - /url: https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/submit-for-review
+          - generic [ref=e93]:
+            - generic [ref=e94]:
+              - generic [ref=e95]:
+                - text: Reference Name
+                - button "More information" [ref=e97] [cursor=pointer]: "?"
+              - textbox "Reference Name More information" [ref=e99]: Growth Monthly
+              - paragraph [ref=e101]: "50"
+            - generic [ref=e102]:
+              - paragraph [ref=e103]: Status
+              - paragraph [ref=e104]:
+                - img [ref=e105]
+                - text: Developer Action Needed
+            - generic [ref=e107]:
+              - paragraph [ref=e108]:
+                - text: Apple ID
+                - button "More information" [ref=e110] [cursor=pointer]: "?"
+              - paragraph [ref=e111]: "6760442919"
+            - generic [ref=e112]:
+              - paragraph [ref=e113]:
+                - text: Product ID
+                - button "More information" [ref=e115] [cursor=pointer]: "?"
+              - paragraph [ref=e116]: pro.marketingtool.growth.monthly
+            - generic [ref=e117]:
+              - paragraph [ref=e118]:
+                - text: Subscription Duration
+                - button "More information" [ref=e120] [cursor=pointer]: "?"
+              - paragraph [ref=e121]: 1 month
+            - generic [ref=e122]:
+              - paragraph [ref=e123]: Group Reference Name
+              - paragraph [ref=e260]:
+                - link "MarketingTool Pro Plans" [ref=e261] [cursor=pointer]:
+                  - /url: /apps/6758618412/distribution/subscription-groups/21973573
+            - generic [ref=e125]:
+              - paragraph [ref=e126]:
+                - text: Family Sharing
+                - button "More information" [ref=e128] [cursor=pointer]: "?"
+              - paragraph [ref=e129]: This subscription can be shared by everyone in a family group.
+          - separator [ref=e130]
+          - generic [ref=e131]:
+            - heading "Availability" [level=3] [ref=e132]
+            - generic [ref=e262]:
+              - paragraph [ref=e263]:
+                - text: All countries or regions selected
+                - button "Edit" [ref=e264] [cursor=pointer]
+              - paragraph [ref=e265]:
+                - button "Remove from Sale" [ref=e266] [cursor=pointer]
+            - separator [ref=e139]
+          - generic [ref=e140]:
+            - generic [ref=e141]:
+              - heading "Subscription Prices Add Pricing" [level=3] [ref=e267]:
+                - text: Subscription Prices
+                - button "Add Pricing" [ref=e269] [cursor=pointer]:
+                  - img [ref=e270]
+              - link "All Prices and Currencies" [ref=e143] [cursor=pointer]:
+                - /url: /apps/6758618412/distribution/subscriptions/6760442919/pricing-matrix
+                - paragraph [ref=e144]: All Prices and Currencies
+            - paragraph [ref=e272]: Below is a summary of your current pricing and any upcoming changes.
+            - button "Current Pricing for New Subscribers" [ref=e274] [cursor=pointer]:
+              - img [ref=e276]
+              - text: Current Pricing for New Subscribers
+            - link "View all Subscription Pricing" [ref=e278] [cursor=pointer]:
+              - /url: /apps/6758618412/distribution/subscriptions/6760442919/pricing
+              - paragraph [ref=e279]: View all Subscription Pricing
+          - separator [ref=e146]
+          - generic [ref=e147]:
+            - generic [ref=e150]:
+              - heading "Localization" [level=3] [ref=e151]
+              - button [ref=e152] [cursor=pointer]:
+                - img [ref=e153]
+            - paragraph [ref=e156]: The localized display name and description for your subscription will appear on the App Store.
+            - generic [ref=e160]:
+              - generic:
+                - generic:
+                  - grid:
+                    - row "Localizations Display Name Subscription Description Status Localization status" [ref=e161]:
+                      - columnheader "Localizations" [ref=e162]
+                      - columnheader "Display Name" [ref=e163]
+                      - columnheader "Subscription Description" [ref=e164]
+                      - columnheader "Status Localization status" [ref=e165]:
+                        - generic [ref=e166]:
+                          - text: Status
+                          - button "Localization status" [ref=e168] [cursor=pointer]: "?"
+                      - columnheader
+                    - rowgroup "grid" [ref=e169]:
+                      - rowgroup [ref=e170]:
+                        - row "English (U.S.) Growth Plan 1,500+ AI generations across all 7 platforms Prepare for Submission" [ref=e315]:
+                          - gridcell "English (U.S.)" [ref=e172]:
+                            - button "English (U.S.)" [ref=e175] [cursor=pointer]
+                          - gridcell "Growth Plan" [ref=e176]:
+                            - generic [ref=e178]: Growth Plan
+                          - gridcell "1,500+ AI generations across all 7 platforms" [ref=e316]:
+                            - generic [ref=e181]: 1,500+ AI generations across all 7 platforms
+                          - gridcell "Prepare for Submission" [ref=e317]:
+                            - generic [ref=e184]:
+                              - img [ref=e318]
+                              - text: Prepare for Submission
+                          - gridcell [ref=e187]
+          - generic [ref=e189]:
+            - heading "Image (Optional)" [level=3] [ref=e191]
+            - paragraph [ref=e192]:
+              - generic [ref=e193]:
+                - text: Add a 1024 x 1024 pixel image that best represents this subscription. It will be used for any win-back offers or offer code redemptions for this subscription. If you enable App Store Promotion for this subscription, this image will also appear on your app's product page.
+                - link "Learn More" [ref=e194] [cursor=pointer]:
+                  - /url: https://developer.apple.com/help/app-store-connect/manage-in-app-purchases/view-and-edit-in-app-purchase-information
+            - generic [ref=e198] [cursor=pointer]:
+              - button "Choose File" [ref=e199]
+              - generic [ref=e201]: Choose File
+          - separator [ref=e202]
+          - generic [ref=e203]:
+            - heading "Tax Category ? Edit" [level=3] [ref=e205]:
+              - text: Tax Category
+              - button "?" [ref=e207] [cursor=pointer]
+              - button "Edit" [ref=e208] [cursor=pointer]
+            - paragraph [ref=e209]:
+              - generic [ref=e210]:
+                - text: You’re responsible for selecting and maintaining accurate tax categories and all applicable attributes. This subscription will use the app’s tax category unless you choose a different one. Changing the tax category for this subscription won’t affect the tax category for your app or any other in-app purchase or subscription. Any changes will only affect future sales.
+                - link "Learn More" [ref=e211] [cursor=pointer]:
+                  - /url: https://help.apple.com/app-store-connect/#/dev2bd41114d
+            - generic [ref=e213]:
+              - generic [ref=e214]: Category
+              - paragraph [ref=e215]: Match to parent app
+          - separator [ref=e216]
+          - generic [ref=e217]:
+            - heading "Review Information" [level=3] [ref=e219]
+            - generic [ref=e220]:
+              - generic [ref=e221]:
+                - generic [ref=e222]:
+                  - text: Screenshot
+                  - button "More information" [ref=e224] [cursor=pointer]: "?"
+                - generic [ref=e225]:
+                  - generic [ref=e226] [cursor=pointer]:
+                    - button "Choose File" [ref=e227]
+                    - img "SOURCE" [ref=e230]
+                  - button "Delete" [ref=e231] [cursor=pointer]:
+                    - img [ref=e232]
+              - generic [ref=e234]:
+                - generic [ref=e235]:
+                  - text: Review Notes (Optional)
+                  - button "More information" [ref=e237] [cursor=pointer]: "?"
+                - textbox "Review Notes (Optional) More information" [ref=e239]: "Growth Plan — auto-renewing monthly subscription, $99.99/month USD. Includes a 7-day free trial introductory offer. Subscription renews automatically unless cancelled at least 24 hours before the end of the current period. Users can manage or cancel anytime in iOS Settings > Apple ID > Subscriptions. Plan benefits: 1,500+ AI generations per month, full access to all 7 marketing platforms, full automation (auto-apply rules), predictive scaling AI, deep analytics, executive dashboards, priority support. How to test: Tap the \"Upgrade\" button on the home screen. Select the Growth Monthly plan. Complete the sandbox purchase. Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/ Privacy Policy: https://marketingtool.pro/privacy The paywall is reachable from the home screen by tapping the \"Upgrade\" button. Build 479 has the IAP completion fix applied."
+                - paragraph [ref=e241]: "3106"
+          - separator [ref=e242]
+          - paragraph [ref=e243]:
+            - button "Delete This Subscription" [ref=e244] [cursor=pointer]
+      - region "Draft Submissions" [ref=e280]:
+        - button "Draft Submissions (2)" [ref=e281] [cursor=pointer]:
+          - generic [ref=e282]:
+            - text: Draft Submissions (2)
+            - img [ref=e283]
+  - contentinfo [ref=e10]:
+    - generic [ref=e11]:
+      - list [ref=e245]:
+        - listitem [ref=e246]:
+          - link "App Store Connect" [ref=e247] [cursor=pointer]:
+            - /url: /apps
+      - list [ref=e12]:
+        - listitem [ref=e13]: Copyright © 2026 Apple Inc. All rights reserved. |
+        - listitem [ref=e14]:
+          - link "Terms of Service" [ref=e15] [cursor=pointer]:
+            - /url: /WebObjects/iTunesConnect.woa/wa/termsOfService
+          - text: "|"
+        - listitem [ref=e16]:
+          - link "Privacy Policy" [ref=e17] [cursor=pointer]:
+            - /url: https://www.apple.com/legal/privacy
+          - text: "|"
+        - listitem [ref=e18]:
+          - link "Contact Us" [ref=e19] [cursor=pointer]:
+            - /url: /contact-us

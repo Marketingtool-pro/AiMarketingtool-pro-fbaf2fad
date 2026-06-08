@@ -1,0 +1,171 @@
+[     398ms] [LOG] SimpleJSONService Exception: SyntaxError: Failed to execute 'setRequestHeader' on 'XMLHttpRequest': 'type html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title></title>
+    <script type="systemjs-importmap">{
+  "imports": {
+    "react-is": "https://unpkg.apple.com/@maison/itc@1.1.2/umd/react-is.production.min.js",
+    "react": "https://unpkg.apple.com/@maison/itc@1.1.2/umd/react.production.min.js",
+    "react-dom": "https://unpkg.apple.com/@maison/itc@1.1.2/umd/react-dom.production.min.js",
+    "styled-components": "https://unpkg.apple.com/@maison/itc@1.1.2/umd/styled-components.min.js"
+  }
+}</script>
+    <link rel="stylesheet" type="text/css" href="https://www.apple.com/wss/fonts?families=SF+Pro,v1|SF+Pro+Icons,v1" media="all">
+  <script type="module" crossorigin src="https://unpkg.apple.com/@maison/preauthorization-container@0.1.43/umd/pre/index.DeM_ju2p.js"></script>
+  <link rel="modulepreload" crossorigin href="https://unpkg.apple.com/@maison/preauthorization-container@0.1.43/umd/chunks/environment.VbDOKqhn.js">
+  <link rel="modulepreload" crossorigin href="https://unpkg.apple.com/@maison/preauthorization-container@0.1.43/umd/chunks/vendor.yGc4Dq3q.js">
+  <link rel="modulepreload" crossorigin href="https://unpkg.apple.com/@maison/preauthorization-container@0.1.43/umd/chunks/loader-spinner.BOeXV36w.js">
+  <link rel="stylesheet" crossorigin href="https://unpkg.apple.com/@maison/preauthorization-container@0.1.43/umd/assets/pre.4MfbP5qQ.css">
+  <meta name="package-version" content="0.1.43">
+</head>
+<body>
+<div id="page-wrapper">
+    <div id="header">
+        <a href="http://www.apple.com" class="no-text ico-apple">Apple.com</a>
+    </div>
+    <div id="maison-container"></div>
+    <footer id="footer" class="font">
+    <nav class="footer-links" aria-label="footer">
+        <a href="http://www.apple.com" class="no-text ico-apple">Apple.com</a>
+        <span>
+                <l10n-text
+                        key="ITC.HeaderFooter.Copyright.withSymbol"
+                ></l10n-text>
+                <span>
+                    <script>document.write(new Date().getFullYear())</script>
+                </span>
+                <l10n-text
+                        key="ITC.HeaderFooter.Copyright.AppleRightsReserved"
+                ></l10n-text>
+            </span>
+        <a href="https://appstoreconnect.apple.com/olympus/v1/terms/ITC" class="link-gray terms-link">
+            <l10n-text
+                    key="ITC.HeaderFooter.termsOfServiceLinkText"
+            ></l10n-text>
+        </a>
+        <a href="https://www.apple.com/legal/privacy/" class="link-gray">
+            <l10n-text
+                    key="ITC.HeaderFooter.PrivacyPolicyLinkText"
+            ></l10n-text>
+        </a>
+    </nav>
+</footer>
+</div>
+<div id="terms"></div>
+</body>
+</html>' is not a valid HTTP header field value.
+    at XMLHttpRequest.setRequestHeader (https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:2:337192)
+    at https://appstoreconnect.apple.com/access/trends/static/js/main.86e065e2.js:2:693088
+    at we.forEach (https://appstoreconnect.apple.com/access/trends/static/js/main.86e065e2.js:2:689662)
+    at https://appstoreconnect.apple.com/access/trends/static/js/main.86e065e2.js:2:693063
+    at new Promise (<anonymous>)
+    at Ke (https://appstoreconnect.apple.com/access/trends/static/js/main.86e065e2.js:2:692291)
+    at Ue.fetchWithOptions (https://appstoreconnect.apple.com/access/trends/static/js/main.86e065e2.js:2:694269)
+    at https://appstoreconnect.apple.com/access/trends/static/js/main.86e065e2.js:2:778495
+    at new Promise (<anonymous>)
+    at Rr (https://appstoreconnect.apple.com/access/trends/static/js/main.86e065e2.js:2:778451)
+    at https://appstoreconnect.apple.com/access/trends/static/js/main.86e065e2.js:2:788456 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[     399ms] Error: Problem Connecting: SyntaxError: Failed to execute 'setRequestHeader' on 'XMLHttpRequest': 'type html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title></title>
+    <script type="systemjs-importmap">{
+  "imports": {
+    "react-is": "https://unpkg.apple.com/@maison/itc@1.1.2/umd/react-is.production.min.js",
+    "react": "https://unpkg.apple.com/@maison/itc@1.1.2/umd/react.production.min.js",
+    "react-dom": "https://unpkg.apple.com/@maison/itc@1.1.2/umd/react-dom.production.min.js",
+    "styled-components": "https://unpkg.apple.com/@maison/itc@1.1.2/umd/styled-components.min.js"
+  }
+}</script>
+    <link rel="stylesheet" type="text/css" href="https://www.apple.com/wss/fonts?families=SF+Pro,v1|SF+Pro+Icons,v1" media="all">
+  <script type="module" crossorigin src="https://unpkg.apple.com/@maison/preauthorization-container@0.1.43/umd/pre/index.DeM_ju2p.js"></script>
+  <link rel="modulepreload" crossorigin href="https://unpkg.apple.com/@maison/preauthorization-container@0.1.43/umd/chunks/environment.VbDOKqhn.js">
+  <link rel="modulepreload" crossorigin href="https://unpkg.apple.com/@maison/preauthorization-container@0.1.43/umd/chunks/vendor.yGc4Dq3q.js">
+  <link rel="modulepreload" crossorigin href="https://unpkg.apple.com/@maison/preauthorization-container@0.1.43/umd/chunks/loader-spinner.BOeXV36w.js">
+  <link rel="stylesheet" crossorigin href="https://unpkg.apple.com/@maison/preauthorization-container@0.1.43/umd/assets/pre.4MfbP5qQ.css">
+  <meta name="package-version" content="0.1.43">
+</head>
+<body>
+<div id="page-wrapper">
+    <div id="header">
+        <a href="http://www.apple.com" class="no-text ico-apple">Apple.com</a>
+    </div>
+    <div id="maison-container"></div>
+    <footer id="footer" class="font">
+    <nav class="footer-links" aria-label="footer">
+        <a href="http://www.apple.com" class="no-text ico-apple">Apple.com</a>
+        <span>
+                <l10n-text
+                        key="ITC.HeaderFooter.Copyright.withSymbol"
+                ></l10n-text>
+                <span>
+                    <script>document.write(new Date().getFullYear())</script>
+                </span>
+                <l10n-text
+                        key="ITC.HeaderFooter.Copyright.AppleRightsReserved"
+                ></l10n-text>
+            </span>
+        <a href="https://appstoreconnect.apple.com/olympus/v1/terms/ITC" class="link-gray terms-link">
+            <l10n-text
+                    key="ITC.HeaderFooter.termsOfServiceLinkText"
+            ></l10n-text>
+        </a>
+        <a href="https://www.apple.com/legal/privacy/" class="link-gray">
+            <l10n-text
+                    key="ITC.HeaderFooter.PrivacyPolicyLinkText"
+            ></l10n-text>
+        </a>
+    </nav>
+</footer>
+</div>
+<div id="terms"></div>
+</body>
+</html>' is not a valid HTTP header field value.
+    at https://appstoreconnect.apple.com/access/trends/static/js/main.86e065e2.js:2:694373
+[     863ms] [WARNING] document.domain mutation is ignored because the surrounding agent cluster is origin-keyed. @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    1689ms] [WARNING] Metrics config: No config provided via delegate or fetched via init(), using default/cached config values. @ https://appstoreconnect.apple.com/access/static/js/344.d09a59ff782b29d1.js:0
+[    3063ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://appstoreconnect.apple.com/apps/6758618412/distribution/subscriptions/6760442919:0
+[    5922ms] [WARNING] An array is needed to render meta tags @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    7720ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    7720ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    7723ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    7832ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    7977ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    8183ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    8185ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    8251ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    8515ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    8587ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://appstoreconnect.apple.com/partials/app-store/js/date-fns-locale-de-index-js.da22cac8.js:0
+[    8587ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    8587ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    8793ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    8795ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    9161ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    9161ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    9161ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    9162ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    9401ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    9568ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    9568ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    9804ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    9868ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[    9960ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[   10075ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[   10142ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[   10144ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[   10375ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[   10375ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[   10603ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[   10603ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[   10649ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[   10753ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[   10753ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[   10767ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[   10785ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[   11123ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[   11507ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
+[   11964ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.03670225c82d4be0.js:1
