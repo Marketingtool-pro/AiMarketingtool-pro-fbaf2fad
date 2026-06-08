@@ -1,0 +1,73 @@
+- generic [active] [ref=e1]:
+  - banner "App Store Connect" [ref=e3]:
+    - generic [ref=e4]:
+      - heading "App Store Connect" [level=1] [ref=e6]:
+        - link "App Store Connect" [ref=e7] [cursor=pointer]:
+          - /url: /
+      - navigation "Global" [ref=e8]:
+        - list [ref=e29]:
+          - listitem [ref=e30]:
+            - link "Apps" [ref=e31] [cursor=pointer]:
+              - /url: /apps
+          - listitem [ref=e32]:
+            - link "Trends" [ref=e33] [cursor=pointer]:
+              - /url: /trends
+          - listitem [ref=e34]:
+            - link "Reports" [ref=e35] [cursor=pointer]:
+              - /url: /itc/payments_and_financial_reports
+          - listitem [ref=e36]:
+            - link "Business" [ref=e37] [cursor=pointer]:
+              - /url: /business
+          - listitem [ref=e38]:
+            - link "Users and Access" [ref=e39] [cursor=pointer]:
+              - /url: /access/users
+      - button "lokendra singh saingar Lokendra Singh Saingar Account name menu" [ref=e10] [cursor=pointer]:
+        - generic:
+          - generic: lokendra singh saingar
+          - generic: Lokendra Singh Saingar
+          - img [ref=e11]
+  - generic [ref=e43]:
+    - button "Apps menu, MarketingTool - AI Marketing, selected" [ref=e48] [cursor=pointer]:
+      - generic [ref=e49]:
+        - generic "MarketingTool - AI Marketing" [ref=e50]:
+          - img "MarketingTool - AI Marketing" [ref=e51]
+        - generic [ref=e52]: MarketingTool - AI Marketing
+      - img [ref=e54]
+    - navigation "Apps" [ref=e57]:
+      - list [ref=e58]:
+        - listitem [ref=e59]:
+          - link "Distribution" [ref=e60] [cursor=pointer]:
+            - /url: /apps/6758618412/distribution
+        - listitem [ref=e61]:
+          - link "Analytics" [ref=e62] [cursor=pointer]:
+            - /url: /apps/6758618412/analytics
+        - listitem [ref=e63]:
+          - link "TestFlight" [ref=e64] [cursor=pointer]:
+            - /url: /teams/313ffa8d-5aed-4aad-a012-b1057717634c/apps/6758618412/testflight
+        - listitem [ref=e65]:
+          - link "Xcode Cloud" [ref=e66] [cursor=pointer]:
+            - /url: /teams/313ffa8d-5aed-4aad-a012-b1057717634c/apps/6758618412/ci
+  - generic [ref=e13]:
+    - generic:
+      - generic:
+        - generic:
+          - main
+  - contentinfo [ref=e15]:
+    - generic [ref=e16]:
+      - list [ref=e17]:
+        - listitem [ref=e67]:
+          - link "App Store Connect" [ref=e68] [cursor=pointer]:
+            - /url: /apps
+      - list [ref=e20]:
+        - listitem [ref=e21]: Copyright © 2026 Apple Inc. All rights reserved. |
+        - listitem [ref=e22]:
+          - link "Terms of Service" [ref=e23] [cursor=pointer]:
+            - /url: /WebObjects/iTunesConnect.woa/wa/termsOfService
+          - text: "|"
+        - listitem [ref=e24]:
+          - link "Privacy Policy" [ref=e25] [cursor=pointer]:
+            - /url: https://www.apple.com/legal/privacy
+          - text: "|"
+        - listitem [ref=e26]:
+          - link "Contact Us" [ref=e27] [cursor=pointer]:
+            - /url: /contact-us
