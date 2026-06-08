@@ -95,36 +95,26 @@ _docs_ subdirectory. Version-specific documentation is also at
 
 ### Verifying binaries
 
-Download directories contain a `SHASUMS256.txt` file with SHA checksums for the
-files.
+Download directories contain a `SHASUMS256.txt.asc` file with SHA checksums for the
+files and the releaser PGP signature.
 
-To download `SHASUMS256.txt` using `curl`:
-
-```bash
-curl -O https://nodejs.org/dist/vx.y.z/SHASUMS256.txt
-```
-
-To check that downloaded files match the checksum, use `sha256sum`:
+You can get a trusted keyring from nodejs/release-keys, e.g. using `curl`:
 
 ```bash
-sha256sum -c SHASUMS256.txt --ignore-missing
+curl -fsLo "/path/to/nodejs-keyring.kbx" "https://github.com/nodejs/release-keys/raw/HEAD/gpg/pubring.kbx"
 ```
 
-For Current and LTS, the GPG detached signature of `SHASUMS256.txt` is in
-`SHASUMS256.txt.sig`. You can use it with `gpg` to verify the integrity of
-`SHASUMS256.txt`. You will first need to import
-[the GPG keys of individuals authorized to create releases](#release-keys).
+Alternatively, you can import the releaser keys in your default keyring, see
+[Release keys](#release-keys) for commands to how to do that.
 
-See [Release keys](#release-keys) for commands to import active release keys.
-
-Next, download the `SHASUMS256.txt.sig` for the release:
+Then, you can verify the files you've downloaded locally
+(if you're using your default keyring, pass `--keyring="${GNUPGHOME:-~/.gnupg}/pubring.kbx"`):
 
 ```bash
-curl -O https://nodejs.org/dist/vx.y.z/SHASUMS256.txt.sig
+curl -fsO "https://nodejs.org/dist/${VERSION}/SHASUMS256.txt.asc" \
+&& gpgv --keyring="/path/to/nodejs-keyring.kbx" --output SHASUMS256.txt < SHASUMS256.txt.asc \
+&& shasum --check SHASUMS256.txt --ignore-missing
 ```
-
-Then use `gpg --verify SHASUMS256.txt.sig SHASUMS256.txt` to verify
-the file's signature.
 
 ## Building Node.js
 
@@ -178,8 +168,8 @@ For information about the governance of the Node.js project, see
   **Marco Ippolito** <<marcoippolito54@gmail.com>> (he/him)
 * [mcollina](https://github.com/mcollina) -
   **Matteo Collina** <<matteo.collina@gmail.com>> (he/him)
-* [mhdawson](https://github.com/mhdawson) -
-  **Michael Dawson** <<midawson@redhat.com>> (he/him)
+* [panva](https://github.com/panva) -
+  **Filip Skokan** <<panva.ip@gmail.com>> (he/him)
 * [RafaelGSS](https://github.com/RafaelGSS) -
   **Rafael Gonzaga** <<rafael.nunu@hotmail.com>> (he/him)
 * [richardlau](https://github.com/richardlau) -
@@ -246,6 +236,8 @@ For information about the governance of the Node.js project, see
   **Isaac Z. Schlueter** <<i@izs.me>>
 * [joshgav](https://github.com/joshgav) -
   **Josh Gavant** <<josh.gavant@outlook.com>>
+* [mhdawson](https://github.com/mhdawson) -
+  **Michael Dawson** <<midawson@redhat.com>> (he/him)
 * [mmarchini](https://github.com/mmarchini) -
   **Mary Marchini** <<oss@mmarchini.me>> (she/her)
 * [mscdex](https://github.com/mscdex) -
@@ -337,6 +329,8 @@ For information about the governance of the Node.js project, see
   **Gerhard Stöbich** <<deb2001-github@yahoo.de>> (he/they)
 * [gabrielschulhof](https://github.com/gabrielschulhof) -
   **Gabriel Schulhof** <<gabrielschulhof@gmail.com>>
+* [geeksilva97](https://github.com/geeksilva97) -
+  **Edy Silva** <<edigleyssonsilva@gmail.com>> (he/him)
 * [gengjiawen](https://github.com/gengjiawen) -
   **Jiawen Geng** <<technicalcute@gmail.com>>
 * [GeoffreyBooth](https://github.com/GeoffreyBooth) -
@@ -351,6 +345,8 @@ For information about the governance of the Node.js project, see
   **Harshitha K P** <<harshitha014@gmail.com>> (she/her)
 * [himself65](https://github.com/himself65) -
   **Zeyu "Alex" Yang** <<himself65@outlook.com>> (he/him)
+* [IlyasShabi](https://github.com/IlyasShabi) -
+  **Ilyas Shabi** <<ilyasshabi94@gmail.com>> (he/him)
 * [jakecastelli](https://github.com/jakecastelli) -
   **Jake Yuesong Li** <<jake.yuesong@gmail.com>> (he/him)
 * [JakobJingleheimer](https://github.com/JakobJingleheimer) -
@@ -360,7 +356,9 @@ For information about the governance of the Node.js project, see
 * [jazelly](https://github.com/jazelly) -
   **Jason Zhang** <<xzha4350@gmail.com>> (he/him)
 * [jkrems](https://github.com/jkrems) -
-  **Jan Krems** <<jan.krems@gmail.com>> (he/him)
+  **Jan Martin** <<jan.krems@gmail.com>> (he/him)
+* [JonasBa](https://github.com/JonasBa) -
+  **Jonas Badalic** <<jonas.badalic@gmail.com>> (he/him)
 * [joyeecheung](https://github.com/joyeecheung) -
   **Joyee Cheung** <<joyeec9h3@gmail.com>> (she/her)
 * [juanarbol](https://github.com/juanarbol) -
@@ -369,8 +367,6 @@ For information about the governance of the Node.js project, see
   **Minwoo Jung** <<nodecorelab@gmail.com>> (he/him)
 * [KhafraDev](https://github.com/KhafraDev) -
   **Matthew Aitken** <<maitken033380023@gmail.com>> (he/him)
-* [kvakil](https://github.com/kvakil) -
-  **Keyhan Vakil** <<kvakil@sylph.kvakil.me>>
 * [legendecas](https://github.com/legendecas) -
   **Chengzhong Wu** <<legendecas@gmail.com>> (he/him)
 * [lemire](https://github.com/lemire) -
@@ -399,8 +395,6 @@ For information about the governance of the Node.js project, see
   **Xuguang Mei** <<meixuguang@gmail.com>> (he/him)
 * [mhdawson](https://github.com/mhdawson) -
   **Michael Dawson** <<midawson@redhat.com>> (he/him)
-* [mildsunrise](https://github.com/mildsunrise) -
-  **Alba Mendez** <<me@alba.sh>> (she/her)
 * [MoLow](https://github.com/MoLow) -
   **Moshe Atlow** <<moshe@atlow.co.il>> (he/him)
 * [MrJithil](https://github.com/MrJithil) -
@@ -413,10 +407,14 @@ For information about the governance of the Node.js project, see
   **Tim Perry** <<pimterry@gmail.com>> (he/him)
 * [pmarchini](https://github.com/pmarchini)
   **Pietro Marchini** <<pietro.marchini94@gmail.com>> (he/him)
+* [puskin](https://github.com/puskin) -
+  **Giovanni Bucci** <<github@puskin.it>> (he/him)
 * [Qard](https://github.com/Qard) -
   **Stephen Belanger** <<admin@stephenbelanger.com>> (he/him)
 * [RafaelGSS](https://github.com/RafaelGSS) -
   **Rafael Gonzaga** <<rafael.nunu@hotmail.com>> (he/him)
+* [RaisinTen](https://github.com/RaisinTen) -
+  **Darshan Sen** <<raisinten@gmail.com>> (he/him) - [Support me](https://github.com/sponsors/RaisinTen)
 * [richardlau](https://github.com/richardlau) -
   **Richard Lau** <<rlau@redhat.com>>
 * [rluvaton](https://github.com/rluvaton) -
@@ -581,6 +579,8 @@ For information about the governance of the Node.js project, see
   **Kunal Pathak** <<kunal.pathak@microsoft.com>>
 * [kuriyosh](https://github.com/kuriyosh) -
   **Yoshiki Kurihara** <<yosyos0306@gmail.com>> (he/him)
+* [kvakil](https://github.com/kvakil) -
+  **Keyhan Vakil** <<kvakil@sylph.kvakil.me>>
 * [lance](https://github.com/lance) -
   **Lance Ball** <<lball@redhat.com>> (he/him)
 * [Leko](https://github.com/Leko) -
@@ -605,6 +605,8 @@ For information about the governance of the Node.js project, see
   **Mikeal Rogers** <<mikeal.rogers@gmail.com>>
 * [miladfarca](https://github.com/miladfarca) -
   **Milad Fa** <<mfarazma@redhat.com>> (he/him)
+* [mildsunrise](https://github.com/mildsunrise) -
+  **Alba Mendez** <<me@alba.sh>> (she/her)
 * [misterdjules](https://github.com/misterdjules) -
   **Julien Gilli** <<jgilli@netflix.com>>
 * [mmarchini](https://github.com/mmarchini) -
@@ -645,8 +647,6 @@ For information about the governance of the Node.js project, see
   **Peter Marshall** <<petermarshall@chromium.org>> (he/him)
 * [puzpuzpuz](https://github.com/puzpuzpuz) -
   **Andrey Pechkurov** <<apechkurov@gmail.com>> (he/him)
-* [RaisinTen](https://github.com/RaisinTen) -
-  **Darshan Sen** <<raisinten@gmail.com>> (he/him)
 * [refack](https://github.com/refack) -
   **Refael Ackermann (רפאל פלחי)** <<refack@gmail.com>> (he/him/הוא/אתה)
 * [rexagod](https://github.com/rexagod) -
@@ -733,6 +733,8 @@ maintaining the Node.js project.
 
 ### Triagers
 
+* [1ilsang](https://github.com/1ilsang) -
+  **Sangchul Lee** <<1ilsang.dev@gmail.com>> (he/him)
 * [atlowChemi](https://github.com/atlowChemi) -
   **Chemi Atlow** <<chemi@atlow.co.il>> (he/him)
 * [Ayase-252](https://github.com/Ayase-252) -
@@ -753,18 +755,16 @@ maintaining the Node.js project.
   **Frank Qiu** <<iam.frankqiu@gmail.com>> (he/him)
 * [KevinEady](https://github.com/KevinEady) -
   **Kevin Eady** <<kevin.c.eady@gmail.com>> (he/him)
-* [kvakil](https://github.com/kvakil) -
-  **Keyhan Vakil** <<kvakil@sylph.kvakil.me>>
 * [marsonya](https://github.com/marsonya) -
   **Akhil Marsonya** <<akhil.marsonya27@gmail.com>> (he/him)
 * [meixg](https://github.com/meixg) -
   **Xuguang Mei** <<meixuguang@gmail.com>> (he/him)
-* [mertcanaltin](https://github.com/mertcanaltin) -
-  **Mert Can Altin** <<mertgold60@gmail.com>>
+* [milesguicent](https://github.com/milesguicent) -
+  **Miles Guicent** <<guicent@pm.me>> (he/him)
 * [preveen-stack](https://github.com/preveen-stack) -
   **Preveen Padmanabhan** <<wide4head@gmail.com>> (he/him)
-* [RedYetiDev](https://github.com/redyetidev) -
-  **Aviv Keller** <<redyetidev@gmail.com>> (they/them)
+* [RaisinTen](https://github.com/RaisinTen) -
+  **Darshan Sen** <<raisinten@gmail.com>> (he/him)
 * [VoltrexKeyva](https://github.com/VoltrexKeyva) -
   **Mohammed Keyvanzadeh** <<mohammadkeyvanzade94@gmail.com>> (he/him)
 
@@ -776,7 +776,7 @@ responding to new issues.
 Primary GPG keys for Node.js Releasers (some Releasers sign with subkeys):
 
 * **Antoine du Hamel** <<duhamelantoine1995@gmail.com>>
-  `C0D6248439F1D5604AAFFB4021D900FFDB233756`
+  `5BE8A3F6C8A5C01D106C0AD820B1A390B168D356`
 * **Juan José Arboleda** <<soyjuanarbol@gmail.com>>
   `DD792F5973C6DE52C432CBDAC77ABFA00DDBF2B7`
 * **Marco Ippolito** <<marcoippolito54@gmail.com>>
@@ -792,11 +792,14 @@ Primary GPG keys for Node.js Releasers (some Releasers sign with subkeys):
 * **Ulises Gascón** <<ulisesgascongonzalez@gmail.com>>
   `A363A499291CBBC940DD62E41F10027AF002F8B0`
 
-To import the full set of trusted release keys (including subkeys possibly used
-to sign releases):
+You can use the keyring the project maintains at
+<https://github.com/nodejs/release-keys/raw/refs/heads/main/gpg-only-active-keys/pubring.kbx>.
+Alternatively, you can import them from a public key server. Have in mind that
+the project cannot guarantee the availability of the server nor the keys on
+that server.
 
 ```bash
-gpg --keyserver hkps://keys.openpgp.org --recv-keys C0D6248439F1D5604AAFFB4021D900FFDB233756 # Antoine du Hamel
+gpg --keyserver hkps://keys.openpgp.org --recv-keys 5BE8A3F6C8A5C01D106C0AD820B1A390B168D356 # Antoine du Hamel
 gpg --keyserver hkps://keys.openpgp.org --recv-keys DD792F5973C6DE52C432CBDAC77ABFA00DDBF2B7 # Juan José Arboleda
 gpg --keyserver hkps://keys.openpgp.org --recv-keys CC68F5A3106FF448322E48ED27F5E38D5B0A215F # Marco Ippolito
 gpg --keyserver hkps://keys.openpgp.org --recv-keys 8FCCA13FEF1D0C2E91008E09770F7A9A5AE15600 # Michaël Zasso
@@ -813,6 +816,8 @@ verify a downloaded file.
 
 <summary>Other keys used to sign some previous releases</summary>
 
+* **Antoine du Hamel** <<duhamelantoine1995@gmail.com>>
+  `C0D6248439F1D5604AAFFB4021D900FFDB233756`
 * **Beth Griggs** <<bethanyngriggs@gmail.com>>
   `4ED778F539E3634C779C87C6D7062848A1AB005C`
 * **Bryan English** <<bryan@bryanenglish.com>>
@@ -850,6 +855,9 @@ verify a downloaded file.
   `B9E2F5981AA6E0CD28160D9FF13993A75599653C`
 * **Timothy J Fontaine** <<tjfontaine@gmail.com>>
   `7937DFD2AB06298B2293C3187D33FF9D0246406D`
+
+The project maintains a keyring able to verify all past releases of Node.js at
+<https://github.com/nodejs/release-keys/raw/refs/heads/main/gpg/pubring.kbx>.
 
 </details>
 
