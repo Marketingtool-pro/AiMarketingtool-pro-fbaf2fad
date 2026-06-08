@@ -10,7 +10,7 @@
     "type": "git",
     "url": "git+https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad.git"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "author": "",
   "type": "commonjs",
   "main": "index.ts",
