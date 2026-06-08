@@ -225,6 +225,10 @@ export const billingService = {
   async restorePurchases(userId: string) {
     if (!iapAvailable()) return { success: false, error: IAP_UNAVAILABLE_ERROR };
     try {
+      // Must ensure the StoreKit connection is up first, or getAvailablePurchases
+      // throws "Connection not initialized. Call initConnection() first".
+      const ready = await this.initialize();
+      if (!ready) return { success: false, error: 'Store is still starting up. Please try again in a moment.' };
       const purchases = await IAP.getAvailablePurchases();
       if (!purchases || purchases.length === 0) {
         return { success: false, error: 'No purchases found to restore.' };
@@ -244,8 +248,18 @@ export const billingService = {
   },
 
   async end() {
+    // Only tear down the per-screen result listeners here. We deliberately do
+    // NOT call IAP.endConnection() on screen unmount.
+    //
+    // Why: initialize() memoizes its result in `initPromise`. Calling
+    // endConnection() on unmount killed the StoreKit connection while leaving
+    // `initPromise` resolved to `true`, so the NEXT time the paywall opened,
+    // initialize() returned the stale `true` without reconnecting. fetchProducts()
+    // then came back empty ("Subscription products are not available yet") and
+    // getAvailablePurchases() threw "Connection not initialized. Call
+    // initConnection() first." — i.e. the first purchase worked, every later one
+    // failed. Keeping the singleton connection alive for the app session makes
+    // the memoized `initPromise` accurate. The OS reclaims it on app termination.
     this.stopListeners();
-    if (!iapAvailable()) return;
-    try { await IAP.endConnection(); } catch { /* noop */ }
   }
 };
