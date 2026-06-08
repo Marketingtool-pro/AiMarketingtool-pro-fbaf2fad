@@ -15,12 +15,15 @@ import { useAuthStore } from './src/store/authStore';
 import { Colors } from './src/constants/theme';
 import { matomo } from './src/services/matomo';
 import { initializeAppCheck } from './src/services/firebaseAppCheck';
-import perf from '@react-native-firebase/perf';
+// Firebase Performance removed: RNFBPerf with useFrameworks:static crashes iOS
+// on cold start, and the Android deferred-init workaround doesn't cover iOS.
+// Perf is non-essential monitoring — dropped to ship a stable IAP build.
 import crashlytics from '@react-native-firebase/crashlytics';
 import analytics from '@react-native-firebase/analytics';
 import messaging from '@react-native-firebase/messaging';
 import * as TrackingTransparency from 'expo-tracking-transparency';
 import { initRemoteConfig } from './src/services/firebaseRemoteConfig';
+import { initAds } from './src/services/adsService';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -92,9 +95,6 @@ export default function App() {
         .then(() => crashlytics().log('App started'))
         .catch(e => console.warn('Crashlytics init error:', e));
 
-      perf().setPerformanceCollectionEnabled(true)
-        .catch(e => console.warn('Perf init error:', e));
-
       analytics().setAnalyticsCollectionEnabled(true)
         .then(() => analytics().logAppOpen())
         .catch(e => console.warn('Analytics init error:', e));
@@ -119,6 +119,10 @@ export default function App() {
       // Remote Config — deferred so it doesn't block first paint. Falls back
       // to baked-in defaults if fetch fails (see firebaseRemoteConfig.ts).
       initRemoteConfig().catch(e => console.warn('RemoteConfig init error', e));
+
+      // AdMob / Ad Manager — Android only (excluded from iOS). Deferred so the
+      // SDK init network call never gates the splash / cold start.
+      initAds().catch(e => console.warn('Ads init error', e));
     }
 
     prepare();

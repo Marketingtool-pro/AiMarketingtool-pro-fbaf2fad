@@ -424,8 +424,12 @@ const SubscriptionScreen = () => {
           })}
         </View>
 
-        {/* Apple 3.1.1: no Consumable IAP for tokens registered yet. Render card only on Android (Play has SKU "tokens" — 100 Extra Generations product, active in 173 countries) to avoid "misleading UI"/2.1(b) rejection on iOS where the SKU is not registered. */}
-        {Platform.OS !== 'ios' && (
+        {/* Consumable "100 Extra Generations" — registered on BOTH stores now
+            (App Store: pro.marketingtool.tokens, Play: tokens). Must be VISIBLE
+            to the reviewer per Guideline 2.1(b): "make sure they are complete,
+            up-to-date, visible to the reviewer and functional." Hidden only on
+            web (no IAP there). */}
+        {Platform.OS !== 'web' && (
         <TouchableOpacity
           style={{ paddingHorizontal: 20, marginTop: 28 }}
           onPress={() => handlePurchase(TOKENS_SKU)}

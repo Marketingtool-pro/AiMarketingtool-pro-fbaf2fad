@@ -21,6 +21,24 @@ const SUBSCRIPTION_SKUS = new Set(
 export const TOKENS_SKU = Platform.OS === 'ios' ? 'pro.marketingtool.tokens' : 'tokens';
 const CONSUMABLE_SKUS = [TOKENS_SKU];
 
+// ── Google Play subscription model ───────────────────────────────────────────
+// iOS = 6 flat App Store product ids (PLAN_TO_SKU above). Google Play = 3
+// subscription PRODUCTS, each with `monthly` / `yearly` BASE PLANS, purchased via
+// the base plan's offerToken. Map each iOS-style sku -> {Play product id, base
+// plan id}. NOTE: the "Pro" plan's Play product id is `professional` (NOT `pro`).
+// This is why Android purchases failed: the app asked Play for
+// `pro.marketingtool.growth.monthly`, which doesn't exist (the product is `growth`).
+const ANDROID_SUB: Record<string, { product: string; basePlan: string }> = {
+  'pro.marketingtool.starter.monthly': { product: 'starter',      basePlan: 'monthly' },
+  'pro.marketingtool.starter.yearly':  { product: 'starter',      basePlan: 'yearly'  },
+  'pro.marketingtool.pro.monthly':     { product: 'professional', basePlan: 'monthly' },
+  'pro.marketingtool.pro.yearly':      { product: 'professional', basePlan: 'yearly'  },
+  'pro.marketingtool.growth.monthly':  { product: 'growth',       basePlan: 'monthly' },
+  'pro.marketingtool.growth.yearly':   { product: 'growth',       basePlan: 'yearly'  },
+};
+// Distinct Play subscription product ids to fetch on Android.
+const ANDROID_SUB_PRODUCTS = [...new Set(Object.values(ANDROID_SUB).map(v => v.product))];
+
 // Sentinel the UI checks for to silently ignore user-cancelled purchases.
 export const PURCHASE_CANCELLED = '__PURCHASE_CANCELLED__';
 
@@ -92,9 +110,14 @@ export const billingService = {
         // ALWAYS finish the transaction so StoreKit's queue doesn't lock up and
         // block the next purchase. (iOS + Android.)
         try {
+          // isConsumable must be true ONLY for the tokens consumable. The old
+          // `!SUBSCRIPTION_SKUS.has(productId)` was wrong on Android: a sub's
+          // productId there is `starter`/`professional`/`growth` (not the iOS
+          // dotted skus), so it wrongly treated subs as consumable. CONSUMABLE_SKUS
+          // holds the right id per platform ('tokens' / 'pro.marketingtool.tokens').
           await IAP.finishTransaction({
             purchase,
-            isConsumable: !SUBSCRIPTION_SKUS.has(productId),
+            isConsumable: CONSUMABLE_SKUS.includes(productId),
           });
         } catch (e) { console.warn('[Billing] finishTransaction failed:', e); }
 
@@ -134,7 +157,8 @@ export const billingService = {
   async getProducts() {
     if (!iapAvailable()) return [];
     try {
-      const subSkus = [...SUBSCRIPTION_SKUS];
+      // Android fetches the 3 Play subscription PRODUCT ids; iOS fetches the 6 flat skus.
+      const subSkus = Platform.OS === 'android' ? ANDROID_SUB_PRODUCTS : [...SUBSCRIPTION_SKUS];
       const prodSkus = [...CONSUMABLE_SKUS];
 
       const [subscriptions, products] = await Promise.all([
@@ -169,6 +193,40 @@ export const billingService = {
       await this.initialize();
       const available = await this.getProducts();
       if (__DEV__) console.log('[Billing] Available products:', available.map((p: any) => p.id || p.productId));
+      const isSub = SUBSCRIPTION_SKUS.has(sku);
+
+      // ── Android subscriptions: map iOS-style sku -> Play product + base-plan
+      // offer token. Google Play requires purchasing a base plan via its
+      // offerToken, not a flat sku. (This is the fix for zero Android sales.)
+      if (Platform.OS === 'android' && isSub) {
+        const map = ANDROID_SUB[sku];
+        const product: any = map && available.find((p: any) => (p.id || p.productId) === map.product);
+        if (!product) {
+          return { success: false, error: available.length === 0
+            ? 'Subscription products are not available yet. Please try again shortly.'
+            : 'This plan is not available right now. Please contact support.' };
+        }
+        const offers = product.subscriptionOfferDetailsAndroid || product.subscriptionOfferDetails || [];
+        // Prefer the bare base plan (no intro/promo offerId); else any offer on it.
+        const offer = offers.find((o: any) => o.basePlanId === map.basePlan && !o.offerId)
+                   || offers.find((o: any) => o.basePlanId === map.basePlan);
+        if (!offer?.offerToken) {
+          return { success: false, error: 'This plan is not available right now. Please contact support.' };
+        }
+        pendingUserId = userId;
+        await IAP.requestPurchase({
+          request: {
+            android: {
+              skus: [map.product],
+              subscriptionOffers: [{ sku: map.product, offerToken: offer.offerToken }],
+            },
+          },
+          type: 'subs',
+        } as any);
+        return { success: true, pending: true };
+      }
+
+      // ── iOS subscriptions + consumables (both platforms) ──
       const found = available.find((p: any) => (p.id || p.productId) === sku);
       if (!found) {
         const reason = available.length === 0
@@ -177,7 +235,6 @@ export const billingService = {
         return { success: false, error: reason };
       }
 
-      const isSub = SUBSCRIPTION_SKUS.has(sku);
       pendingUserId = userId;
       await IAP.requestPurchase({
         request: { apple: { sku }, google: { skus: [sku] } },
@@ -225,6 +282,10 @@ export const billingService = {
   async restorePurchases(userId: string) {
     if (!iapAvailable()) return { success: false, error: IAP_UNAVAILABLE_ERROR };
     try {
+      // Must ensure the StoreKit connection is up first, or getAvailablePurchases
+      // throws "Connection not initialized. Call initConnection() first".
+      const ready = await this.initialize();
+      if (!ready) return { success: false, error: 'Store is still starting up. Please try again in a moment.' };
       const purchases = await IAP.getAvailablePurchases();
       if (!purchases || purchases.length === 0) {
         return { success: false, error: 'No purchases found to restore.' };
@@ -244,8 +305,18 @@ export const billingService = {
   },
 
   async end() {
+    // Only tear down the per-screen result listeners here. We deliberately do
+    // NOT call IAP.endConnection() on screen unmount.
+    //
+    // Why: initialize() memoizes its result in `initPromise`. Calling
+    // endConnection() on unmount killed the StoreKit connection while leaving
+    // `initPromise` resolved to `true`, so the NEXT time the paywall opened,
+    // initialize() returned the stale `true` without reconnecting. fetchProducts()
+    // then came back empty ("Subscription products are not available yet") and
+    // getAvailablePurchases() threw "Connection not initialized. Call
+    // initConnection() first." — i.e. the first purchase worked, every later one
+    // failed. Keeping the singleton connection alive for the app session makes
+    // the memoized `initPromise` accurate. The OS reclaims it on app termination.
     this.stopListeners();
-    if (!iapAvailable()) return;
-    try { await IAP.endConnection(); } catch { /* noop */ }
   }
 };
