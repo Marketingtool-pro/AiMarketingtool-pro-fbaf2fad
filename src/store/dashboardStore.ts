@@ -93,11 +93,20 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       const now = new Date();
       const { dateRange } = get();
       const daysToShow = dateRange === '30d' ? 30 : dateRange === 'all' ? 90 : 7;
+
+      const dailyGenerationCounts = new Map<string, number>();
+      for (const generation of generations) {
+        if (typeof generation.createdAt !== 'string') continue;
+        if (generation.createdAt.length < 10) continue;
+        const dateKey = generation.createdAt.slice(0, 10);
+        dailyGenerationCounts.set(dateKey, (dailyGenerationCounts.get(dateKey) ?? 0) + 1);
+      }
+
       for (let i = daysToShow - 1; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(now.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
-        const count = generations.filter((g: any) => typeof g.createdAt === 'string' && g.createdAt.startsWith(dateStr)).length;
+        const count = dailyGenerationCounts.get(dateStr) ?? 0;
         performanceData.push({ date: dateStr, value: count });
       }
 
