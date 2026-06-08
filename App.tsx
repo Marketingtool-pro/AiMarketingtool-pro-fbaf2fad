@@ -23,6 +23,7 @@ import analytics from '@react-native-firebase/analytics';
 import messaging from '@react-native-firebase/messaging';
 import * as TrackingTransparency from 'expo-tracking-transparency';
 import { initRemoteConfig } from './src/services/firebaseRemoteConfig';
+import { initAds } from './src/services/adsService';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -118,6 +119,10 @@ export default function App() {
       // Remote Config — deferred so it doesn't block first paint. Falls back
       // to baked-in defaults if fetch fails (see firebaseRemoteConfig.ts).
       initRemoteConfig().catch(e => console.warn('RemoteConfig init error', e));
+
+      // AdMob / Ad Manager — Android only (excluded from iOS). Deferred so the
+      // SDK init network call never gates the splash / cold start.
+      initAds().catch(e => console.warn('Ads init error', e));
     }
 
     prepare();

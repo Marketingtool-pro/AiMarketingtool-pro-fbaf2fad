@@ -7,5 +7,13 @@ module.exports = {
     // Static-framework compatibility is handled by expo-build-properties
     // forceStaticLinking: ["NitroIap"] + the NitroIap build-settings patch in
     // plugins/withEasPodfileFix.js.
+
+    // AdMob / Ad Manager is ANDROID-ONLY by request. Excluding it from iOS
+    // autolinking keeps the Google-Mobile-Ads SDK out of the iOS binary entirely
+    // (the iOS app is in App Review and must not change). All JS usage is
+    // Platform-guarded + lazy-required (see src/services/adsService.ts) so iOS
+    // never touches the native bindings. To enable iOS later: remove this line,
+    // add `iosAppId` to the app.json plugin, and rebuild iOS.
+    'react-native-google-mobile-ads': { platforms: { ios: null } },
   },
 };
