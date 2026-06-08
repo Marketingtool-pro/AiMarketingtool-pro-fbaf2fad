@@ -88,3 +88,29 @@
   - Firestore data-path questions (`generations`, `chat_sessions`, `chat_messages`)
   - App Check / Messaging / Secret Manager investigations
   - Verifying deployed backend config before changing mobile-side fallbacks
+
+## Android SDK & Compile Requirements (API 36 / Android 16)
+- **Important**: This project uses Expo SDK 56 which relies on `WindowCompat.enableEdgeToEdge()` inside `expo-dev-launcher`. This API requires compiling against **Android 16 (API 36)**.
+- Always ensure `compileSdkVersion` and `targetSdkVersion` are set to `36` in both `android/build.gradle` and `app.json` (under `expo-build-properties` plugin configurations).
+- **Core Dependency Pin**: Do **NOT** pin `androidx.core` to older versions (e.g., `1.15.0`) in Gradle's `resolutionStrategy` because it will cause compilation errors with unresolved edge-to-edge references.
+
+## Native Graphics & Skia Binaries
+- The `@shopify/react-native-skia` native module requires prebuilt binaries to compile on Android.
+- If native compilation fails due to missing `libskia.a`, always run:
+  `npx install-skia`
+  This downloads and places the required `.a` libraries under `node_modules/@shopify/react-native-skia/libs/android/`.
+
+## Package Management & GitHub Packages
+- The project publishes Node.js packages directly to **GitHub Packages** (`npm.pkg.github.com`).
+- npm package publishing is automated via GitHub Actions in `.github/workflows/publish-package.yml` and `.github/workflows/npm-publish-github-packages.yml`.
+- Creating and publishing a new **GitHub Release** (e.g., `v1.5.0`) automatically pushes the git tag and triggers the publishing workflows using the repository secrets.
+
+## Deployment & CI/CD
+
+### Android EAS Build & Submit
+- The GitHub Actions runner executes `.github/workflows/production-deploy.yml` on push to the `Master` branch or on tag creation `v*.*.*`.
+- It executes `eas build --platform android --profile production` and automatically submits the compiled AAB to the Play Store via `eas submit --platform android`.
+
+### Firebase Web Hosting
+- Web builds are compiled using Expo Web Export (`npm run build` triggers `expo export --platform web`).
+- The generated output in `dist/` is automatically deployed to Firebase Hosting (`marketing-tool-484720`) via the `.github/workflows/firebase-hosting-merge.yml` workflow using the configured `firebase.json`.
