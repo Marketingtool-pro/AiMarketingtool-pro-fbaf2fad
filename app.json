@@ -165,10 +165,12 @@
       "expo-asset",
       "expo-tracking-transparency",
       "./plugins/withKotlinKspFix.js",
+      "./plugins/withAndroidxCorePin.js",
+      "./plugins/withRNEdgeToEdgeFix.js",
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "androidAppId": "ca-app-pub-2789940907288323~8551339904",
           "delayAppMeasurementInit": true
         }
       ]

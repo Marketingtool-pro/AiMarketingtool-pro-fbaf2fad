@@ -3,18 +3,24 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
+ *
+ * ── PATCHED (react-android 0.85.3-e2e.1) ──────────────────────────────────────
+ * Removes the Android-15-deprecated Window.getStatusBarColor / setStatusBarColor
+ * references that Google Play (Android vitals) flags:
+ *   • getTypedExportedConstants(): no longer reads window.statusBarColor — returns
+ *     a constant "black" default (DEFAULT_BACKGROUND_COLOR is informational only).
+ *   • setColor(): no longer reads/writes window.statusBarColor. Under edge-to-edge
+ *     it already early-returns; for legacy mode the colour set is a no-op (the app
+ *     drives system-bar appearance via react-native-edge-to-edge / WindowInsets).
+ * Every overridden method signature is IDENTICAL to upstream 0.85.3 so the
+ * TurboModule spec + JS bridge link unchanged.
  */
 
 package com.facebook.react.modules.statusbar
 
-import android.animation.ArgbEvaluator
-import android.animation.ValueAnimator
-import android.graphics.Color
 import android.os.Build
 import android.view.View
 import android.view.WindowInsetsController
-import android.view.WindowManager
-import androidx.core.view.WindowInsetsControllerCompat
 import com.facebook.common.logging.FLog
 import com.facebook.fbreact.specs.NativeStatusBarManagerAndroidSpec
 import com.facebook.react.bridge.GuardedRunnable
@@ -24,6 +30,9 @@ import com.facebook.react.bridge.UiThreadUtil
 import com.facebook.react.common.ReactConstants
 import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.uimanager.PixelUtil
+// NOTE: DisplayMetricsHolder.getStatusBarHeightPx is `internal` in react-android and
+// can't be referenced from this separately-compiled patch module. The status-bar
+// height is read from the platform "status_bar_height" dimen resource instead.
 import com.facebook.react.views.view.isEdgeToEdgeFeatureFlagOn
 import com.facebook.react.views.view.setStatusBarTranslucency
 import com.facebook.react.views.view.setStatusBarVisibility
@@ -33,38 +42,21 @@ import com.facebook.react.views.view.setStatusBarVisibility
 internal class StatusBarModule(reactContext: ReactApplicationContext?) :
     NativeStatusBarManagerAndroidSpec(reactContext) {
 
-  /**
-   * Cache of the last color set via [setColor]. Used on API 35+ where
-   * Window.getStatusBarColor() is deprecated and unavailable without suppression.
-   */
-  private var cachedStatusBarColor: Int? = null
-
   override fun getTypedExportedConstants(): Map<String, Any> {
-    val currentActivity = reactApplicationContext.currentActivity
-    val statusBarColor =
-        if (Build.VERSION.SDK_INT >= 35) {
-          cachedStatusBarColor?.let { String.format("#%08X", 0xFFFFFFFF.toInt() and it) } ?: "#000000"
-        } else {
-          @Suppress("DEPRECATION")
-          currentActivity?.window?.statusBarColor?.let { color ->
-            String.format("#%08X", 0xFFFFFFFF.toInt() and color)
-          } ?: "#000000"
-        }
+    // Patched: status-bar height via the platform dimen resource instead of the
+    // internal DisplayMetricsHolder.getStatusBarHeightPx helper. And do NOT read
+    // window.statusBarColor (deprecated Window.getStatusBarColor, flagged by Google
+    // Play on Android 15). DEFAULT_BACKGROUND_COLOR is informational only.
+    val res = (reactApplicationContext.currentActivity ?: reactApplicationContext).resources
+    val resId = res.getIdentifier("status_bar_height", "dimen", "android")
+    val heightPx = if (resId > 0) res.getDimensionPixelSize(resId) else 0
     return mapOf(
-        HEIGHT_KEY to PixelUtil.toDIPFromPixel(statusBarHeightPx(currentActivity).toFloat()),
-        DEFAULT_BACKGROUND_COLOR_KEY to statusBarColor,
+        HEIGHT_KEY to PixelUtil.toDIPFromPixel(heightPx.toFloat()),
+        DEFAULT_BACKGROUND_COLOR_KEY to "black",
     )
   }
 
-  /** Returns status bar height in pixels using the public Android resources API. */
-  private fun statusBarHeightPx(context: android.content.Context?): Int {
-    val res = context?.resources ?: android.content.res.Resources.getSystem()
-    val id = res.getIdentifier("status_bar_height", "dimen", "android")
-    return if (id > 0) res.getDimensionPixelSize(id) else 0
-  }
-
   override fun setColor(colorDouble: Double, animated: Boolean) {
-    val color = colorDouble.toInt()
     val activity = reactApplicationContext.getCurrentActivity()
     if (activity == null) {
       FLog.w(
@@ -80,30 +72,13 @@ internal class StatusBarModule(reactContext: ReactApplicationContext?) :
       )
       return
     }
-    cachedStatusBarColor = color
-    UiThreadUtil.runOnUiThread(
-        object : GuardedRunnable(reactApplicationContext) {
-          override fun runGuarded() {
-            val window = activity.window ?: return
-            if (animated) {
-              val curColor: Int =
-                  if (Build.VERSION.SDK_INT >= 35) {
-                    cachedStatusBarColor ?: Color.BLACK
-                  } else {
-                    @Suppress("DEPRECATION")
-                    window.statusBarColor
-                  }
-              val colorAnimation = ValueAnimator.ofObject(ArgbEvaluator(), curColor, color)
-              colorAnimation.addUpdateListener { animator ->
-                applyStatusBarColor(activity.window, animator.animatedValue as Int)
-              }
-              colorAnimation.setDuration(300).startDelay = 0
-              colorAnimation.start()
-            } else {
-              applyStatusBarColor(window, color)
-            }
-          }
-        }
+    // Patched: the deprecated Window.setStatusBarColor / getStatusBarColor calls are
+    // REMOVED (Google Play flags them on Android 15). Setting an opaque status-bar
+    // colour is incompatible with edge-to-edge; system-bar appearance is driven via
+    // react-native-edge-to-edge / WindowInsetsController instead. No-op here.
+    FLog.w(
+        ReactConstants.TAG,
+        "StatusBarModule: setColor is a no-op on Android 15 edge-to-edge builds.",
     )
   }
 
@@ -183,35 +158,6 @@ internal class StatusBarModule(reactContext: ReactApplicationContext?) :
           }
         }
     )
-  }
-
-  /**
-   * Applies a status bar background color.
-   * API < 35: uses Window.setStatusBarColor() (correct on these versions).
-   * API >= 35: setting status bar color is deprecated; newer platform behavior keeps the bar
-   *            transparent by policy, so this only syncs icon appearance to the requested
-   *            color's luminance.
-   */
-  private fun applyStatusBarColor(window: android.view.Window?, color: Int) {
-    window ?: return
-    cachedStatusBarColor = color
-    if (Build.VERSION.SDK_INT < 35) {
-      @Suppress("DEPRECATION")
-      window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-      @Suppress("DEPRECATION")
-      window.statusBarColor = color
-    }
-    WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars =
-        isColorLight(color)
-  }
-
-  /** Returns true if the color has high enough luminance to warrant dark (visible) icons. */
-  private fun isColorLight(color: Int): Boolean {
-    val r = Color.red(color) / 255.0
-    val g = Color.green(color) / 255.0
-    val b = Color.blue(color) / 255.0
-    val luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
-    return luminance > 0.179
   }
 
   companion object {

@@ -3,6 +3,19 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
+ *
+ * ── PATCHED (react-android 0.85.3-e2e.1) ──────────────────────────────────────
+ * Removes EVERY reference to the Android-15-deprecated edge-to-edge APIs that
+ * Google Play (Android vitals) flags — not just runtime-guards them, because Play
+ * scans for the static bytecode references:
+ *   • Window.setStatusBarColor      (statusBarColor = …)        → removed
+ *   • Window.setNavigationBarColor  (navigationBarColor = …)    → removed
+ *   • LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES                 → ALWAYS
+ *   • LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT                     → ALWAYS
+ * Edge-to-edge transparency is handled by WindowCompat.setDecorFitsSystemWindows
+ * + WindowInsetsControllerCompat, so the colour setters are unnecessary anyway.
+ * Public/internal API signatures are IDENTICAL to upstream 0.85.3 so the rest of
+ * react-android and the JS bridge link unchanged.
  */
 
 package com.facebook.react.views.view
@@ -16,6 +29,9 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+// NOTE: com.facebook.react.views.common.UiModeUtils is `internal` in react-android,
+// so it can't be referenced from this separately-compiled patch module. Use a manual
+// Configuration check instead (identical result).
 
 internal val LightNavigationBarColor = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
 internal val DarkNavigationBarColor = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
@@ -46,7 +62,11 @@ internal fun Window.setStatusBarTranslucency(isTranslucent: Boolean) {
 }
 
 internal fun Window.setStatusBarVisibility(isHidden: Boolean) {
-  if (isHidden) this.statusBarHide() else this.statusBarShow()
+  if (isHidden) {
+    this.statusBarHide()
+  } else {
+    this.statusBarShow()
+  }
 }
 
 @Suppress("DEPRECATION")
@@ -58,6 +78,7 @@ private fun Window.statusBarHide() {
     }
   } else {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      // Patched: SHORT_EDGES (deprecated/flagged) -> ALWAYS
       attributes.layoutInDisplayCutoutMode =
           WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
       setDecorFitsSystemWindows(false)
@@ -76,6 +97,7 @@ private fun Window.statusBarShow() {
     }
   } else {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      // Patched: DEFAULT (deprecated/flagged) -> ALWAYS
       attributes.layoutInDisplayCutoutMode =
           WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
       setDecorFitsSystemWindows(true)
@@ -87,39 +109,31 @@ private fun Window.statusBarShow() {
 
 internal fun Window.enableEdgeToEdge() {
   WindowCompat.setDecorFitsSystemWindows(this, false)
-  val isDarkMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-      Configuration.UI_MODE_NIGHT_YES
+
+  val isDarkMode =
+      (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+          Configuration.UI_MODE_NIGHT_YES
 
   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
     isStatusBarContrastEnforced = false
     isNavigationBarContrastEnforced = true
   }
 
-  if (Build.VERSION.SDK_INT < 35) {
-    @Suppress("DEPRECATION")
-    statusBarColor = Color.TRANSPARENT
-    @Suppress("DEPRECATION")
-    navigationBarColor =
-        when {
-          Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> Color.TRANSPARENT
-          Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !isDarkMode -> LightNavigationBarColor
-          else -> DarkNavigationBarColor
-        }
-  }
+  // Patched: the deprecated `statusBarColor` / `navigationBarColor` setters are
+  // REMOVED entirely (Google Play flags the static references on Android 15).
+  // Under edge-to-edge the system bars are transparent via setDecorFitsSystemWindows
+  // above + the insets controller below, so the colour setters are not needed.
+  // LightNavigationBarColor / DarkNavigationBarColor are retained as module-internal
+  // constants for API compatibility with the rest of react-android.
 
   WindowInsetsControllerCompat(this, decorView).run {
-    isAppearanceLightStatusBars = !isDarkMode
     isAppearanceLightNavigationBars = !isDarkMode
   }
 
   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+    // Patched: SHORT_EDGES (deprecated/flagged) -> ALWAYS on all supported levels.
     attributes.layoutInDisplayCutoutMode =
-        when {
-          Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ->
-              WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
-          else ->
-              WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-        }
+        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
   }
 }
 
