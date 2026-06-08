@@ -35,8 +35,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.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 }}
         run: |
-          AAR_VERSION="0.83.6-e2e.1"
-          ORIG_VERSION="0.83.6"
+          AAR_VERSION="0.85.3-e2e.1"
+          ORIG_VERSION="0.85.3"
           AAR_FILE="android-patches/build/patched/react-android-${AAR_VERSION}.aar"
           TAG="react-android-${AAR_VERSION}"
 
@@ -59,4 +59,4 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: react-android-patched
-          path: android-patches/build/patched/react-android-0.83.6-e2e.1.aar
+          path: android-patches/build/patched/react-android-0.85.3-e2e.1.aar
