@@ -164,7 +164,14 @@
       "expo-web-browser",
       "expo-asset",
       "expo-tracking-transparency",
-      "./plugins/withKotlinKspFix.js"
+      "./plugins/withKotlinKspFix.js",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "delayAppMeasurementInit": true
+        }
+      ]
     ],
     "extra": {
       "appwriteEndpoint": "https://api.marketingtool.pro/v1",

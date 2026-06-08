@@ -94,6 +94,10 @@ jobs:
 
   build-submit-ios:
     name: Build + Submit (iOS, with IAPs)
+    # iOS builds ONLY on a version tag push (v*.*.*). A manual run
+    # (workflow_dispatch) is Android-only — so "build Android" never also burns an
+    # iOS build. To ship iOS, push a tag.
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
