@@ -21,6 +21,30 @@ const SUBSCRIPTION_SKUS = new Set(
 export const TOKENS_SKU = Platform.OS === 'ios' ? 'pro.marketingtool.tokens' : 'tokens';
 const CONSUMABLE_SKUS = [TOKENS_SKU];
 
+// Map a purchased product id -> the entitlement it grants, so the app can unlock
+// the moment StoreKit/Play confirms the transaction WITHOUT waiting on a server
+// round-trip. This is the fix for Guideline 2.1(b) ("pro feature remained locked
+// after purchase"): in Apple's sandbox the server verify can fail, but the
+// finished transaction is itself proof of purchase and must unlock immediately.
+// Covers BOTH the iOS flat skus and the Android Play product ids (starter /
+// professional / growth).
+export type Entitlement = { tier: 'starter' | 'pro' | 'enterprise'; generationsLimit: number };
+const PRODUCT_TO_ENTITLEMENT: Record<string, Entitlement> = {
+  'pro.marketingtool.starter.monthly': { tier: 'starter', generationsLimit: 200 },
+  'pro.marketingtool.starter.yearly':  { tier: 'starter', generationsLimit: 200 },
+  'pro.marketingtool.pro.monthly':     { tier: 'pro',      generationsLimit: 500 },
+  'pro.marketingtool.pro.yearly':      { tier: 'pro',      generationsLimit: 500 },
+  'pro.marketingtool.growth.monthly':  { tier: 'enterprise', generationsLimit: 9999 },
+  'pro.marketingtool.growth.yearly':   { tier: 'enterprise', generationsLimit: 9999 },
+  // Android Play subscription product ids:
+  'starter':      { tier: 'starter',    generationsLimit: 200 },
+  'professional': { tier: 'pro',        generationsLimit: 500 },
+  'growth':       { tier: 'enterprise', generationsLimit: 9999 },
+};
+
+export const entitlementForProduct = (productId: string): Entitlement | null =>
+  PRODUCT_TO_ENTITLEMENT[productId] ?? null;
+
 // ── Google Play subscription model ───────────────────────────────────────────
 // iOS = 6 flat App Store product ids (PLAN_TO_SKU above). Google Play = 3
 // subscription PRODUCTS, each with `monthly` / `yearly` BASE PLANS, purchased via
@@ -296,8 +320,20 @@ export const billingService = {
       const successCount = results.filter(
         (r) => r.status === 'fulfilled' && r.value.success
       ).length;
+      // Resolve the highest entitlement among the restored purchases so the caller
+      // can unlock Pro locally even when the server verify is unavailable (same
+      // root cause as the purchase flow — must not depend on a server round-trip).
+      const rank = { starter: 1, pro: 2, enterprise: 3 } as const;
+      let entitlement: Entitlement | null = null;
+      for (const p of purchases) {
+        const pid = (p as any).productId || (p as any).id || '';
+        const ent = entitlementForProduct(pid);
+        if (ent && (!entitlement || rank[ent.tier] > rank[entitlement.tier])) {
+          entitlement = ent;
+        }
+      }
       // Even if server verify is unavailable, having active purchases counts as restored.
-      return { success: successCount > 0 || purchases.length > 0, count: successCount || purchases.length };
+      return { success: successCount > 0 || purchases.length > 0, count: successCount || purchases.length, entitlement };
     } catch (err: any) {
       console.error('[Billing] Restore error:', err);
       return { success: false, error: err.message };
