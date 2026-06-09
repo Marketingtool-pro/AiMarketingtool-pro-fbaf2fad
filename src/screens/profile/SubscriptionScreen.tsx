@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import * as Haptics from 'expo-haptics';
-import { billingService, PURCHASE_CANCELLED, TOKENS_SKU } from '../../services/billingService';
+import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, entitlementForProduct } from '../../services/billingService';
 import { functions } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 
@@ -37,7 +37,7 @@ interface Plan {
 
 const SubscriptionScreen = () => {
   const navigation = useNavigation();
-  const { profile, refreshProfile } = useAuthStore();
+  const { profile, refreshProfile, grantEntitlement } = useAuthStore();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [selectedPlan, setSelectedPlan] = useState<string>('pro');
   const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +49,7 @@ const SubscriptionScreen = () => {
     if (Platform.OS === 'web') return;
     billingService.initialize().catch(err => console.error('[Billing] Init failed:', err));
     billingService.startListeners({
-      onSuccess: () => {
+      onSuccess: async (productId: string) => {
         setIsLoading(false);
         const kind = pendingKindRef.current;
         pendingKindRef.current = null;
@@ -58,8 +58,13 @@ const SubscriptionScreen = () => {
             { text: 'OK', onPress: () => { refreshProfile(); } },
           ]);
         } else {
+          // Unlock Pro immediately from the finished transaction — do NOT wait on
+          // the server verify (it can fail in Apple's sandbox). This is the fix
+          // for "pro feature remained locked after purchase".
+          const ent = entitlementForProduct(productId);
+          if (ent) await grantEntitlement(ent.tier, ent.generationsLimit);
           Alert.alert('Success', 'Your subscription is now active!', [
-            { text: 'OK', onPress: () => { refreshProfile(); navigation.goBack(); } },
+            { text: 'OK', onPress: () => { navigation.goBack(); } },
           ]);
         }
       },
@@ -275,8 +280,12 @@ const SubscriptionScreen = () => {
     try {
       const result = await billingService.restorePurchases(userId);
       if (result.success) {
+        // Unlock locally from the restored entitlement — don't depend on server verify.
+        if (result.entitlement) {
+          await grantEntitlement(result.entitlement.tier, result.entitlement.generationsLimit);
+        }
         Alert.alert('Restored', `${result.count ?? 0} purchase(s) restored.`, [
-          { text: 'OK', onPress: () => { refreshProfile(); navigation.goBack(); } },
+          { text: 'OK', onPress: () => { navigation.goBack(); } },
         ]);
       } else {
         Alert.alert('Nothing to Restore', result.error || 'No previous purchases found for this Apple ID / Google account.');

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { dbService, COLLECTIONS, Query, client, DATABASE_ID } from '../services/appwrite';
 import { Models } from 'react-native-appwrite';
 import { useAuthStore } from './authStore';
+import { Generation } from './toolsStore';
 
 export interface DashboardMetric {
   id: string;
@@ -70,7 +71,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       // 1. Fetch Generations for basic metrics (for now)
-      const generationsResult = await dbService.listDocuments(
+      const generationsResult = await dbService.listDocuments<Generation & Models.Document>(
         COLLECTIONS.GENERATIONS,
         [Query.equal('userId', userId), Query.orderDesc('createdAt'), Query.limit(100)]
       );

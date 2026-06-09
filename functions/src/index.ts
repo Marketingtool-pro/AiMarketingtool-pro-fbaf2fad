@@ -64,8 +64,8 @@ const toolExecutorFlow = ai.defineFlow(
   },
   async ({ toolSlug, toolName, inputs, input, outputCount, userId, model: modelOverride }) => {
     // Choose model: Remote Config override → complexity-based default
-    const modelId = modelOverride
-      ?? (COMPLEX_TOOLS.has(toolSlug) ? "gemini-2.5-flash" : "gemini-2.5-flash-lite");
+    const modelId = modelOverride ??
+      (COMPLEX_TOOLS.has(toolSlug) ? "gemini-2.5-flash" : "gemini-2.5-flash-lite");
     const model = googleAI.model(modelId);
 
     const systemPrompt = `You are an expert marketing AI. Generate ${outputCount} high-quality ${toolName} outputs.
@@ -92,9 +92,9 @@ const toolExecutorFlow = ai.defineFlow(
     const content = response.text;
 
     // Split into variations
-    const outputs = content.includes("---VARIATION---")
-      ? content.split("---VARIATION---").map((s) => s.trim()).filter((s) => s.length > 20).slice(0, outputCount)
-      : [content.trim()];
+    const outputs = content.includes("---VARIATION---") ?
+      content.split("---VARIATION---").map((s) => s.trim()).filter((s) => s.length > 20).slice(0, outputCount) :
+      [content.trim()];
 
     // Save to Firestore history if userId provided
     if (userId) {
@@ -106,7 +106,7 @@ const toolExecutorFlow = ai.defineFlow(
           input: inputs || { prompt: input },
           output: outputs.join("\n\n---\n\n"),
           outputType: "text",
-        model: modelId,
+          model: modelId,
           tokensUsed: response.usage?.totalTokens ?? 0,
           isFavorite: false,
           createdAt: FieldValue.serverTimestamp(),
