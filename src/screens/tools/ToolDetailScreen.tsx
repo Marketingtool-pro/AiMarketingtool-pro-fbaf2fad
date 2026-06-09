@@ -31,7 +31,7 @@ const ToolDetailScreen = () => {
   const route = useRoute<RouteType>();
   const { toolSlug, prefillInputs } = route.params;
   const { tools, generateContent, isGenerating } = useToolsStore();
-  const { profile } = useAuthStore();
+  const { profile, localSubscriptionOverride } = useAuthStore();
 
   const [tool, setTool] = useState<Tool | null>(null);
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
@@ -76,7 +76,7 @@ const ToolDetailScreen = () => {
     if (!validateInputs() || !tool || isGenerating) return;
 
     // PRO LOCK: gate Pro tools for free users
-    if (tool.isPro && profile?.subscription === 'free') {
+    if (tool.isPro && profile?.subscription === 'free' && localSubscriptionOverride === 'free') {
       Alert.alert(
         '🔒 Pro Tool Locked',
         `${tool.name} is a Professional plan feature. Upgrade to unlock 500+ generations/month, advanced automation, and cross-platform intelligence.`,
@@ -93,6 +93,7 @@ const ToolDetailScreen = () => {
     // never set, so it evaluated to 0<=0 and blocked EVERY free generation.
     if (
       profile?.subscription === 'free' &&
+      localSubscriptionOverride === 'free' &&
       (profile?.generationsUsed ?? 0) >= (profile?.generationsLimit ?? 10)
     ) {
       Alert.alert(
@@ -247,7 +248,7 @@ const ToolDetailScreen = () => {
                 'zap' because Tool.icon is hardcoded to 'zap' in toolsStore. */}
             <View style={[styles.toolIcon, { backgroundColor: Colors.secondary + '20' }]}>
               <Image source={getToolIcon(tool.slug)} style={{ width: 48, height: 48 }} resizeMode="contain" />
-              {tool.isPro && profile?.subscription === 'free' && (
+              {tool.isPro && profile?.subscription === 'free' && localSubscriptionOverride === 'free' && (
                 <View style={styles.lockOverlay}>
                   <Feather name="lock" size={18} color="#FFF" />
                 </View>
@@ -366,7 +367,7 @@ const ToolDetailScreen = () => {
           </View>
 
           {/* Credits Info */}
-          {profile?.subscription === 'free' && (
+          {profile?.subscription === 'free' && localSubscriptionOverride === 'free' && (
             <View style={styles.creditsInfo}>
               <Feather name="zap" size={20} color={Colors.warning} />
               <Text style={styles.creditsText}>
@@ -388,7 +389,7 @@ const ToolDetailScreen = () => {
             user knows BEFORE tapping. */}
         <View style={styles.generateContainer}>
           {(() => {
-            const isLockedForUser = tool.isPro && profile?.subscription === 'free';
+            const isLockedForUser = tool.isPro && profile?.subscription === 'free' && localSubscriptionOverride === 'free';
             return (
               <TouchableOpacity
                 onPress={handleGenerate}
