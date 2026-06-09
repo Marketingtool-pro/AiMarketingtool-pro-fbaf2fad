@@ -75,7 +75,7 @@ const iapAvailable = (): boolean => {
 const IAP_UNAVAILABLE_ERROR = 'In-app purchase is not available on this device.';
 
 export type PurchaseCallbacks = {
-  onSuccess: (productId: string) => void;
+  onSuccess: (productId: string, entitlement?: Entitlement | null) => void;
   onError: (message: string) => void;
 };
 
@@ -149,7 +149,7 @@ export const billingService = {
           try { await IAP.acknowledgePurchaseAndroid(p.purchaseToken); } catch { /* noop */ }
         }
 
-        callbacks?.onSuccess(productId);
+        callbacks?.onSuccess(productId, entitlementForProduct(productId));
       } catch (err: any) {
         console.error('[Billing] purchaseUpdated handler error:', err);
         callbacks?.onError(err?.message || 'Could not complete the purchase.');
