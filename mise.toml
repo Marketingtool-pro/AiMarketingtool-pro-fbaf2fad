@@ -2,6 +2,7 @@
 java = "temurin-21.0.5"
 
 [tasks.ci]
-description = "Run continuous integration build"
-run = "cd marketing-tool-484720 && ./gradlew clean test"
+description = "Run continuous integration build for Android App"
+# Changes context to the native android app directory to execute gradle
+run = "cd android && ./gradlew clean test"
 
