@@ -1,7 +1,7 @@
 [tools]
-java = "21.0.5-tem"
+java = "temurin-21.0.5"
 
 [tasks.ci]
 description = "Run continuous integration build"
-run = "./gradlew clean test"
+run = "cd marketing-tool-484720 && ./gradlew clean test"
 
