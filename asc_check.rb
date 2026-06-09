@@ -11,9 +11,9 @@
 #   BUILD_NUMBER=514 ruby asc_check.rb    # check a specific build number
 #
 # Env:
-#   ASC_KEY_ID     App Store Connect API key ID   (default: 69JDXUCPU3)
-#   ASC_ISSUER_ID  ASC issuer ID                  (default: 313ffa8d-…)
-#   ASC_APP_ID     Numeric app ID                 (default: 6758618412)
+#   ASC_KEY_ID     App Store Connect API key ID   (required)
+#   ASC_ISSUER_ID  ASC issuer ID                  (required)
+#   ASC_APP_ID     Numeric app ID                 (required)
 #   ASC_KEY_PATH   Path to AuthKey_<id>.p8        (default: ../AuthKey_<id>.p8)
 #   BUILD_NUMBER   Specific build to wait for     (optional)
 #   POLL_INTERVAL  Seconds between polls          (default: 30)
@@ -25,9 +25,9 @@ require 'net/http'
 require 'json'
 require 'uri'
 
-KEY_ID       = ENV.fetch('ASC_KEY_ID',    '69JDXUCPU3')
-ISSUER_ID    = ENV.fetch('ASC_ISSUER_ID', '313ffa8d-5aed-4aad-a012-b1057717634c')
-APP_ID       = ENV.fetch('ASC_APP_ID',    '6758618412')
+KEY_ID       = ENV.fetch('ASC_KEY_ID')
+ISSUER_ID    = ENV.fetch('ASC_ISSUER_ID')
+APP_ID       = ENV.fetch('ASC_APP_ID')
 KEY_PATH     = ENV.fetch('ASC_KEY_PATH',  File.expand_path("../AuthKey_#{KEY_ID}.p8", __dir__))
 WANT_BUILD   = ENV['BUILD_NUMBER']
 POLL_INTERVAL = (ENV['POLL_INTERVAL'] || '30').to_i
@@ -51,7 +51,7 @@ def asc_get(path)
   token = generate_token
   uri = URI("#{BASE}#{path}")
   r = Net::HTTP::Get.new(uri)
-  r['Authorization'] = "******"
+  r['Authorization'] = "Bearer #{token}"
   r['Content-Type']  = 'application/json'
   res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(r) }
   JSON.parse(res.body)

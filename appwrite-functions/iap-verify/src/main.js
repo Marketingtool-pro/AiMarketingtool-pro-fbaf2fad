@@ -96,6 +96,9 @@ module.exports = async ({ req, res, log, error }) => {
   if (platform === "ios" && appleReceipt) {
     try {
       const sharedSecret = process.env.APPLE_SHARED_SECRET;
+      if (!sharedSecret) {
+        log("WARNING: APPLE_SHARED_SECRET not configured — skipping server-side receipt validation");
+      }
       if (sharedSecret) {
         const verifyUrl = "https://buy.itunes.apple.com/verifyReceipt";
         const sandboxUrl = "https://sandbox.itunes.apple.com/verifyReceipt";
