@@ -66,6 +66,7 @@ interface AuthState {
   checkAuth: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  grantEntitlement: (tier: UserProfile['subscription'], generationsLimit: number) => Promise<void>;
   refreshProfile: () => Promise<void>;
   clearError: () => void;
   fetchOrCreateProfile: (user: Models.User<Models.Preferences>) => Promise<UserProfile>;
@@ -484,6 +485,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error;
+    }
+  },
+
+  // Unlock the entitlement the instant a StoreKit/Play purchase is confirmed.
+  // Sets local state FIRST (optimistic, never blocked by the network) so Pro
+  // tools unlock immediately, then best-effort persists to the profile document
+  // so the unlock survives refreshProfile()/app restart. A failed DB write must
+  // NOT re-lock the user — the finished transaction already proves the purchase.
+  grantEntitlement: async (tier, generationsLimit) => {
+    const { profile } = get();
+    if (!profile) return;
+    set({ profile: { ...profile, subscription: tier, generationsLimit } });
+    try {
+      const updated = await dbService.updateDocument<UserProfile & Models.Document>(
+        COLLECTIONS.USERS,
+        profile.$id,
+        { subscription: tier, generationsLimit }
+      );
+      set({ profile: updated as UserProfile });
+    } catch (error) {
+      console.warn('[AuthStore] grantEntitlement persist failed (local unlock kept):', error);
     }
   },
 
