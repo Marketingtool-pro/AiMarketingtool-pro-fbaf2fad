@@ -151,3 +151,8 @@ vendor/
 fastlane/
 gradle-user-home/
 gradle-user-home/
+
+# Large local git bundles / backups — NEVER commit (backup.bundle is ~3.6 GB)
+backup.bundle
+mybundle
+*.bundle
