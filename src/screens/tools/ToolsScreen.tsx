@@ -25,8 +25,8 @@ const CARD_WIDTH = (width - 48 - 16) / 3;
 const ToolsScreen = () => {
   const navigation = useNavigation<any>();
   const { tools } = useToolsStore();
-  const { profile } = useAuthStore();
-  const isFreeUser = !profile?.subscription || profile.subscription === 'free';
+  const { profile, localSubscriptionOverride } = useAuthStore();
+  const isFreeUser = (!profile?.subscription || profile.subscription === 'free') && localSubscriptionOverride === 'free';
   const [searchQuery, setSearchQuery] = useState('');
   const [activePlatform, setActivePlatform] = useState('All');
   const [activeSubcategory, setActiveSubcategory] = useState('All');
