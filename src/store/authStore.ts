@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import * as SecureStore from 'expo-secure-store';
 import { Models, ExecutionMethod } from 'react-native-appwrite';
 import { authService, dbService, account, functions, COLLECTIONS, Query } from '../services/appwrite';
 import { biometricService } from '../services/biometric';
@@ -40,6 +41,7 @@ interface UserProfile {
 interface AuthState {
   user: Models.User<Models.Preferences> | null;
   profile: UserProfile | null;
+  localSubscriptionOverride: 'free' | 'starter' | 'pro' | 'enterprise';
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
@@ -66,6 +68,7 @@ interface AuthState {
   checkAuth: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  grantEntitlement: (tier: UserProfile['subscription'], generationsLimit: number) => Promise<void>;
   refreshProfile: () => Promise<void>;
   clearError: () => void;
   fetchOrCreateProfile: (user: Models.User<Models.Preferences>) => Promise<UserProfile>;
@@ -74,6 +77,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   profile: null,
+  localSubscriptionOverride: 'free',
   isLoading: true,
   isAuthenticated: false,
   error: null,
@@ -432,6 +436,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   checkAuth: async () => {
     set({ isLoading: true });
     try {
+      // Load local subscription override
+      try {
+        const override = await SecureStore.getItemAsync('local_subscription_override');
+        if (override) {
+          set({ localSubscriptionOverride: override as any });
+        }
+      } catch (e) {
+        console.warn('[AuthStore] Load local subscription override failed:', e);
+      }
+
       // Check if biometric is enabled
       const bioEnabled = await biometricService.isBiometricEnabled();
       if (bioEnabled) {
@@ -484,6 +498,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error;
+    }
+  },
+
+  // Unlock the entitlement the instant a StoreKit/Play purchase is confirmed.
+  // Sets local state FIRST (optimistic, never blocked by the network) so Pro
+  // tools unlock immediately, then best-effort persists to the profile document
+  // so the unlock survives refreshProfile()/app restart. A failed DB write must
+  // NOT re-lock the user — the finished transaction already proves the purchase.
+  grantEntitlement: async (tier, generationsLimit) => {
+    set({ localSubscriptionOverride: tier });
+    try {
+      await SecureStore.setItemAsync('local_subscription_override', tier);
+    } catch (e) {
+      console.warn('[AuthStore] Save local subscription override failed:', e);
+    }
+    const { profile } = get();
+    if (!profile) return;
+    set({ profile: { ...profile, subscription: tier, generationsLimit } });
+    try {
+      const updated = await dbService.updateDocument<UserProfile & Models.Document>(
+        COLLECTIONS.USERS,
+        profile.$id,
+        { subscription: tier, generationsLimit }
+      );
+      set({ profile: updated as UserProfile });
+    } catch (error) {
+      console.warn('[AuthStore] grantEntitlement persist failed (local unlock kept):', error);
     }
   },
 

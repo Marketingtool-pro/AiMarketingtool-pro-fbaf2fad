@@ -1,7 +1,0 @@
-- generic [ref=e2]:
-  - link "Apple.com" [ref=e4] [cursor=pointer]:
-    - /url: http://www.apple.com
-  - contentinfo [ref=e5]:
-    - navigation "footer" [ref=e6]:
-      - link "Apple.com" [ref=e7] [cursor=pointer]:
-        - /url: http://www.apple.com

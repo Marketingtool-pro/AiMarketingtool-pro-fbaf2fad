@@ -135,7 +135,9 @@ jobs:
       - name: Submit for review WITH in-app purchases
         env:
           ASC_KEY_PATH: ./AuthKey_69JDXUCPU3.p8
-          DRY_RUN: 'false'
+          # Held for manual review-submit AFTER TestFlight verification of 514.
+          # Flip back to 'false' (or run asc_autosubmit.rb locally) to submit.
+          DRY_RUN: 'true'
         run: |
           sudo gem install jwt --no-document
           ruby scripts/asc_autosubmit.rb
