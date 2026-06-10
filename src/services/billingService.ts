@@ -28,18 +28,18 @@ const CONSUMABLE_SKUS = [TOKENS_SKU];
 // finished transaction is itself proof of purchase and must unlock immediately.
 // Covers BOTH the iOS flat skus and the Android Play product ids (starter /
 // professional / growth).
-export type Entitlement = { tier: 'starter' | 'pro' | 'enterprise'; generationsLimit: number };
+export type Entitlement = { tier: 'starter' | 'pro' | 'growth'; generationsLimit: number };
 const PRODUCT_TO_ENTITLEMENT: Record<string, Entitlement> = {
   'pro.marketingtool.starter.monthly': { tier: 'starter', generationsLimit: 200 },
   'pro.marketingtool.starter.yearly':  { tier: 'starter', generationsLimit: 200 },
   'pro.marketingtool.pro.monthly':     { tier: 'pro',      generationsLimit: 500 },
   'pro.marketingtool.pro.yearly':      { tier: 'pro',      generationsLimit: 500 },
-  'pro.marketingtool.growth.monthly':  { tier: 'enterprise', generationsLimit: 9999 },
-  'pro.marketingtool.growth.yearly':   { tier: 'enterprise', generationsLimit: 9999 },
+  'pro.marketingtool.growth.monthly':  { tier: 'growth', generationsLimit: 9999 },
+  'pro.marketingtool.growth.yearly':   { tier: 'growth', generationsLimit: 9999 },
   // Android Play subscription product ids:
   'starter':      { tier: 'starter',    generationsLimit: 200 },
   'professional': { tier: 'pro',        generationsLimit: 500 },
-  'growth':       { tier: 'enterprise', generationsLimit: 9999 },
+  'growth':       { tier: 'growth', generationsLimit: 9999 },
 };
 
 export const entitlementForProduct = (productId: string): Entitlement | null =>
@@ -128,8 +128,13 @@ export const billingService = {
       try {
         // Server verification is best-effort: sync the entitlement when we can,
         // but a missing/unreachable verify endpoint must NOT fail a real purchase.
-        try { await this.verifyPurchase(purchase, pendingUserId || ''); }
-        catch (e) { console.warn('[Billing] verify (non-blocking) failed:', e); }
+        const userId = pendingUserId;
+        if (userId) {
+          try { await this.verifyPurchase(purchase, userId); }
+          catch (e) { console.warn('[Billing] verify (non-blocking) failed:', e); }
+        } else {
+          console.warn('[Billing] verify skipped: missing pendingUserId');
+        }
 
         // ALWAYS finish the transaction so StoreKit's queue doesn't lock up and
         // block the next purchase. (iOS + Android.)
@@ -323,7 +328,7 @@ export const billingService = {
       // Resolve the highest entitlement among the restored purchases so the caller
       // can unlock Pro locally even when the server verify is unavailable (same
       // root cause as the purchase flow — must not depend on a server round-trip).
-      const rank = { starter: 1, pro: 2, enterprise: 3 } as const;
+      const rank = { starter: 1, pro: 2, growth: 3 } as const;
       let entitlement: Entitlement | null = null;
       for (const p of purchases) {
         const pid = (p as any).productId || (p as any).id || '';
@@ -336,7 +341,7 @@ export const billingService = {
       return { success: successCount > 0 || purchases.length > 0, count: successCount || purchases.length, entitlement };
     } catch (err: any) {
       console.error('[Billing] Restore error:', err);
-      return { success: false, error: err.message };
+      return { success: false, error: err?.message || 'Failed to restore purchases.' };
     }
   },
 
