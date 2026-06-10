@@ -200,3 +200,4 @@ mybundle
 xcode-build.log
 yarn.lock
 package-lock.json
+.bundle
