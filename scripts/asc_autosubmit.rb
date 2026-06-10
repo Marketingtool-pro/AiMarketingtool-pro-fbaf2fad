@@ -12,16 +12,16 @@
 #         Set DRY_RUN=false to actually attach + submit to Apple.
 #
 # Env:
-#   ASC_KEY_ID, ASC_ISSUER_ID, ASC_APP_ID  (have defaults below)
+#   ASC_KEY_ID, ASC_ISSUER_ID, ASC_APP_ID  (required)
 #   ASC_KEY_PATH   path to the .p8 (default: ../AuthKey_<id>.p8)
 #   BUILD_NUMBER   specific build to ship (default: newest VALID build)
 #   DRY_RUN        "false" to go live (default "true")
 # =============================================================================
 require 'jwt'; require 'openssl'; require 'net/http'; require 'json'; require 'uri'
 
-KEY_ID    = ENV.fetch('ASC_KEY_ID', '69JDXUCPU3')
-ISSUER_ID = ENV.fetch('ASC_ISSUER_ID', '313ffa8d-5aed-4aad-a012-b1057717634c')
-APP_ID    = ENV.fetch('ASC_APP_ID', '6758618412')
+KEY_ID    = ENV.fetch('ASC_KEY_ID') { abort '❌ Missing required env var ASC_KEY_ID' }
+ISSUER_ID = ENV.fetch('ASC_ISSUER_ID') { abort '❌ Missing required env var ASC_ISSUER_ID' }
+APP_ID    = ENV.fetch('ASC_APP_ID') { abort '❌ Missing required env var ASC_APP_ID' }
 KEY_PATH  = ENV.fetch('ASC_KEY_PATH', File.expand_path("../AuthKey_#{KEY_ID}.p8", __dir__))
 DRY_RUN   = ENV.fetch('DRY_RUN', 'true') != 'false'
 WANT_BUILD = ENV['BUILD_NUMBER']

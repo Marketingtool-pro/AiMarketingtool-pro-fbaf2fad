@@ -2,10 +2,11 @@
 # Query App Store Connect: subscriptions + prices + build 512 + review state.
 require 'jwt'; require 'net/http'; require 'json'; require 'openssl'
 
-KEY_ID = '69JDXUCPU3'
-ISSUER = '313ffa8d-5aed-4aad-a012-b1057717634c'
-APP_ID = '6758618412'
-KEY    = OpenSSL::PKey::EC.new(File.read('AuthKey_69JDXUCPU3.p8'))
+KEY_ID = ENV.fetch('ASC_KEY_ID') { abort 'Missing required env var ASC_KEY_ID' }
+ISSUER = ENV.fetch('ASC_ISSUER_ID') { abort 'Missing required env var ASC_ISSUER_ID' }
+APP_ID = ENV.fetch('ASC_APP_ID') { abort 'Missing required env var ASC_APP_ID' }
+KEY_PATH = ENV.fetch('ASC_KEY_PATH', "AuthKey_#{KEY_ID}.p8")
+KEY    = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
 
 def token
   payload = { iss: ISSUER, iat: Time.now.to_i, exp: Time.now.to_i + 600,
