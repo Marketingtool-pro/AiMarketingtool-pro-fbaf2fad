@@ -188,6 +188,7 @@ const ProfileScreen = () => {
                 let badgeLabel = 'Free Plan';
                 if (activeSubscription === 'starter') badgeLabel = 'Starter Member';
                 if (activeSubscription === 'pro') badgeLabel = 'Pro Member';
+                if (activeSubscription === 'growth') badgeLabel = 'Growth Member';
                 if (activeSubscription === 'enterprise') badgeLabel = 'Enterprise Member';
 
                 return (

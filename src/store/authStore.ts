@@ -28,7 +28,7 @@ interface UserProfile {
   name: string;
   email: string;
   avatar?: string;
-  subscription: 'free' | 'starter' | 'pro' | 'enterprise';
+  subscription: 'free' | 'starter' | 'pro' | 'growth' | 'enterprise';
   generationsUsed: number;
   generationsLimit: number;
   credits?: number;
@@ -41,7 +41,7 @@ interface UserProfile {
 interface AuthState {
   user: Models.User<Models.Preferences> | null;
   profile: UserProfile | null;
-  localSubscriptionOverride: 'free' | 'starter' | 'pro' | 'enterprise';
+  localSubscriptionOverride: 'free' | 'starter' | 'pro' | 'growth' | 'enterprise';
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
@@ -159,7 +159,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       }
     } catch (error: any) {
-      if (error.type === 'user_mfa_required' || error.code === 401 && error.message?.includes('MFA')) {
+      if (error.type === 'user_mfa_required' || (error.code === 401 && error.message?.includes('MFA'))) {
         set({ mfaPending: true, isLoading: false });
         return;
       }
