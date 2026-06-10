@@ -6,7 +6,11 @@ import { parseAppwriteResponse } from '../store/authStore';
 
 export type PlanId = 'free' | 'starter' | 'pro' | 'growth' | 'agency';
 
-/** Safely extracts a product/purchase ID from an unknown object by checking `productId` then `id`. */
+/**
+ * Safely extracts a product/purchase ID from an unknown object.
+ * Checks `productId` first (iOS StoreKit shape) then `id` (Android Play shape),
+ * since the two stores use different field names for the same concept.
+ */
 const getObjectProductId = (obj: unknown): string => {
   if (!obj || typeof obj !== 'object') return '';
   const o = obj as { productId?: unknown; id?: unknown };
@@ -21,8 +25,9 @@ const getPurchaseProductId = (purchase: IAP.Purchase): string =>
 const getPurchaseToken = (purchase: IAP.Purchase): string | null => {
   const value = purchase as unknown;
   if (!value || typeof value !== 'object') return null;
-  if ('purchaseToken' in value && typeof (value as { purchaseToken?: unknown }).purchaseToken === 'string') {
-    return (value as { purchaseToken: string }).purchaseToken;
+  if ('purchaseToken' in value) {
+    const token = (value as { purchaseToken: unknown }).purchaseToken;
+    if (typeof token === 'string') return token;
   }
   return null;
 };
@@ -257,6 +262,9 @@ export const billingService = {
       if (Platform.OS === 'android' && isSub) {
         const map = ANDROID_SUB[sku];
         type AndroidProduct = {
+          // `subscriptionOfferDetailsAndroid` is the field name used by react-native-iap v15+,
+          // while `subscriptionOfferDetails` was used in earlier v12/v13 releases.
+          // Both are checked for compatibility with different library versions.
           subscriptionOfferDetailsAndroid?: Array<{ basePlanId: string; offerId?: string; offerToken?: string }>;
           subscriptionOfferDetails?: Array<{ basePlanId: string; offerId?: string; offerToken?: string }>;
         };
