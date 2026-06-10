@@ -40,7 +40,7 @@ repositories {
 }
 
 def reactVersion = '0.85.3'
-def patchedVersion = "${reactVersion}-e2e.1"
+def patchedVersion = "${reactVersion}-e2e.${System.getenv("GITHUB_RUN_NUMBER") ?: "1"}"
 
 dependencies {
     // All imports needed by our 2 patched files

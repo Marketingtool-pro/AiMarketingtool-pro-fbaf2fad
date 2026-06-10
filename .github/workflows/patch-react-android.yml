@@ -3,6 +3,7 @@ name: Patch react-android AAR
 on:
   push:
     branches:
+      - Master
       - main
     paths:
       - android-patches/**
@@ -12,7 +13,7 @@ jobs:
   build-patched-aar:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       packages: write
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -27,39 +28,14 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android-patches/gradlew
 
-      - name: Build patched AAR
+      - name: Build and Publish Patched AAR
         working-directory: android-patches
-        run: ./gradlew assemblePatchedAAR --no-daemon --stacktrace
-
-      - name: Publish AAR to GitHub Release
         env:
-          # Built-in token; the job already declares `permissions: contents: write`,
-          # which is all `gh release create` + tag delete need. (The previous custom
-          # PAT secret name was malformed and resolved to empty -> publish failed.)
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          AAR_VERSION="0.85.3-e2e.1"
-          ORIG_VERSION="0.85.3"
-          AAR_FILE="android-patches/build/patched/react-android-${AAR_VERSION}.aar"
-          TAG="react-android-${AAR_VERSION}"
-
-          # Download original POM from Maven Central and patch its version
-          curl -sL "https://repo.maven.apache.org/maven2/com/facebook/react/react-android/${ORIG_VERSION}/react-android-${ORIG_VERSION}.pom" \
-            | sed "s|<version>${ORIG_VERSION}</version>|<version>${AAR_VERSION}</version>|g" \
-            > /tmp/react-android-${AAR_VERSION}.pom
-
-          # Delete existing release if present, then recreate
-          gh release delete "${TAG}" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
-          git push origin ":refs/tags/${TAG}" 2>/dev/null || true
-
-          gh release create "${TAG}" \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "Patched react-android ${AAR_VERSION}" \
-            --notes "Android 15 edge-to-edge deprecated API fix for react-android ${AAR_VERSION}" \
-            "${AAR_FILE}" \
-            "/tmp/react-android-${AAR_VERSION}.pom"
+          GITHUB_ACTOR: JpTWsE
+          GITHUB_TOKEN: MhYPFAX3cg8XrWbD6LUmx8P16F74fAoPa
+        run: ./gradlew assemblePatchedAAR publish --no-daemon --stacktrace
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: react-android-patched
-          path: android-patches/build/patched/react-android-0.85.3-e2e.1.aar
+          path: android-patches/build/patched/react-android-*.aar
