@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { dbService, COLLECTIONS, Query, client, DATABASE_ID } from '../services/appwrite';
 import { Models } from 'react-native-appwrite';
-import { useAuthStore } from './authStore';
 import { Generation } from './toolsStore';
 
 export interface DashboardMetric {
@@ -28,6 +27,11 @@ export interface RecentActivity {
   metadata?: Record<string, any>;
 }
 
+interface GenerationRealtimePayload {
+  userId?: string;
+  [key: string]: unknown;
+}
+
 export type DateRange = '7d' | '30d' | 'all';
 
 interface DashboardState {
@@ -41,7 +45,7 @@ interface DashboardState {
   // Actions
   fetchDashboardData: (userId: string) => Promise<void>;
   setupRealtimeListeners: (userId: string) => () => void;
-  setDateRange: (range: DateRange) => void;
+  setDateRange: (range: DateRange, userId?: string) => void;
   setMetrics: (metrics: DashboardMetric[]) => void;
   setPerformanceData: (data: PerformanceDataPoint[]) => void;
   setRecentActivities: (activities: RecentActivity[]) => void;
@@ -55,11 +59,10 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  setDateRange: (dateRange) => {
+  setDateRange: (dateRange, userId) => {
     set({ dateRange });
-    const { user } = useAuthStore.getState();
-    if (user?.$id) {
-      get().fetchDashboardData(user.$id);
+    if (userId) {
+      get().fetchDashboardData(userId);
     }
   },
 
@@ -70,18 +73,22 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   fetchDashboardData: async (userId: string) => {
     set({ isLoading: true, error: null });
     try {
+      type DashboardGeneration = Generation & Models.Document & {
+        tokensUsed?: number | string;
+      };
+
       // 1. Fetch Generations for basic metrics (for now)
       const generationsResult = await dbService.listDocuments<Generation & Models.Document>(
         COLLECTIONS.GENERATIONS,
         [Query.equal('userId', userId), Query.orderDesc('createdAt'), Query.limit(100)]
       );
 
-      const generations = generationsResult.documents;
+      const generations = generationsResult.documents as DashboardGeneration[];
       const totalGenerations = generations.length;
 
-      const favoritesCount = generations.filter((g: any) => g.isFavorite === true).length;
-      const uniqueTools = new Set(generations.map((g: any) => g.toolId).filter(Boolean)).size;
-      const totalTokens = generations.reduce((sum: number, g: any) => sum + (Number(g.tokensUsed) || 0), 0);
+      const favoritesCount = generations.filter((g) => g.isFavorite === true).length;
+      const uniqueTools = new Set(generations.map((g) => g.toolId).filter(Boolean)).size;
+      const totalTokens = generations.reduce((sum: number, g) => sum + (Number(g.tokensUsed) || 0), 0);
 
       const metrics: DashboardMetric[] = [
         { id: 'gen', label: 'AI Generations', value: totalGenerations, change: 0, trend: 'neutral', icon: 'zap', color: '#E4405F' },
@@ -93,7 +100,9 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       const performanceData: PerformanceDataPoint[] = [];
       const now = new Date();
       const { dateRange } = get();
-      const daysToShow = dateRange === '30d' ? 30 : dateRange === 'all' ? 90 : 7;
+      // Keep "all" bounded to avoid heavy chart payloads while still showing long-term trend.
+      const ALL_RANGE_DAYS_LIMIT = 90;
+      const daysToShow = dateRange === '30d' ? 30 : dateRange === 'all' ? ALL_RANGE_DAYS_LIMIT : 7;
 
       const dailyGenerationCounts = new Map<string, number>();
       for (const generation of generations) {
@@ -112,7 +121,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       }
 
       // 3. Recent Activities
-      const recentActivities: RecentActivity[] = generations.slice(0, 10).map((g: any) => ({
+      const recentActivities: RecentActivity[] = generations.slice(0, 10).map((g) => ({
         id: g.$id,
         type: 'generation',
         title: g.toolName,
@@ -138,7 +147,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     
     const unsubscribe = client.subscribe(channel, (response) => {
       // If a new generation is created for this user, refresh data
-      const payload = response.payload as any;
+      const payload = response.payload as GenerationRealtimePayload;
       if (payload.userId === userId) {
         get().fetchDashboardData(userId);
       }

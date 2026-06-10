@@ -5,18 +5,33 @@
 # period) and PATCHes it — same effect as editing+saving in the ASC UI, which
 # flips the localization Rejected -> Prepare for Submission. Runs locally via the
 # ASC API. DRY_RUN=true (default) only prints; DRY_RUN=false executes.
-require 'jwt'; require 'openssl'; require 'net/http'; require 'json'; require 'uri'
-KEY_ID="69JDXUCPU3"; ISSUER="313ffa8d-5aed-4aad-a012-b1057717634c"
-KEY=File.expand_path("../AuthKey_#{KEY_ID}.p8", __dir__)
+require 'jwt'
+require 'openssl'
+require 'net/http'
+require 'json'
+require 'uri'
+KEY_ID = ENV.fetch("ASC_KEY_ID") { raise "Missing required env var ASC_KEY_ID" }
+ISSUER = ENV.fetch("ASC_ISSUER_ID") { raise "Missing required env var ASC_ISSUER_ID" }
+KEY = File.expand_path(ENV.fetch("ASC_PRIVATE_KEY_PATH") { raise "Missing required env var ASC_PRIVATE_KEY_PATH" }, __dir__)
 DRY=ENV.fetch("DRY_RUN","true")!="false"
-SUBS=%w[6760442919 6760486886 6760490715 6760491034 6760491514 6760492298]
+DEFAULT_SUBS=%w[6760442919 6760486886 6760490715 6760491034 6760491514 6760492298]
+SUBS=(ENV["SUBS"] || "").split(/[,\s]+/).reject(&:empty?)
+SUBS=DEFAULT_SUBS if SUBS.empty?
 pk=OpenSSL::PKey::EC.new(File.read(KEY)); n=Time.now.to_i
 TOK=JWT.encode({iss:ISSUER,iat:n,exp:n+1100,aud:"appstoreconnect-v1"},pk,"ES256",{kid:KEY_ID,typ:"JWT"})
 BASE="https://api.appstoreconnect.apple.com"
 def req(m,p,b=nil)
   u=URI("#{BASE}#{p}");k={get:Net::HTTP::Get,patch:Net::HTTP::Patch}[m]
   r=k.new(u);r["Authorization"]="Bearer #{TOK}";r["Content-Type"]="application/json";r.body=JSON.generate(b) if b
-  res=Net::HTTP.start(u.host,u.port,use_ssl:true){|h|h.request(r)};[res.code.to_i,(JSON.parse(res.body) rescue {})]
+  res=Net::HTTP.start(u.host,u.port,use_ssl:true){|h|h.request(r)}
+  parsed_body =
+    begin
+      JSON.parse(res.body)
+    rescue JSON::ParserError => e
+      warn "JSON parse failed (HTTP #{res.code}): #{e.message}; body=#{res.body.to_s[0,200].inspect}"
+      {}
+    end
+  [res.code.to_i, parsed_body]
 end
 puts "=== MODE: #{DRY ? 'DRY RUN (no changes)' : 'LIVE'} ==="
 SUBS.each do |sid|

@@ -37,7 +37,7 @@ const ToolsScreen = () => {
     'Meta / Facebook': ['facebook-ads', 'meta-content'],
     'Social Media': ['social-media', 'instagram', 'tiktok', 'youtube', 'linkedin', 'twitter', 'pinterest'],
     'Content & SEO': ['google-seo', 'google-content', 'content-creation', 'copywriting'],
-    'An-Analytics': ['google-analytics'],
+    'Analytics': ['google-analytics'],
     'E-commerce': ['shopify-products', 'shopify-ads', 'email-marketing', 'ecommerce-seo'],
     'AI Tools': ['ai-agents'],
   };
@@ -72,7 +72,7 @@ const ToolsScreen = () => {
     { name: 'Meta / Facebook', img: require('../../../assets/images/platforms/plat-meta.png') },
     { name: 'Social Media', img: require('../../../assets/images/platforms/plat-social.png') },
     { name: 'Content & SEO', img: require('../../../assets/images/platforms/plat-seo.png') },
-    { name: 'An-Analytics', img: require('../../../assets/images/platforms/plat-analytics.png') },
+    { name: 'Analytics', img: require('../../../assets/images/platforms/plat-analytics.png') },
     { name: 'E-commerce', img: require('../../../assets/images/platforms/plat-ecommerce.png') },
     { name: 'AI Tools', img: require('../../../assets/images/platforms/plat-ai.png') },
   ];
