@@ -165,7 +165,6 @@
       "expo-asset",
       "expo-tracking-transparency",
       "./plugins/withKotlinKspFix.js",
-      "./plugins/withAndroidxCorePin.js",
       "./plugins/withRNEdgeToEdgeFix.js",
       [
         "react-native-google-mobile-ads",
