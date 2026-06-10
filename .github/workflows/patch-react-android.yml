@@ -31,8 +31,8 @@ jobs:
       - name: Build and Publish Patched AAR
         working-directory: android-patches
         env:
-          GITHUB_ACTOR: JpTWsE
-          GITHUB_TOKEN: MhYPFAX3cg8XrWbD6LUmx8P16F74fAoPa
+          GITHUB_ACTOR: ${{ secrets.MAVEN_USERNAME || github.actor }}
+          GITHUB_TOKEN: ${{ secrets.MAVEN_PASSWORD || secrets.GITHUB_TOKEN }}
         run: ./gradlew assemblePatchedAAR publish --no-daemon --stacktrace
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
