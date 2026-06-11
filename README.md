@@ -105,6 +105,19 @@ Production deployment is automated through GitHub Actions.
 
 > Do not trigger EAS build or submission flows without explicit approval.
 
+Local release verification flow (run only when shipping is approved):
+
+```bash
+git pull --rebase
+git status
+
+# Verify App Store Connect/IAP configuration
+ASC_KEY_ID=<key_id> ASC_ISSUER_ID=<issuer_id> ASC_KEY_PATH=./AuthKey_<key_id>.p8 npm run iap:verify
+
+# Build + auto-submit (both stores)
+npm run ship:verified
+```
+
 ## Contributing
 
 Contributions are welcome.
