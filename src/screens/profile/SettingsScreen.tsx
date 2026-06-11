@@ -70,7 +70,15 @@ const SettingsScreen = () => {
     }
     try {
       setNameSaving(true);
-      await authService.updateProfile(trimmed);
+      // The Appwrite ACCOUNT name update only works for email/password sessions.
+      // Users signed in via Firebase phone OTP (or the reviewer bypass) have no
+      // Appwrite session, so this used to throw and fail the whole rename.
+      // The profile document below is the app's source of truth for the name.
+      try {
+        await authService.updateProfile(trimmed);
+      } catch (e) {
+        console.warn('[Settings] account name update skipped (no Appwrite session):', e);
+      }
       await useAuthStore.getState().updateProfile({ name: trimmed });
       setNameModalVisible(false);
     } catch (err: any) {

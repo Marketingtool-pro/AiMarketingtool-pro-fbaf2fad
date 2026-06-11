@@ -83,3 +83,35 @@ code./
 plugin/
 
 
+
+# Heavy local-only artifacts (EAS archive size limit is 2 GB)
+backup.bundle
+.cargo-features-manager-*
+ios/Pods
+ios/build
+ios/DerivedData
+externals
+codelab-android-compose
+agent-skills
+maven
+mise-oci
+vendor
+iwyu
+swiftly.pkg
+simtool
+mybundle
+my_gem
+my-module
+bazel-*
+.build
+github-ci-server
+Pods
+*.xcarchive
+*.ipa
+
+# Security: secrets must never reach the EAS build archive.
+# If a future build needs an EXPO_PUBLIC_* value from .env, mirror it in
+# EAS environment variables (eas env) instead of shipping the file.
+.env
+.env.*
+*.keychain

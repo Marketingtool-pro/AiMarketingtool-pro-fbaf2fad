@@ -27,6 +27,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import { hasProAccess } from '../../services/billingService';
 import { useAuthStore } from '../../store/authStore';
 import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
@@ -167,7 +168,15 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
 
 const DashboardScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { user, profile } = useAuthStore();
+  const { user, profile, localSubscriptionOverride } = useAuthStore();
+  // A user is free only if BOTH the server profile and the local purchase
+  // override say so — the override is set by a finished StoreKit transaction
+  // and must win even when the server write failed (e.g. Apple's sandbox).
+  const isFreeUser =
+    (!profile?.subscription || profile.subscription === 'free') &&
+    localSubscriptionOverride === 'free';
+  // PRO-badged tools need the Pro tier or higher, not just any paid plan.
+  const canUsePro = hasProAccess(profile?.subscription, localSubscriptionOverride);
   const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
   const [refreshing, setRefreshing] = React.useState(false);
   const [campaignsCount, setCampaignsCount] = React.useState<number>(0);
@@ -340,7 +349,8 @@ const DashboardScreen = () => {
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* Premium Banner */}
+        {/* Premium Banner — only for users without an active plan */}
+        {isFreeUser && (
         <TouchableOpacity
           style={styles.premiumBanner}
           onPress={() => navigation.navigate('Subscription')}
@@ -363,6 +373,7 @@ const DashboardScreen = () => {
             <Feather name="chevron-right" size={24} color={Colors.gold} />
           </LinearGradient>
         </TouchableOpacity>
+        )}
 
         {/* Horizontal Banner Carousel */}
         <View style={styles.bannerSection}>
@@ -546,7 +557,7 @@ const DashboardScreen = () => {
                     />
                     {/* Same Pro lock visual as ToolsScreen / ToolDetailScreen
                         so locked state is consistent across every screen. */}
-                    {(tool as any).isPro && profile?.subscription === 'free' && (
+                    {(tool as any).isPro && !canUsePro && (
                       <View style={styles.dashLockOverlay}>
                         <Feather name="lock" size={14} color="#FFF" />
                       </View>

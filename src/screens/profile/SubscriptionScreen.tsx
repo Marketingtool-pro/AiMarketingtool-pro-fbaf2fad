@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import * as Haptics from 'expo-haptics';
-import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, entitlementForProduct } from '../../services/billingService';
+import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, entitlementForProduct, CREDITS_PER_TOKEN_PACK } from '../../services/billingService';
 import { functions } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 
@@ -37,7 +37,7 @@ interface Plan {
 
 const SubscriptionScreen = () => {
   const navigation = useNavigation();
-  const { profile, refreshProfile, grantEntitlement } = useAuthStore();
+  const { user, profile, refreshProfile, grantEntitlement, grantCredits } = useAuthStore();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [selectedPlan, setSelectedPlan] = useState<string>('pro');
   const [isLoading, setIsLoading] = useState(false);
@@ -54,9 +54,10 @@ const SubscriptionScreen = () => {
         const kind = pendingKindRef.current;
         pendingKindRef.current = null;
         if (kind === 'consumable') {
-          Alert.alert('Success', 'Your account has been topped up!', [
-            { text: 'OK', onPress: () => { refreshProfile(); } },
-          ]);
+          // Credit locally first — tokens are "added instantly" (pricing page)
+          // and the server verify can fail in Apple's sandbox.
+          await grantCredits(CREDITS_PER_TOKEN_PACK);
+          Alert.alert('Success', `${CREDITS_PER_TOKEN_PACK} generations added to your account!`);
         } else {
           // Unlock Pro immediately from the finished transaction — do NOT wait on
           // the server verify (it can fail in Apple's sandbox). This is the fix
@@ -268,7 +269,7 @@ const SubscriptionScreen = () => {
 
   const handleRestorePurchases = async () => {
     if (Platform.OS === 'web') {
-      Alert.alert('Not Supported', 'Restore Purchases is only available on iOS and Android.');
+      Alert.alert('Use the Mobile App', 'Restore Purchases works in the iOS and Android apps, where your store purchases live.');
       return;
     }
     const userId = profile?.userId || profile?.$id;
