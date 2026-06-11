@@ -47,7 +47,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund
+        run: npm ci --include=dev
 
       - name: Build production (android)
         id: build
@@ -78,7 +78,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund
+        run: npm ci --include=dev
 
       - name: Submit to Play Store
         continue-on-error: true
@@ -115,7 +115,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund
+        run: npm ci --include=dev
 
       # Write the ASC API key FIRST, at the path eas.json's ascApiKeyPath expects,
       # so `eas submit` can authenticate (the .p8 is gitignored, not in the checkout).
