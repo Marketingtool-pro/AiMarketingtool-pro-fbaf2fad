@@ -1,5 +1,7 @@
 [tools]
+github-cli = "latest"
 jsonschema = "latest"
+python = "3.12"
 # mise config files are hierarchical. mise will find all of the config files
 # in all parent directories and merge them together.
 # You might have a structure like:
