@@ -112,9 +112,10 @@ git pull --rebase
 git status
 
 # Verify App Store Connect/IAP configuration
+# Values from App Store Connect → Users and Access → Integrations
 export ASC_KEY_ID=<key_id>
 export ASC_ISSUER_ID=<issuer_id>
-export ASC_KEY_PATH=./AuthKey_<key_id>.p8
+export ASC_KEY_PATH=~/secrets/AuthKey_<key_id>.p8
 npm run iap:verify
 
 # Build + auto-submit (both stores)
