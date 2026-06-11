@@ -10,14 +10,14 @@ platform :ios do
       in_house: false
     )
 
-    # Use deliver to verify the connection
-    deliver(
+    # Verify the API key works by fetching app info from App Store Connect.
+    # (deliver verify_only needs a binary to validate — it was picking up the
+    # unrelated swiftly.pkg in the repo root and failing in altool.)
+    build_number = latest_testflight_build_number(
       api_key: api_key,
-      app_identifier: "pro.marketingtool.app",
-      verify_only: true,          
-      skip_screenshots: true,     
-      skip_metadata: true         
+      app_identifier: "pro.marketingtool.app"
     )
+    UI.success("App Store Connect API key works — latest TestFlight build: #{build_number}")
   end
 end
 

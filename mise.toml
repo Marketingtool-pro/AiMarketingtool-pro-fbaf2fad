@@ -1,5 +1,4 @@
 [tools]
-github-cli = "latest"
 jsonschema = "latest"
 python = "3.12"
 # mise config files are hierarchical. mise will find all of the config files
