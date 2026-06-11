@@ -112,10 +112,12 @@ git pull --rebase
 git status
 
 # Verify App Store Connect/IAP configuration
+# Uses fastlane/Fastfile lane: ios test_iap_config
 # Values from App Store Connect → Users and Access → Integrations
-export ASC_KEY_ID=<key_id>
-export ASC_ISSUER_ID=<issuer_id>
-export ASC_KEY_PATH=~/secrets/AuthKey_<key_id>.p8
+export ASC_KEY_ID=YOUR_KEY_ID
+export ASC_ISSUER_ID=YOUR_ISSUER_ID
+export ASC_KEY_PATH=~/secrets/AuthKey_YOUR_KEY_ID.p8
+chmod 700 ~/secrets && chmod 600 "$ASC_KEY_PATH"
 npm run iap:verify
 
 # Build + auto-submit (both stores)
