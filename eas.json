@@ -6,7 +6,8 @@
   "build": {
     "production": {
       "autoIncrement": false,
-      "channel": "production"
+      "channel": "production",
+      "node": "24.16.0"
     }
   },
   "submit": {
