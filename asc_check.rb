@@ -2,23 +2,60 @@
 # Query App Store Connect: subscriptions + prices + build 512 + review state.
 require 'jwt'; require 'net/http'; require 'json'; require 'openssl'
 
-KEY_ID = '69JDXUCPU3'
-ISSUER = '313ffa8d-5aed-4aad-a012-b1057717634c'
-APP_ID = '6758618412'
-KEY    = OpenSSL::PKey::EC.new(File.read('AuthKey_69JDXUCPU3.p8'))
+def required_env(name)
+  value = ENV[name]
+  abort("Missing required environment variable: #{name}") if value.nil? || value.strip.empty?
+  value
+end
+
+def load_private_key(filename)
+  path = File.expand_path(filename, __dir__)
+
+  unless File.file?(path) && File.readable?(path)
+    warn "Private key file not found or not readable: #{path}"
+    exit 1
+  end
+
+  begin
+    OpenSSL::PKey::EC.new(File.read(path))
+  rescue Errno::EACCES, Errno::ENOENT, OpenSSL::PKey::ECError => e
+    warn "Failed to load private key from #{path}: #{e.message}"
+    exit 1
+  end
+end
+
+KEY_ID   = required_env('ASC_KEY_ID')
+ISSUER   = required_env('ASC_ISSUER_ID')
+APP_ID   = required_env('ASC_APP_ID')
+KEY_PATH = ENV.fetch('ASC_KEY_PATH', 'AuthKey_69JDXUCPU3.p8')
+KEY      = load_private_key(KEY_PATH)
+
+@cached_token = nil
+@cached_token_exp = 0
 
 def token
-  payload = { iss: ISSUER, iat: Time.now.to_i, exp: Time.now.to_i + 600,
-              aud: 'appstoreconnect-v1' }
-  JWT.encode(payload, KEY, 'ES256', { kid: KEY_ID, typ: 'JWT' })
+  now = Time.now.to_i
+  return @cached_token if @cached_token && now < (@cached_token_exp - 30)
+
+  exp = now + 600
+  payload = { iss: ISSUER, iat: now, exp: exp, aud: 'appstoreconnect-v1' }
+  @cached_token = JWT.encode(payload, KEY, 'ES256', { kid: KEY_ID, typ: 'JWT' })
+  @cached_token_exp = exp
+  @cached_token
 end
 
 def get(path)
   uri = URI("https://api.appstoreconnect.apple.com#{path}")
   req = Net::HTTP::Get.new(uri)
   req['Authorization'] = "Bearer #{token}"
-  res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
-  [res.code, (JSON.parse(res.body) rescue res.body)]
+  res = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 10, read_timeout: 30) { |h| h.request(req) }
+  parsed_body = begin
+    JSON.parse(res.body)
+  rescue JSON::ParserError => e
+    warn "JSON parse failed for #{path} (HTTP #{res.code}): #{e.class}: #{e.message}"
+    res.body
+  end
+  [res.code, parsed_body]
 end
 
 puts "=== SUBSCRIPTION GROUPS ==="
