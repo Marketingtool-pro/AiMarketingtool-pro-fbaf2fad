@@ -1,11 +1,11 @@
 {
   "cli": {
     "version": ">= 5.9.1",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "production": {
-      "autoIncrement": true,
+      "autoIncrement": false,
       "channel": "production",
       "node": "24.16.0",
       "env": {
