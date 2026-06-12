@@ -101,8 +101,8 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       const now = new Date();
       const { dateRange } = get();
       // Keep "all" bounded to avoid heavy chart payloads while still showing long-term trend.
-      const ALL_RANGE_DAYS_LIMIT = 90;
-      const daysToShow = dateRange === '30d' ? 30 : dateRange === 'all' ? ALL_RANGE_DAYS_LIMIT : 7;
+      const allRangeDaysLimit = 90;
+      const daysToShow = dateRange === '30d' ? 30 : dateRange === 'all' ? allRangeDaysLimit : 7;
 
       const dailyGenerationCounts = new Map<string, number>();
       for (const generation of generations) {
