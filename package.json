@@ -1,6 +1,6 @@
 {
   "name": "@marketingtool-pro/marketingtool",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "description": "Hybrid React Native application using **Appwrite** for core Auth/Data and **Firebase** for AI Functions, Observability, and Hosting.",
   "homepage": "https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad#readme",
   "bugs": {
