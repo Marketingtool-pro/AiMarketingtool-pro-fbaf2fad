@@ -86,7 +86,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       const generations = generationsResult.documents as DashboardGeneration[];
       const totalGenerations = generations.length;
 
-      const favoritesCount = generations.filter((g) => g.isFavorite === true).length;
+      const favoritesCount = generations.filter((g) => g.isFavorite).length;
       const uniqueTools = new Set(generations.map((g) => g.toolId).filter(Boolean)).size;
       const totalTokens = generations.reduce((sum: number, g) => sum + (Number(g.tokensUsed) || 0), 0);
 
@@ -101,8 +101,8 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       const now = new Date();
       const { dateRange } = get();
       // Keep "all" bounded to avoid heavy chart payloads while still showing long-term trend.
-      const ALL_RANGE_DAYS_LIMIT = 90;
-      const daysToShow = dateRange === '30d' ? 30 : dateRange === 'all' ? ALL_RANGE_DAYS_LIMIT : 7;
+      const allRangeDaysLimit = 90;
+      const daysToShow = dateRange === '30d' ? 30 : dateRange === 'all' ? allRangeDaysLimit : 7;
 
       const dailyGenerationCounts = new Map<string, number>();
       for (const generation of generations) {
@@ -137,7 +137,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         isLoading: false 
       });
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error?.message || 'Failed to load dashboard data', isLoading: false });
     }
   },
 
@@ -148,7 +148,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     const unsubscribe = client.subscribe(channel, (response) => {
       // If a new generation is created for this user, refresh data
       const payload = response.payload as GenerationRealtimePayload;
-      if (payload.userId === userId) {
+      if (payload?.userId === userId) {
         get().fetchDashboardData(userId);
       }
     });
