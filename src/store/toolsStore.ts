@@ -127,6 +127,7 @@ export const TOOL_CATEGORIES = [
 // Load ALL 314 tools from tools.js (was tools.json — renamed to bypass *.json archive filter)
 // Intentionally kept as require(): this file is stored as .js to avoid archive filtering.
 // Explicit typing prevents implicit `any` and keeps downstream processing type-checked.
+// tools.js exports the raw catalog array directly.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const allToolsRaw = require('../data/tools.js') as RawTool[];
 

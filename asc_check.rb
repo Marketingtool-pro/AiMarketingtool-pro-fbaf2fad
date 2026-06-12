@@ -11,16 +11,12 @@ end
 def load_private_key(filename)
   path = File.expand_path(filename, __dir__)
 
-  unless File.file?(path) && File.readable?(path)
-    warn "Private key file not found or not readable: #{path}"
-    exit 1
-  end
+  abort("Private key file not found or not readable: #{path}") unless File.file?(path) && File.readable?(path)
 
   begin
     OpenSSL::PKey::EC.new(File.read(path))
   rescue Errno::EACCES, Errno::ENOENT, OpenSSL::PKey::ECError => e
-    warn "Failed to load private key from #{path}: #{e.message}"
-    exit 1
+    abort("Failed to load private key from #{path}: #{e.message}")
   end
 end
 
@@ -54,7 +50,7 @@ def get(path)
   parsed_body = begin
     JSON.parse(res.body)
   rescue JSON::ParserError => e
-    warn "JSON parse failed for #{path} (HTTP #{res.code}): #{e.class}: #{e.message}"
+    warn "JSON parse failed for #{path} (HTTP #{res.code}): #{e.message}"
     res.body
   end
   [res.code, parsed_body]
