@@ -18,7 +18,13 @@ def get(path)
   req = Net::HTTP::Get.new(uri)
   req['Authorization'] = "Bearer #{token}"
   res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
-  [res.code, (JSON.parse(res.body) rescue res.body)]
+  parsed_body = begin
+    JSON.parse(res.body)
+  rescue JSON::ParserError => e
+    warn "JSON parse failed for #{path} (HTTP #{res.code}): #{e.class}: #{e.message}"
+    res.body
+  end
+  [res.code, parsed_body]
 end
 
 puts "=== SUBSCRIPTION GROUPS ==="
