@@ -137,7 +137,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         isLoading: false 
       });
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error?.message || 'Failed to load dashboard data', isLoading: false });
     }
   },
 
