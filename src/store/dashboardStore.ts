@@ -148,7 +148,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     const unsubscribe = client.subscribe(channel, (response) => {
       // If a new generation is created for this user, refresh data
       const payload = response.payload as GenerationRealtimePayload;
-      if (payload.userId === userId) {
+      if (payload?.userId === userId) {
         get().fetchDashboardData(userId);
       }
     });
