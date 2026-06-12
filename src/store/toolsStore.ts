@@ -269,6 +269,8 @@ export const useToolsStore = create<ToolsState>((set, get) => ({
   fetchGenerations: async (userId: string) => {
     set({ isLoading: true });
     try {
+      // Index hint: COLLECTIONS.GENERATIONS should have a composite index on
+      // (userId ASC, createdAt DESC) to support Query.equal('userId', ...) + Query.orderDesc('createdAt').
       const result = await dbService.listDocuments<Generation & Models.Document>(
         COLLECTIONS.GENERATIONS,
         [Query.equal('userId', userId), Query.orderDesc('createdAt'), Query.limit(50)]
