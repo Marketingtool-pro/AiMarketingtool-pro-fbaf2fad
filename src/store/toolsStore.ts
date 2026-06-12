@@ -17,6 +17,10 @@ export interface Tool {
   outputType: 'text' | 'image' | 'code' | 'html';
   exampleOutput?: string;
   tags: string[];
+  // Honest-deliverable note shown on the tool screen for tools whose name
+  // implies media rendering / scheduling / live data: every tool produces an
+  // AI TEXT deliverable (scripts, plans, analyses) — never a fake render.
+  deliverable?: string;
 }
 
 export interface ToolInput {
@@ -198,6 +202,23 @@ function badgeToCategory(badge: string, name: string): string {
 
 // Canonical source of truth: tools.json (mirrors the web app's 314-tool catalog).
 // No hardcoded sample arrays, no fake usage/rating/trending metadata.
+
+// Tools whose names imply non-text outcomes get an explicit expectation note
+// (MOBILE_TOOLS_POLICY: no misleading claims, no hidden limitations).
+function deriveDeliverable(slug: string, name: string): string | undefined {
+  const s = `${slug} ${name}`.toLowerCase();
+  if (/image|video|reel|photo|thumbnail|logo|banner|visual|carousel|design/.test(s)) {
+    return 'Delivers scripts, captions & creative direction as text — render the visuals in your design or editing app.';
+  }
+  if (/schedul|auto-post|posting|publisher|automation/.test(s)) {
+    return 'Delivers your posting plan & schedule as text — live scheduling runs on the web platform.';
+  }
+  if (/analyz|tracker|monitor|audit|finder/.test(s)) {
+    return 'Delivers an expert AI analysis & recommendations based on the details you provide.';
+  }
+  return undefined;
+}
+
 const ALL_TOOLS: Tool[] = (allToolsRaw as any[]).map((t, i) => ({
   $id: `t${i}`,
   name: t.name || 'Tool',
@@ -209,6 +230,7 @@ const ALL_TOOLS: Tool[] = (allToolsRaw as any[]).map((t, i) => ({
   isPro: t.isPro === false ? false : deriveIsPro(t.slug),
   inputs: t.formFields || [{ name: 'mainInput', label: 'Input', type: 'textarea', required: true }],
   outputType: 'text',
+  deliverable: deriveDeliverable(t.slug || '', t.name || ''),
   tags: [t.badge].filter(Boolean),
 })) as Tool[];
 

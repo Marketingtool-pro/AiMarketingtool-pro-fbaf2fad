@@ -127,6 +127,83 @@ const toolExecutorFlow = ai.defineFlow(
 );
 
 /**
+ * Image Generator Flow — REAL image generation for social media tools
+ * (Instagram posts, carousels, ad creatives). Returns the image as a data URI
+ * so the app can render it, save it to the camera roll, and share it straight
+ * to Instagram. This is the first platform-real tool: actual media, not text.
+ */
+const imageGeneratorFlow = ai.defineFlow(
+  {
+    name: "imageGenerator",
+    inputSchema: z.object({
+      prompt: z.string(),
+      toolSlug: z.string().optional(),
+      style: z.string().optional(),      // e.g. "photorealistic", "bold flat design"
+      platform: z.string().optional(),   // e.g. "instagram-post", "instagram-story"
+      userId: z.string().optional(),
+    }),
+    outputSchema: z.object({
+      image: z.string(),     // data:image/png;base64,...
+      caption: z.string(),
+      success: z.boolean(),
+      model: z.string(),
+    }),
+  },
+  async ({ prompt, toolSlug, style, platform, userId }) => {
+    const aspect = platform === "instagram-story" || platform === "reel-cover" ?
+      "9:16 vertical" : "1:1 square";
+    const imagePrompt =
+      `Professional social media marketing image, ${aspect} composition. ` +
+      `${style ? `Style: ${style}. ` : ""}` +
+      `No watermarks, no embedded text unless asked. Brief: ${prompt}`;
+
+    const response = await ai.generate({
+      model: googleAI.model("gemini-2.5-flash-image"),
+      prompt: imagePrompt,
+      config: { responseModalities: ["TEXT", "IMAGE"] },
+    });
+
+    const media = response.media;
+    if (!media?.url) {
+      throw new Error("Image model returned no media");
+    }
+
+    // Companion caption so the user can post immediately.
+    const captionRes = await ai.generate({
+      model: googleAI.model("gemini-2.5-flash-lite"),
+      prompt: `Write one Instagram caption (max 2 sentences + 5 hashtags) for a post about: ${prompt}`,
+      config: { maxOutputTokens: 200, temperature: 0.8 },
+    });
+
+    // History: store the caption + metadata only (not the base64 payload).
+    if (userId) {
+      try {
+        await getFirestore().collection("generations").add({
+          userId,
+          toolId: toolSlug || "image-generator",
+          toolName: "AI Image Generator",
+          input: { prompt, style: style || "", platform: platform || "" },
+          output: captionRes.text,
+          outputType: "image",
+          model: "gemini-2.5-flash-image",
+          isFavorite: false,
+          createdAt: FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        console.error("[Firestore] Failed to save image generation:", e);
+      }
+    }
+
+    return {
+      image: media.url,
+      caption: captionRes.text,
+      success: true,
+      model: "gemini-2.5-flash-image",
+    };
+  }
+);
+
+/**
  * Chat AI Flow — conversational AI for the Chat tab
  */
 const chatAiFlow = ai.defineFlow(
@@ -202,4 +279,16 @@ export const chatAi = onCallGenkit(
     authPolicy: hasClaim("sub"),
   },
   chatAiFlow
+);
+
+export const imageGenerator = onCallGenkit(
+  {
+    secrets: [googleGenaiApiKey],
+    enforceAppCheck: true,
+    authPolicy: hasClaim("sub"),
+    // image payloads are larger than text — give the function headroom
+    memory: "1GiB",
+    timeoutSeconds: 120,
+  },
+  imageGeneratorFlow
 );
