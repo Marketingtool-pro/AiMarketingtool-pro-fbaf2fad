@@ -100,7 +100,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         } else if (typeof rawTokens === 'string') {
           const trimmed = rawTokens.trim();
           if (trimmed.length > 0) {
-            const value = parseFloat(trimmed);
+            const value = Number(trimmed);
             parsedTokens = Number.isFinite(value) ? value : 0;
           }
         }

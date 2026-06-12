@@ -4,7 +4,7 @@ require 'jwt'; require 'net/http'; require 'json'; require 'openssl'
 
 def required_env(name)
   value = ENV[name]
-  abort("Missing required environment variable: #{name}") if value.nil? || value.strip.empty?
+  abort("Missing required environment variable: #{name}. Set it in your environment or a .env file before running this script.") if value.nil? || value.strip.empty?
   value
 end
 
