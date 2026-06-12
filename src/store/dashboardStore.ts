@@ -86,7 +86,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       const generations = generationsResult.documents as DashboardGeneration[];
       const totalGenerations = generations.length;
 
-      const favoritesCount = generations.filter((g) => g.isFavorite === true).length;
+      const favoritesCount = generations.filter((g) => g.isFavorite).length;
       const uniqueTools = new Set(generations.map((g) => g.toolId).filter(Boolean)).size;
       const totalTokens = generations.reduce((sum: number, g) => sum + (Number(g.tokensUsed) || 0), 0);
 
