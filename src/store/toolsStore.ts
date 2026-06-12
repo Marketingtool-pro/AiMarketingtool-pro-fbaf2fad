@@ -227,6 +227,7 @@ const ALL_TOOLS: Tool[] = (allToolsRaw as any[]).map((t, i) => ({
   description: t.description || '',
   icon: 'zap',
   category: badgeToCategory(t.badge, t.name),
+  // Precedence rule: explicit `false` in source data overrides slug-based derivation.
   isPro: t.isPro === false ? false : deriveIsPro(t.slug),
   inputs: t.formFields || [{ name: 'mainInput', label: 'Input', type: 'textarea', required: true }],
   outputType: 'text',
