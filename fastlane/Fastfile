@@ -2,8 +2,8 @@ default_platform(:ios)
 
 platform :ios do
   lane :test_iap_config do
-    key_id = ENV.fetch("ASC_KEY_ID", "69JDXUCPU3")
-    issuer_id = ENV.fetch("ASC_ISSUER_ID", "313ffa8d-5aed-4aad-a012-b1057717634c")
+    key_id = ENV.fetch("ASC_KEY_ID")
+    issuer_id = ENV.fetch("ASC_ISSUER_ID")
     key_path = ENV.fetch("ASC_KEY_PATH", File.join(Dir.pwd, "AuthKey_#{key_id}.p8"))
     app_identifier = ENV.fetch("ASC_APP_IDENTIFIER", "pro.marketingtool.app")
 
