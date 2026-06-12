@@ -12,7 +12,10 @@ const APPWRITE_PROJECT_ID = '6952c8a0002d3365625d';
 const APPWRITE_PLATFORM = 'pro.marketingtool.app';
 
 // Database IDs
-export const DATABASE_ID = 'marketingtool_db';
+// The Appwrite database ID on the server is 'main' (was wrongly 'marketingtool_db',
+// which caused every profile read/write to fail with "Database not found" — the
+// real reason credits never showed and plans never unlocked after purchase).
+export const DATABASE_ID = 'main';
 export const COLLECTIONS = {
   USERS: 'users',
   TOOLS: 'tools',
