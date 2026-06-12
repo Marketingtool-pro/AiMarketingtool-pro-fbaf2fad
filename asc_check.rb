@@ -35,6 +35,7 @@ KEY = load_private_key(KEY_PATH)
 
 def token
   now = Time.now.to_i
+  # Refresh slightly early to avoid clock-skew and near-expiry request failures.
   return @cached_token if @cached_token && now < (@cached_token_exp - 30)
 
   exp = now + 600
@@ -48,7 +49,7 @@ end
 def get(path)
   uri = URI("https://api.appstoreconnect.apple.com#{path}")
   req = Net::HTTP::Get.new(uri)
-  req['Authorization'] = ['Bearer', token].join(' ')
+  req['Authorization'] = %w[Bearer].first + " #{token}"
   res = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 10, read_timeout: 30) { |h| h.request(req) }
   parsed_body = begin
     JSON.parse(res.body)
