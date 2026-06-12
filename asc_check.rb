@@ -49,7 +49,7 @@ end
 def get(path)
   uri = URI("https://api.appstoreconnect.apple.com#{path}")
   req = Net::HTTP::Get.new(uri)
-  req['Authorization'] = %w[Bearer].first + " #{token}"
+  req['Authorization'] = 'Bearer ' + token
   res = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 10, read_timeout: 30) { |h| h.request(req) }
   parsed_body = begin
     JSON.parse(res.body)
