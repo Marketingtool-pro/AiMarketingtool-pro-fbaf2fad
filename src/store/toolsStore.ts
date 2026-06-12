@@ -115,7 +115,9 @@ export const TOOL_CATEGORIES = [
 
 
 // Load ALL 314 tools from tools.js (was tools.json — renamed to bypass *.json archive filter)
-const allToolsRaw = require('../data/tools.js');
+// Intentionally kept as require(): this file is stored as .js to avoid archive filtering.
+// Explicit typing prevents implicit `any` and keeps downstream processing type-checked.
+const allToolsRaw = require('../data/tools.js') as Array<Partial<Tool> & Record<string, unknown>>;
 import { ToolIconImagesKeys, setToolIconOverride, getToolIcon as _getToolIcon } from '../constants/toolIcons';
 
 // Pro lock derivation — basic single-shot content tools stay free so users
