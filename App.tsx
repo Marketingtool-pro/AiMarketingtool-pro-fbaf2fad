@@ -11,6 +11,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import { Feather } from '@expo/vector-icons';
 import AppNavigator from './src/navigation/AppNavigator';
+import { initNotificationHistory } from './src/services/notificationHistory';
 import { useAuthStore } from './src/store/authStore';
 import { Colors } from './src/constants/theme';
 import { matomo } from './src/services/matomo';
@@ -33,6 +34,9 @@ export default function App() {
   const { checkAuth } = useAuthStore();
 
   useEffect(() => {
+    // Persist received notifications so the Notifications screen has a real
+    // history (Notification Center alone forgets dismissed items).
+    initNotificationHistory();
     async function prepare() {
       try {
         // Request ATT permission on iOS
