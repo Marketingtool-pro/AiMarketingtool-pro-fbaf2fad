@@ -137,7 +137,7 @@ const FREE_EXACT_SLUGS = new Set([
   'viral-tweets',
   'social-bio-writer',
 ]);
-function deriveIsPro(slug: any): boolean {
+function deriveIsPro(slug: unknown): boolean {
   if (typeof slug !== 'string') return true;
   const s = slug.toLowerCase();
   if (FREE_EXACT_SLUGS.has(s)) return false;
