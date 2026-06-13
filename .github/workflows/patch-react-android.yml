@@ -9,11 +9,18 @@ on:
       - android-patches/**
   workflow_dispatch:
 
+env:
+  # Single source of truth for the patch revision. MUST stay in sync with
+  # PATCHED_VERSION in plugins/withRNEdgeToEdgeFix.js (consumed at prebuild)
+  # and the default patchRevision in android-patches/build.gradle.
+  PATCH_REVISION: '2'
+  REACT_VERSION: '0.85.3'
+
 jobs:
   build-patched-aar:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write   # create/update the react-android-* release
       packages: write
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -33,9 +40,40 @@ jobs:
         env:
           GITHUB_ACTOR: ${{ secrets.MAVEN_USERNAME || github.actor }}
           GITHUB_TOKEN: ${{ secrets.MAVEN_PASSWORD || secrets.GITHUB_TOKEN }}
-        run: ./gradlew assemblePatchedAAR publish --no-daemon --stacktrace
+        run: ./gradlew assemblePatchedAAR publish -PpatchRevision=${{ env.PATCH_REVISION }} --no-daemon --stacktrace
+
+      - name: Verify patched classes (no deprecated APIs)
+        working-directory: android-patches
+        run: |
+          V="${REACT_VERSION}-e2e.${PATCH_REVISION}"
+          cd build/patched
+          unzip -o -q "react-android-${V}.aar" classes.jar
+          unzip -o -q classes.jar 'com/facebook/react/views/view/WindowUtil*' 'com/facebook/react/modules/statusbar/StatusBarModule*'
+          if grep -lr setStatusBarColor com/facebook/react/views/view/ com/facebook/react/modules/statusbar/; then
+            echo "::error::Patched classes still reference setStatusBarColor"; exit 1
+          fi
+          echo "OK: patched classes contain no deprecated edge-to-edge API references"
+
+      - name: Publish GitHub Release (consumed by withRNEdgeToEdgeFix.js)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V="${REACT_VERSION}-e2e.${PATCH_REVISION}"
+          TAG="react-android-${V}"
+          AAR="android-patches/build/patched/react-android-${V}.aar"
+          POM="android-patches/build/patched/react-android-${V}.pom"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$AAR" "$POM" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "$AAR" "$POM" --repo "$GITHUB_REPOSITORY" \
+              --title "react-android ${V} (patched AAR)" \
+              --notes "Patched react-android ${REACT_VERSION}: removes deprecated Android 15 edge-to-edge APIs. Downloaded by plugins/withRNEdgeToEdgeFix.js during expo prebuild." \
+              --latest=false --target "$GITHUB_SHA"
+          fi
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: react-android-patched
-          path: android-patches/build/patched/react-android-*.aar
+          path: |
+            android-patches/build/patched/react-android-*.aar
+            android-patches/build/patched/react-android-*.pom

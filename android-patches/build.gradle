@@ -40,7 +40,10 @@ repositories {
 }
 
 def reactVersion = '0.85.3'
-def patchedVersion = "${reactVersion}-e2e.${System.getenv("GITHUB_RUN_NUMBER") ?: "1"}"
+// Pinned revision — MUST stay in sync with PATCHED_VERSION in plugins/withRNEdgeToEdgeFix.js
+// and the release tag react-android-<version> published by .github/workflows/patch-react-android.yml.
+// Override with -PpatchRevision=N when cutting a new patch revision.
+def patchedVersion = "${reactVersion}-e2e.${findProperty('patchRevision') ?: '2'}"
 
 dependencies {
     // All imports needed by our 2 patched files

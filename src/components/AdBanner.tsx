@@ -1,6 +1,6 @@
 import React from 'react';
 import { Platform, View, StyleSheet } from 'react-native';
-import { adUnit } from '../services/adsService';
+import { adUnit, adRequestOptions } from '../services/adsService';
 
 /**
  * AdMob anchored adaptive banner — Android only (returns null on iOS/web, where
@@ -18,7 +18,7 @@ export default function AdBanner() {
       <BannerAd
         unitId={adUnit.banner}
         size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-        requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+        requestOptions={adRequestOptions()}
       />
     </View>
   );
