@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import React from'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from'react-native';
+import { LinearGradient } from'expo-linear-gradient';
+import { Feather } from'@expo/vector-icons';
+import { useNavigation } from'@react-navigation/native';
+import { Colors, Gradients, Spacing, BorderRadius } from'../../constants/theme';
 
 
 const PrivacyScreen = () => {
@@ -27,47 +27,47 @@ const PrivacyScreen = () => {
           <Text style={styles.lastUpdated}>Last Updated: March 1, 2026</Text>
 
           <Text style={styles.paragraph}>
-            AI MarketingTool LLC ("we," "our," or "us") operates the MarketingTool mobile application. This Privacy Policy explains how we collect, use, and protect your personal information.
+            AI MarketingTool LLC (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) operates the MarketingTool mobile application. This Privacy Policy explains how we collect, use, and protect your personal information.
           </Text>
 
           <Text style={styles.heading}>Information We Collect</Text>
           <Text style={styles.paragraph}>
-            {'\u2022'} Account information (name, email, phone number){'\n'}
-            {'\u2022'} Profile data (avatar, preferences, settings){'\n'}
-            {'\u2022'} Usage data (tools used, generations created, features accessed){'\n'}
-            {'\u2022'} Device information (device type, OS version, app version){'\n'}
-            {'\u2022'} Subscription information (processed securely by Apple App Store / Google Play in-app purchase)
+            {&apos;\u2022&apos;} Account information (name, email, phone number){&apos;\n&apos;}
+            {&apos;\u2022&apos;} Profile data (avatar, preferences, settings){&apos;\n&apos;}
+            {&apos;\u2022&apos;} Usage data (tools used, generations created, features accessed){&apos;\n&apos;}
+            {&apos;\u2022&apos;} Device information (device type, OS version, app version){&apos;\n&apos;}
+            {&apos;\u2022&apos;} Subscription information (processed securely by Apple App Store / Google Play in-app purchase)
           </Text>
 
           <Text style={styles.heading}>How We Use Your Information</Text>
           <Text style={styles.paragraph}>
-            {'\u2022'} To provide, maintain, and improve the App and its features.{'\n'}
-            {'\u2022'} To process your transactions and manage your subscriptions.{'\n'}
-            {'\u2022'} To authenticate your identity and secure your account.{'\n'}
-            {'\u2022'} To send you notifications about your account, updates, and service changes.{'\n'}
-            {'\u2022'} To generate AI-powered marketing content based on your inputs.{'\n'}
-            {'\u2022'} To improve our AI models and develop new features.
+            {&apos;\u2022&apos;} To provide, maintain, and improve the App and its features.{&apos;\n&apos;}
+            {&apos;\u2022&apos;} To process your transactions and manage your subscriptions.{&apos;\n&apos;}
+            {&apos;\u2022&apos;} To authenticate your identity and secure your account.{&apos;\n&apos;}
+            {&apos;\u2022&apos;} To send you notifications about your account, updates, and service changes.{&apos;\n&apos;}
+            {&apos;\u2022&apos;} To generate AI-powered marketing content based on your inputs.{&apos;\n&apos;}
+            {&apos;\u2022&apos;} To improve our AI models and develop new features.
           </Text>
 
           <Text style={styles.heading}>Third-Party Services</Text>
           <Text style={styles.paragraph}>
-            We use trusted service providers to operate the App. Data shared with each provider is limited to what is necessary for the described function:{'\n\n'}
-            {'\u2022'} Cloud infrastructure: Secure storage for your account data, profiles, and generation history.{'\n'}
-            {'\u2022'} App stores: Subscription billing and app distribution via Apple App Store and Google Play.{'\n'}
-            {'\u2022'} Authentication: Secure sign-in via your Apple, Google, or Facebook account (OAuth).{'\n'}
-            {'\u2022'} SMS verification: One-time codes sent to verify your phone number.{'\n'}
-            {'\u2022'} Push notifications: Delivered through your device's native notification service.{'\n'}
-            {'\u2022'} AI content generation: Your inputs are processed to generate marketing content. Inputs are not stored by AI providers after processing.
+            We use trusted service providers to operate the App. Data shared with each provider is limited to what is necessary for the described function:{&apos;\n\n&apos;}
+            {&apos;\u2022&apos;} Cloud infrastructure: Secure storage for your account data, profiles, and generation history.{&apos;\n&apos;}
+            {&apos;\u2022&apos;} App stores: Subscription billing and app distribution via Apple App Store and Google Play.{&apos;\n&apos;}
+            {&apos;\u2022&apos;} Authentication: Secure sign-in via your Apple, Google, or Facebook account (OAuth).{&apos;\n&apos;}
+            {&apos;\u2022&apos;} SMS verification: One-time codes sent to verify your phone number.{&apos;\n&apos;}
+            {&apos;\u2022&apos;} Push notifications: Delivered through your device&apos;s native notification service.{&apos;\n&apos;}
+            {&apos;\u2022&apos;} AI content generation: Your inputs are processed to generate marketing content. Inputs are not stored by AI providers after processing.
           </Text>
 
           <Text style={styles.heading}>Biometric Data</Text>
           <Text style={styles.paragraph}>
-            If you choose to enable Biometric Login (Face ID or Touch ID), please be aware that MarketingTool does not collect, store, or transmit your biometric data. Authentication is handled entirely and securely on your device using the native operating system's keychain.
+            If you choose to enable Biometric Login (Face ID or Touch ID), please be aware that MarketingTool does not collect, store, or transmit your biometric data. Authentication is handled entirely and securely on your device using the native operating system&apos;s keychain.
           </Text>
 
           <Text style={styles.heading}>Data Security</Text>
           <Text style={styles.paragraph}>
-            We do not sell your personal data to any third party. Data shared with third-party services is limited to what is necessary to provide the App's functionality. We implement appropriate security measures to protect your data, including encryption in transit and at rest.
+            We do not sell your personal data to any third party. Data shared with third-party services is limited to what is necessary to provide the App&apos;s functionality. We implement appropriate security measures to protect your data, including encryption in transit and at rest.
           </Text>
 
           <Text style={styles.heading}>Data Retention</Text>
@@ -77,21 +77,21 @@ const PrivacyScreen = () => {
 
           <Text style={styles.heading}>Your Rights</Text>
           <Text style={styles.paragraph}>
-            {'\u2022'} Access and export your personal data{'\n'}
-            {'\u2022'} Request correction of inaccurate data{'\n'}
-            {'\u2022'} Request deletion of your account and data{'\n'}
-            {'\u2022'} Opt out of marketing communications{'\n'}
-            {'\u2022'} Withdraw consent at any time
+            {&apos;\u2022&apos;} Access and export your personal data{&apos;\n&apos;}
+            {&apos;\u2022&apos;} Request correction of inaccurate data{&apos;\n&apos;}
+            {&apos;\u2022&apos;} Request deletion of your account and data{&apos;\n&apos;}
+            {&apos;\u2022&apos;} Opt out of marketing communications{&apos;\n&apos;}
+            {&apos;\u2022&apos;} Withdraw consent at any time
           </Text>
 
-          <Text style={styles.heading}>Children's Privacy</Text>
+          <Text style={styles.heading}>Children&apos;s Privacy</Text>
           <Text style={styles.paragraph}>
             MarketingTool is not intended for use by children under the age of 13. We do not knowingly collect personal information from children under 13.
           </Text>
 
           <Text style={styles.heading}>Changes to This Policy</Text>
           <Text style={styles.paragraph}>
-            We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.
+            We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the &quot;Last Updated&quot; date.
           </Text>
 
           <Text style={styles.heading}>Contact Information</Text>
@@ -100,8 +100,8 @@ const PrivacyScreen = () => {
           </Text>
 
           <Text style={styles.companyInfo}>
-            AI MarketingTool LLC{'\n'}
-            30 N Gould St, STE R{'\n'}
+            AI MarketingTool LLC{&apos;\n&apos;}
+            30 N Gould St, STE R{&apos;\n&apos;}
             Sheridan, WY 82801, USA
           </Text>
         </View>
@@ -120,7 +120,7 @@ const PrivacyScreen = () => {
 const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
-    backgroundColor: '#0D0F1C',
+    backgroundColor:'#0D0F1C',
   },
   header: {
     paddingTop: 60,
@@ -128,21 +128,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection:'row',
+    alignItems:'center',
+    justifyContent:'space-between',
   },
   backButton: {
     width: 44,
     height: 44,
     borderRadius: BorderRadius.full,
     backgroundColor: Colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent:'center',
+    alignItems:'center',
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight:'bold',
     color: Colors.white,
   },
   placeholder: {
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight:'bold',
     color: Colors.white,
     marginBottom: 4,
   },
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight:'600',
     color: Colors.white,
     marginTop: Spacing.lg,
     marginBottom: Spacing.sm,
@@ -187,15 +187,15 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 22,
     marginTop: Spacing.lg,
-    fontWeight: '500',
+    fontWeight:'500',
   },
   footer: {
-    alignItems: 'center',
+    alignItems:'center',
     paddingTop: Spacing.xl,
   },
   footerCompany: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight:'600',
     color: Colors.secondary,
   },
   footerEmail: {

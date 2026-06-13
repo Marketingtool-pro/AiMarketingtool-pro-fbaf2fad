@@ -1,0 +1,54 @@
+Command line invocation:
+    /Users/loken/Downloads/Xcode-beta.app/Contents/Developer/usr/bin/xcodebuild -workspace ios/MarketingTool.xcworkspace -scheme MarketingTool -configuration Debug -sdk iphonesimulator build
+
+Build settings from command line:
+    SDKROOT = iphonesimulator27.0
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder, name:Any iOS Simulator Device }
+{ platform:iOS Simulator, arch:arm64, id:671B6503-436B-4309-A9C2-ED5D19BC7AB6, OS:27.0, name:iPad (A16) }
+{ platform:iOS Simulator, arch:arm64, id:BD172EDE-304F-4E4A-9192-7B2AEE9F8676, OS:27.0, name:iPad Air 11-inch (M4) }
+{ platform:iOS Simulator, arch:arm64, id:E776B9D5-6E36-4D36-86F3-133356D29A40, OS:27.0, name:iPad Air 13-inch (M4) }
+{ platform:iOS Simulator, arch:arm64, id:1C871A1C-8144-43DF-A889-5B0B3C1999D8, OS:27.0, name:iPad Pro 11-inch (M5) }
+{ platform:iOS Simulator, arch:arm64, id:CD7DF72E-4E06-4F7B-A8E9-5EC75405E7EB, OS:26.5, name:iPad Pro 13-inch (M4) }
+{ platform:iOS Simulator, arch:arm64, id:391017CE-A0C9-41E0-BA46-68A41C40BCD2, OS:27.0, name:iPad Pro 13-inch (M5) }
+{ platform:iOS Simulator, arch:arm64, id:83731DFC-C520-4822-8343-5FE24BB96656, OS:27.0, name:iPad mini (A17 Pro) }
+{ platform:iOS Simulator, arch:arm64, id:805DC4A0-0203-40FD-8F79-2836D6DA4411, OS:26.5, name:iPadAir-26_5-review }
+{ platform:iOS Simulator, arch:arm64, id:7CB1E5D5-8747-4D41-950D-493A1A1F958A, OS:26.5, name:iPhone 15 Pro }
+{ platform:iOS Simulator, arch:arm64, id:47E09165-99BF-4FF4-B6A5-23D43A6DCEAE, OS:27.0, name:iPhone 17 }
+{ platform:iOS Simulator, arch:arm64, id:7AB0D45C-3169-4D24-B1D2-26E805DDF515, OS:27.0, name:iPhone 17 Pro }
+{ platform:iOS Simulator, arch:arm64, id:B4BDFC64-DC0D-41E0-B977-CF7D7D9E66CB, OS:27.0, name:iPhone 17 Pro Max }
+{ platform:iOS Simulator, arch:arm64, id:5C799DB4-1925-4C30-BE75-9113BD789A9C, OS:27.0, name:iPhone 17e }
+{ platform:iOS Simulator, arch:arm64, id:B4C5A923-8966-4471-986C-1F162491BB6E, OS:27.0, name:iPhone Air }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008132-001A60A43C0B801C, name:My Mac }
+{ platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device }
+ComputePackagePrebuildTargetDependencyGraph
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'MarketingTool' in project 'MarketingTool' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/ios/MarketingTool.xcodeproj: error: Unable to open base configuration reference file '/Users/loken/Developer/AiMarketingtool-pro-fbaf2fad/ios/Pods/Target Support Files/Pods-MarketingTool/Pods-MarketingTool.debug.xcconfig'. (in target 'MarketingTool' from project 'MarketingTool')
+note: Run script build phase 'Bundle React Native code and images' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'MarketingTool' from project 'MarketingTool')
+note: Run script build phase '[Expo] Configure project' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'MarketingTool' from project 'MarketingTool')
+warning: Run script build phase '[CP-User] [RNFB] Core Configuration' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'MarketingTool' from project 'MarketingTool')
+warning: Run script build phase '[CP-User] [RNFB] Crashlytics Configuration' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'MarketingTool' from project 'MarketingTool')
+warning: Run script build phase '[CP-User] [RNGoogleMobileAds] Configuration' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'MarketingTool' from project 'MarketingTool')
+warning: Run script build phase '[Expo Dev Launcher] Strip Local Network Keys for Release' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'MarketingTool' from project 'MarketingTool')
+** BUILD FAILED **
+
+
+The following build commands failed:
+	Building workspace MarketingTool with scheme MarketingTool and configuration Debug
+(1 failure)

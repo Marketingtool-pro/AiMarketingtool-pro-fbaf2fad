@@ -53,9 +53,9 @@ interface SuggestedPrompt {
 
 // Animated Ripple Component (LiMo style)
 const AnimatedRipple = () => {
-  const ripple1 = useRef(new Animated.Value(0)).current;
-  const ripple2 = useRef(new Animated.Value(0)).current;
-  const ripple3 = useRef(new Animated.Value(0)).current;
+  const [ripple1] = useState(() => new Animated.Value(0));
+  const [ripple2] = useState(() => new Animated.Value(0));
+  const [ripple3] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     const createRippleAnimation = (anim: Animated.Value, delay: number) => {
@@ -483,7 +483,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                 </View>
               </View>
 
-              <Text style={styles.emptyTitle}>Hi, I'm Marketing AI!</Text>
+              <Text style={styles.emptyTitle}>Hi, I&apos;m Marketing AI!</Text>
               <Text style={styles.emptySubtitle}>Your AI Marketing Assistant</Text>
 
               {/* Chat / Tools / History Tabs */}

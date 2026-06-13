@@ -29,7 +29,7 @@ import { clearVerification as clearFirebaseVerification } from '../../services/f
 
 import * as AppleAuthentication from 'expo-apple-authentication';
 
-const { width } = Dimensions.get('window');
+
 
 // Country data for phone login
 interface Country {
@@ -139,12 +139,14 @@ const LoginScreen = () => {
   // user is forced to re-send for the new identifier.
   useEffect(() => {
     if (!otpSent) return;
-    setOtpSent(false);
-    setOtpCode('');
-    setOtpError('');
-    setShowOtpModal(false);
-    useAuthStore.getState().clearOtpTemp();
-    clearFirebaseVerification();
+    setTimeout(() => {
+      setOtpSent(false);
+      setOtpCode('');
+      setOtpError('');
+      setShowOtpModal(false);
+      useAuthStore.getState().clearOtpTemp();
+      clearFirebaseVerification();
+    }, 0);
     SecureStore.deleteItemAsync('pendingOTP').catch(() => {});
   }, [phoneNumber, selectedCountry.code]);
 

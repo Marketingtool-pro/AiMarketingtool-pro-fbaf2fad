@@ -143,6 +143,7 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // eslint-disable-next-line react-compiler/react-compiler
     scale.value = withSequence(withTiming(0.9, { duration: 100 }), withTiming(1, { duration: 100 }));
     onPress();
   };
@@ -179,8 +180,12 @@ const DashboardScreen = () => {
   const canUsePro = hasProAccess(profile?.subscription, localSubscriptionOverride);
   const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
   const [refreshing, setRefreshing] = React.useState(false);
-  const [campaignsCount, setCampaignsCount] = React.useState<number>(0);
-  const [generationsCount, setGenerationsCount] = React.useState<number>(0);
+
+  // Update counts when generations change
+  const userGenerations = (user?.$id && generations.length > 0) ? generations.filter(g => g.userId === user.$id) : [];
+  const generationsCount = userGenerations.length;
+  // Campaigns = unique tools used
+  const campaignsCount = new Set(userGenerations.map(g => g.toolId)).size;
 
   useEffect(() => {
     fetchTools();
@@ -189,18 +194,6 @@ const DashboardScreen = () => {
       fetchGenerations(user.$id);
     }
   }, [user?.$id]);
-
-  // Update counts when generations change
-  useEffect(() => {
-    if (user?.$id && generations.length > 0) {
-      // Get generations count for this user
-      const userGenerations = generations.filter(g => g.userId === user.$id);
-      setGenerationsCount(userGenerations.length);
-      // Campaigns = unique tools used
-      const uniqueTools = new Set(userGenerations.map(g => g.toolId));
-      setCampaignsCount(uniqueTools.size);
-    }
-  }, [generations, user]);
 
   const onRefresh = async () => {
     setRefreshing(true);

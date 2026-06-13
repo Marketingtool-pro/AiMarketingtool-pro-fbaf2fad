@@ -8,9 +8,9 @@ import { Colors } from '../../constants/theme';
 const AppLogo = require('../../../assets/images/logo-icon.png');
 
 const SplashScreen = () => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const glowAnim = useRef(new Animated.Value(0.4)).current;
+  const [fadeAnim] = useState(() => new Animated.Value(0));
+  const [scaleAnim] = useState(() => new Animated.Value(0.8));
+  const [glowAnim] = useState(() => new Animated.Value(0.4));
 
   useEffect(() => {
     Animated.parallel([

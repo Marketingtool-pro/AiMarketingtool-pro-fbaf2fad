@@ -18,17 +18,17 @@ import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 
 const ContactScreen = () => {
   const navigation = useNavigation();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
+  const [name, setName] = useState(&apos;&apos;);
+  const [email, setEmail] = useState(&apos;&apos;);
+  const [subject, setSubject] = useState(&apos;&apos;);
+  const [message, setMessage] = useState(&apos;&apos;);
 
   const handleSubmit = () => {
     if (!name || !email || !message) {
-      Alert.alert('Missing Fields', 'Please fill in name, email and message.');
+      Alert.alert(&apos;Missing Fields&apos;, &apos;Please fill in name, email and message.&apos;);
       return;
     }
-    const mailUrl = `mailto:help@marketingtool.pro?subject=${encodeURIComponent(subject || 'Contact from App')}&body=${encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`)}`;
+    const mailUrl = `mailto:help@marketingtool.pro?subject=${encodeURIComponent(subject || &apos;Contact from App&apos;)}&body=${encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`)}`;
     Linking.openURL(mailUrl);
   };
 
@@ -57,7 +57,7 @@ const ContactScreen = () => {
           {/* Info Card */}
           <View style={styles.infoCard}>
             <Feather name="headphones" size={28} color={Colors.secondary} />
-            <Text style={styles.infoTitle}>We're here to help</Text>
+            <Text style={styles.infoTitle}>We&apos;re here to help</Text>
             <Text style={styles.infoDesc}>
               Have a question, feedback, or need support? Fill out the form below or reach us directly.
             </Text>
@@ -67,7 +67,7 @@ const ContactScreen = () => {
           <View style={styles.methodsRow}>
             <TouchableOpacity
               style={styles.methodCard}
-              onPress={() => Linking.openURL('mailto:help@marketingtool.pro')}
+              onPress={() => Linking.openURL(&apos;mailto:help@marketingtool.pro&apos;)}
             >
               <View style={[styles.methodIcon, { backgroundColor: Colors.secondary + '20' }]}>
                 <Feather name="mail" size={20} color={Colors.secondary} />
@@ -78,7 +78,7 @@ const ContactScreen = () => {
 
             <TouchableOpacity
               style={styles.methodCard}
-              onPress={() => Linking.openURL('https://marketingtool.pro/help/')}
+              onPress={() => Linking.openURL(&apos;https://marketingtool.pro/help/&apos;)}
             >
               <View style={[styles.methodIcon, { backgroundColor: Colors.success + '20' }]}>
                 <Feather name="help-circle" size={20} color={Colors.success} />
@@ -154,7 +154,7 @@ const ContactScreen = () => {
           {/* Website link */}
           <TouchableOpacity
             style={styles.webLink}
-            onPress={() => Linking.openURL('https://marketingtool.pro/contact/')}
+            onPress={() => Linking.openURL(&apos;https://marketingtool.pro/contact/&apos;)}
           >
             <Feather name="external-link" size={16} color={Colors.secondary} />
             <Text style={styles.webLinkText}>Visit our website contact page</Text>
