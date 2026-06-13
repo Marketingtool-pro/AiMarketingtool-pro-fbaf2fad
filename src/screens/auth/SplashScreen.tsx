@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Animated, Dimensions, Image } from 'react-native';
 import { Colors } from '../../constants/theme';
 
-const { width, height } = Dimensions.get('window');
+
 
 // App logo - MarketingTool M+signal icon
 const AppLogo = require('../../../assets/images/logo-icon.png');

@@ -10,8 +10,6 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Animated,
-  Dimensions,
   Image,
   Modal,
   FlatList,
