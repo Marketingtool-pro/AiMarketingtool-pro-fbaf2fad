@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
-import { Canvas, Path, Skia, LinearGradient, vec, Group, Rect, Text as SkiaText, useFont } from '@shopify/react-native-skia';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { Canvas, Path, Skia, LinearGradient, vec, Group, Rect } from '@shopify/react-native-skia';
 import { Colors, Spacing } from '../../constants/theme';
 
 const { width } = Dimensions.get('window');
@@ -19,12 +19,13 @@ interface PerformanceChartProps {
 }
 
 const PerformanceChart = ({ data, title = 'Activity Trend' }: PerformanceChartProps) => {
-  if (!data || data.length < 2) return null;
+  const hasData = data && data.length >= 2;
 
-  const max = useMemo(() => Math.max(...data.map(d => d.value), 10), [data]);
-  const min = useMemo(() => Math.min(...data.map(d => d.value), 0), [data]);
+  const max = useMemo(() => hasData ? Math.max(...data.map(d => d.value), 10) : 10, [data, hasData]);
+  const min = useMemo(() => hasData ? Math.min(...data.map(d => d.value), 0) : 0, [data, hasData]);
 
   const points = useMemo(() => {
+    if (!hasData) return [];
     const xStep = (CHART_WIDTH - PADDING * 2) / (data.length - 1);
     const yScale = (CHART_HEIGHT - PADDING * 2) / (max - min || 1);
 
@@ -60,6 +61,8 @@ const PerformanceChart = ({ data, title = 'Activity Trend' }: PerformanceChartPr
     path.close();
     return path;
   }, [linePath, points]);
+
+  if (!hasData) return null;
 
   return (
     <View style={styles.container}>

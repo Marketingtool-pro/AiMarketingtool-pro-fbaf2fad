@@ -11,6 +11,7 @@ export default function AdBanner() {
   if (Platform.OS !== 'android') return null;
 
   // Lazy require so iOS/web never touch the native module.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { BannerAd, BannerAdSize } = require('react-native-google-mobile-ads');
 
   return (

@@ -12,7 +12,6 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
-  Easing,
   Image,
   Modal,
   FlatList,

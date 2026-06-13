@@ -17,7 +17,7 @@ export function parseAppwriteResponse(rb: any): any {
   if (typeof rb === 'object') return rb;
   if (typeof rb === 'string') {
     try { return JSON.parse(rb); }
-    catch { return { success: false, message: rb }; }
+    catch (error: any) { return { success: false, message: rb }; }
   }
   return {};
 }
@@ -133,7 +133,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           generationsLimit: 9999,
         };
         set({ user: mockUser as any, profile: reviewerProfile, isAuthenticated: true, isLoading: false });
-      } catch (e) {
+      } catch {
         const fallbackProfile: UserProfile = {
           $id: 'reviewer_bypass',
           userId: 'reviewer_bypass',
@@ -168,7 +168,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           }
         }
       }
-    } catch (error: any) {
+    } catch {
       if (error.type === 'user_mfa_required' || (error.code === 401 && error.message?.includes('MFA'))) {
         set({ mfaPending: true, isLoading: false });
         return;
@@ -187,7 +187,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const profile = await get().fetchOrCreateProfile(user);
         set({ user, profile, isAuthenticated: true, isLoading: false, mfaPending: false });
       }
-    } catch (error: any) {
+    } catch {
       set({ error: error.message || 'Invalid 2FA code', isLoading: false });
       throw error;
     }
@@ -206,7 +206,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authService.update2FA(true);
       const user = await authService.getCurrentUser();
       set({ user, isLoading: false });
-    } catch (error: any) {
+    } catch {
       set({ isLoading: false, error: error.message });
       throw error;
     }
@@ -218,7 +218,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authService.update2FA(false);
       const user = await authService.getCurrentUser();
       set({ user, isLoading: false });
-    } catch (error: any) {
+    } catch {
       set({ isLoading: false, error: error.message });
       throw error;
     }
@@ -233,7 +233,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const profile = await get().fetchOrCreateProfile(user);
         set({ user, profile, isAuthenticated: true, isLoading: false });
       }
-    } catch (error: any) {
+    } catch {
       set({ error: error.message || 'Registration failed', isLoading: false });
       throw error;
     }
@@ -252,7 +252,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       }
       set({ isLoading: false, error: 'Google login was cancelled or failed' });
-    } catch (error: any) {
+    } catch {
       set({ error: error.message || 'Google login failed', isLoading: false });
       throw error;
     }
@@ -271,7 +271,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       }
       set({ isLoading: false, error: 'Apple login was cancelled or failed' });
-    } catch (error: any) {
+    } catch {
       set({ error: error.message || 'Apple login failed', isLoading: false });
       throw error;
     }
@@ -290,7 +290,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       }
       set({ isLoading: false, error: 'Facebook login was cancelled or failed' });
-    } catch (error: any) {
+    } catch {
       set({ error: error.message || 'Facebook login failed', isLoading: false });
       throw error;
     }
@@ -330,7 +330,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       set({ tempPhone: formatted, tempVerificationId: formatted });
       return formatted;
-    } catch (error: any) {
+    } catch {
       if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
       set({ error: error.message || 'Failed to send OTP' });
       throw error;
@@ -384,7 +384,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error(sessionResult.error || 'Failed to create session');
       }
 
-      try { await account.deleteSession('current'); } catch (_e) {}
+      try { await account.deleteSession('current'); } catch {}
       await account.createSession(sessionResult.userId, sessionResult.secret);
 
       const user = await authService.getCurrentUser();
@@ -393,7 +393,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const profile = await get().fetchOrCreateProfile(user);
       set({ user, profile, isAuthenticated: true, tempPhone: null, tempVerificationId: null });
       return;
-    } catch (error: any) {
+    } catch {
       if (__DEV__) console.log('[Auth] Verify OTP error:', error.message);
       set({ error: error.message || 'Invalid OTP' });
       throw error;
@@ -417,7 +417,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ isLoading: false });
       }
       return false;
-    } catch (error) {
+    } catch {
       set({ isLoading: false });
       return false;
     }
@@ -430,7 +430,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Sign out of Firebase too — phone-auth users have a Firebase session
       // alongside the Appwrite one. Failing to sign out leaves the Firebase
       // user logged in and triggers stale-state behavior on next login.
-      try { await signOutFirebase(); } catch (_e) {}
+      try { await signOutFirebase(); } catch {}
       set({
         user: null,
         profile: null,
@@ -438,7 +438,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
         biometricPending: false,
       });
-    } catch (error: any) {
+    } catch {
       set({ error: error.message, isLoading: false });
     }
   },
@@ -452,7 +452,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (override) {
           set({ localSubscriptionOverride: override as any });
         }
-      } catch (e) {
+      } catch {
         console.warn('[AuthStore] Load local subscription override failed:', e);
       }
 
@@ -476,7 +476,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else {
         set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
       }
-    } catch (error) {
+    } catch {
       // On error or timeout, proceed as not authenticated
       set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
     }
@@ -487,7 +487,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       await authService.resetPassword(email);
       set({ isLoading: false });
-    } catch (error: any) {
+    } catch {
       set({ error: error.message || 'Password reset failed', isLoading: false });
       throw error;
     }
@@ -505,7 +505,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         data
       );
       set({ profile: updated as UserProfile, isLoading: false });
-    } catch (error: any) {
+    } catch {
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -520,7 +520,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ localSubscriptionOverride: tier });
     try {
       await SecureStore.setItemAsync('local_subscription_override', tier);
-    } catch (e) {
+    } catch {
       console.warn('[AuthStore] Save local subscription override failed:', e);
     }
     const { profile } = get();
@@ -533,7 +533,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         { subscription: tier, generationsLimit }
       );
       set({ profile: updated as UserProfile });
-    } catch (error) {
+    } catch {
       console.warn('[AuthStore] grantEntitlement persist failed (local unlock kept):', error);
     }
   },
@@ -553,7 +553,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         { generationsLimit }
       );
       set({ profile: updated as UserProfile });
-    } catch (error) {
+    } catch {
       console.warn('[AuthStore] grantCredits persist failed (local credit kept):', error);
     }
   },
@@ -564,7 +564,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const profile = await get().fetchOrCreateProfile(user);
       set({ profile });
-    } catch (error) {
+    } catch {
       console.error('[AuthStore] Refresh profile failed:', error);
     }
   },
@@ -619,7 +619,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       ]);
 
       return newProfile as UserProfile;
-    } catch (error: any) {
+    } catch {
       // Surface network/timeout errors in state so the UI can show a warning.
       // We still return a temporary defaultProfile so auth isn't blocked.
       if (error?.message && !error.message.includes('Document with the requested ID')) {

@@ -14,8 +14,13 @@ import { adUnit, adRequestOptions } from '../services/adsService';
  */
 export default function NativeAdCard() {
   if (Platform.OS !== 'android') return null;
+  return <AndroidNativeAdCard />;
+}
+
+function AndroidNativeAdCard() {
 
   // Lazy require so iOS/web never touch the native module.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const {
     NativeAd,
     NativeAdView,
