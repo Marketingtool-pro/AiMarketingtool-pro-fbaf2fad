@@ -34,5 +34,5 @@ jobs:
           unzip sonar-scanner-cli-5.0.1.3006-linux.zip
           ./sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner \
             -Dsonar.projectKey=AiMarketingtool-pro-fbaf2fad \
-            -Dsonar.organization=marketingtool-pro \
+            -Dsonar.organization=github \
             -Dsonar.sources=.
