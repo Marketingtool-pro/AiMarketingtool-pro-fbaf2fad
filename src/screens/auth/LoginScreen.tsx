@@ -14,6 +14,7 @@ import {
   Modal,
   FlatList,
   AppState,
+  Dimensions,
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -498,7 +499,7 @@ const LoginScreen = () => {
           </TouchableOpacity>
 
           <View style={styles.footer}>
-             <Text style={styles.footerText}>Don't have an account? </Text>
+             <Text style={styles.footerText}>Don&apos;t have an account? </Text>
              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
                 <Text style={styles.signupText}>Sign Up Free</Text>
              </TouchableOpacity>

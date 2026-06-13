@@ -143,7 +143,8 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // eslint-disable-next-line react-compiler/react-compiler
+    // Reanimated shared values are mutated by design; react-hooks/immutability doesn't model them.
+    // eslint-disable-next-line react-hooks/immutability
     scale.value = withSequence(withTiming(0.9, { duration: 100 }), withTiming(1, { duration: 100 }));
     onPress();
   };
