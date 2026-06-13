@@ -1,26 +1,23 @@
 version: 2.1
 
+# SonarCloud removed (its org never existed → every scan returned 404).
+# Quality/security is covered by CodeQL + Socket + CodeRabbit (GitHub checks)
+# and Sonatype (dependency security). This pipeline runs the project's real
+# lint using its actual Node toolchain.
 jobs:
-  sonarqube:
+  lint:
     docker:
-      - image: cimg/android:2024.01.1-node
+      - image: cimg/node:24.3
     steps:
       - checkout
       - run:
-          name: Download SonarScanner
-          command: |
-            wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
-            unzip sonar-scanner-cli-5.0.1.3006-linux.zip
+          name: Install dependencies
+          command: npm ci
       - run:
-          name: Run SonarScanner
-          command: |
-            ./sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner \
-              -Dsonar.projectKey=AiMarketingtool-pro-fbaf2fad \
-              -Dsonar.sources=android/app/src/main/java,src \
-              -Dsonar.host.url=${SONAR_HOST_URL} \
-              -Dsonar.login=${SONAR_TOKEN}
+          name: Lint (expo)
+          command: npm run lint
 
 workflows:
   main:
     jobs:
-      - sonarqube
+      - lint
