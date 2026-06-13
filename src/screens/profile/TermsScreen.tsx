@@ -91,8 +91,8 @@ const TermsScreen = () => {
           </Text>
 
           <Text style={styles.companyInfo}>
-            AI MarketingTool LLC{&apos;\n&apos;}
-            30 N Gould St, STE R{&apos;\n&apos;}
+            AI MarketingTool LLC{'\n'}
+            30 N Gould St, STE R{'\n'}
             Sheridan, WY 82801, USA
           </Text>
         </View>

@@ -32,32 +32,32 @@ const PrivacyScreen = () => {
 
           <Text style={styles.heading}>Information We Collect</Text>
           <Text style={styles.paragraph}>
-            {&apos;\u2022&apos;} Account information (name, email, phone number){&apos;\n&apos;}
-            {&apos;\u2022&apos;} Profile data (avatar, preferences, settings){&apos;\n&apos;}
-            {&apos;\u2022&apos;} Usage data (tools used, generations created, features accessed){&apos;\n&apos;}
-            {&apos;\u2022&apos;} Device information (device type, OS version, app version){&apos;\n&apos;}
-            {&apos;\u2022&apos;} Subscription information (processed securely by Apple App Store / Google Play in-app purchase)
+            {'\u2022'} Account information (name, email, phone number){'\n'}
+            {'\u2022'} Profile data (avatar, preferences, settings){'\n'}
+            {'\u2022'} Usage data (tools used, generations created, features accessed){'\n'}
+            {'\u2022'} Device information (device type, OS version, app version){'\n'}
+            {'\u2022'} Subscription information (processed securely by Apple App Store / Google Play in-app purchase)
           </Text>
 
           <Text style={styles.heading}>How We Use Your Information</Text>
           <Text style={styles.paragraph}>
-            {&apos;\u2022&apos;} To provide, maintain, and improve the App and its features.{&apos;\n&apos;}
-            {&apos;\u2022&apos;} To process your transactions and manage your subscriptions.{&apos;\n&apos;}
-            {&apos;\u2022&apos;} To authenticate your identity and secure your account.{&apos;\n&apos;}
-            {&apos;\u2022&apos;} To send you notifications about your account, updates, and service changes.{&apos;\n&apos;}
-            {&apos;\u2022&apos;} To generate AI-powered marketing content based on your inputs.{&apos;\n&apos;}
-            {&apos;\u2022&apos;} To improve our AI models and develop new features.
+            {'\u2022'} To provide, maintain, and improve the App and its features.{'\n'}
+            {'\u2022'} To process your transactions and manage your subscriptions.{'\n'}
+            {'\u2022'} To authenticate your identity and secure your account.{'\n'}
+            {'\u2022'} To send you notifications about your account, updates, and service changes.{'\n'}
+            {'\u2022'} To generate AI-powered marketing content based on your inputs.{'\n'}
+            {'\u2022'} To improve our AI models and develop new features.
           </Text>
 
           <Text style={styles.heading}>Third-Party Services</Text>
           <Text style={styles.paragraph}>
-            We use trusted service providers to operate the App. Data shared with each provider is limited to what is necessary for the described function:{&apos;\n\n&apos;}
-            {&apos;\u2022&apos;} Cloud infrastructure: Secure storage for your account data, profiles, and generation history.{&apos;\n&apos;}
-            {&apos;\u2022&apos;} App stores: Subscription billing and app distribution via Apple App Store and Google Play.{&apos;\n&apos;}
-            {&apos;\u2022&apos;} Authentication: Secure sign-in via your Apple, Google, or Facebook account (OAuth).{&apos;\n&apos;}
-            {&apos;\u2022&apos;} SMS verification: One-time codes sent to verify your phone number.{&apos;\n&apos;}
-            {&apos;\u2022&apos;} Push notifications: Delivered through your device&apos;s native notification service.{&apos;\n&apos;}
-            {&apos;\u2022&apos;} AI content generation: Your inputs are processed to generate marketing content. Inputs are not stored by AI providers after processing.
+            We use trusted service providers to operate the App. Data shared with each provider is limited to what is necessary for the described function:{'\n\n'}
+            {'\u2022'} Cloud infrastructure: Secure storage for your account data, profiles, and generation history.{'\n'}
+            {'\u2022'} App stores: Subscription billing and app distribution via Apple App Store and Google Play.{'\n'}
+            {'\u2022'} Authentication: Secure sign-in via your Apple, Google, or Facebook account (OAuth).{'\n'}
+            {'\u2022'} SMS verification: One-time codes sent to verify your phone number.{'\n'}
+            {'\u2022'} Push notifications: Delivered through your device&apos;s native notification service.{'\n'}
+            {'\u2022'} AI content generation: Your inputs are processed to generate marketing content. Inputs are not stored by AI providers after processing.
           </Text>
 
           <Text style={styles.heading}>Biometric Data</Text>
@@ -77,11 +77,11 @@ const PrivacyScreen = () => {
 
           <Text style={styles.heading}>Your Rights</Text>
           <Text style={styles.paragraph}>
-            {&apos;\u2022&apos;} Access and export your personal data{&apos;\n&apos;}
-            {&apos;\u2022&apos;} Request correction of inaccurate data{&apos;\n&apos;}
-            {&apos;\u2022&apos;} Request deletion of your account and data{&apos;\n&apos;}
-            {&apos;\u2022&apos;} Opt out of marketing communications{&apos;\n&apos;}
-            {&apos;\u2022&apos;} Withdraw consent at any time
+            {'\u2022'} Access and export your personal data{'\n'}
+            {'\u2022'} Request correction of inaccurate data{'\n'}
+            {'\u2022'} Request deletion of your account and data{'\n'}
+            {'\u2022'} Opt out of marketing communications{'\n'}
+            {'\u2022'} Withdraw consent at any time
           </Text>
 
           <Text style={styles.heading}>Children&apos;s Privacy</Text>
@@ -100,8 +100,8 @@ const PrivacyScreen = () => {
           </Text>
 
           <Text style={styles.companyInfo}>
-            AI MarketingTool LLC{&apos;\n&apos;}
-            30 N Gould St, STE R{&apos;\n&apos;}
+            AI MarketingTool LLC{'\n'}
+            30 N Gould St, STE R{'\n'}
             Sheridan, WY 82801, USA
           </Text>
         </View>

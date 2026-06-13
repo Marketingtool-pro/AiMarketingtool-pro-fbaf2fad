@@ -178,7 +178,7 @@
     "chai": "^6.2.2",
     "eas-build-cache-provider": "^20.0.0",
     "esbuild": "0.28.1",
-    "eslint": "^8.57.1",
+    "eslint": "^9.39.4",
     "eslint-config-expo": "^56.0.4",
     "eslint-plugin-react": "^7.37.5",
     "expo-module-scripts": "^56.0.3",
