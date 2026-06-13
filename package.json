@@ -177,7 +177,7 @@
     "babel-preset-expo": "~56.0.15",
     "chai": "^6.2.2",
     "eas-build-cache-provider": "^20.0.0",
-    "esbuild": "0.28.0",
+    "esbuild": "0.28.1",
     "eslint": "^9.39.4",
     "eslint-config-expo": "~56.0.4",
     "expo-module-scripts": "^56.0.3",
