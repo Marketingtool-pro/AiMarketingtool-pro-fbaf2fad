@@ -63,7 +63,11 @@ jobs:
           AAR="android-patches/build/patched/react-android-${V}.aar"
           POM="android-patches/build/patched/react-android-${V}.pom"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$AAR" "$POM" --repo "$GITHUB_REPOSITORY" --clobber
+            # Releases are immutable on this repo: a published version can never be
+            # replaced. To ship a new patch build, bump PATCH_REVISION (and the
+            # matching constants in plugins/withRNEdgeToEdgeFix.js + android-patches/build.gradle).
+            echo "Release $TAG already published (immutable) — nothing to do."
+            echo "To publish a new patch, bump PATCH_REVISION."
           else
             gh release create "$TAG" "$AAR" "$POM" --repo "$GITHUB_REPOSITORY" \
               --title "react-android ${V} (patched AAR)" \
