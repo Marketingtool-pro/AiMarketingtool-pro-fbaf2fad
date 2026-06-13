@@ -19,7 +19,7 @@ const withAndroidAbiFilters = (config) => {
 
     contents = contents.replace(
       /(versionCode\s+\d+\s*\n\s*versionName\s+"[^"]*"\s*\n)/,
-      `$1\n        ndk {\n            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'\n        }\n`,
+      `$1\n        ndk {\n            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'\n        }\n`,
     );
 
     cfg.modResults.contents = contents;

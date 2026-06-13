@@ -165,7 +165,6 @@
       "expo-asset",
       "expo-tracking-transparency",
       "./plugins/withKotlinKspFix.js",
-      "./plugins/withRNEdgeToEdgeFix.js",
       [
         "react-native-google-mobile-ads",
         {
@@ -194,5 +193,10 @@
     "updates": {
       "url": "https://u.expo.dev/93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
     }
+  },
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-2789940907288323~8551339904",
+    "ios_app_id": "ca-app-pub-2789940907288323~8551339904",
+    "delay_app_measurement_init": true
   }
 }

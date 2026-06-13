@@ -8,6 +8,9 @@
       "autoIncrement": false,
       "channel": "production",
       "node": "24.16.0",
+      "android": {
+        "resourceClass": "large"
+      },
       "env": {
         "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
       }
