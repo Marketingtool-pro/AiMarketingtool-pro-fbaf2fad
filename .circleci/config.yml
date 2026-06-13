@@ -1,0 +1,26 @@
+version: 2.1
+
+jobs:
+  sonarqube:
+    docker:
+      - image: cimg/android:2024.01.1-node
+    steps:
+      - checkout
+      - run:
+          name: Download SonarScanner
+          command: |
+            wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+            unzip sonar-scanner-cli-5.0.1.3006-linux.zip
+      - run:
+          name: Run SonarScanner
+          command: |
+            ./sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner \
+              -Dsonar.projectKey=AiMarketingtool-pro-fbaf2fad \
+              -Dsonar.sources=android/app/src/main/java,src \
+              -Dsonar.host.url=${SONAR_HOST_URL} \
+              -Dsonar.login=${SONAR_TOKEN}
+
+workflows:
+  main:
+    jobs:
+      - sonarqube
