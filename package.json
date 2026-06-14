@@ -140,8 +140,8 @@
     "lottie-react-native": "~7.3.8",
     "material-symbols": "^0.45.1",
     "mvdan-sh": "^0.10.1",
-    "react": "19.2.7",
-    "react-dom": "19.2.7",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.85.3",
     "react-native-appwrite": "0.32.0",
     "react-native-edge-to-edge": "^1.8.1",
@@ -206,8 +206,8 @@
     "@opentelemetry/sdk-node": ">=0.217.0",
     "@opentelemetry/exporter-prometheus": ">=0.217.0",
     "ws": "^8.21.0",
-    "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "react": "$react",
+    "react-dom": "$react-dom"
   },
   "expo": {
     "doctor": {
@@ -233,8 +233,6 @@
         "expo-location",
         "expo-notifications",
         "expo-sharing",
-        "react",
-        "react-dom",
         "react-native-keyboard-controller",
         "react-native-svg"
       ]
