@@ -9,13 +9,13 @@ name: Production Deploy
 # Requires repo secret ASC_API_KEY_BASE64 (base64 of AuthKey_69JDXUCPU3.p8).
 
 on:
-  # Tag-triggered auto-build/submit is DISABLED so a git push (yours or the
-  # bots') never uploads a build or touches App Store Connect while a manual
-  # submission is being assembled in the web UI. To ship iOS, run it manually:
-  # Actions -> Production Deploy -> Run workflow.
-  # push:
-  #   tags:
-  #     - 'v*.*.*'
+  # Tag push (v*.*.*) builds iOS and uploads to TestFlight. The review-submit
+  # step below stays DRY_RUN: 'true', so a tag does NOT submit to App Review —
+  # it only lands the build in TestFlight for verification. Flip DRY_RUN to
+  # 'false' (after TestFlight check) to actually submit build + IAPs for review.
+  push:
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
 
 permissions:
