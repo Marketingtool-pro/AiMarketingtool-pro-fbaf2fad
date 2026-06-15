@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import * as Haptics from 'expo-haptics';
-import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, entitlementForProduct, CREDITS_PER_TOKEN_PACK } from '../../services/billingService';
+import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, type Entitlement } from '../../services/billingService';
 import { functions } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 
@@ -37,7 +37,7 @@ interface Plan {
 
 const SubscriptionScreen = () => {
   const navigation = useNavigation();
-  const { user, profile, refreshProfile, grantEntitlement, grantCredits } = useAuthStore();
+  const { profile, refreshProfile, applyLocalEntitlement } = useAuthStore();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [selectedPlan, setSelectedPlan] = useState<string>('pro');
   const [isLoading, setIsLoading] = useState(false);
@@ -49,10 +49,15 @@ const SubscriptionScreen = () => {
     if (Platform.OS === 'web') return;
     billingService.initialize().catch(err => console.error('[Billing] Init failed:', err));
     billingService.startListeners({
-      onSuccess: async (productId: string) => {
+      onSuccess: (_productId: string, entitlement?: Entitlement | null) => {
         setIsLoading(false);
         const kind = pendingKindRef.current;
         pendingKindRef.current = null;
+        // Apply entitlement immediately so Pro features unlock without waiting
+        // for the server round-trip (Guideline 2.1b fix — client-side unlock).
+        if (entitlement) {
+          applyLocalEntitlement(entitlement);
+        }
         if (kind === 'consumable') {
           // Credit locally first — tokens are "added instantly" (pricing page)
           // and the server verify can fail in Apple's sandbox.
