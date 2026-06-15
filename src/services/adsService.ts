@@ -45,11 +45,38 @@ export const adUnit = {
 
 let initialized = false;
 
+// GDPR/UMP consent state. Until consent is OBTAINED (or NOT_REQUIRED outside the
+// EEA/UK), every ad request stays non-personalized — that is the legally safe floor.
+let personalizedAllowed = false;
+
+/** Request options for every ad load — NPA unless UMP consent allows personalized. */
+export const adRequestOptions = () => ({ requestNonPersonalizedAdsOnly: !personalizedAllowed });
+
+/**
+ * Google UMP consent flow (required for EEA/UK users). gatherConsent() shows the
+ * consent form only when the user's region requires it; elsewhere it resolves
+ * immediately with NOT_REQUIRED. A failure here must never block ad init — we
+ * just stay on non-personalized requests.
+ */
+async function gatherUmpConsent(m: any): Promise<void> {
+  try {
+    await m.AdsConsent.gatherConsent();
+    const info = await m.AdsConsent.getConsentInfo();
+    personalizedAllowed =
+      info.status === m.AdsConsentStatus.OBTAINED ||
+      info.status === m.AdsConsentStatus.NOT_REQUIRED;
+  } catch (e) {
+    personalizedAllowed = false;
+    console.warn('[Ads] UMP consent error (continuing with non-personalized ads)', e);
+  }
+}
+
 /** Initialize the Mobile Ads SDK. Safe to call repeatedly; no-op on iOS. */
 export async function initAds(): Promise<void> {
   const m = lib();
   if (!m || initialized) return;
   try {
+    await gatherUmpConsent(m);
     await m.default().setRequestConfiguration({
       maxAdContentRating: m.MaxAdContentRating.PG,
       tagForChildDirectedTreatment: false,
@@ -67,7 +94,7 @@ export async function showInterstitial(): Promise<boolean> {
   const m = lib();
   if (!m) return false;
   try {
-    const ad = m.InterstitialAd.createForAdRequest(adUnit.interstitial, { requestNonPersonalizedAdsOnly: true });
+    const ad = m.InterstitialAd.createForAdRequest(adUnit.interstitial, adRequestOptions());
     return await new Promise<boolean>((resolve) => {
       const offLoad = ad.addAdEventListener(m.AdEventType.LOADED, () => ad.show());
       const offClose = ad.addAdEventListener(m.AdEventType.CLOSED, () => { offLoad(); offClose(); offErr(); resolve(true); });
@@ -85,7 +112,7 @@ export async function showRewarded(): Promise<{ amount: number; type: string } |
   const m = lib();
   if (!m) return null;
   try {
-    const ad = m.RewardedAd.createForAdRequest(adUnit.rewarded, { requestNonPersonalizedAdsOnly: true });
+    const ad = m.RewardedAd.createForAdRequest(adUnit.rewarded, adRequestOptions());
     return await new Promise((resolve) => {
       let reward: { amount: number; type: string } | null = null;
       const offLoad = ad.addAdEventListener(m.RewardedAdEventType.LOADED, () => ad.show());

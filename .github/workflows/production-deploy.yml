@@ -9,9 +9,13 @@ name: Production Deploy
 # Requires repo secret ASC_API_KEY_BASE64 (base64 of AuthKey_69JDXUCPU3.p8).
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
+  # Tag-triggered auto-build/submit is DISABLED so a git push (yours or the
+  # bots') never uploads a build or touches App Store Connect while a manual
+  # submission is being assembled in the web UI. To ship iOS, run it manually:
+  # Actions -> Production Deploy -> Run workflow.
+  # push:
+  #   tags:
+  #     - 'v*.*.*'
   workflow_dispatch:
 
 permissions:
@@ -47,7 +51,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund
+        run: npm ci --include=dev
 
       - name: Build production (android)
         id: build
@@ -78,7 +82,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund
+        run: npm ci --include=dev
 
       - name: Submit to Play Store
         continue-on-error: true
@@ -115,7 +119,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund
+        run: npm ci --include=dev
 
       # Write the ASC API key FIRST, at the path eas.json's ascApiKeyPath expects,
       # so `eas submit` can authenticate (the .p8 is gitignored, not in the checkout).

@@ -11,6 +11,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
+import {
+  listNotificationHistory,
+  recordNotification,
+  markNotificationRead,
+  clearNotificationHistory,
+} from '../../services/notificationHistory';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 
 
@@ -48,26 +54,33 @@ const NotificationsScreen = () => {
   };
 
   const loadNotifications = async () => {
-    const delivered = await Notifications.getPresentedNotificationsAsync();
-    const items: NotificationItem[] = delivered.map((n) => ({
-      id: n.request.identifier,
-      title: n.request.content.title || 'MarketingTool',
-      body: n.request.content.body || '',
-      date: new Date(n.date),
-      read: false,
+    // Sweep anything still in Notification Center into the persistent history,
+    // then render from history — so items survive being opened or dismissed.
+    try {
+      const delivered = await Notifications.getPresentedNotificationsAsync();
+      await Promise.all(delivered.map(recordNotification));
+    } catch { /* history is best-effort */ }
+    const stored = await listNotificationHistory();
+    setNotifications(stored.map((s) => ({
+      id: s.id,
+      title: s.title,
+      body: s.body,
+      date: new Date(s.date),
+      read: s.read,
       type: 'system' as const,
-    }));
-    setNotifications(items);
+    })));
   };
 
   const markAsRead = (id: string) => {
     setNotifications(prev =>
       prev.map(n => (n.id === id ? { ...n, read: true } : n))
     );
+    markNotificationRead(id);
   };
 
   const dismissAll = async () => {
     await Notifications.dismissAllNotificationsAsync();
+    await clearNotificationHistory();
     setNotifications([]);
   };
 

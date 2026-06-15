@@ -59,6 +59,29 @@ const PRODUCT_TO_ENTITLEMENT: Record<string, Entitlement> = {
 export const entitlementForProduct = (productId: string): Entitlement | null =>
   PRODUCT_TO_ENTITLEMENT[productId] ?? null;
 
+// ── Tier model (matches marketingtool.pro/pricing) ───────────────────────────
+// Gates must be tier-aware, not binary: Starter buys the standard platform and
+// 200 generations/month, but PRO-badged tools require the Pro tier or higher.
+export type Tier = 'free' | 'starter' | 'pro' | 'growth' | 'enterprise';
+export const TIER_RANK: Record<Tier, number> = { free: 0, starter: 1, pro: 2, growth: 3, enterprise: 4 };
+// The token pack adds 100 generations, "added instantly to your account".
+export const CREDITS_PER_TOKEN_PACK = 100;
+
+// Resolve the user's effective tier from the server profile and the local
+// purchase override (set by a finished StoreKit transaction; must win even
+// when the server write failed, e.g. in Apple's sandbox). Highest tier wins.
+export const effectiveTier = (
+  profileTier?: string | null,
+  override?: string | null
+): Tier => {
+  const p = (profileTier && profileTier in TIER_RANK ? profileTier : 'free') as Tier;
+  const o = (override && override in TIER_RANK ? override : 'free') as Tier;
+  return TIER_RANK[p] >= TIER_RANK[o] ? p : o;
+};
+
+export const hasProAccess = (profileTier?: string | null, override?: string | null): boolean =>
+  TIER_RANK[effectiveTier(profileTier, override)] >= TIER_RANK.pro;
+
 // ── Google Play subscription model ───────────────────────────────────────────
 // iOS = 6 flat App Store product ids (PLAN_TO_SKU above). Google Play = 3
 // subscription PRODUCTS, each with `monthly` / `yearly` BASE PLANS, purchased via

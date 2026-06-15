@@ -1,4 +1,11 @@
 {
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "predeploy": []
+    }
+  ],
   "hosting": {
     "public": "public",
     "ignore": [

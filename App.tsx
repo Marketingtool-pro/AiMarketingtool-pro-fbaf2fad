@@ -11,6 +11,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import { Feather } from '@expo/vector-icons';
 import AppNavigator from './src/navigation/AppNavigator';
+import { initNotificationHistory } from './src/services/notificationHistory';
 import { useAuthStore } from './src/store/authStore';
 import { Colors } from './src/constants/theme';
 import { matomo } from './src/services/matomo';
@@ -33,6 +34,9 @@ export default function App() {
   const { checkAuth } = useAuthStore();
 
   useEffect(() => {
+    // Persist received notifications so the Notifications screen has a real
+    // history (Notification Center alone forgets dismissed items).
+    initNotificationHistory();
     async function prepare() {
       try {
         // Request ATT permission on iOS
@@ -55,7 +59,18 @@ export default function App() {
         // which isn't linked. Capping at 2s so a slow attestation call
         // doesn't block the splash forever.
         await Promise.all([
-          withTimeout(Font.loadAsync({ ...Feather.font }), 1500),
+          // Load the bundled Poppins family the theme references (theme.ts FontFamily).
+          // Previously only Feather icons were loaded, so every `fontFamily: 'Poppins-*'`
+          // silently fell back to the platform system font — San Francisco on iOS,
+          // Roboto on Android — which is why Android didn't match the iOS design on
+          // every screen. Loading these makes typography identical on both platforms.
+          withTimeout(Font.loadAsync({
+            ...Feather.font,
+            'Poppins-Regular': require('./assets/fonts/Poppins-Regular.ttf'),
+            'Poppins-Medium': require('./assets/fonts/Poppins-Medium.ttf'),
+            'Poppins-SemiBold': require('./assets/fonts/Poppins-SemiBold.ttf'),
+            'Poppins-Bold': require('./assets/fonts/Poppins-Bold.ttf'),
+          }), 3000),
           withTimeout(checkAuth(), 1500),
           withTimeout(initializeAppCheck(), 2000),
         ]);

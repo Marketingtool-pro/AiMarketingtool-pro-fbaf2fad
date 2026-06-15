@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Platform, View, Text, Image, StyleSheet } from 'react-native';
-import { adUnit } from '../services/adsService';
+import { adUnit, adRequestOptions } from '../services/adsService';
 
 /**
  * AdMob "Native Advanced" ad — Android only (returns null on iOS/web, where the
@@ -14,8 +14,13 @@ import { adUnit } from '../services/adsService';
  */
 export default function NativeAdCard() {
   if (Platform.OS !== 'android') return null;
+  return <AndroidNativeAdCard />;
+}
+
+function AndroidNativeAdCard() {
 
   // Lazy require so iOS/web never touch the native module.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const {
     NativeAd,
     NativeAdView,
@@ -29,7 +34,7 @@ export default function NativeAdCard() {
   useEffect(() => {
     let current: any;
     let cancelled = false;
-    NativeAd.createForAdRequest(adUnit.native, { requestNonPersonalizedAdsOnly: true })
+    NativeAd.createForAdRequest(adUnit.native, adRequestOptions())
       .then((loaded: any) => {
         if (cancelled) { loaded?.destroy?.(); return; }
         current = loaded;

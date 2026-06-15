@@ -50,6 +50,7 @@ expo-env.d.ts
 *.p8
 *.p12
 *.key
+*.keychain
 *.mobileprovision
 
 # SECURE: BLOCK ALL CREDENTIALS & JSON SECRETS
@@ -199,3 +200,5 @@ mybundle
 /target
 xcode-build.log
 yarn.lock
+package-lock.json
+.bundle

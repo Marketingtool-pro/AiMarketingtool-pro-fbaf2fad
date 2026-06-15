@@ -1,4 +1,4 @@
-import { Platform } from "react-native";
+// Unused platform import removed
 
 /**
  * PRO Tool Icon Mapping (auto-generated, paid icon pack)

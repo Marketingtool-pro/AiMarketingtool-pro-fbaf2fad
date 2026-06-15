@@ -12,7 +12,6 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
-  Easing,
   Image,
   Modal,
   FlatList,
@@ -55,7 +54,7 @@ const LoginScreen = () => {
   const {
     login, loginWithGoogle, loginWithApple, loginWithFacebook,
     sendPhoneOTP, verifyPhoneOTP, verifyTOTP, authenticateWithBiometric, isLoading, 
-    mfaPending, clearError,
+    mfaPending,
   } = useAuthStore();
 
   const [email, setEmail] = useState('');

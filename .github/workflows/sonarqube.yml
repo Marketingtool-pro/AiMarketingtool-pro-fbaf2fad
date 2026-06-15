@@ -1,0 +1,30 @@
+name: SonarQube analysis
+
+on:
+  push:
+    branches: [ "Master" ]
+  pull_request:
+    branches: [ "Master" ]
+  workflow_dispatch:
+
+permissions:
+  pull-requests: read
+
+jobs:
+  Analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      # Official action manages a current scanner version. The old pinned
+      # sonar-scanner-cli 5.0.1 hit `404 on api.sonarcloud.io/analysis/analyses`
+      # because it predates SonarCloud's current API. projectKey / organization /
+      # sources come from sonar-project.properties.
+      - name: SonarQube Scan
+        if: ${{ github.event_name != 'pull_request' || github.actor != 'dependabot[bot]' }}
+        uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'https://sonarcloud.io' }}
