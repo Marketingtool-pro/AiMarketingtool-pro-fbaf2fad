@@ -55,13 +55,15 @@ const ToolDetailScreen = () => {
   useEffect(() => {
     const foundTool = tools.find(t => t.slug === toolSlug);
     if (foundTool) {
-      setTool(foundTool);
-      // Initialize input values (prefill if coming from regenerate)
-      const initialValues: Record<string, string> = {};
-      foundTool.inputs.forEach(input => {
-        initialValues[input.name] = prefillInputs?.[input.name] || '';
-      });
-      setInputValues(initialValues);
+      setTimeout(() => {
+        setTool(foundTool);
+        // Initialize input values (prefill if coming from regenerate)
+        const initialValues: Record<string, string> = {};
+        foundTool.inputs.forEach(input => {
+          initialValues[input.name] = prefillInputs?.[input.name] || '';
+        });
+        setInputValues(initialValues);
+      }, 0);
     }
   }, [toolSlug, tools]);
 

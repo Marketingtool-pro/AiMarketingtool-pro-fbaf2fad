@@ -1,0 +1,20 @@
+version: 2.1
+
+orbs:
+    mac-permissions: circleci/macos
+
+jobs:
+  build-test:
+    macos:
+      xcode: 14.2.0
+    steps:
+        - checkout
+        - run: echo 'chruby ruby-2.7' >> ~/.bash_profile
+        - mac-permissions/add-uitest-permissions
+        - run: bundle install
+        - run: bundle exec fastlane testandbuild
+
+workflows:
+    verify:
+        jobs:
+            - build-test

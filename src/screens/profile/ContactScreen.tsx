@@ -57,7 +57,7 @@ const ContactScreen = () => {
           {/* Info Card */}
           <View style={styles.infoCard}>
             <Feather name="headphones" size={28} color={Colors.secondary} />
-            <Text style={styles.infoTitle}>We're here to help</Text>
+            <Text style={styles.infoTitle}>We&apos;re here to help</Text>
             <Text style={styles.infoDesc}>
               Have a question, feedback, or need support? Fill out the form below or reach us directly.
             </Text>

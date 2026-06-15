@@ -3,6 +3,9 @@ import { dbService, COLLECTIONS, Query, client, DATABASE_ID } from '../services/
 import { Models } from 'react-native-appwrite';
 import { Generation } from './toolsStore';
 
+// Keep "all" bounded to avoid heavy chart payloads while still showing long-term trend.
+const ALL_RANGE_DAYS_LIMIT = 90;
+
 export interface DashboardMetric {
   id: string;
   label: string;
@@ -24,12 +27,12 @@ export interface RecentActivity {
   title: string;
   description: string;
   timestamp: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface GenerationRealtimePayload {
   userId?: string;
-  [key: string]: unknown;
+  [key: string]: string | number | boolean | null | undefined | Record<string, unknown> | unknown[];
 }
 
 export type DateRange = '7d' | '30d' | 'all';
@@ -88,7 +91,22 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
       const favoritesCount = generations.filter((g) => g.isFavorite).length;
       const uniqueTools = new Set(generations.map((g) => g.toolId).filter(Boolean)).size;
-      const totalTokens = generations.reduce((sum: number, g) => sum + (Number(g.tokensUsed) || 0), 0);
+      const totalTokens = generations.reduce((sum: number, g) => {
+        const rawTokens = g.tokensUsed;
+        let parsedTokens = 0;
+
+        if (typeof rawTokens === 'number') {
+          parsedTokens = Number.isFinite(rawTokens) ? rawTokens : 0;
+        } else if (typeof rawTokens === 'string') {
+          const trimmed = rawTokens.trim();
+          if (trimmed.length > 0) {
+            const value = Number(trimmed);
+            parsedTokens = Number.isFinite(value) ? value : 0;
+          }
+        }
+
+        return sum + parsedTokens;
+      }, 0);
 
       const metrics: DashboardMetric[] = [
         { id: 'gen', label: 'AI Generations', value: totalGenerations, change: 0, trend: 'neutral', icon: 'zap', color: '#E4405F' },
@@ -100,15 +118,14 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       const performanceData: PerformanceDataPoint[] = [];
       const now = new Date();
       const { dateRange } = get();
-      // Keep "all" bounded to avoid heavy chart payloads while still showing long-term trend.
-      const allRangeDaysLimit = 90;
-      const daysToShow = dateRange === '30d' ? 30 : dateRange === 'all' ? allRangeDaysLimit : 7;
+      const daysToShow = dateRange === '30d' ? 30 : dateRange === 'all' ? ALL_RANGE_DAYS_LIMIT : 7;
 
       const dailyGenerationCounts = new Map<string, number>();
+      const ISO_DATE_PREFIX_LENGTH = 10; // 'YYYY-MM-DD'
       for (const generation of generations) {
         if (typeof generation.createdAt !== 'string') continue;
-        if (generation.createdAt.length < 10) continue;
-        const dateKey = generation.createdAt.slice(0, 10);
+        if (generation.createdAt.length < ISO_DATE_PREFIX_LENGTH) continue;
+        const dateKey = generation.createdAt.slice(0, ISO_DATE_PREFIX_LENGTH);
         dailyGenerationCounts.set(dateKey, (dailyGenerationCounts.get(dateKey) ?? 0) + 1);
       }
 

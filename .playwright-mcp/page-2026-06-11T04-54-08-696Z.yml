@@ -1,0 +1,461 @@
+- generic [ref=e1]:
+  - banner "App Store Connect" [ref=e3]:
+    - generic [ref=e4]:
+      - heading "App Store Connect" [level=1] [ref=e20]:
+        - link "App Store Connect" [ref=e21] [cursor=pointer]:
+          - /url: /
+      - navigation "Global" [ref=e7]:
+        - list [ref=e23]:
+          - listitem [ref=e24]:
+            - link "Apps" [ref=e25] [cursor=pointer]:
+              - /url: /apps
+          - listitem [ref=e26]:
+            - link "Trends" [ref=e27] [cursor=pointer]:
+              - /url: /trends
+          - listitem [ref=e28]:
+            - link "Reports" [ref=e29] [cursor=pointer]:
+              - /url: /itc/payments_and_financial_reports
+          - listitem [ref=e30]:
+            - link "Business" [ref=e31] [cursor=pointer]:
+              - /url: /business
+          - listitem [ref=e32]:
+            - link "Users and Access" [ref=e33] [cursor=pointer]:
+              - /url: /access/users
+      - button "lokendra singh saingar Lokendra Singh Saingar Account name menu" [ref=e35] [cursor=pointer]:
+        - generic:
+          - generic: lokendra singh saingar
+          - generic: Lokendra Singh Saingar
+          - img [ref=e36]
+  - generic [ref=e41]:
+    - button "Apps menu, MarketingTool - AI Marketing, selected" [ref=e46] [cursor=pointer]:
+      - generic [ref=e47]:
+        - generic "MarketingTool - AI Marketing" [ref=e48]:
+          - img "MarketingTool - AI Marketing" [ref=e49]
+        - generic [ref=e50]: MarketingTool - AI Marketing
+      - img [ref=e52]
+    - navigation "Apps" [ref=e55]:
+      - list [ref=e56]:
+        - listitem [ref=e57]:
+          - link "Distribution" [ref=e58] [cursor=pointer]:
+            - /url: /apps/6758618412/distribution
+        - listitem [ref=e59]:
+          - link "Analytics" [ref=e60] [cursor=pointer]:
+            - /url: /apps/6758618412/analytics
+        - listitem [ref=e61]:
+          - link "TestFlight" [ref=e62] [cursor=pointer]:
+            - /url: /teams/313ffa8d-5aed-4aad-a012-b1057717634c/apps/6758618412/testflight
+        - listitem [ref=e63]:
+          - link "Xcode Cloud" [ref=e64] [cursor=pointer]:
+            - /url: /teams/313ffa8d-5aed-4aad-a012-b1057717634c/apps/6758618412/ci
+  - generic [ref=e70]:
+    - main [ref=e71]:
+      - generic [ref=e74]:
+        - generic [ref=e76]:
+          - navigation "Distribution" [ref=e78]:
+            - list [ref=e79]:
+              - listitem [ref=e80]:
+                - generic [ref=e81]:
+                  - heading "iOS App" [level=2] [ref=e83]
+                  - list [ref=e84]:
+                    - listitem [ref=e85]:
+                      - link "1.5.0 Prepare for Submission" [ref=e86] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/ios/version/inflight
+                        - generic [ref=e87]:
+                          - img [ref=e88]
+                          - text: 1.5.0 Prepare for Submission
+                - button "Add Platform" [ref=e90] [cursor=pointer]
+              - listitem [ref=e91]:
+                - separator [ref=e92]
+              - listitem [ref=e93]:
+                - heading "General" [level=2] [ref=e95]
+                - list [ref=e96]:
+                  - listitem [ref=e97]:
+                    - link "App Information" [ref=e98] [cursor=pointer]:
+                      - /url: /apps/6758618412/distribution/info
+                      - generic [ref=e99]: App Information
+                  - listitem [ref=e100]:
+                    - link "App Review" [ref=e101] [cursor=pointer]:
+                      - /url: /apps/6758618412/distribution/reviewsubmissions
+                      - generic [ref=e103]:
+                        - img [ref=e104]
+                        - text: App Review
+                  - listitem [ref=e106]:
+                    - link "History" [ref=e107] [cursor=pointer]:
+                      - /url: /apps/6758618412/distribution/activity/ios/versions
+                      - generic [ref=e108]: History
+              - listitem [ref=e109]:
+                - separator [ref=e110]
+              - listitem [ref=e111]:
+                - heading "App Store" [level=2] [ref=e113]
+                - generic [ref=e114]:
+                  - heading "Trust & Safety" [level=3] [ref=e116]
+                  - list [ref=e117]:
+                    - listitem [ref=e118]:
+                      - link "App Privacy" [ref=e119] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/privacy
+                        - generic [ref=e120]: App Privacy
+                    - listitem [ref=e121]:
+                      - link "App Accessibility" [ref=e122] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/accessibility
+                        - generic [ref=e123]: App Accessibility
+                    - listitem [ref=e124]:
+                      - link "Ratings and Reviews" [ref=e125] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/ratings/ios
+                        - generic [ref=e126]: Ratings and Reviews
+                - generic [ref=e127]:
+                  - heading "Growth & Marketing" [level=3] [ref=e129]
+                  - list [ref=e130]:
+                    - listitem [ref=e131]:
+                      - link "In-App Events" [ref=e132] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/events
+                        - generic [ref=e133]: In-App Events
+                    - listitem [ref=e134]:
+                      - link "Custom Product Pages" [ref=e135] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/productpages
+                        - generic [ref=e136]: Custom Product Pages
+                    - listitem [ref=e137]:
+                      - link "Product Page Optimization" [ref=e138] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/optimization
+                        - generic [ref=e139]: Product Page Optimization
+                    - listitem [ref=e140]:
+                      - link "Promo Codes" [ref=e141] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/promo_codes/generate
+                        - generic [ref=e142]: Promo Codes
+                    - listitem [ref=e143]:
+                      - link "Game Center" [ref=e144] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/gamecenter
+                        - generic [ref=e145]: Game Center
+                - generic [ref=e146]:
+                  - heading "Monetization" [level=3] [ref=e148]
+                  - list [ref=e149]:
+                    - listitem [ref=e150]:
+                      - link "Pricing and Availability" [ref=e151] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/pricing
+                        - generic [ref=e152]: Pricing and Availability
+                    - listitem [ref=e153]:
+                      - link "In-App Purchases" [ref=e154] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/iaps
+                        - generic [ref=e155]: In-App Purchases
+                    - listitem [ref=e156]:
+                      - link "Subscriptions" [ref=e157] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/subscriptions
+                        - generic [ref=e158]: Subscriptions
+                - generic [ref=e159]:
+                  - heading "Featuring" [level=3] [ref=e161]
+                  - list [ref=e162]:
+                    - listitem [ref=e163]:
+                      - link "Nominations" [ref=e164] [cursor=pointer]:
+                        - /url: /apps/6758618412/distribution/nominations
+                        - generic [ref=e165]: Nominations
+          - generic [ref=e168]:
+            - generic [ref=e169]:
+              - generic [ref=e170]:
+                - heading "iOS App Version 1.5.0" [level=2] [ref=e173]
+                - generic [ref=e174]:
+                  - button "Save" [disabled] [ref=e175]
+                  - button "Update Review" [ref=e176] [cursor=pointer]
+              - separator [ref=e177]
+            - generic [ref=e178]:
+              - img [ref=e179]
+              - generic [ref=e181]:
+                - paragraph [ref=e182]: "This item requires your attention:"
+                - paragraph [ref=e183]: The item you submitted was rejected. Learn more from the submission details page.
+                - list [ref=e184]:
+                  - listitem [ref=e185]: "2.1.0 Performance: App Completeness"
+                  - listitem [ref=e186]: "3.0.0 Business: Preamble"
+              - paragraph [ref=e187]:
+                - link "View Submission" [ref=e188] [cursor=pointer]:
+                  - /url: /apps/6758618412/distribution/reviewsubmissions/details/a54acc02-91e4-4aae-a6f3-9bc204fd7325
+            - generic [ref=e189]:
+              - generic [ref=e192]:
+                - paragraph [ref=e194]: The assets and metadata below appear on your app’s product page, when users install your app, and will be used for web engine search results once you release your app.
+                - generic [ref=e197]:
+                  - button "English (U.S.)" [ref=e198] [cursor=pointer]:
+                    - text: English (U.S.)
+                    - img [ref=e199]
+                  - button "?" [ref=e203] [cursor=pointer]
+              - separator [ref=e204]
+              - generic [ref=e205]:
+                - heading "Previews and Screenshots" [level=3] [ref=e206]
+                - button "More information" [ref=e208] [cursor=pointer]: "?"
+              - paragraph [ref=e209]: Adding accurate screenshots of your app on the newest devices can help you represent the app's user experience. Keep in mind that we'll use these screenshots for all display sizes and localizations. Screenshots are only required for iOS apps, and only the first 3 will be used on the app installation sheets.
+              - generic [ref=e210]:
+                - tablist [ref=e211]:
+                  - tab "iPhone" [selected] [ref=e212] [cursor=pointer]:
+                    - generic [ref=e213]: iPhone
+                  - tab "iPad" [ref=e214] [cursor=pointer]:
+                    - generic [ref=e215]: iPad
+                  - tab "Apple Watch" [ref=e216] [cursor=pointer]:
+                    - generic [ref=e217]: Apple Watch
+                - paragraph [ref=e218]:
+                  - link "View All Sizes in Media Manager" [ref=e219] [cursor=pointer]:
+                    - /url: /apps/6758618412/distribution/ios/version/inflight/media-manager/iphone
+              - generic [ref=e221]:
+                - generic:
+                  - alert
+                - tabpanel "iPhone" [ref=e222]:
+                  - generic [ref=e223]:
+                    - generic [ref=e224]:
+                      - img [ref=e227]
+                      - generic [ref=e232]:
+                        - generic [ref=e233]: iPhone
+                        - generic [ref=e234]: 6.5" Display
+                    - region [ref=e235]:
+                      - tabpanel [ref=e236]:
+                        - generic [ref=e239]:
+                          - list "App Previews from 6.5\" Display"
+                          - list "Screenshots from 6.5\" Display" [ref=e240]:
+                            - listitem [ref=e241]:
+                              - generic [ref=e242]:
+                                - button "Screenshot 1_Dashboard.png" [ref=e243]:
+                                  - img [ref=e245]
+                                - button "Delete" [ref=e246] [cursor=pointer]:
+                                  - img [ref=e247]
+                            - listitem [ref=e249]:
+                              - generic [ref=e250]:
+                                - button "Screenshot 2_Tools.png" [ref=e251]:
+                                  - img [ref=e253]
+                                - button "Delete" [ref=e254] [cursor=pointer]:
+                                  - img [ref=e255]
+                            - listitem [ref=e257]:
+                              - generic [ref=e258]:
+                                - button "Screenshot 4_AIChat_Conv.png" [ref=e259]:
+                                  - img [ref=e261]
+                                - button "Delete" [ref=e262] [cursor=pointer]:
+                                  - img [ref=e263]
+                            - listitem [ref=e265]:
+                              - generic [ref=e266]:
+                                - button "Screenshot 5_History.png" [ref=e267]:
+                                  - img [ref=e269]
+                                - button "Delete" [ref=e270] [cursor=pointer]:
+                                  - img [ref=e271]
+                            - listitem [ref=e273]:
+                              - generic [ref=e274]:
+                                - button "Screenshot 3_AIChat_Tools.png" [ref=e275]:
+                                  - img [ref=e277]
+                                - button "Delete" [ref=e278] [cursor=pointer]:
+                                  - img [ref=e279]
+                            - listitem [ref=e281]:
+                              - generic [ref=e282]:
+                                - button "Screenshot 6_Profile.png" [ref=e283]:
+                                  - img [ref=e285]
+                                - button "Delete" [ref=e286] [cursor=pointer]:
+                                  - img [ref=e287]
+                            - listitem [ref=e289]:
+                              - generic [ref=e290]:
+                                - button "Screenshot 04_AIChat.png" [ref=e291]:
+                                  - img [ref=e293]
+                                - button "Delete" [ref=e294] [cursor=pointer]:
+                                  - img [ref=e295]
+                        - generic [ref=e297]:
+                          - paragraph [ref=e299]: 0 of 3 App Previews
+                          - paragraph [ref=e301]: 7 of 10 Screenshots
+                          - paragraph [ref=e304]:
+                            - button "Choose File" [ref=e305] [cursor=pointer]
+                          - paragraph [ref=e307]:
+                            - button "Delete All" [ref=e308] [cursor=pointer]
+              - generic [ref=e309]:
+                - generic [ref=e310]:
+                  - generic [ref=e312]:
+                    - generic [ref=e313]: Promotional Text
+                    - button "More information" [ref=e315] [cursor=pointer]: "?"
+                  - textbox "Promotional Text" [ref=e317]: Create scroll-stopping ads, captions, emails & product descriptions in seconds. 206+ AI marketing tools powered by advanced AI. Try the meme generator — it's free!
+                  - status "Characters remaining" [ref=e319]: "7"
+                - separator [ref=e321]
+                - generic [ref=e322]:
+                  - generic [ref=e324]:
+                    - generic [ref=e325]: Description
+                    - button "More information" [ref=e327] [cursor=pointer]: "?"
+                  - textbox "Description" [ref=e329]: "MarketingTool is your AI-powered marketing assistant — generate professional ad copy, social media captions, email campaigns, product descriptions, and more in seconds. Whether you're a solo entrepreneur, freelancer, agency, or e-commerce seller, MarketingTool gives you access to 206+ AI-powered tools designed to save hours of writing and boost your marketing results. WHAT YOU CAN DO: Google Ads & SEO • Generate high-converting Google Ads headlines and descriptions • Create SEO-optimized meta titles, descriptions, and keywords • Build content strategies with keyword research tools Facebook & Instagram • Write scroll-stopping Facebook ad copy • Generate Instagram captions, hashtags, and Reels scripts • Create engaging social media content calendars Shopify & E-Commerce • Write compelling product titles and descriptions • Generate collection descriptions and promotional copy • Create abandoned cart email sequences Email Marketing • Craft subject lines that get opened • Write welcome series, newsletters, and promotional emails • Generate complete email campaign sequences AI CHAT — MARKETBOT Talk to MarketBot, your personal AI marketing strategist. Get help with: • Ad creation across all major platforms • Content writing for blogs, landing pages, and more • SEO keyword research and optimization • Campaign planning and audience analysis • Competitor research and budget allocation MEME GENERATOR Create viral memes with 12 popular templates including Drake, Distracted Boyfriend, Expanding Brain, and more. Customize fonts, colors, text placement, and share directly to social media. KEY FEATURES: • 206+ AI marketing tools across 14 categories • Support for Google, Meta, and Shopify platforms • 6 tones: Professional, Casual, Friendly, Persuasive, Creative, Formal • 7 languages: English, Spanish, French, German, Hindi, Chinese, Japanese • Generate up to 5 variations at once • Save and organize your generated content • Copy results with one tap • Beautiful dark mode interface FREE TO START Get started with free credits. Upgrade to Pro for up to 1,500 AI generations per month and full access to every tool. Built for marketers who want results, not writer's block. SUBSCRIPTIONS & PRICING MarketingTool offers the following auto-renewable subscriptions: • Starter Monthly — $29/month • Starter Yearly — $199/year • Pro Monthly — $59/month • Pro Yearly — $499/year • Growth Monthly — $99/month • Growth Yearly — $999/year Payment will be charged to your Apple ID account at confirmation of purchase. Your subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel your subscriptions in your Apple ID account settings after purchase. Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/ Privacy Policy: https://marketingtool.pro/privacy"
+                  - status "Characters remaining" [ref=e331]: 1,008
+                - generic [ref=e332]:
+                  - generic [ref=e334]:
+                    - generic [ref=e335]: Keywords
+                    - button "More information" [ref=e337] [cursor=pointer]: "?"
+                  - textbox "Keywords" [ref=e339]: ai marketing,ad copy,copywriting,content writer,social media,instagram captions,seo,email,shopify
+                  - status "Characters remaining" [ref=e341]: "3"
+                - generic [ref=e342]:
+                  - generic [ref=e344]:
+                    - generic [ref=e345]: Support URL
+                    - button "More information" [ref=e347] [cursor=pointer]: "?"
+                  - textbox "Support URL" [ref=e349]: https://marketingtool.pro/support
+                - generic [ref=e350]:
+                  - generic [ref=e352]:
+                    - generic [ref=e353]: Marketing URL
+                    - button "More information" [ref=e355] [cursor=pointer]: "?"
+                  - textbox "Marketing URL" [ref=e357]: https://marketingtool.pro
+                - generic [ref=e358]:
+                  - generic [ref=e360]:
+                    - generic [ref=e361]: Version
+                    - button "More information" [ref=e363] [cursor=pointer]: "?"
+                  - textbox "Version" [ref=e365]: 1.5.0
+                - generic [ref=e366]:
+                  - generic [ref=e368]:
+                    - generic [ref=e369]: Copyright
+                    - button "More information" [ref=e371] [cursor=pointer]: "?"
+                  - textbox "Copyright" [ref=e373]: 2026 MarketingTool Pro
+                  - status "Characters remaining" [ref=e375]: "178"
+                - generic [ref=e376]:
+                  - generic [ref=e378]:
+                    - generic [ref=e379]: Routing App Coverage File
+                    - button "More information" [ref=e381] [cursor=pointer]: "?"
+                  - generic [ref=e383] [cursor=pointer]:
+                    - button "Choose File" [ref=e384]
+                    - generic [ref=e386]: Choose File
+              - separator [ref=e387]
+              - button "App Clip" [ref=e389] [cursor=pointer]:
+                - img [ref=e391]
+                - text: App Clip
+              - generic [ref=e394]:
+                - heading "iMessage App" [level=3] [ref=e395]:
+                  - button "iMessage App" [ref=e396] [cursor=pointer]:
+                    - img [ref=e398]
+                    - text: iMessage App
+                - button "More information" [ref=e401] [cursor=pointer]: "?"
+            - generic [ref=e402]:
+              - heading "Build" [level=3] [ref=e404]
+              - table [ref=e406]:
+                - rowgroup [ref=e407]:
+                  - row "Build Version Has App Clip" [ref=e408]:
+                    - columnheader "Build" [ref=e409]:
+                      - generic [ref=e411]: Build
+                    - columnheader "Version" [ref=e412]:
+                      - generic [ref=e414]: Version
+                    - columnheader "Has App Clip" [ref=e415]:
+                      - generic [ref=e417]: Has App Clip
+                    - columnheader [ref=e418]
+                - rowgroup [ref=e419]:
+                  - row "App Icon 513 1.5.0 No Delete" [ref=e420]:
+                    - cell "App Icon 513" [ref=e421]:
+                      - generic [ref=e423]:
+                        - link "App Icon" [ref=e424] [cursor=pointer]:
+                          - /url: /apps/6758618412/testflight/ios/8047d273-8dad-4dbd-b1db-c09afe494ed4/metadata
+                          - generic "App Icon" [ref=e425]:
+                            - img "App Icon" [ref=e426]
+                        - link "513" [ref=e428] [cursor=pointer]:
+                          - /url: /apps/6758618412/testflight/ios/8047d273-8dad-4dbd-b1db-c09afe494ed4/metadata
+                    - cell "1.5.0" [ref=e429]:
+                      - generic [ref=e430]: 1.5.0
+                    - cell "No" [ref=e431]:
+                      - paragraph [ref=e433]: "No"
+                    - cell "Delete" [ref=e434]:
+                      - button "Delete":
+                        - img [ref=e435] [cursor=pointer]
+              - paragraph [ref=e437]: Included Assets
+              - generic [ref=e439]:
+                - button "App Icon" [ref=e440] [cursor=pointer]:
+                  - generic "App Icon" [ref=e441]:
+                    - img "App Icon" [ref=e442]
+                - paragraph [ref=e443]: App Icon
+            - generic [ref=e449] [cursor=pointer]:
+              - checkbox "Game Center" [ref=e451]
+              - text: Game Center
+            - separator [ref=e453]
+            - generic [ref=e454]:
+              - heading "App Review Information" [level=3] [ref=e455]
+              - generic [ref=e456]:
+                - generic [ref=e457]:
+                  - generic [ref=e458]:
+                    - generic [ref=e460]:
+                      - generic [ref=e461]: Sign-In Information
+                      - button "More information" [ref=e463] [cursor=pointer]: "?"
+                    - paragraph [ref=e464]: Provide a user name and password so we can sign in to your app. We’ll need this to complete your app review.
+                    - generic [ref=e466]:
+                      - checkbox "Sign-in required" [checked] [ref=e467]
+                      - generic [ref=e469]: Sign-in required
+                  - textbox "User name" [ref=e472]: demo@marketingtool.pro
+                  - textbox "Password" [ref=e475]: MarketingTool2026Demo!
+                - generic [ref=e476]:
+                  - generic [ref=e478]:
+                    - generic [ref=e479]: Contact Information
+                    - button "More information" [ref=e481] [cursor=pointer]: "?"
+                  - textbox "First name" [ref=e484]: Lokendra singh
+                  - textbox "Last name" [ref=e487]: saingar
+                  - textbox "Phone number" [ref=e490]: "+919571312555"
+                  - textbox "Email" [ref=e493]: Lokendra07@outlook.com
+                - generic [ref=e494]:
+                  - generic [ref=e496]:
+                    - generic [ref=e497]: Notes
+                    - button "More information" [ref=e499] [cursor=pointer]: "?"
+                  - paragraph [ref=e500]:
+                    - generic [ref=e501]:
+                      - text: Chinese law requires apps with news, religious, book, and magazine content to have relevant permits in order to be available on the App Store in China mainland. If applicable, enter information about your permits below.
+                      - link "Learn More" [ref=e502] [cursor=pointer]:
+                        - /url: https://developer.apple.com/help/app-store-connect/reference/app-information
+                  - textbox "Notes" [ref=e504]: "MarketingTool is an AI-powered marketing assistant with 206+ tools for ad copy, social media captions, email campaigns, and product descriptions. Free users receive limited credits; Pro subscribers get up to 1,500 AI generations per month. === LOGIN FOR REVIEW — two ways, either one signs you in to full Pro === PRIMARY — Sign in with Email: 1. Launch the app and tap \"Sign In\". 2. On the phone-number screen, tap the \"Sign in with Email\" button (solid purple, directly under the phone field — visible without scrolling on iPhone and iPad). 3. Email: demo@marketingtool.pro 4. Password: MarketingTool2026Demo! 5. Tap \"Sign In\" -> you reach the Home dashboard with full Pro access (all 206+ tools and the subscription flow). FALLBACK — Phone OTP (no SMS sent): 1. On the phone-number screen, set country to India (+91) and enter 9999999999. 2. Tap \"Continue\" / \"Send OTP\". 3. Enter OTP code: 123456 -> tap \"Verify\" -> Home dashboard. An internet connection is required for sign-in and AI generation. === KEY AREAS TO REVIEW === - Home: dashboard with quick actions and stats - Tools: 206+ AI tools (Google Ads, Meta, Shopify, Email, and more) - AI Chat (MarketBot): conversational AI marketing assistant - History: previously generated content - Profile > Upgrade: auto-renewable subscriptions (Starter / Pro / Growth, Monthly & Yearly). Tap a plan to start the StoreKit purchase flow. Contact Lokendra07@outlook.com / +91-9571-312-555 with any questions during review."
+                  - status "Characters remaining" [ref=e506]: 2,525
+                - generic [ref=e507]:
+                  - generic [ref=e509]:
+                    - generic [ref=e510]: Attachment
+                    - button "More information" [ref=e512] [cursor=pointer]: "?"
+                  - generic [ref=e514] [cursor=pointer]:
+                    - button "Choose File (Optional)" [ref=e515]
+                    - generic [ref=e517]: Choose File (Optional)
+            - separator [ref=e518]
+            - generic [ref=e519]:
+              - heading "App Store Version Release" [level=3] [ref=e520]
+              - paragraph [ref=e521]: To make your app available on the App Store, you can automatically release it after it’s been approved by App Review. You can also manually release it on the App Store at a later date.
+              - generic [ref=e522]:
+                - generic [ref=e524]:
+                  - generic [ref=e525]:
+                    - radio "Manually release this version" [ref=e526]
+                    - generic [ref=e528]: Manually release this version
+                  - generic [ref=e529]:
+                    - radio "Automatically release this version" [checked] [ref=e530]
+                    - generic [ref=e532]: Automatically release this version
+                  - generic [ref=e533]:
+                    - radio "Automatically release this version after App Review, no earlier than" [ref=e534]
+                    - generic [ref=e536]: Automatically release this version after App Review, no earlier than
+                - paragraph [ref=e538]: Your local date and time.
+                - generic [ref=e541]:
+                  - textbox "Automatically release this version after App Review, no earlier than" [disabled] [ref=e542]: Jun 10, 2026 22:00
+                  - text: GMT-7
+        - region "Draft Submissions" [ref=e543]:
+          - button "Draft Submissions (1)" [ref=e544] [cursor=pointer]:
+            - generic [ref=e545]:
+              - text: Draft Submissions (1)
+              - img [ref=e546]
+    - dialog "Draft Submission Started by API user Yesterday at 9:56 AM" [active] [ref=e551]:
+      - document [ref=e552]:
+        - generic [ref=e553]:
+          - generic [ref=e554]:
+            - heading "Draft Submission Started by API user Yesterday at 9:56 AM" [level=2] [ref=e556]:
+              - paragraph [ref=e557]: Draft Submission
+              - paragraph [ref=e558]: Started by API user Yesterday at 9:56 AM
+            - button "Close" [ref=e559] [cursor=pointer]:
+              - img [ref=e560]
+          - generic [ref=e563]:
+            - generic [ref=e564]: Items added below will be reviewed together with your latest version of the selected platform.
+            - combobox "Select submission platform" [ref=e568]:
+              - option "iOS" [selected]
+              - option "macOS"
+              - option "tvOS"
+              - option "visionOS"
+          - generic [ref=e570]:
+            - heading "Items Ready to Submit (0)" [level=5] [ref=e571]
+            - generic [ref=e573]:
+              - paragraph [ref=e574]: No Items
+              - paragraph [ref=e575]: There are no items in this submission. To add an item, click Add for Review on the item's page.
+              - button "Delete Submission" [ref=e576] [cursor=pointer]
+            - button "Submit for Review" [disabled] [ref=e578]
+  - contentinfo [ref=e10]:
+    - generic [ref=e11]:
+      - list [ref=e65]:
+        - listitem [ref=e66]:
+          - link "App Store Connect" [ref=e67] [cursor=pointer]:
+            - /url: /apps
+      - list [ref=e12]:
+        - listitem [ref=e13]: Copyright © 2026 Apple Inc. All rights reserved. |
+        - listitem [ref=e14]:
+          - link "Terms of Service" [ref=e15] [cursor=pointer]:
+            - /url: /WebObjects/iTunesConnect.woa/wa/termsOfService
+          - text: "|"
+        - listitem [ref=e16]:
+          - link "Privacy Policy" [ref=e17] [cursor=pointer]:
+            - /url: https://www.apple.com/legal/privacy
+          - text: "|"
+        - listitem [ref=e18]:
+          - link "Contact Us" [ref=e19] [cursor=pointer]:
+            - /url: /contact-us
+  - log [ref=e548]
+  - log [ref=e549]

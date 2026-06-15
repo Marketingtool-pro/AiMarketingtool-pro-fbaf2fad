@@ -1,0 +1,6 @@
+[    2266ms] [WARNING] DropdownMenu is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component. @ https://static.expo.dev/_next/static/chunks/2nd3dbedrmy39.js:5
+[    2267ms] [WARNING] DropdownMenu is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component. @ https://static.expo.dev/_next/static/chunks/2nd3dbedrmy39.js:5
+[   41980ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:35783/orbit/status?:0
+[   41986ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:47909/orbit/status?:0
+[   41993ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:44171/orbit/status?:0
+[   41996ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:50799/orbit/status?:0

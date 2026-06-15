@@ -38,6 +38,13 @@ interface UserProfile {
   createdAt: string;
 }
 
+// Inline entitlement type — mirrors billingService.ts Entitlement.
+// Defined here to avoid a circular import (billingService imports from authStore).
+export interface LocalEntitlement {
+  tier: 'starter' | 'pro' | 'enterprise';
+  generationsLimit: number;
+}
+
 interface AuthState {
   user: Models.User<Models.Preferences> | null;
   profile: UserProfile | null;
@@ -71,6 +78,7 @@ interface AuthState {
   grantEntitlement: (tier: UserProfile['subscription'], generationsLimit: number) => Promise<void>;
   grantCredits: (amount: number) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  applyLocalEntitlement: (entitlement: LocalEntitlement) => void;
   clearError: () => void;
   fetchOrCreateProfile: (user: Models.User<Models.Preferences>) => Promise<UserProfile>;
 }
@@ -452,7 +460,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (override) {
           set({ localSubscriptionOverride: override as any });
         }
-      } catch {
+      } catch (e: any) {
         console.warn('[AuthStore] Load local subscription override failed:', e);
       }
 
@@ -520,7 +528,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ localSubscriptionOverride: tier });
     try {
       await SecureStore.setItemAsync('local_subscription_override', tier);
-    } catch {
+    } catch (e: any) {
       console.warn('[AuthStore] Save local subscription override failed:', e);
     }
     const { profile } = get();
@@ -566,6 +574,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ profile });
     } catch (error: any) {
       console.error('[AuthStore] Refresh profile failed:', error);
+    }
+  },
+
+  // Immediately apply a purchase entitlement to the local profile so the UI
+  // unlocks Pro features without waiting for a server round-trip. This is the
+  // client-side half of the Guideline 2.1(b) fix; the server sync happens
+  // asynchronously via iap-verify and refreshProfile.
+  applyLocalEntitlement: (entitlement: LocalEntitlement) => {
+    const { profile } = get();
+    if (!profile) return;
+    const tierRank: Record<string, number> = { free: 0, starter: 1, pro: 2, enterprise: 3 };
+    const currentRank = tierRank[profile.subscription] ?? 0;
+    const newRank     = tierRank[entitlement.tier] ?? 0;
+    if (newRank >= currentRank) {
+      set({
+        profile: {
+          ...profile,
+          subscription:     entitlement.tier,
+          generationsLimit: entitlement.generationsLimit,
+        },
+      });
     }
   },
 
