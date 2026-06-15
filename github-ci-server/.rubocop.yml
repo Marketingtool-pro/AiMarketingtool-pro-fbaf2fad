@@ -1,0 +1,25 @@
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.3
+  Exclude:
+    - vendor/**/*
+
+# The server follows GitHub's CI-checks tutorial structure: one Sinatra app
+# class with a large helpers block. Splitting it would diverge from the
+# upstream tutorial for no behavioral gain.
+Metrics/ClassLength:
+  Enabled: false
+Metrics/BlockLength:
+  Enabled: false
+Metrics/MethodLength:
+  Max: 70
+Metrics/AbcSize:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+# @app_client is the natural name for the memoized Octokit client; renaming it
+# to @authenticate_app (the method name) would hurt readability.
+Naming/MemoizedInstanceVariableName:
+  Enabled: false

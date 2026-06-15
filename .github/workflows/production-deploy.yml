@@ -1,9 +1,21 @@
 name: Production Deploy
 
+# iOS auto-build + submit IS enabled again, fixed for the 2.1(b) loop:
+# the old `eas submit` made a binary-only ("1 Item") submission that could not
+# carry the in-app purchases -> auto-rejected. The build-submit-ios job below
+# instead uploads the binary, then runs scripts/asc_autosubmit.rb which creates
+# ONE App Store Connect review submission containing the BUILD + all 6
+# subscriptions + the consumable (the step that was missing all 14 times).
+# Requires repo secret ASC_API_KEY_BASE64 (base64 of AuthKey_69JDXUCPU3.p8).
+
 on:
-  push:
-    tags:
-      - 'v*.*.*'
+  # Tag-triggered auto-build/submit is DISABLED so a git push (yours or the
+  # bots') never uploads a build or touches App Store Connect while a manual
+  # submission is being assembled in the web UI. To ship iOS, run it manually:
+  # Actions -> Production Deploy -> Run workflow.
+  # push:
+  #   tags:
+  #     - 'v*.*.*'
   workflow_dispatch:
 
 permissions:
@@ -16,6 +28,10 @@ concurrency:
 jobs:
   build-android:
     name: Build (android)
+    # iOS-only on tag pushes. Play Store is already live, so rebuilding Android on
+    # every v*.*.* tag just burns EAS build minutes. Android now ONLY builds on a
+    # manual run (Actions → Production Deploy → Run workflow).
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -28,7 +44,6 @@ jobs:
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '24'
-          cache: 'npm'
 
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
         with:
@@ -36,7 +51,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=dev
 
       - name: Build production (android)
         id: build
@@ -48,6 +63,7 @@ jobs:
 
   submit-android:
     name: Submit (android)
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     needs: build-android
     timeout-minutes: 30
@@ -59,7 +75,6 @@ jobs:
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '24'
-          cache: 'npm'
 
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
         with:
@@ -67,7 +82,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=dev
 
       - name: Submit to Play Store
         continue-on-error: true
@@ -81,21 +96,22 @@ jobs:
             eas submit --platform android --profile production --non-interactive --latest
           fi
 
-  build-ios:
-    name: Build (ios)
+  build-submit-ios:
+    name: Build + Submit (iOS, with IAPs)
+    # iOS builds ONLY on a version tag push (v*.*.*). A manual run
+    # (workflow_dispatch) is Android-only — so "build Android" never also burns an
+    # iOS build. To ship iOS, push a tag.
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    outputs:
-      build-id: ${{ steps.build.outputs.build-id }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '24'
-          cache: 'npm'
 
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
         with:
@@ -103,47 +119,32 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=dev
 
-      - name: Build production (ios)
-        id: build
+      # Write the ASC API key FIRST, at the path eas.json's ascApiKeyPath expects,
+      # so `eas submit` can authenticate (the .p8 is gitignored, not in the checkout).
+      - name: Restore App Store Connect API key
+        env:
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
         run: |
-          eas build --platform ios --profile production --non-interactive 2>&1 | tee /tmp/eas-build-ios.log
-          BUILD_ID=$(grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' /tmp/eas-build-ios.log | head -1)
-          echo "build-id=$BUILD_ID" >> $GITHUB_OUTPUT
-          echo "Captured EAS Build ID: $BUILD_ID"
+          printf '%s' "$ASC_API_KEY_BASE64" | base64 -d > AuthKey_69JDXUCPU3.p8
+          test -s AuthKey_69JDXUCPU3.p8 && echo "ASC key restored" || (echo "ASC key empty — set ASC_API_KEY_BASE64 secret" && exit 1)
 
-  submit-ios:
-    name: Submit (ios)
-    runs-on: ubuntu-latest
-    needs: build-ios
-    timeout-minutes: 30
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - name: Build production (iOS)
+        run: eas build --platform ios --profile production --non-interactive --wait
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        with:
-          node-version: '24'
-          cache: 'npm'
+      - name: Upload binary to App Store Connect (TestFlight)
+        run: eas submit --platform ios --profile production --non-interactive --latest
 
-      - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
-        with:
-          eas-version: 18.13.1
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Submit to App Store
-        continue-on-error: true
+      - name: Submit for review WITH in-app purchases
+        env:
+          ASC_KEY_PATH: ./AuthKey_69JDXUCPU3.p8
+          # Held for manual review-submit AFTER TestFlight verification of 514.
+          # Flip back to 'false' (or run asc_autosubmit.rb locally) to submit.
+          DRY_RUN: 'true'
         run: |
-          BUILD_ID="${{ needs.build-ios.outputs.build-id }}"
-          if [ -n "$BUILD_ID" ]; then
-            echo "Submitting build ID: $BUILD_ID"
-            eas submit --platform ios --profile production --non-interactive --id "$BUILD_ID"
-          else
-            echo "No build ID captured, falling back to --latest"
-            eas submit --platform ios --profile production --non-interactive --latest
-          fi
+          sudo gem install jwt --no-document
+          export ASC_KEY_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyId")"
+          export ASC_ISSUER_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyIssuerId")"
+          export ASC_APP_ID="$(node -pe "require('./eas.json').submit.production.ios.ascAppId")"
+          ruby scripts/asc_autosubmit.rb

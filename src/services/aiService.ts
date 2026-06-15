@@ -46,7 +46,10 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
     // Read model from Remote Config (falls back to 'gemini-2.5-flash-lite' if not fetched)
     const geminiModel = getString('gemini_model');
 
-    // 🚨 ANR FIX: Set async=true to prevent blocking the main thread during execution
+    // Sync execution (false) — same reasoning as ChatScreen: async + getExecution
+    // polling needs the executions.read scope, which phone-OTP (Firebase) users
+    // don't have, so polling failed and tools looked broken. fetch() is async at
+    // the JS layer, so a sync execution does NOT block the UI thread (no ANR).
     const execution = await functions.createExecution(
       TOOL_EXECUTOR_FUNCTION_ID,
       JSON.stringify({
@@ -59,10 +62,19 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         options: { tone: tone || 'professional', language: language || 'English' },
         model: geminiModel,
       }),
-      true,  // async = true (DO NOT BLOCK)
+      false,  // sync — result arrives in this response, no polling/scope needed
       '/',    // path
       ExecutionMethod.POST, // method
     );
+
+    // Sync executions return the result directly.
+    if (execution.status === 'completed') {
+      const result = parseExecutionResponse(execution.responseBody, outputCount);
+      if (result.success && result.outputs.length > 0) {
+        if (__DEV__) console.log(`[AI] Function success (sync): ${result.outputs.length} outputs`);
+        return result;
+      }
+    }
 
     // Polling for the result
     let status = execution.status;
@@ -94,13 +106,21 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
   try {
     if (__DEV__) console.log(`[AI] Fallback: calling Next.js API for ${toolSlug}`);
 
-    const jwt = await account.createJWT();
+    // createJWT requires an Appwrite session — phone-OTP (Firebase) users have
+    // none. Send the request without a bearer in that case instead of dying.
+    let bearer = '';
+    try {
+      const jwt = await account.createJWT();
+      bearer = `Bearer ${jwt.jwt}`;
+    } catch {
+      if (__DEV__) console.log('[AI] No Appwrite session for JWT — calling API without bearer');
+    }
 
     const response = await fetch(`${NEXTJS_API_BASE}/api/tools/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${jwt.jwt}`,
+        ...(bearer ? { Authorization: bearer } : {}),
       },
       body: JSON.stringify({
         tool: toolSlug,
@@ -127,7 +147,7 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${jwt.jwt}`,
+        ...(bearer ? { Authorization: bearer } : {}),
       },
       body: JSON.stringify({
         tool: toolSlug,

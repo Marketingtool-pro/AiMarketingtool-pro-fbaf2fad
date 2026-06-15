@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import * as Haptics from 'expo-haptics';
-import { billingService, PURCHASE_CANCELLED } from '../../services/billingService';
+import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, type Entitlement } from '../../services/billingService';
 import { functions } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 
@@ -37,7 +37,7 @@ interface Plan {
 
 const SubscriptionScreen = () => {
   const navigation = useNavigation();
-  const { profile, refreshProfile } = useAuthStore();
+  const { profile, refreshProfile, applyLocalEntitlement } = useAuthStore();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [selectedPlan, setSelectedPlan] = useState<string>('pro');
   const [isLoading, setIsLoading] = useState(false);
@@ -49,17 +49,28 @@ const SubscriptionScreen = () => {
     if (Platform.OS === 'web') return;
     billingService.initialize().catch(err => console.error('[Billing] Init failed:', err));
     billingService.startListeners({
-      onSuccess: () => {
+      onSuccess: (_productId: string, entitlement?: Entitlement | null) => {
         setIsLoading(false);
         const kind = pendingKindRef.current;
         pendingKindRef.current = null;
+        // Apply entitlement immediately so Pro features unlock without waiting
+        // for the server round-trip (Guideline 2.1b fix — client-side unlock).
+        if (entitlement) {
+          applyLocalEntitlement(entitlement);
+        }
         if (kind === 'consumable') {
-          Alert.alert('Success', 'Your account has been topped up!', [
-            { text: 'OK', onPress: () => { refreshProfile(); } },
-          ]);
+          // Credit locally first — tokens are "added instantly" (pricing page)
+          // and the server verify can fail in Apple's sandbox.
+          await grantCredits(CREDITS_PER_TOKEN_PACK);
+          Alert.alert('Success', `${CREDITS_PER_TOKEN_PACK} generations added to your account!`);
         } else {
+          // Unlock Pro immediately from the finished transaction — do NOT wait on
+          // the server verify (it can fail in Apple's sandbox). This is the fix
+          // for "pro feature remained locked after purchase".
+          const ent = entitlementForProduct(productId);
+          if (ent) await grantEntitlement(ent.tier, ent.generationsLimit);
           Alert.alert('Success', 'Your subscription is now active!', [
-            { text: 'OK', onPress: () => { refreshProfile(); navigation.goBack(); } },
+            { text: 'OK', onPress: () => { navigation.goBack(); } },
           ]);
         }
       },
@@ -263,7 +274,7 @@ const SubscriptionScreen = () => {
 
   const handleRestorePurchases = async () => {
     if (Platform.OS === 'web') {
-      Alert.alert('Not Supported', 'Restore Purchases is only available on iOS and Android.');
+      Alert.alert('Use the Mobile App', 'Restore Purchases works in the iOS and Android apps, where your store purchases live.');
       return;
     }
     const userId = profile?.userId || profile?.$id;
@@ -275,8 +286,12 @@ const SubscriptionScreen = () => {
     try {
       const result = await billingService.restorePurchases(userId);
       if (result.success) {
+        // Unlock locally from the restored entitlement — don't depend on server verify.
+        if (result.entitlement) {
+          await grantEntitlement(result.entitlement.tier, result.entitlement.generationsLimit);
+        }
         Alert.alert('Restored', `${result.count ?? 0} purchase(s) restored.`, [
-          { text: 'OK', onPress: () => { refreshProfile(); navigation.goBack(); } },
+          { text: 'OK', onPress: () => { navigation.goBack(); } },
         ]);
       } else {
         Alert.alert('Nothing to Restore', result.error || 'No previous purchases found for this Apple ID / Google account.');
@@ -396,9 +411,12 @@ const SubscriptionScreen = () => {
                     ) : isAgency ? (
                       <Text style={styles.planPrice}>Custom</Text>
                     ) : isYearly ? (
+                      // Apple 3.1.2(c): the BILLED amount must be the most clear & conspicuous
+                      // price element. Show the total ($/year) large+bold via planPrice, and the
+                      // calculated monthly equivalent subordinate (smaller, dimmer, labelled).
                       <>
-                        <Text style={styles.planPrice}>${plan.yearlyPrice}<Text style={{fontSize: 14}}>/mo</Text></Text>
-                        <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 }}>${plan.yearlyTotal}/year</Text>
+                        <Text style={styles.planPrice}>${plan.yearlyTotal}<Text style={{fontSize: 14}}>/year</Text></Text>
+                        <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 }}>${plan.yearlyPrice}/mo equivalent</Text>
                       </>
                     ) : (
                       <Text style={styles.planPrice}>${plan.monthlyPrice}<Text style={{fontSize: 14}}>/mo</Text></Text>
@@ -424,11 +442,15 @@ const SubscriptionScreen = () => {
           })}
         </View>
 
-        {/* Apple 3.1.1: no Consumable IAP for tokens registered yet. Render card only on Android (Play has SKU "tokens" — 100 Extra Generations product, active in 173 countries) to avoid "misleading UI"/2.1(b) rejection on iOS where the SKU is not registered. */}
-        {Platform.OS !== 'ios' && (
+        {/* Consumable "100 Extra Generations" — registered on BOTH stores now
+            (App Store: pro.marketingtool.tokens, Play: tokens). Must be VISIBLE
+            to the reviewer per Guideline 2.1(b): "make sure they are complete,
+            up-to-date, visible to the reviewer and functional." Hidden only on
+            web (no IAP there). */}
+        {Platform.OS !== 'web' && (
         <TouchableOpacity
           style={{ paddingHorizontal: 20, marginTop: 28 }}
-          onPress={() => handlePurchase('tokens')}
+          onPress={() => handlePurchase(TOKENS_SKU)}
           activeOpacity={0.7}
         >
           <Text style={{ fontSize: 22, fontWeight: '900', color: '#FFF', marginBottom: 6 }}>Need More Generations?</Text>

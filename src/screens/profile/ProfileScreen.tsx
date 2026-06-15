@@ -53,7 +53,7 @@ const StatItem = ({ label, value, iconName }: { label: string; value: string | n
 
 const ProfileScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { user, profile, logout } = useAuthStore();
+  const { user, profile, logout, localSubscriptionOverride } = useAuthStore();
 
   const handleLogout = () => {
     Alert.alert(
@@ -61,7 +61,7 @@ const ProfileScreen = () => {
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', onPress: () => logout(), style: 'destructive' },
+        { text: 'Logout', onPress: async () => { await logout(); }, style: 'destructive' },
       ]
     );
   };
@@ -94,7 +94,7 @@ const ProfileScreen = () => {
     {
       title: 'Subscription',
       items: [
-        { iconName: 'star', label: 'Manage Plan', screen: 'Subscription', badge: profile?.subscription === 'free' ? 'Upgrade' : null },
+        { iconName: 'star', label: 'Manage Plan', screen: 'Subscription', badge: (profile?.subscription === 'free' && localSubscriptionOverride === 'free') ? 'Upgrade' : null },
         // Platform-native subscription management. Apple 3.1.1 / Google Play
         // policy require IAP subs to be managed via the platform's own
         // settings — no external payment links permitted in the app.
@@ -182,15 +182,25 @@ const ProfileScreen = () => {
               </Text>
               <Text style={styles.email}>{user?.email || 'help@marketingtool.pro'}</Text>
 
-              <View style={[
-                styles.planBadge,
-                { backgroundColor: profile?.subscription === 'pro' ? '#f59e0b' : 'rgba(255,255,255,0.1)' }
-              ]}>
-                <Feather name="user" size={12} color="#fff" style={{ marginRight: 4 }} />
-                <Text style={styles.planText}>
-                  {profile?.subscription === 'pro' ? 'Pro Member' : 'Free Plan'}
-                </Text>
-              </View>
+              {(() => {
+                const activeSubscription = profile?.subscription !== 'free' ? profile?.subscription : localSubscriptionOverride;
+                const hasSub = activeSubscription && activeSubscription !== 'free';
+                let badgeLabel = 'Free Plan';
+                if (activeSubscription === 'starter') badgeLabel = 'Starter Member';
+                if (activeSubscription === 'pro') badgeLabel = 'Pro Member';
+                if (activeSubscription === 'growth') badgeLabel = 'Growth Member';
+                if (activeSubscription === 'enterprise') badgeLabel = 'Enterprise Member';
+
+                return (
+                  <View style={[
+                    styles.planBadge,
+                    { backgroundColor: hasSub ? '#f59e0b' : 'rgba(255,255,255,0.1)' }
+                  ]}>
+                    <Feather name={hasSub ? 'star' : 'user'} size={12} color="#fff" style={{ marginRight: 4 }} />
+                    <Text style={styles.planText}>{badgeLabel}</Text>
+                  </View>
+                );
+              })()}
             </View>
 
             {/* Stats Section */}
@@ -203,7 +213,7 @@ const ProfileScreen = () => {
         </View>
 
         {/* Upgrade Banner */}
-        {profile?.subscription === 'free' && (
+        {profile?.subscription === 'free' && localSubscriptionOverride === 'free' && (
           <TouchableOpacity
             style={styles.upgradeBanner}
             onPress={() => navigation.navigate('Subscription')}

@@ -15,6 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useToolsStore, Tool, TOOL_CATEGORIES, PLATFORMS } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
+import { hasProAccess } from '../../services/billingService';
 import { Colors } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 import * as Haptics from 'expo-haptics';
@@ -25,8 +26,10 @@ const CARD_WIDTH = (width - 48 - 16) / 3;
 const ToolsScreen = () => {
   const navigation = useNavigation<any>();
   const { tools } = useToolsStore();
-  const { profile } = useAuthStore();
-  const isFreeUser = !profile?.subscription || profile.subscription === 'free';
+  const { profile, localSubscriptionOverride } = useAuthStore();
+  const isFreeUser = (!profile?.subscription || profile.subscription === 'free') && localSubscriptionOverride === 'free';
+  // PRO-badged tools need the Pro tier or higher, not just any paid plan.
+  const canUsePro = hasProAccess(profile?.subscription, localSubscriptionOverride);
   const [searchQuery, setSearchQuery] = useState('');
   const [activePlatform, setActivePlatform] = useState('All');
   const [activeSubcategory, setActiveSubcategory] = useState('All');
@@ -37,7 +40,7 @@ const ToolsScreen = () => {
     'Meta / Facebook': ['facebook-ads', 'meta-content'],
     'Social Media': ['social-media', 'instagram', 'tiktok', 'youtube', 'linkedin', 'twitter', 'pinterest'],
     'Content & SEO': ['google-seo', 'google-content', 'content-creation', 'copywriting'],
-    'An-Analytics': ['google-analytics'],
+    'Analytics': ['google-analytics'],
     'E-commerce': ['shopify-products', 'shopify-ads', 'email-marketing', 'ecommerce-seo'],
     'AI Tools': ['ai-agents'],
   };
@@ -72,7 +75,7 @@ const ToolsScreen = () => {
     { name: 'Meta / Facebook', img: require('../../../assets/images/platforms/plat-meta.png') },
     { name: 'Social Media', img: require('../../../assets/images/platforms/plat-social.png') },
     { name: 'Content & SEO', img: require('../../../assets/images/platforms/plat-seo.png') },
-    { name: 'An-Analytics', img: require('../../../assets/images/platforms/plat-analytics.png') },
+    { name: 'Analytics', img: require('../../../assets/images/platforms/plat-analytics.png') },
     { name: 'E-commerce', img: require('../../../assets/images/platforms/plat-ecommerce.png') },
     { name: 'AI Tools', img: require('../../../assets/images/platforms/plat-ai.png') },
   ];
@@ -180,7 +183,7 @@ const ToolsScreen = () => {
               <View style={styles.iconLiquid}>
                 <View style={styles.iconGlow} />
                 <Image source={getToolIcon(tool.slug)} style={styles.cardIcon} resizeMode="contain" />
-                {tool.isPro && isFreeUser && (
+                {tool.isPro && !canUsePro && (
                   <View style={styles.lockOverlay}>
                     <Feather name="lock" size={20} color="#FFF" />
                   </View>

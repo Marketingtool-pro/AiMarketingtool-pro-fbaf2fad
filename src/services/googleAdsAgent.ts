@@ -1,4 +1,4 @@
-import gcpAuthService from './gcpAuthService';
+import { gcpAuthService } from './gcpAuthService';
 
 const PROJECT_ID = 'marketing-tool-484720';
 const REGION = 'us-central1'; // vertex ai region

@@ -11,16 +11,20 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import { Feather } from '@expo/vector-icons';
 import AppNavigator from './src/navigation/AppNavigator';
+import { initNotificationHistory } from './src/services/notificationHistory';
 import { useAuthStore } from './src/store/authStore';
 import { Colors } from './src/constants/theme';
 import { matomo } from './src/services/matomo';
 import { initializeAppCheck } from './src/services/firebaseAppCheck';
-import perf from '@react-native-firebase/perf';
+// Firebase Performance removed: RNFBPerf with useFrameworks:static crashes iOS
+// on cold start, and the Android deferred-init workaround doesn't cover iOS.
+// Perf is non-essential monitoring — dropped to ship a stable IAP build.
 import crashlytics from '@react-native-firebase/crashlytics';
 import analytics from '@react-native-firebase/analytics';
 import messaging from '@react-native-firebase/messaging';
 import * as TrackingTransparency from 'expo-tracking-transparency';
 import { initRemoteConfig } from './src/services/firebaseRemoteConfig';
+import { initAds } from './src/services/adsService';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -30,6 +34,9 @@ export default function App() {
   const { checkAuth } = useAuthStore();
 
   useEffect(() => {
+    // Persist received notifications so the Notifications screen has a real
+    // history (Notification Center alone forgets dismissed items).
+    initNotificationHistory();
     async function prepare() {
       try {
         // Request ATT permission on iOS
@@ -52,7 +59,18 @@ export default function App() {
         // which isn't linked. Capping at 2s so a slow attestation call
         // doesn't block the splash forever.
         await Promise.all([
-          withTimeout(Font.loadAsync({ ...Feather.font }), 1500),
+          // Load the bundled Poppins family the theme references (theme.ts FontFamily).
+          // Previously only Feather icons were loaded, so every `fontFamily: 'Poppins-*'`
+          // silently fell back to the platform system font — San Francisco on iOS,
+          // Roboto on Android — which is why Android didn't match the iOS design on
+          // every screen. Loading these makes typography identical on both platforms.
+          withTimeout(Font.loadAsync({
+            ...Feather.font,
+            'Poppins-Regular': require('./assets/fonts/Poppins-Regular.ttf'),
+            'Poppins-Medium': require('./assets/fonts/Poppins-Medium.ttf'),
+            'Poppins-SemiBold': require('./assets/fonts/Poppins-SemiBold.ttf'),
+            'Poppins-Bold': require('./assets/fonts/Poppins-Bold.ttf'),
+          }), 3000),
           withTimeout(checkAuth(), 1500),
           withTimeout(initializeAppCheck(), 2000),
         ]);
@@ -92,9 +110,6 @@ export default function App() {
         .then(() => crashlytics().log('App started'))
         .catch(e => console.warn('Crashlytics init error:', e));
 
-      perf().setPerformanceCollectionEnabled(true)
-        .catch(e => console.warn('Perf init error:', e));
-
       analytics().setAnalyticsCollectionEnabled(true)
         .then(() => analytics().logAppOpen())
         .catch(e => console.warn('Analytics init error:', e));
@@ -119,6 +134,10 @@ export default function App() {
       // Remote Config — deferred so it doesn't block first paint. Falls back
       // to baked-in defaults if fetch fails (see firebaseRemoteConfig.ts).
       initRemoteConfig().catch(e => console.warn('RemoteConfig init error', e));
+
+      // AdMob / Ad Manager — Android only (excluded from iOS). Deferred so the
+      // SDK init network call never gates the splash / cold start.
+      initAds().catch(e => console.warn('Ads init error', e));
     }
 
     prepare();

@@ -39,14 +39,17 @@ repositories {
     mavenCentral()
 }
 
-def reactVersion = '0.83.6'
-def patchedVersion = "${reactVersion}-e2e.1"
+def reactVersion = '0.85.3'
+// Pinned revision — MUST stay in sync with PATCHED_VERSION in plugins/withRNEdgeToEdgeFix.js
+// and the release tag react-android-<version> published by .github/workflows/patch-react-android.yml.
+// Override with -PpatchRevision=N when cutting a new patch revision.
+def patchedVersion = "${reactVersion}-e2e.${findProperty('patchRevision') ?: '2'}"
 
 dependencies {
     // All imports needed by our 2 patched files
     compileOnly "com.facebook.react:react-android:${reactVersion}"
-    compileOnly "androidx.core:core:1.13.1"
-    compileOnly "androidx.core:core-ktx:1.13.1"
+    compileOnly "androidx.core:core:1.15.0"
+    compileOnly "androidx.core:core-ktx:1.15.0"
 }
 
 // ── AAR Surgery ──────────────────────────────────────────────────────────────

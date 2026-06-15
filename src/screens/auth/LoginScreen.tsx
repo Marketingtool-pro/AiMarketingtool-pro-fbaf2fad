@@ -10,13 +10,11 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Animated,
-  Dimensions,
-  Easing,
   Image,
   Modal,
   FlatList,
   AppState,
+  Dimensions,
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -32,7 +30,7 @@ import { clearVerification as clearFirebaseVerification } from '../../services/f
 
 import * as AppleAuthentication from 'expo-apple-authentication';
 
-const { width } = Dimensions.get('window');
+
 
 // Country data for phone login
 interface Country {
@@ -55,7 +53,7 @@ const LoginScreen = () => {
   const {
     login, loginWithGoogle, loginWithApple, loginWithFacebook,
     sendPhoneOTP, verifyPhoneOTP, verifyTOTP, authenticateWithBiometric, isLoading, 
-    mfaPending, clearError,
+    mfaPending,
   } = useAuthStore();
 
   const [email, setEmail] = useState('');
@@ -142,12 +140,14 @@ const LoginScreen = () => {
   // user is forced to re-send for the new identifier.
   useEffect(() => {
     if (!otpSent) return;
-    setOtpSent(false);
-    setOtpCode('');
-    setOtpError('');
-    setShowOtpModal(false);
-    useAuthStore.getState().clearOtpTemp();
-    clearFirebaseVerification();
+    setTimeout(() => {
+      setOtpSent(false);
+      setOtpCode('');
+      setOtpError('');
+      setShowOtpModal(false);
+      useAuthStore.getState().clearOtpTemp();
+      clearFirebaseVerification();
+    }, 0);
     SecureStore.deleteItemAsync('pendingOTP').catch(() => {});
   }, [phoneNumber, selectedCountry.code]);
 
@@ -191,7 +191,10 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     try {
-      await login(email, password);
+      // Trim email (passwords are left intact — they may legitimately contain
+      // spaces). iOS autofill/QuickType often appends a trailing space to the
+      // email field, which otherwise breaks exact-match login + the demo bypass.
+      await login(email.trim(), password);
     } catch (err: any) {
       Alert.alert('Login Failed', err.message || 'Please check your credentials');
     }
@@ -496,7 +499,7 @@ const LoginScreen = () => {
           </TouchableOpacity>
 
           <View style={styles.footer}>
-             <Text style={styles.footerText}>Don't have an account? </Text>
+             <Text style={styles.footerText}>Don&apos;t have an account? </Text>
              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
                 <Text style={styles.signupText}>Sign Up Free</Text>
              </TouchableOpacity>

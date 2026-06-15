@@ -27,12 +27,14 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import { hasProAccess } from '../../services/billingService';
 import { useAuthStore } from '../../store/authStore';
 import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 import LottieView from 'lottie-react-native';
 import Glass3DLogo from '../../components/common/Glass3DLogo';
+import NativeAdCard from '../../components/NativeAdCard';
 
 const { width } = Dimensions.get('window');
 
@@ -141,6 +143,8 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // Reanimated shared values are mutated by design; react-hooks/immutability doesn't model them.
+    // eslint-disable-next-line react-hooks/immutability
     scale.value = withSequence(withTiming(0.9, { duration: 100 }), withTiming(1, { duration: 100 }));
     onPress();
   };
@@ -166,11 +170,23 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
 
 const DashboardScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { user, profile } = useAuthStore();
+  const { user, profile, localSubscriptionOverride } = useAuthStore();
+  // A user is free only if BOTH the server profile and the local purchase
+  // override say so — the override is set by a finished StoreKit transaction
+  // and must win even when the server write failed (e.g. Apple's sandbox).
+  const isFreeUser =
+    (!profile?.subscription || profile.subscription === 'free') &&
+    localSubscriptionOverride === 'free';
+  // PRO-badged tools need the Pro tier or higher, not just any paid plan.
+  const canUsePro = hasProAccess(profile?.subscription, localSubscriptionOverride);
   const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
   const [refreshing, setRefreshing] = React.useState(false);
-  const [campaignsCount, setCampaignsCount] = React.useState<number>(0);
-  const [generationsCount, setGenerationsCount] = React.useState<number>(0);
+
+  // Update counts when generations change
+  const userGenerations = (user?.$id && generations.length > 0) ? generations.filter(g => g.userId === user.$id) : [];
+  const generationsCount = userGenerations.length;
+  // Campaigns = unique tools used
+  const campaignsCount = new Set(userGenerations.map(g => g.toolId)).size;
 
   useEffect(() => {
     fetchTools();
@@ -179,18 +195,6 @@ const DashboardScreen = () => {
       fetchGenerations(user.$id);
     }
   }, [user?.$id]);
-
-  // Update counts when generations change
-  useEffect(() => {
-    if (user?.$id && generations.length > 0) {
-      // Get generations count for this user
-      const userGenerations = generations.filter(g => g.userId === user.$id);
-      setGenerationsCount(userGenerations.length);
-      // Campaigns = unique tools used
-      const uniqueTools = new Set(userGenerations.map(g => g.toolId));
-      setCampaignsCount(uniqueTools.size);
-    }
-  }, [generations, user]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -213,7 +217,6 @@ const DashboardScreen = () => {
     { id: 1, image: BannerImages.banner1, title: 'AI Marketing Pro', subtitle: 'Create stunning ads in seconds', color: '#6C5CE7' },
     { id: 2, image: BannerImages.banner2, title: 'Smart Content', subtitle: 'AI-powered writing assistant', color: '#00B894' },
     { id: 3, image: BannerImages.banner3, title: 'ROI Boost', subtitle: 'Data-driven strategies', color: '#E17055' },
-    { id: 4, image: BannerImages.banner4, title: 'Digital Growth', subtitle: 'Scale your business faster', color: '#0984E3' },
     { id: 5, image: BannerImages.banner5, title: 'Marketing Suite', subtitle: 'All tools in one place', color: '#A29BFE' },
   ];
 
@@ -340,7 +343,8 @@ const DashboardScreen = () => {
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* Premium Banner */}
+        {/* Premium Banner — only for users without an active plan */}
+        {isFreeUser && (
         <TouchableOpacity
           style={styles.premiumBanner}
           onPress={() => navigation.navigate('Subscription')}
@@ -363,6 +367,7 @@ const DashboardScreen = () => {
             <Feather name="chevron-right" size={24} color={Colors.gold} />
           </LinearGradient>
         </TouchableOpacity>
+        )}
 
         {/* Horizontal Banner Carousel */}
         <View style={styles.bannerSection}>
@@ -508,6 +513,10 @@ const DashboardScreen = () => {
           </ScrollView>
         </View>
 
+        {/* AdMob Native Advanced ad — Android only (renders null on iOS, so the
+            iOS layout is unchanged). This is the "android extra" ad placement. */}
+        <NativeAdCard />
+
         {/* Popular Tools */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -542,7 +551,7 @@ const DashboardScreen = () => {
                     />
                     {/* Same Pro lock visual as ToolsScreen / ToolDetailScreen
                         so locked state is consistent across every screen. */}
-                    {(tool as any).isPro && profile?.subscription === 'free' && (
+                    {(tool as any).isPro && !canUsePro && (
                       <View style={styles.dashLockOverlay}>
                         <Feather name="lock" size={14} color="#FFF" />
                       </View>

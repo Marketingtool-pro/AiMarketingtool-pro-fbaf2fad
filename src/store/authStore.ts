@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import * as SecureStore from 'expo-secure-store';
 import { Models, ExecutionMethod } from 'react-native-appwrite';
 import { authService, dbService, account, functions, COLLECTIONS, Query } from '../services/appwrite';
 import { biometricService } from '../services/biometric';
@@ -16,7 +17,7 @@ export function parseAppwriteResponse(rb: any): any {
   if (typeof rb === 'object') return rb;
   if (typeof rb === 'string') {
     try { return JSON.parse(rb); }
-    catch { return { success: false, message: rb }; }
+    catch (error: any) { return { success: false, message: rb }; }
   }
   return {};
 }
@@ -27,7 +28,7 @@ interface UserProfile {
   name: string;
   email: string;
   avatar?: string;
-  subscription: 'free' | 'starter' | 'pro' | 'enterprise';
+  subscription: 'free' | 'starter' | 'pro' | 'growth' | 'enterprise';
   generationsUsed: number;
   generationsLimit: number;
   credits?: number;
@@ -37,9 +38,17 @@ interface UserProfile {
   createdAt: string;
 }
 
+// Inline entitlement type — mirrors billingService.ts Entitlement.
+// Defined here to avoid a circular import (billingService imports from authStore).
+export interface LocalEntitlement {
+  tier: 'starter' | 'pro' | 'enterprise';
+  generationsLimit: number;
+}
+
 interface AuthState {
   user: Models.User<Models.Preferences> | null;
   profile: UserProfile | null;
+  localSubscriptionOverride: 'free' | 'starter' | 'pro' | 'growth' | 'enterprise';
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
@@ -66,7 +75,10 @@ interface AuthState {
   checkAuth: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  grantEntitlement: (tier: UserProfile['subscription'], generationsLimit: number) => Promise<void>;
+  grantCredits: (amount: number) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  applyLocalEntitlement: (entitlement: LocalEntitlement) => void;
   clearError: () => void;
   fetchOrCreateProfile: (user: Models.User<Models.Preferences>) => Promise<UserProfile>;
 }
@@ -74,6 +86,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   profile: null,
+  localSubscriptionOverride: 'free',
   isLoading: true,
   isAuthenticated: false,
   error: null,
@@ -87,7 +100,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     // Reviewer bypass for App Store / Play Store — allows entry even if
     // Appwrite is unreachable or the demo account wasn't created.
-    if (email === 'demo@marketingtool.pro' && password === 'Reviewer123!') {
+    // Normalize email (trim + lowercase) and trim the password so iOS autofill
+    // whitespace or an auto-capitalized first letter can never defeat the match.
+    // Reviewer password(s): prefer EXPO_PUBLIC_REVIEWER_PASSWORDS (comma-separated) so the
+    // value can be overridden via EAS env / .env. Falls back to the throwaway demo password
+    // printed in the App Store Connect review notes so the bypass ALWAYS works for the
+    // reviewer even if the env var didn't make it into the build (this mirrors the hardcoded
+    // OTP fallback '123456' below). This is a reviewer-only demo account with no real data.
+    const REVIEWER_PASSWORDS = (process.env.EXPO_PUBLIC_REVIEWER_PASSWORDS || 'MarketingTool2026Demo!')
+      .split(',')
+      .map((p: string) => p.trim())
+      .filter(Boolean);
+    if (
+      email.trim().toLowerCase() === 'demo@marketingtool.pro' &&
+      REVIEWER_PASSWORDS.length > 0 &&
+      REVIEWER_PASSWORDS.includes(password.trim())
+    ) {
       const mockUser = {
         $id: 'reviewer_bypass',
         name: 'App Store Reviewer',
@@ -101,10 +129,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       };
       // Still try to fetch/create a real profile in Appwrite so the app
       // behaves normally, but ignore errors so the reviewer isn't blocked.
+      // Whatever the server says, the reviewer account is always full Pro —
+      // the review notes promise it, and a server-side 'free' profile here is
+      // what made Apple see locked Pro tools ("10 generations remaining").
       try {
         const profile = await get().fetchOrCreateProfile(mockUser as any);
-        set({ user: mockUser as any, profile, isAuthenticated: true, isLoading: false });
-      } catch (e) {
+        const reviewerProfile: UserProfile = {
+          ...profile,
+          subscription: 'pro',
+          generationsUsed: 0,
+          generationsLimit: 9999,
+        };
+        set({ user: mockUser as any, profile: reviewerProfile, isAuthenticated: true, isLoading: false });
+      } catch {
         const fallbackProfile: UserProfile = {
           $id: 'reviewer_bypass',
           userId: 'reviewer_bypass',
@@ -140,7 +177,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       }
     } catch (error: any) {
-      if (error.type === 'user_mfa_required' || error.code === 401 && error.message?.includes('MFA')) {
+      if (error.type === 'user_mfa_required' || (error.code === 401 && error.message?.includes('MFA'))) {
         set({ mfaPending: true, isLoading: false });
         return;
       }
@@ -355,7 +392,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error(sessionResult.error || 'Failed to create session');
       }
 
-      try { await account.deleteSession('current'); } catch (_e) {}
+      try { await account.deleteSession('current'); } catch {}
       await account.createSession(sessionResult.userId, sessionResult.secret);
 
       const user = await authService.getCurrentUser();
@@ -388,7 +425,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ isLoading: false });
       }
       return false;
-    } catch (error) {
+    } catch {
       set({ isLoading: false });
       return false;
     }
@@ -401,7 +438,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Sign out of Firebase too — phone-auth users have a Firebase session
       // alongside the Appwrite one. Failing to sign out leaves the Firebase
       // user logged in and triggers stale-state behavior on next login.
-      try { await signOutFirebase(); } catch (_e) {}
+      try { await signOutFirebase(); } catch {}
       set({
         user: null,
         profile: null,
@@ -417,6 +454,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   checkAuth: async () => {
     set({ isLoading: true });
     try {
+      // Load local subscription override
+      try {
+        const override = await SecureStore.getItemAsync('local_subscription_override');
+        if (override) {
+          set({ localSubscriptionOverride: override as any });
+        }
+      } catch (e: any) {
+        console.warn('[AuthStore] Load local subscription override failed:', e);
+      }
+
       // Check if biometric is enabled
       const bioEnabled = await biometricService.isBiometricEnabled();
       if (bioEnabled) {
@@ -437,7 +484,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else {
         set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
       }
-    } catch (error) {
+    } catch (error: any) {
       // On error or timeout, proceed as not authenticated
       set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
     }
@@ -472,14 +519,82 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  // Unlock the entitlement the instant a StoreKit/Play purchase is confirmed.
+  // Sets local state FIRST (optimistic, never blocked by the network) so Pro
+  // tools unlock immediately, then best-effort persists to the profile document
+  // so the unlock survives refreshProfile()/app restart. A failed DB write must
+  // NOT re-lock the user — the finished transaction already proves the purchase.
+  grantEntitlement: async (tier, generationsLimit) => {
+    set({ localSubscriptionOverride: tier });
+    try {
+      await SecureStore.setItemAsync('local_subscription_override', tier);
+    } catch (e: any) {
+      console.warn('[AuthStore] Save local subscription override failed:', e);
+    }
+    const { profile } = get();
+    if (!profile) return;
+    set({ profile: { ...profile, subscription: tier, generationsLimit } });
+    try {
+      const updated = await dbService.updateDocument<UserProfile & Models.Document>(
+        COLLECTIONS.USERS,
+        profile.$id,
+        { subscription: tier, generationsLimit }
+      );
+      set({ profile: updated as UserProfile });
+    } catch (error: any) {
+      console.warn('[AuthStore] grantEntitlement persist failed (local unlock kept):', error);
+    }
+  },
+
+  // Token packs are "added instantly to your account" (pricing page). Credit
+  // locally from the finished transaction first — same philosophy as
+  // grantEntitlement: a failed server write must not eat a paid purchase.
+  grantCredits: async (amount: number) => {
+    const { profile } = get();
+    if (!profile) return;
+    const generationsLimit = (profile.generationsLimit ?? 0) + amount;
+    set({ profile: { ...profile, generationsLimit } });
+    try {
+      const updated = await dbService.updateDocument<UserProfile & Models.Document>(
+        COLLECTIONS.USERS,
+        profile.$id,
+        { generationsLimit }
+      );
+      set({ profile: updated as UserProfile });
+    } catch (error: any) {
+      console.warn('[AuthStore] grantCredits persist failed (local credit kept):', error);
+    }
+  },
+
   refreshProfile: async () => {
     const { user } = get();
     if (!user) return;
     try {
       const profile = await get().fetchOrCreateProfile(user);
       set({ profile });
-    } catch (error) {
+    } catch (error: any) {
       console.error('[AuthStore] Refresh profile failed:', error);
+    }
+  },
+
+  // Immediately apply a purchase entitlement to the local profile so the UI
+  // unlocks Pro features without waiting for a server round-trip. This is the
+  // client-side half of the Guideline 2.1(b) fix; the server sync happens
+  // asynchronously via iap-verify and refreshProfile.
+  applyLocalEntitlement: (entitlement: LocalEntitlement) => {
+    const { profile } = get();
+    if (!profile) return;
+    const tierRank: Record<string, number> = { free: 0, starter: 1, pro: 2, enterprise: 3 };
+    const currentRank = tierRank[profile.subscription] ?? 0;
+    const newRank     = tierRank[entitlement.tier] ?? 0;
+    if (newRank >= currentRank) {
+      set({
+        profile: {
+          ...profile,
+          subscription:     entitlement.tier,
+          generationsLimit: entitlement.generationsLimit,
+        },
+      });
     }
   },
 
