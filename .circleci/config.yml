@@ -2,8 +2,6 @@
 # See: https://circleci.com/docs/reference/configuration-reference
 version: 2.1
 
-# Orbs are reusable packages of CircleCI configuration that you may share across projects, enabling you to create encapsulated, parameterized commands, jobs, and executors that can be used across multiple projects.
-# See: https://circleci.com/docs/orbs/use/orb-intro/
 jobs:
   build:
     docker:
@@ -23,16 +21,6 @@ jobs:
       - run:
           name: Test
           command: npm test --if-present
-# Orchestrate jobs using workflows
-# See: https://circleci.com/docs/guides/orchestrate/workflows/ & https://circleci.com/docs/reference/configuration-reference/#workflows
-workflows:
-  ci: # This is the name of the workflow; feel free to change it to better match your workflow.
-    # Inside the workflow, you define the jobs you want to run.
-    jobs:
-      - build
-version: 2.1
-
-jobs:
   sonarqube:
     docker:
       - image: cimg/android:2024.01.1-node
@@ -57,4 +45,5 @@ jobs:
 workflows:
   main:
     jobs:
+      - build
       - sonarqube
