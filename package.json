@@ -228,6 +228,11 @@
     },
     "install": {
       "exclude": [
+        "expo-background-fetch",
+        "expo-brownfield",
+        "expo-font",
+        "expo-image-manipulator",
+        "expo-task-manager",
         "react-native-reanimated",
         "react-native-safe-area-context",
         "react-native-worklets",
