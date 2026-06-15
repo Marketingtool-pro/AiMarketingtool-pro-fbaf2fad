@@ -406,9 +406,12 @@ const SubscriptionScreen = () => {
                     ) : isAgency ? (
                       <Text style={styles.planPrice}>Custom</Text>
                     ) : isYearly ? (
+                      // Apple 3.1.2(c): the BILLED amount must be the most clear & conspicuous
+                      // price element. Show the total ($/year) large+bold via planPrice, and the
+                      // calculated monthly equivalent subordinate (smaller, dimmer, labelled).
                       <>
-                        <Text style={styles.planPrice}>${plan.yearlyPrice}<Text style={{fontSize: 14}}>/mo</Text></Text>
-                        <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 }}>${plan.yearlyTotal}/year</Text>
+                        <Text style={styles.planPrice}>${plan.yearlyTotal}<Text style={{fontSize: 14}}>/year</Text></Text>
+                        <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 }}>${plan.yearlyPrice}/mo equivalent</Text>
                       </>
                     ) : (
                       <Text style={styles.planPrice}>${plan.monthlyPrice}<Text style={{fontSize: 14}}>/mo</Text></Text>
