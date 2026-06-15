@@ -168,7 +168,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           }
         }
       }
-    } catch {
+    } catch (error: any) {
       if (error.type === 'user_mfa_required' || (error.code === 401 && error.message?.includes('MFA'))) {
         set({ mfaPending: true, isLoading: false });
         return;
@@ -187,7 +187,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const profile = await get().fetchOrCreateProfile(user);
         set({ user, profile, isAuthenticated: true, isLoading: false, mfaPending: false });
       }
-    } catch {
+    } catch (error: any) {
       set({ error: error.message || 'Invalid 2FA code', isLoading: false });
       throw error;
     }
@@ -206,7 +206,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authService.update2FA(true);
       const user = await authService.getCurrentUser();
       set({ user, isLoading: false });
-    } catch {
+    } catch (error: any) {
       set({ isLoading: false, error: error.message });
       throw error;
     }
@@ -218,7 +218,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authService.update2FA(false);
       const user = await authService.getCurrentUser();
       set({ user, isLoading: false });
-    } catch {
+    } catch (error: any) {
       set({ isLoading: false, error: error.message });
       throw error;
     }
@@ -233,7 +233,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const profile = await get().fetchOrCreateProfile(user);
         set({ user, profile, isAuthenticated: true, isLoading: false });
       }
-    } catch {
+    } catch (error: any) {
       set({ error: error.message || 'Registration failed', isLoading: false });
       throw error;
     }
@@ -252,7 +252,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       }
       set({ isLoading: false, error: 'Google login was cancelled or failed' });
-    } catch {
+    } catch (error: any) {
       set({ error: error.message || 'Google login failed', isLoading: false });
       throw error;
     }
@@ -271,7 +271,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       }
       set({ isLoading: false, error: 'Apple login was cancelled or failed' });
-    } catch {
+    } catch (error: any) {
       set({ error: error.message || 'Apple login failed', isLoading: false });
       throw error;
     }
@@ -290,7 +290,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       }
       set({ isLoading: false, error: 'Facebook login was cancelled or failed' });
-    } catch {
+    } catch (error: any) {
       set({ error: error.message || 'Facebook login failed', isLoading: false });
       throw error;
     }
@@ -330,7 +330,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       set({ tempPhone: formatted, tempVerificationId: formatted });
       return formatted;
-    } catch {
+    } catch (error: any) {
       if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
       set({ error: error.message || 'Failed to send OTP' });
       throw error;
@@ -393,7 +393,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const profile = await get().fetchOrCreateProfile(user);
       set({ user, profile, isAuthenticated: true, tempPhone: null, tempVerificationId: null });
       return;
-    } catch {
+    } catch (error: any) {
       if (__DEV__) console.log('[Auth] Verify OTP error:', error.message);
       set({ error: error.message || 'Invalid OTP' });
       throw error;
@@ -438,7 +438,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
         biometricPending: false,
       });
-    } catch {
+    } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }
   },
@@ -476,7 +476,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else {
         set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
       }
-    } catch {
+    } catch (error: any) {
       // On error or timeout, proceed as not authenticated
       set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
     }
@@ -487,7 +487,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       await authService.resetPassword(email);
       set({ isLoading: false });
-    } catch {
+    } catch (error: any) {
       set({ error: error.message || 'Password reset failed', isLoading: false });
       throw error;
     }
@@ -505,7 +505,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         data
       );
       set({ profile: updated as UserProfile, isLoading: false });
-    } catch {
+    } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -533,7 +533,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         { subscription: tier, generationsLimit }
       );
       set({ profile: updated as UserProfile });
-    } catch {
+    } catch (error: any) {
       console.warn('[AuthStore] grantEntitlement persist failed (local unlock kept):', error);
     }
   },
@@ -553,7 +553,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         { generationsLimit }
       );
       set({ profile: updated as UserProfile });
-    } catch {
+    } catch (error: any) {
       console.warn('[AuthStore] grantCredits persist failed (local credit kept):', error);
     }
   },
@@ -564,7 +564,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const profile = await get().fetchOrCreateProfile(user);
       set({ profile });
-    } catch {
+    } catch (error: any) {
       console.error('[AuthStore] Refresh profile failed:', error);
     }
   },
@@ -619,7 +619,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       ]);
 
       return newProfile as UserProfile;
-    } catch {
+    } catch (error: any) {
       // Surface network/timeout errors in state so the UI can show a warning.
       // We still return a temporary defaultProfile so auth isn't blocked.
       if (error?.message && !error.message.includes('Document with the requested ID')) {
