@@ -6,6 +6,32 @@ import { parseAppwriteResponse } from '../store/authStore';
 
 export type PlanId = 'free' | 'starter' | 'pro' | 'growth' | 'agency';
 
+/**
+ * Safely extracts a product/purchase ID from an unknown object.
+ * Checks `productId` first (iOS StoreKit shape) then `id` (Android Play shape),
+ * since the two stores use different field names for the same concept.
+ */
+const getObjectProductId = (obj: unknown): string => {
+  if (!obj || typeof obj !== 'object') return '';
+  const o = obj as { productId?: unknown; id?: unknown };
+  if (typeof o.productId === 'string') return o.productId;
+  if (typeof o.id === 'string') return o.id;
+  return '';
+};
+
+const getPurchaseProductId = (purchase: IAP.Purchase): string =>
+  getObjectProductId(purchase as unknown);
+
+const getPurchaseToken = (purchase: IAP.Purchase): string | null => {
+  const value = purchase as unknown;
+  if (!value || typeof value !== 'object') return null;
+  if ('purchaseToken' in value) {
+    const token = (value as { purchaseToken: unknown }).purchaseToken;
+    if (typeof token === 'string') return token;
+  }
+  return null;
+};
+
 export const PLAN_TO_SKU: Record<Exclude<PlanId, 'free' | 'agency'>, { monthly: string; yearly: string }> = {
   starter: { monthly: 'pro.marketingtool.starter.monthly', yearly: 'pro.marketingtool.starter.yearly' },
   pro:     { monthly: 'pro.marketingtool.pro.monthly',     yearly: 'pro.marketingtool.pro.yearly' },
@@ -29,17 +55,18 @@ const CONSUMABLE_SKUS = [TOKENS_SKU];
 // Covers BOTH the iOS flat skus and the Android Play product ids (starter /
 // professional / growth).
 export type Entitlement = { tier: 'starter' | 'pro' | 'growth'; generationsLimit: number };
+const GROWTH_GENERATION_LIMIT = 9999;
 const PRODUCT_TO_ENTITLEMENT: Record<string, Entitlement> = {
   'pro.marketingtool.starter.monthly': { tier: 'starter', generationsLimit: 200 },
   'pro.marketingtool.starter.yearly':  { tier: 'starter', generationsLimit: 200 },
   'pro.marketingtool.pro.monthly':     { tier: 'pro',      generationsLimit: 500 },
   'pro.marketingtool.pro.yearly':      { tier: 'pro',      generationsLimit: 500 },
-  'pro.marketingtool.growth.monthly':  { tier: 'growth', generationsLimit: 9999 },
-  'pro.marketingtool.growth.yearly':   { tier: 'growth', generationsLimit: 9999 },
+  'pro.marketingtool.growth.monthly':  { tier: 'growth', generationsLimit: GROWTH_GENERATION_LIMIT },
+  'pro.marketingtool.growth.yearly':   { tier: 'growth', generationsLimit: GROWTH_GENERATION_LIMIT },
   // Android Play subscription product ids:
   'starter':      { tier: 'starter',    generationsLimit: 200 },
   'professional': { tier: 'pro',        generationsLimit: 500 },
-  'growth':       { tier: 'growth', generationsLimit: 9999 },
+  'growth':       { tier: 'growth', generationsLimit: GROWTH_GENERATION_LIMIT },
 };
 
 export const entitlementForProduct = (productId: string): Entitlement | null =>
@@ -98,7 +125,7 @@ const iapAvailable = (): boolean => {
 const IAP_UNAVAILABLE_ERROR = 'In-app purchase is not available on this device.';
 
 export type PurchaseCallbacks = {
-  onSuccess: (productId: string) => void;
+  onSuccess: (productId: string, entitlement?: Entitlement | null) => void;
   onError: (message: string) => void;
 };
 
@@ -146,15 +173,19 @@ export const billingService = {
     if (purchaseSub || errorSub) return; // already listening
 
     purchaseSub = IAP.purchaseUpdatedListener(async (purchase: IAP.Purchase) => {
-      const p = purchase as any;
-      const productId = p.productId || p.id || '';
+      const productId = getPurchaseProductId(purchase);
       try {
         // Server verification is best-effort: sync the entitlement when we can,
         // but a missing/unreachable verify endpoint must NOT fail a real purchase.
         const userId = pendingUserId;
         if (userId) {
           try { await this.verifyPurchase(purchase, userId); }
-          catch (e) { console.warn('[Billing] verify (non-blocking) failed:', e); }
+          catch (e) {
+            // Verification is intentionally best-effort/non-blocking here:
+            // network/backend failures must not prevent finishing a valid store purchase.
+            // We log for observability and continue so transaction finalization can proceed.
+            console.warn('[Billing] verify (non-blocking) failed:', e);
+          }
         } else {
           console.warn('[Billing] verify skipped: missing pendingUserId');
         }
@@ -173,11 +204,12 @@ export const billingService = {
           });
         } catch (e) { console.warn('[Billing] finishTransaction failed:', e); }
 
-        if (Platform.OS === 'android' && p.purchaseToken) {
-          try { await IAP.acknowledgePurchaseAndroid(p.purchaseToken); } catch { /* noop */ }
+        const purchaseToken = getPurchaseToken(purchase);
+        if (Platform.OS === 'android' && purchaseToken) {
+          try { await IAP.acknowledgePurchaseAndroid(purchaseToken); } catch { /* noop */ }
         }
 
-        callbacks?.onSuccess(productId);
+        callbacks?.onSuccess(productId, entitlementForProduct(productId));
       } catch (err: any) {
         console.error('[Billing] purchaseUpdated handler error:', err);
         callbacks?.onError(err?.message || 'Could not complete the purchase.');
@@ -235,16 +267,22 @@ export const billingService = {
    * Returns { pending: true } when the store sheet launched.
    */
   async requestPurchase(sku: string, userId: string): Promise<{ success: boolean; pending?: boolean; error?: string }> {
+    const getProductId = (product: unknown): string | undefined => {
+      if (!product || typeof product !== 'object') return undefined;
+      const p = product as { id?: string; productId?: string };
+      return p.id || p.productId;
+    };
+
     if (!iapAvailable()) {
       return { success: false, error: IAP_UNAVAILABLE_ERROR };
     }
     if (!purchaseSub || !errorSub) {
-      return { success: false, error: 'Store is still starting up. Please try again in a moment.' };
+      return { success: false, error: 'In-app purchase service is still initializing (billing listeners are not ready). Please wait a few seconds and try again.' };
     }
     try {
       await this.initialize();
       const available = await this.getProducts();
-      if (__DEV__) console.log('[Billing] Available products:', available.map((p: any) => p.id || p.productId));
+      if (__DEV__) console.log('[Billing] Available products:', available.map((p: unknown) => getObjectProductId(p)));
       const isSub = SUBSCRIPTION_SKUS.has(sku);
 
       // ── Android subscriptions: map iOS-style sku -> Play product + base-plan
@@ -252,7 +290,14 @@ export const billingService = {
       // offerToken, not a flat sku. (This is the fix for zero Android sales.)
       if (Platform.OS === 'android' && isSub) {
         const map = ANDROID_SUB[sku];
-        const product: any = map && available.find((p: any) => (p.id || p.productId) === map.product);
+        type AndroidProduct = {
+          // `subscriptionOfferDetailsAndroid` is the field name used by react-native-iap v15+,
+          // while `subscriptionOfferDetails` was used in earlier v12/v13 releases.
+          // Both are checked for compatibility with different library versions.
+          subscriptionOfferDetailsAndroid?: Array<{ basePlanId: string; offerId?: string; offerToken?: string }>;
+          subscriptionOfferDetails?: Array<{ basePlanId: string; offerId?: string; offerToken?: string }>;
+        };
+        const product = map && available.find((p: unknown) => getObjectProductId(p) === map.product) as AndroidProduct | undefined;
         if (!product) {
           return { success: false, error: available.length === 0
             ? 'Subscription products are not available yet. Please try again shortly.'
@@ -279,7 +324,7 @@ export const billingService = {
       }
 
       // ── iOS subscriptions + consumables (both platforms) ──
-      const found = available.find((p: any) => (p.id || p.productId) === sku);
+      const found = available.find((p: unknown) => getObjectProductId(p) === sku);
       if (!found) {
         const reason = available.length === 0
           ? 'Subscription products are not available yet. Please try again shortly.'
@@ -351,7 +396,7 @@ export const billingService = {
       // Resolve the highest entitlement among the restored purchases so the caller
       // can unlock Pro locally even when the server verify is unavailable (same
       // root cause as the purchase flow — must not depend on a server round-trip).
-      const rank = { starter: 1, pro: 2, growth: 3 } as const;
+      const rank = { starter: 1, pro: 2, enterprise: 3 } as const;
       let entitlement: Entitlement | null = null;
       for (const p of purchases) {
         const pid = (p as any).productId || (p as any).id || '';

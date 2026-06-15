@@ -42,6 +42,22 @@ interface Message {
   retryMessage?: string;
 }
 
+// Module-scope factory so the impure Date.now()/sequence calls live outside
+// component render code (react-hooks/purity flags impure calls made inside
+// component-scope functions). IDs stay unique within a session.
+let messageSeq = 0;
+const createMessage = (
+  role: Message['role'],
+  content: string,
+  extra?: Partial<Message>,
+): Message => ({
+  id: `${Date.now()}-${messageSeq++}`,
+  role,
+  content,
+  timestamp: new Date(),
+  ...extra,
+});
+
 interface SuggestedPrompt {
   iconSlug: string;
   image?: any;
@@ -53,9 +69,9 @@ interface SuggestedPrompt {
 
 // Animated Ripple Component (LiMo style)
 const AnimatedRipple = () => {
-  const ripple1 = useRef(new Animated.Value(0)).current;
-  const ripple2 = useRef(new Animated.Value(0)).current;
-  const ripple3 = useRef(new Animated.Value(0)).current;
+  const [ripple1] = useState(() => new Animated.Value(0));
+  const [ripple2] = useState(() => new Animated.Value(0));
+  const [ripple3] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     const createRippleAnimation = (anim: Animated.Value, delay: number) => {
@@ -257,12 +273,7 @@ const ChatScreen = () => {
     const messageText = text || inputText.trim();
     if (!messageText) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: messageText,
-      timestamp: new Date(),
-    };
+    const userMessage = createMessage('user', messageText);
 
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
@@ -272,24 +283,16 @@ const ChatScreen = () => {
     try {
       const response = await callWindmillChat(messageText, messages);
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response,
-        timestamp: new Date(),
-      };
+      const assistantMessage = createMessage('assistant', response);
       setMessages(prev => [...prev, assistantMessage]);
       setConsecutiveErrors(0);
       lastFailedMessage.current = null;
     } catch (error: any) {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'I encountered an error connecting to the AI. Please try again.',
-        timestamp: new Date(),
-        isError: true,
-        retryMessage: messageText,
-      };
+      const errorMessage = createMessage(
+        'assistant',
+        'I encountered an error connecting to the AI. Please try again.',
+        { isError: true, retryMessage: messageText },
+      );
       setMessages(prev => [...prev, errorMessage]);
       setConsecutiveErrors(prev => prev + 1);
       lastFailedMessage.current = messageText;
@@ -483,7 +486,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                 </View>
               </View>
 
-              <Text style={styles.emptyTitle}>Hi, I'm Marketing AI!</Text>
+              <Text style={styles.emptyTitle}>Hi, I&apos;m Marketing AI!</Text>
               <Text style={styles.emptySubtitle}>Your AI Marketing Assistant</Text>
 
               {/* Chat / Tools / History Tabs */}
