@@ -10,3 +10,19 @@
 # Binary files should be left untouched
 *.jar           binary
 
+# --- Linguist language-statistics overrides ---
+# Keep GitHub's language % reflecting real source (TypeScript/JavaScript),
+# not generated/vendored artifacts.
+
+# 804K auto-generated diagnostics dump — was inflating the repo to ~38% HTML.
+Diagnostics-Report.html linguist-generated
+
+# Lockfiles / generated
+package-lock.json linguist-generated
+*.lock linguist-generated
+
+# Vendored / docs (excluded from stats)
+public/** linguist-vendored
+docs/** linguist-documentation
+vendor/** linguist-vendored
+
