@@ -36,8 +36,7 @@
     "ship:verified:ios": "npm run iap:verify && npm run ship:ios",
     "ship:ios": "eas build --platform ios --profile production --auto-submit --non-interactive",
     "ship:android": "eas build --platform android --profile production --auto-submit --non-interactive",
-    "build": "expo export --platform web",
-    "lint": "expo lint"
+    "build": "expo export --platform web"
   },
   "dependencies": {
     "@actions/core": "^3.0.1",
