@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, StyleSheet, Animated, Dimensions, Image } from 'react-native';
 import { Colors } from '../../constants/theme';
 
@@ -42,7 +42,7 @@ const SplashScreen = () => {
         }),
       ])
     ).start();
-  }, []);
+  }, [fadeAnim, scaleAnim, glowAnim]);
 
   return (
     <View style={styles.container}>
