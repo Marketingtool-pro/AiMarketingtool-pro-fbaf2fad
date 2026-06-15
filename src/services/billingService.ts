@@ -6,16 +6,29 @@ import { parseAppwriteResponse } from '../store/authStore';
 
 export type PlanId = 'free' | 'starter' | 'pro' | 'growth' | 'agency';
 
-const getPurchaseProductId = (purchase: IAP.Purchase): string => {
-  const p = purchase as Record<string, unknown>;
-  if (typeof p.productId === 'string') return p.productId;
-  if (typeof p.id === 'string') return p.id;
+/**
+ * Safely extracts a product/purchase ID from an unknown object.
+ * Checks `productId` first (iOS StoreKit shape) then `id` (Android Play shape),
+ * since the two stores use different field names for the same concept.
+ */
+const getObjectProductId = (obj: unknown): string => {
+  if (!obj || typeof obj !== 'object') return '';
+  const o = obj as { productId?: unknown; id?: unknown };
+  if (typeof o.productId === 'string') return o.productId;
+  if (typeof o.id === 'string') return o.id;
   return '';
 };
 
+const getPurchaseProductId = (purchase: IAP.Purchase): string =>
+  getObjectProductId(purchase as unknown);
+
 const getPurchaseToken = (purchase: IAP.Purchase): string | null => {
-  const p = purchase as Record<string, unknown>;
-  if (typeof p.purchaseToken === 'string') return p.purchaseToken;
+  const value = purchase as unknown;
+  if (!value || typeof value !== 'object') return null;
+  if ('purchaseToken' in value) {
+    const token = (value as { purchaseToken: unknown }).purchaseToken;
+    if (typeof token === 'string') return token;
+  }
   return null;
 };
 
@@ -41,18 +54,19 @@ const CONSUMABLE_SKUS = [TOKENS_SKU];
 // finished transaction is itself proof of purchase and must unlock immediately.
 // Covers BOTH the iOS flat skus and the Android Play product ids (starter /
 // professional / growth).
-export type Entitlement = { tier: 'starter' | 'pro' | 'enterprise'; generationsLimit: number };
+export type Entitlement = { tier: 'starter' | 'pro' | 'growth'; generationsLimit: number };
+const GROWTH_GENERATION_LIMIT = 9999;
 const PRODUCT_TO_ENTITLEMENT: Record<string, Entitlement> = {
   'pro.marketingtool.starter.monthly': { tier: 'starter', generationsLimit: 200 },
   'pro.marketingtool.starter.yearly':  { tier: 'starter', generationsLimit: 200 },
   'pro.marketingtool.pro.monthly':     { tier: 'pro',      generationsLimit: 500 },
   'pro.marketingtool.pro.yearly':      { tier: 'pro',      generationsLimit: 500 },
-  'pro.marketingtool.growth.monthly':  { tier: 'enterprise', generationsLimit: 9999 },
-  'pro.marketingtool.growth.yearly':   { tier: 'enterprise', generationsLimit: 9999 },
+  'pro.marketingtool.growth.monthly':  { tier: 'growth', generationsLimit: GROWTH_GENERATION_LIMIT },
+  'pro.marketingtool.growth.yearly':   { tier: 'growth', generationsLimit: GROWTH_GENERATION_LIMIT },
   // Android Play subscription product ids:
   'starter':      { tier: 'starter',    generationsLimit: 200 },
   'professional': { tier: 'pro',        generationsLimit: 500 },
-  'growth':       { tier: 'enterprise', generationsLimit: 9999 },
+  'growth':       { tier: 'growth', generationsLimit: GROWTH_GENERATION_LIMIT },
 };
 
 export const entitlementForProduct = (productId: string): Entitlement | null =>
@@ -268,7 +282,7 @@ export const billingService = {
     try {
       await this.initialize();
       const available = await this.getProducts();
-      if (__DEV__) console.log('[Billing] Available products:', available.map((p: unknown) => getProductId(p)));
+      if (__DEV__) console.log('[Billing] Available products:', available.map((p: unknown) => getObjectProductId(p)));
       const isSub = SUBSCRIPTION_SKUS.has(sku);
 
       // ── Android subscriptions: map iOS-style sku -> Play product + base-plan
@@ -276,9 +290,14 @@ export const billingService = {
       // offerToken, not a flat sku. (This is the fix for zero Android sales.)
       if (Platform.OS === 'android' && isSub) {
         const map = ANDROID_SUB[sku];
-        // product is typed as `any` because Play subscription objects contain
-        // platform-specific offer detail arrays not covered by the IAP type definitions.
-        const product: any = map && available.find((p: unknown) => getProductId(p) === map.product);
+        type AndroidProduct = {
+          // `subscriptionOfferDetailsAndroid` is the field name used by react-native-iap v15+,
+          // while `subscriptionOfferDetails` was used in earlier v12/v13 releases.
+          // Both are checked for compatibility with different library versions.
+          subscriptionOfferDetailsAndroid?: Array<{ basePlanId: string; offerId?: string; offerToken?: string }>;
+          subscriptionOfferDetails?: Array<{ basePlanId: string; offerId?: string; offerToken?: string }>;
+        };
+        const product = map && available.find((p: unknown) => getObjectProductId(p) === map.product) as AndroidProduct | undefined;
         if (!product) {
           return { success: false, error: available.length === 0
             ? 'Subscription products are not available yet. Please try again shortly.'
@@ -305,7 +324,7 @@ export const billingService = {
       }
 
       // ── iOS subscriptions + consumables (both platforms) ──
-      const found = available.find((p: unknown) => getProductId(p) === sku);
+      const found = available.find((p: unknown) => getObjectProductId(p) === sku);
       if (!found) {
         const reason = available.length === 0
           ? 'Subscription products are not available yet. Please try again shortly.'
