@@ -83,9 +83,93 @@
         "sms"
       ]
     },
-    "associatedDomains": [
-      "applinks:marketingtool.pro",
-      "applinks:app.marketingtool.pro"
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "deploymentTarget": "16.4",
+            "storeKitVersion": "2",
+            "forceStaticLinking": [
+              "RNFBApp",
+              "RNFBAuth",
+              "RNFBMessaging",
+              "RNFBAnalytics",
+              "RNFBCrashlytics",
+              "RNFBFirestore",
+              "NitroIap"
+            ],
+            "extraPods": [
+              {
+                "name": "RecaptchaEnterprise",
+                "version": "~> 18.0"
+              }
+            ],
+            "extraCCFlags": [
+              "-Wno-everything",
+              "-Xfrontend -disable-implicit-concurrency-module-import"
+            ]
+          },
+          "android": {
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "minSdkVersion": 24,
+            "windowSoftInputMode": "adjustResize",
+            "useMemoryPageSize16KB": true,
+            "ndkVersion": "27.1.12297006",
+            "kotlinVersion": "2.1.20",
+            "kspVersion": "2.1.20-1.0.32"
+          }
+        }
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-firebase/messaging",
+      "@react-native-firebase/app-check",
+      "@react-native-firebase/crashlytics",
+      "./plugins/withEasPodfileFix.js",
+      "./plugins/withIosFirebaseSwiftFix.js",
+      [
+        "react-native-edge-to-edge",
+        {
+          "android": {
+            "parentTheme": "Default",
+            "enforceNavigationBarContrast": false
+          }
+        }
+      ],
+      "./plugins/withAndroid15EdgeToEdge.js",
+      "./plugins/withFirebaseDeferredInit.js",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#060b28"
+        }
+      ],
+      "expo-notifications",
+      "react-native-iap",
+      "expo-secure-store",
+      "expo-font",
+      "expo-sharing",
+      "expo-web-browser",
+      "expo-asset",
+      "expo-tracking-transparency",
+      "./plugins/withKotlinKspFix.js",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-2789940907288323~8551339904",
+          "iosAppId": "ca-app-pub-2789940907288323~8551339904",
+          "delayAppMeasurementInit": true
+        }
+      ]
     ],
     "appleTeamId": "N465W7879Z"
   },

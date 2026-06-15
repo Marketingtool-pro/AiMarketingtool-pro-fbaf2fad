@@ -460,7 +460,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (override) {
           set({ localSubscriptionOverride: override as any });
         }
-      } catch {
+      } catch (e: any) {
         console.warn('[AuthStore] Load local subscription override failed:', e);
       }
 
@@ -528,7 +528,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ localSubscriptionOverride: tier });
     try {
       await SecureStore.setItemAsync('local_subscription_override', tier);
-    } catch {
+    } catch (e: any) {
       console.warn('[AuthStore] Save local subscription override failed:', e);
     }
     const { profile } = get();

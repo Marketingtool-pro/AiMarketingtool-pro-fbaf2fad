@@ -34,11 +34,6 @@ const NotificationsScreen = () => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [pushEnabled, setPushEnabled] = useState(false);
 
-  useEffect(() => {
-    checkPermission();
-    loadNotifications();
-  }, []);
-
   const checkPermission = async () => {
     const { status } = await Notifications.getPermissionsAsync();
     setPushEnabled(status === 'granted');
