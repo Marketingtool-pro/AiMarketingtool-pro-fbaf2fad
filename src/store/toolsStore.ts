@@ -127,9 +127,8 @@ export const TOOL_CATEGORIES = [
 // Load ALL 314 tools from tools.js (was tools.json — renamed to bypass *.json archive filter)
 // Intentionally kept as require(): this file is stored as .js to avoid archive filtering.
 // Explicit typing prevents implicit `any` and keeps downstream processing type-checked.
-// tools.js exports the raw catalog array directly.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const allToolsRaw = require('../data/tools.js') as RawTool[];
+import { ToolIconImagesKeys, setToolIconOverride, getToolIcon as _getToolIcon } from '../constants/toolIcons';
 
 // Pro lock derivation — basic single-shot content tools stay free so users
 // can taste the catalog; everything advanced (analytics, audits, AI agents,
@@ -150,7 +149,7 @@ const FREE_EXACT_SLUGS = new Set([
   'viral-tweets',
   'social-bio-writer',
 ]);
-function deriveIsPro(slug: string | undefined): boolean {
+function deriveIsPro(slug: unknown): boolean {
   if (typeof slug !== 'string') return true;
   const s = slug.toLowerCase();
   if (FREE_EXACT_SLUGS.has(s)) return false;
@@ -232,7 +231,7 @@ function deriveDeliverable(slug: string, name: string): string | undefined {
   return undefined;
 }
 
-const ALL_TOOLS: Tool[] = allToolsRaw.map((t, i) => ({
+const ALL_TOOLS: Tool[] = (allToolsRaw as RawTool[]).map((t, i) => ({
   $id: `t${i}`,
   name: t.name || 'Tool',
   slug: t.slug || `tool-${i}`,
