@@ -17,7 +17,7 @@ export function parseAppwriteResponse(rb: any): any {
   if (typeof rb === 'object') return rb;
   if (typeof rb === 'string') {
     try { return JSON.parse(rb); }
-    catch { return { success: false, message: rb }; }
+    catch (error: any) { return { success: false, message: rb }; }
   }
   return {};
 }
@@ -133,7 +133,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           generationsLimit: 9999,
         };
         set({ user: mockUser as any, profile: reviewerProfile, isAuthenticated: true, isLoading: false });
-      } catch (e) {
+      } catch {
         const fallbackProfile: UserProfile = {
           $id: 'reviewer_bypass',
           userId: 'reviewer_bypass',
@@ -384,7 +384,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error(sessionResult.error || 'Failed to create session');
       }
 
-      try { await account.deleteSession('current'); } catch (_e) {}
+      try { await account.deleteSession('current'); } catch {}
       await account.createSession(sessionResult.userId, sessionResult.secret);
 
       const user = await authService.getCurrentUser();
@@ -417,7 +417,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ isLoading: false });
       }
       return false;
-    } catch (error) {
+    } catch {
       set({ isLoading: false });
       return false;
     }
@@ -430,7 +430,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Sign out of Firebase too — phone-auth users have a Firebase session
       // alongside the Appwrite one. Failing to sign out leaves the Firebase
       // user logged in and triggers stale-state behavior on next login.
-      try { await signOutFirebase(); } catch (_e) {}
+      try { await signOutFirebase(); } catch {}
       set({
         user: null,
         profile: null,
@@ -452,7 +452,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (override) {
           set({ localSubscriptionOverride: override as any });
         }
-      } catch (e) {
+      } catch {
         console.warn('[AuthStore] Load local subscription override failed:', e);
       }
 
@@ -476,7 +476,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else {
         set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
       }
-    } catch (error) {
+    } catch (error: any) {
       // On error or timeout, proceed as not authenticated
       set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
     }
@@ -520,7 +520,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ localSubscriptionOverride: tier });
     try {
       await SecureStore.setItemAsync('local_subscription_override', tier);
-    } catch (e) {
+    } catch {
       console.warn('[AuthStore] Save local subscription override failed:', e);
     }
     const { profile } = get();
@@ -533,7 +533,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         { subscription: tier, generationsLimit }
       );
       set({ profile: updated as UserProfile });
-    } catch (error) {
+    } catch (error: any) {
       console.warn('[AuthStore] grantEntitlement persist failed (local unlock kept):', error);
     }
   },
@@ -553,7 +553,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         { generationsLimit }
       );
       set({ profile: updated as UserProfile });
-    } catch (error) {
+    } catch (error: any) {
       console.warn('[AuthStore] grantCredits persist failed (local credit kept):', error);
     }
   },
@@ -564,7 +564,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const profile = await get().fetchOrCreateProfile(user);
       set({ profile });
-    } catch (error) {
+    } catch (error: any) {
       console.error('[AuthStore] Refresh profile failed:', error);
     }
   },

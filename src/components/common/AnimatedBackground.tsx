@@ -13,10 +13,10 @@ const FloatingParticle = ({ delay, size, startX, startY, color }: {
   startY: number;
   color: string;
 }) => {
-  const translateY = React.useRef(new RNAnimated.Value(0)).current;
-  const translateX = React.useRef(new RNAnimated.Value(0)).current;
-  const opacity = React.useRef(new RNAnimated.Value(0)).current;
-  const scale = React.useRef(new RNAnimated.Value(0.5)).current;
+  const [translateY] = React.useState(() => new RNAnimated.Value(0));
+  const [translateX] = React.useState(() => new RNAnimated.Value(0));
+  const [opacity] = React.useState(() => new RNAnimated.Value(0));
+  const [scale] = React.useState(() => new RNAnimated.Value(0.5));
 
   React.useEffect(() => {
     const anim = RNAnimated.loop(
