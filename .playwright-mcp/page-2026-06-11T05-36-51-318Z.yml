@@ -1,0 +1,613 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e6]:
+      - generic [ref=e8]:
+        - button "Navigate to home" [ref=e9] [cursor=pointer]:
+          - img "Expo home" [ref=e10]
+        - generic [ref=e12]:
+          - button "Notifications" [ref=e13] [cursor=pointer]:
+            - img [ref=e16]
+          - button "Search" [ref=e19] [cursor=pointer]:
+            - img [ref=e20]
+      - generic [ref=e23]:
+        - button "aimarketintool-2-2-2" [ref=e25] [cursor=pointer]:
+          - generic [ref=e26]:
+            - img [ref=e27]:
+              - img [ref=e28]
+            - paragraph [ref=e31]: aimarketintool-2-2-2
+          - img [ref=e33]
+        - button "marketingtool" [ref=e37] [cursor=pointer]:
+          - generic [ref=e38]:
+            - figure [ref=e213]:
+              - generic [ref=e214]:
+                - generic [ref=e215]: M
+                - img [ref=e216]
+            - paragraph [ref=e41]: marketingtool
+          - img [ref=e43]
+      - generic [ref=e48]:
+        - link "Account" [ref=e51] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2
+          - generic [ref=e52]:
+            - img [ref=e53]
+            - paragraph [ref=e56]: Account
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - paragraph [ref=e59]: Project
+            - link "Overview" [ref=e61] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool
+              - generic [ref=e62]:
+                - img [ref=e63]
+                - paragraph [ref=e70]: Overview
+            - link "Insights" [ref=e72] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/insights
+              - generic [ref=e73]:
+                - img [ref=e74]
+                - paragraph [ref=e81]: Insights
+            - link "Usage" [ref=e83] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/usage
+              - generic [ref=e84]:
+                - img [ref=e85]
+                - paragraph [ref=e88]: Usage
+            - link "Observe" [ref=e90] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/observe
+              - generic [ref=e91]:
+                - img [ref=e92]
+                - paragraph [ref=e95]: Observe
+          - generic [ref=e96]:
+            - paragraph [ref=e97]: Develop
+            - link "Workflows" [ref=e99] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/workflows
+              - generic [ref=e100]:
+                - img [ref=e101]
+                - paragraph [ref=e104]: Workflows
+            - link "Development builds" [ref=e106] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/development-builds
+              - generic [ref=e107]:
+                - img [ref=e108]
+                - paragraph [ref=e111]: Development builds
+          - generic [ref=e112]:
+            - paragraph [ref=e113]: Deploy
+            - link "Builds" [ref=e115] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds
+              - generic [ref=e116]:
+                - img [ref=e117]
+                - paragraph [ref=e120]: Builds
+            - link "Submissions" [ref=e122] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/submissions
+              - generic [ref=e123]:
+                - img [ref=e124]
+                - paragraph [ref=e132]: Submissions
+            - button "Over-the-air updates" [ref=e134] [cursor=pointer]:
+              - generic [ref=e135]:
+                - img [ref=e136]
+                - paragraph [ref=e139]: Over-the-air updates
+              - img [ref=e140]
+            - button "Hosting" [ref=e218] [cursor=pointer]:
+              - generic [ref=e219]:
+                - img [ref=e220]
+                - paragraph [ref=e223]: Hosting
+              - img [ref=e224]
+            - link "Push notifications" [ref=e151] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/push-notifications
+              - generic [ref=e152]:
+                - img [ref=e153]
+                - paragraph [ref=e156]: Push notifications
+          - generic [ref=e157]:
+            - paragraph [ref=e158]: Entities
+            - link "Fingerprints" [ref=e160] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/fingerprints
+              - paragraph [ref=e162]: Fingerprints
+          - generic [ref=e163]:
+            - paragraph [ref=e164]: Project settings
+            - link "General" [ref=e166] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/settings
+              - paragraph [ref=e168]: General
+            - link "Credentials" [ref=e170] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/credentials
+              - paragraph [ref=e172]: Credentials
+            - link "Environment variables" [ref=e174] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/environment-variables
+              - paragraph [ref=e176]: Environment variables
+            - link "Hosting" [ref=e228] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/hosting/settings
+              - paragraph [ref=e230]: Hosting
+            - link "GitHub" [ref=e178] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/github
+              - paragraph [ref=e180]: GitHub
+      - button "User menu Lokendra singh saingar" [ref=e183] [cursor=pointer]:
+        - generic [ref=e184]:
+          - img "User menu" [ref=e185]
+          - paragraph [ref=e186]: Lokendra singh saingar
+        - img [ref=e188]
+    - generic [ref=e196]:
+      - generic [ref=e197]:
+        - generic [ref=e198]:
+          - link "Builds" [ref=e199] [cursor=pointer]:
+            - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds
+            - generic [ref=e200]:
+              - img [ref=e201]
+              - paragraph [ref=e204]: Builds
+          - img [ref=e205]
+          - paragraph [ref=e209]: 4291f696
+        - generic [ref=e231]:
+          - button "Copy error as prompt" [ref=e233] [cursor=pointer]:
+            - img [ref=e234]
+            - generic [ref=e238]: Copy error as prompt
+          - button "Compare" [ref=e240] [cursor=pointer]:
+            - img [ref=e241]
+            - generic [ref=e247]: Compare
+      - generic [ref=e248]:
+        - generic [ref=e249]:
+          - generic [ref=e251]:
+            - generic [ref=e253]:
+              - generic [ref=e254]:
+                - img [ref=e255]
+                - heading "iOS App Store build" [level=3] [ref=e258]
+              - paragraph [ref=e259]: "cf6c3b1 · build(ios): commit package-lock.json so EAS npm ci runs (fixes the 2s 514 build failure) EAS always runs npm ci, which requires a committed lockfile. It was gitignored/dropped in edc6890, so every 514 build died in ~2s. Regenerated from Master package.json (react 19.2.3)."
+            - button [ref=e262] [cursor=pointer]:
+              - img [ref=e263]
+          - generic [ref=e267]:
+            - generic [ref=e269]:
+              - paragraph [ref=e270]: Profile
+              - button [ref=e271]:
+                - img [ref=e272]
+            - paragraph [ref=e276]: Environment
+            - paragraph [ref=e278]: Deployment
+            - paragraph [ref=e280]: Version
+            - paragraph [ref=e282]: Fingerprint
+            - paragraph [ref=e284]: Commit
+            - paragraph [ref=e286]: Created by
+            - paragraph [ref=e289]: production
+            - link "production" [ref=e290] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/environment-variables?environment=production
+              - paragraph [ref=e292]: production
+            - link "1.5.0 production" [ref=e293] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/deployments/production/1.5.0
+              - generic [ref=e295]:
+                - button "1.5.0" [ref=e296]:
+                  - paragraph [ref=e297]: 1.5.0
+                - button "production" [ref=e298]:
+                  - img [ref=e299]
+                  - paragraph [ref=e302]: production
+            - paragraph [ref=e304]:
+              - button "1.5.0 (223)" [ref=e305]
+            - link "9e50f72" [ref=e306] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/fingerprints/9e50f725d5c663d784617377d407b84c84e5b705
+              - generic [ref=e307]:
+                - img [ref=e308]
+                - paragraph [ref=e311]:
+                  - code [ref=e312]: 9e50f72
+            - generic [ref=e314]:
+              - link "cf6c3b1" [ref=e317] [cursor=pointer]:
+                - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/cf6c3b1f238f005f58472af99f0b5cab3272d128
+                - code [ref=e318]: cf6c3b1
+              - button [ref=e320] [cursor=pointer]:
+                - img [ref=e321]
+            - generic [ref=e325]:
+              - img "Lokendra singh saingar account icon" [ref=e326]
+              - generic [ref=e328]:
+                - paragraph [ref=e329]: Lokendra singh saingar
+                - paragraph [ref=e330]: aimarketintool-2-2-2-2
+        - generic [ref=e331]:
+          - generic [ref=e333]:
+            - generic [ref=e336]:
+              - img [ref=e337]
+              - heading "Build artifact" [level=4] [ref=e341]
+            - button [ref=e343] [cursor=pointer]:
+              - img [ref=e344]
+          - generic [ref=e351]:
+            - paragraph [ref=e353]: Status
+            - paragraph [ref=e355]: Start time
+            - paragraph [ref=e357]: Wait time
+            - generic [ref=e358]:
+              - paragraph [ref=e359]: Queue time
+              - button [ref=e360]:
+                - img [ref=e361]
+            - paragraph [ref=e365]: Build time
+            - paragraph [ref=e367]: Total time
+            - generic [ref=e368]:
+              - paragraph [ref=e369]: Availability
+              - button [ref=e370]:
+                - img [ref=e371]
+            - generic [ref=e375]:
+              - img "Errored" [ref=e378]
+              - paragraph [ref=e381]: Errored
+            - time [ref=e385]: Jun 10, 2026 10:33 PM
+            - paragraph [ref=e387]: 570ms
+            - paragraph [ref=e389]: 37s
+            - paragraph [ref=e391]: 20s
+            - paragraph [ref=e393]: 58s
+            - paragraph [ref=e395]: 29 days
+        - generic [ref=e396]:
+          - generic [ref=e398]:
+            - generic [ref=e401]:
+              - img [ref=e402]
+              - heading "Logs" [level=4] [ref=e405]
+            - button [ref=e407] [cursor=pointer]:
+              - img [ref=e408]
+          - generic [ref=e414]:
+            - button "Waiting to start 38s" [ref=e416]:
+              - generic [ref=e417]:
+                - img [ref=e418]
+                - img [ref=e422]
+                - paragraph [ref=e426]: Waiting to start
+              - generic [ref=e427]:
+                - paragraph [ref=e428]: 38s
+                - button [ref=e429] [cursor=pointer]:
+                  - img [ref=e430]
+            - button "Spin up build environment 4ms" [ref=e434]:
+              - generic [ref=e435]:
+                - img [ref=e436]
+                - img [ref=e440]
+                - paragraph [ref=e444]: Spin up build environment
+              - generic [ref=e445]:
+                - paragraph [ref=e446]: 4ms
+                - button [ref=e447] [cursor=pointer]:
+                  - img [ref=e448]
+            - button "Prepare project 6s" [ref=e452]:
+              - generic [ref=e453]:
+                - img [ref=e454]
+                - img [ref=e458]
+                - paragraph [ref=e462]: Prepare project
+              - generic [ref=e463]:
+                - paragraph [ref=e464]: 6s
+                - button [ref=e465] [cursor=pointer]:
+                  - img [ref=e466]
+            - button "Pre-install hook 200ms" [ref=e470]:
+              - generic [ref=e471]:
+                - img [ref=e472]
+                - img [ref=e476]
+                - paragraph [ref=e480]: Pre-install hook
+              - generic [ref=e481]:
+                - paragraph [ref=e482]: 200ms
+                - button [ref=e483] [cursor=pointer]:
+                  - img [ref=e484]
+            - button "Read eas.json 1ms" [ref=e488]:
+              - generic [ref=e489]:
+                - img [ref=e490]
+                - img [ref=e494]
+                - paragraph [ref=e498]: Read eas.json
+              - generic [ref=e499]:
+                - paragraph [ref=e500]: 1ms
+                - button [ref=e501] [cursor=pointer]:
+                  - img [ref=e502]
+            - button "Read package.json 1ms" [ref=e506]:
+              - generic [ref=e507]:
+                - img [ref=e508]
+                - img [ref=e512]
+                - paragraph [ref=e516]: Read package.json
+              - generic [ref=e517]:
+                - paragraph [ref=e518]: 1ms
+                - button [ref=e519] [cursor=pointer]:
+                  - img [ref=e520]
+            - generic [ref=e523]:
+              - button "Install dependencies 2s" [ref=e524]:
+                - generic [ref=e525]:
+                  - img [ref=e526]
+                  - img [ref=e530]
+                  - paragraph [ref=e534]: Install dependencies
+                - generic [ref=e535]:
+                  - paragraph [ref=e536]: 2s
+                  - button [ref=e537] [cursor=pointer]:
+                    - img [ref=e538]
+              - generic [ref=e564]:
+                - generic [ref=e565]:
+                  - generic [ref=e566]: "1"
+                  - code [ref=e567]: Running "npm ci --include=dev" in /Users/expo/workingdir/build directory
+                - generic [ref=e568]:
+                  - generic [ref=e569]: "2"
+                  - code [ref=e570]: npm warn ERESOLVE overriding peer dependency
+                - generic [ref=e571]:
+                  - generic [ref=e572]: "3"
+                  - code [ref=e573]: "npm warn While resolving: @opentelemetry/auto-instrumentations-node@0.76.0"
+                - generic [ref=e574]:
+                  - generic [ref=e575]: "4"
+                  - code [ref=e576]: "npm warn Found: @opentelemetry/core@2.7.1"
+                - generic [ref=e577]:
+                  - generic [ref=e578]: "5"
+                  - code [ref=e579]: npm warn node_modules/@opentelemetry/auto-instrumentations-node/node_modules/@opentelemetry/core
+                - generic [ref=e580]:
+                  - generic [ref=e581]: "6"
+                  - code [ref=e582]: npm warn @opentelemetry/core@"^2.0.0" from @opentelemetry/instrumentation-pino@0.64.0
+                - generic [ref=e583]:
+                  - generic [ref=e584]: "7"
+                  - code [ref=e585]: npm warn node_modules/@opentelemetry/auto-instrumentations-node/node_modules/@opentelemetry/instrumentation-pino
+                - generic [ref=e586]:
+                  - generic [ref=e587]: "8"
+                  - code [ref=e588]: npm warn @opentelemetry/instrumentation-pino@"^0.64.0" from @opentelemetry/auto-instrumentations-node@0.76.0
+                - generic [ref=e589]:
+                  - generic [ref=e590]: "9"
+                  - code [ref=e591]: npm warn node_modules/@opentelemetry/auto-instrumentations-node
+                - generic [ref=e592]:
+                  - generic [ref=e593]: "10"
+                  - code [ref=e594]: npm warn 2 more (@opentelemetry/resource-detector-gcp, @opentelemetry/resources)
+                - generic [ref=e595]:
+                  - generic [ref=e596]: "11"
+                  - code [ref=e597]: npm warn
+                - generic [ref=e598]:
+                  - generic [ref=e599]: "12"
+                  - code [ref=e600]: "npm warn Could not resolve dependency:"
+                - generic [ref=e601]:
+                  - generic [ref=e602]: "13"
+                  - code [ref=e603]: npm warn peer @opentelemetry/core@"^2.0.0" from @opentelemetry/auto-instrumentations-node@0.76.0
+                - generic [ref=e604]:
+                  - generic [ref=e605]: "14"
+                  - code [ref=e606]: npm warn node_modules/@opentelemetry/auto-instrumentations-node
+                - generic [ref=e607]:
+                  - generic [ref=e608]: "15"
+                  - code [ref=e609]: npm warn overridden @opentelemetry/auto-instrumentations-node@">=0.75.0" (was "^0.49.1") from @genkit-ai/google-cloud@1.36.0
+                - generic [ref=e610]:
+                  - generic [ref=e611]: "16"
+                  - code [ref=e612]: npm warn node_modules/@genkit-ai/google-cloud
+                - generic [ref=e613]:
+                  - generic [ref=e614]: "17"
+                  - code [ref=e615]: npm warn
+                - generic [ref=e616]:
+                  - generic [ref=e617]: "18"
+                  - code [ref=e618]: "npm warn Conflicting peer dependency: @opentelemetry/core@2.7.1"
+                - generic [ref=e619]:
+                  - generic [ref=e620]: "19"
+                  - code [ref=e621]: npm warn node_modules/@opentelemetry/core
+                - generic [ref=e622]:
+                  - generic [ref=e623]: "20"
+                  - code [ref=e624]: npm warn peer @opentelemetry/core@"^2.0.0" from @opentelemetry/auto-instrumentations-node@0.76.0
+                - generic [ref=e625]:
+                  - generic [ref=e626]: "21"
+                  - code [ref=e627]: npm warn node_modules/@opentelemetry/auto-instrumentations-node
+                - generic [ref=e628]:
+                  - generic [ref=e629]: "22"
+                  - code [ref=e630]: npm warn overridden @opentelemetry/auto-instrumentations-node@">=0.75.0" (was "^0.49.1") from @genkit-ai/google-cloud@1.36.0
+                - generic [ref=e631]:
+                  - generic [ref=e632]: "23"
+                  - code [ref=e633]: npm warn node_modules/@genkit-ai/google-cloud
+                - generic [ref=e634]:
+                  - generic [ref=e635]: "24"
+                  - code [ref=e636]: npm warn ERESOLVE overriding peer dependency
+                - generic [ref=e637]:
+                  - generic [ref=e638]: "25"
+                  - code [ref=e639]: "npm warn While resolving: @react-navigation/elements@2.9.23"
+                - generic [ref=e640]:
+                  - generic [ref=e641]: "26"
+                  - code [ref=e642]: "npm warn Found: @react-navigation/native@7.3.0"
+                - generic [ref=e643]:
+                  - generic [ref=e644]: "27"
+                  - code [ref=e645]: npm warn node_modules/@react-navigation/native
+                - generic [ref=e646]:
+                  - generic [ref=e647]: "28"
+                  - code [ref=e648]: npm warn @react-navigation/native@"7.3.0" from the root project
+                - generic [ref=e649]:
+                  - generic [ref=e650]: "29"
+                  - code [ref=e651]: npm warn 2 more (@react-navigation/bottom-tabs, @react-navigation/native-stack)
+                - generic [ref=e652]:
+                  - generic [ref=e653]: "30"
+                  - code [ref=e654]: npm warn
+                - generic [ref=e655]:
+                  - generic [ref=e656]: "31"
+                  - code [ref=e657]: "npm warn Could not resolve dependency:"
+                - generic [ref=e658]:
+                  - generic [ref=e659]: "32"
+                  - code [ref=e660]: npm warn peer @react-navigation/native@"^7.3.1" from @react-navigation/elements@2.9.23
+                - generic [ref=e661]:
+                  - generic [ref=e662]: "33"
+                  - code [ref=e663]: npm warn node_modules/@react-navigation/elements
+                - generic [ref=e664]:
+                  - generic [ref=e665]: "34"
+                  - code [ref=e666]: npm warn @react-navigation/elements@"^2.9.21" from @react-navigation/bottom-tabs@7.17.1
+                - generic [ref=e667]:
+                  - generic [ref=e668]: "35"
+                  - code [ref=e669]: npm warn node_modules/@react-navigation/bottom-tabs
+                - generic [ref=e670]:
+                  - generic [ref=e671]: "36"
+                  - code [ref=e672]: npm warn 1 more (@react-navigation/native-stack)
+                - generic [ref=e673]:
+                  - generic [ref=e674]: "37"
+                  - code [ref=e675]: npm warn
+                - generic [ref=e676]:
+                  - generic [ref=e677]: "38"
+                  - code [ref=e678]: "npm warn Conflicting peer dependency: @react-navigation/native@7.3.1"
+                - generic [ref=e679]:
+                  - generic [ref=e680]: "39"
+                  - code [ref=e681]: npm warn node_modules/@react-navigation/native
+                - generic [ref=e682]:
+                  - generic [ref=e683]: "40"
+                  - code [ref=e684]: npm warn peer @react-navigation/native@"^7.3.1" from @react-navigation/elements@2.9.23
+                - generic [ref=e685]:
+                  - generic [ref=e686]: "41"
+                  - code [ref=e687]: npm warn node_modules/@react-navigation/elements
+                - generic [ref=e688]:
+                  - generic [ref=e689]: "42"
+                  - code [ref=e690]: npm warn @react-navigation/elements@"^2.9.21" from @react-navigation/bottom-tabs@7.17.1
+                - generic [ref=e691]:
+                  - generic [ref=e692]: "43"
+                  - code [ref=e693]: npm warn node_modules/@react-navigation/bottom-tabs
+                - generic [ref=e694]:
+                  - generic [ref=e695]: "44"
+                  - code [ref=e696]: npm warn 1 more (@react-navigation/native-stack)
+                - generic [ref=e697]:
+                  - generic [ref=e698]: "45"
+                  - code [ref=e699]: npm warn ERESOLVE overriding peer dependency
+                - generic [ref=e700]:
+                  - generic [ref=e701]: "46"
+                  - code [ref=e702]: "npm warn While resolving: expo-modules-core@56.0.16"
+                - generic [ref=e703]:
+                  - generic [ref=e704]: "47"
+                  - code [ref=e705]: "npm warn Found: react-native-worklets@0.9.1"
+                - generic [ref=e706]:
+                  - generic [ref=e707]: "48"
+                  - code [ref=e708]: npm warn node_modules/react-native-worklets
+                - generic [ref=e709]:
+                  - generic [ref=e710]: "49"
+                  - code [ref=e711]: npm warn react-native-worklets@"0.9.1" from the root project
+                - generic [ref=e712]:
+                  - generic [ref=e713]: "50"
+                  - code [ref=e714]: npm warn 2 more (@expo/ui, react-native-reanimated)
+                - generic [ref=e715]:
+                  - generic [ref=e716]: "51"
+                  - code [ref=e717]: npm warn
+                - generic [ref=e718]:
+                  - generic [ref=e719]: "52"
+                  - code [ref=e720]: "npm warn Could not resolve dependency:"
+                - generic [ref=e721]:
+                  - generic [ref=e722]: "53"
+                  - code [ref=e723]: npm warn peerOptional react-native-worklets@"^0.7.4 || ^0.8.0" from expo-modules-core@56.0.16
+                - generic [ref=e724]:
+                  - generic [ref=e725]: "54"
+                  - code [ref=e726]: npm warn node_modules/expo-modules-core
+                - generic [ref=e727]:
+                  - generic [ref=e728]: "55"
+                  - code [ref=e729]: npm warn expo-modules-core@"~56.0.16" from expo@56.0.11
+                - generic [ref=e730]:
+                  - generic [ref=e731]: "56"
+                  - code [ref=e732]: npm warn node_modules/expo
+                - generic [ref=e733]:
+                  - generic [ref=e734]: "57"
+                  - code [ref=e735]: npm warn
+                - generic [ref=e736]:
+                  - generic [ref=e737]: "58"
+                  - code [ref=e738]: "npm warn Conflicting peer dependency: react-native-worklets@0.8.3"
+                - generic [ref=e739]:
+                  - generic [ref=e740]: "59"
+                  - code [ref=e741]: npm warn node_modules/react-native-worklets
+                - generic [ref=e742]:
+                  - generic [ref=e743]: "60"
+                  - code [ref=e744]: npm warn peerOptional react-native-worklets@"^0.7.4 || ^0.8.0" from expo-modules-core@56.0.16
+                - generic [ref=e745]:
+                  - generic [ref=e746]: "61"
+                  - code [ref=e747]: npm warn node_modules/expo-modules-core
+                - generic [ref=e748]:
+                  - generic [ref=e749]: "62"
+                  - code [ref=e750]: npm warn expo-modules-core@"~56.0.16" from expo@56.0.11
+                - generic [ref=e751]:
+                  - generic [ref=e752]: "63"
+                  - code [ref=e753]: npm warn node_modules/expo
+                - generic [ref=e754]:
+                  - generic [ref=e755]: "64"
+                  - code [ref=e756]: npm error code EUSAGE
+                - generic [ref=e757]:
+                  - generic [ref=e758]: "65"
+                  - code [ref=e759]: npm error
+                - generic [ref=e760]:
+                  - generic [ref=e761]: "66"
+                  - code [ref=e762]: "npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing."
+                - generic [ref=e763]:
+                  - generic [ref=e764]: "67"
+                  - code [ref=e765]: npm error
+                - generic [ref=e766]:
+                  - generic [ref=e767]: "68"
+                  - code [ref=e768]: "npm error Missing: @testing-library/dom@10.4.1 from lock file"
+                - generic [ref=e769]:
+                  - generic [ref=e770]: "69"
+                  - code [ref=e771]: "npm error Missing: @types/aria-query@5.0.4 from lock file"
+                - generic [ref=e772]:
+                  - generic [ref=e773]: "70"
+                  - code [ref=e774]: "npm error Missing: aria-query@5.3.0 from lock file"
+                - generic [ref=e775]:
+                  - generic [ref=e776]: "71"
+                  - code [ref=e777]: "npm error Missing: dom-accessibility-api@0.5.16 from lock file"
+                - generic [ref=e778]:
+                  - generic [ref=e779]: "72"
+                  - code [ref=e780]: "npm error Missing: lz-string@1.5.0 from lock file"
+                - generic [ref=e781]:
+                  - generic [ref=e782]: "73"
+                  - code [ref=e783]: "npm error Missing: pretty-format@27.5.1 from lock file"
+                - generic [ref=e784]:
+                  - generic [ref=e785]: "74"
+                  - code [ref=e786]: "npm error Missing: @react-native/metro-config@0.85.3 from lock file"
+                - generic [ref=e787]:
+                  - generic [ref=e788]: "75"
+                  - code [ref=e789]: "npm error Missing: @react-native/metro-babel-transformer@0.85.3 from lock file"
+                - generic [ref=e790]:
+                  - generic [ref=e791]: "76"
+                  - code [ref=e792]: "npm error Missing: @react-native/babel-preset@0.85.3 from lock file"
+                - generic [ref=e793]:
+                  - generic [ref=e794]: "77"
+                  - code [ref=e795]: "npm error Missing: @babel/plugin-transform-react-jsx-self@7.29.7 from lock file"
+                - generic [ref=e796]:
+                  - generic [ref=e797]: "78"
+                  - code [ref=e798]: "npm error Missing: @babel/plugin-transform-react-jsx-source@7.29.7 from lock file"
+                - generic [ref=e799]:
+                  - generic [ref=e800]: "79"
+                  - code [ref=e801]: "npm error Missing: @babel/plugin-transform-regenerator@7.29.7 from lock file"
+                - generic [ref=e802]:
+                  - generic [ref=e803]: "80"
+                  - code [ref=e804]: "npm error Missing: react-refresh@0.14.2 from lock file"
+                - generic [ref=e805]:
+                  - generic [ref=e806]: "81"
+                  - code [ref=e807]: "npm error Missing: ansi-styles@5.2.0 from lock file"
+                - generic [ref=e808]:
+                  - generic [ref=e809]: "82"
+                  - code [ref=e810]: "npm error Missing: react-is@17.0.2 from lock file"
+                - generic [ref=e811]:
+                  - generic [ref=e812]: "83"
+                  - code [ref=e813]: npm error
+                - generic [ref=e814]:
+                  - generic [ref=e815]: "84"
+                  - code [ref=e816]: npm error Clean install a project
+                - generic [ref=e817]:
+                  - generic [ref=e818]: "85"
+                  - code [ref=e819]: npm error
+                - generic [ref=e820]:
+                  - generic [ref=e821]: "86"
+                  - code [ref=e822]: "npm error Usage:"
+                - generic [ref=e823]:
+                  - generic [ref=e824]: "87"
+                  - code [ref=e825]: npm error npm ci
+                - generic [ref=e826]:
+                  - generic [ref=e827]: "88"
+                  - code [ref=e828]: npm error
+                - generic [ref=e829]:
+                  - generic [ref=e830]: "89"
+                  - code [ref=e831]: "npm error Options:"
+                - generic [ref=e832]:
+                  - generic [ref=e833]: "90"
+                  - code [ref=e834]: npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+                - generic [ref=e835]:
+                  - generic [ref=e836]: "91"
+                  - code [ref=e837]: npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+                - generic [ref=e838]:
+                  - generic [ref=e839]: "92"
+                  - code [ref=e840]: npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+                - generic [ref=e841]:
+                  - generic [ref=e842]: "93"
+                  - code [ref=e843]: npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+                - generic [ref=e844]:
+                  - generic [ref=e845]: "94"
+                  - code [ref=e846]: npm error [--no-bin-links] [--no-fund] [--dry-run]
+                - generic [ref=e847]:
+                  - generic [ref=e848]: "95"
+                  - code [ref=e849]: npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+                - generic [ref=e850]:
+                  - generic [ref=e851]: "96"
+                  - code [ref=e852]: npm error [-ws|--workspaces] [--include-workspace-root] [--install-links]
+                - generic [ref=e853]:
+                  - generic [ref=e854]: "97"
+                  - code [ref=e855]: npm error
+                - generic [ref=e856]:
+                  - generic [ref=e857]: "98"
+                  - code [ref=e858]: "npm error aliases: clean-install, ic, install-clean, isntall-clean"
+                - generic [ref=e859]:
+                  - generic [ref=e860]: "99"
+                  - code [ref=e861]: npm error
+                - generic [ref=e862]:
+                  - generic [ref=e863]: "100"
+                  - code [ref=e864]: npm error Run "npm help ci" for more info
+                - generic [ref=e865]:
+                  - generic [ref=e866]: "101"
+                  - code [ref=e867]: "npm error A complete log of this run can be found in: /Users/expo/.npm/_logs/2026-06-11T05_33_52_792Z-debug-0.log"
+                - generic [ref=e868]:
+                  - generic [ref=e869]: "102"
+                  - paragraph [ref=e870]: "npm ci --include=dev exited with non-zero code: 1"
+            - generic [ref=e541]:
+              - button "Fail job 1ms" [ref=e542]:
+                - generic [ref=e543]:
+                  - img [ref=e544]
+                  - img [ref=e548]
+                  - paragraph [ref=e552]: Fail job
+                - generic [ref=e553]:
+                  - paragraph [ref=e554]: 1ms
+                  - button [ref=e555] [cursor=pointer]:
+                    - img [ref=e556]
+              - generic [ref=e560]:
+                - generic [ref=e561]: "1"
+                - paragraph [ref=e562]: "Build failed npm ci --include=dev exited with non-zero code: 1"
+  - alert [ref=e563]

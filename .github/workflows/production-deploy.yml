@@ -144,4 +144,7 @@ jobs:
           DRY_RUN: 'true'
         run: |
           sudo gem install jwt --no-document
+          export ASC_KEY_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyId")"
+          export ASC_ISSUER_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyIssuerId")"
+          export ASC_APP_ID="$(node -pe "require('./eas.json').submit.production.ios.ascAppId")"
           ruby scripts/asc_autosubmit.rb

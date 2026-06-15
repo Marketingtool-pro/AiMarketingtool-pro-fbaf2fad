@@ -1,0 +1,719 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e6]:
+      - generic [ref=e8]:
+        - button "Navigate to home" [ref=e9] [cursor=pointer]:
+          - img "Expo home" [ref=e10]
+        - generic [ref=e12]:
+          - button "Notifications" [ref=e13] [cursor=pointer]:
+            - img [ref=e16]
+          - button "Search" [ref=e19] [cursor=pointer]:
+            - img [ref=e20]
+      - generic [ref=e23]:
+        - button "aimarketintool-2-2-2" [ref=e25] [cursor=pointer]:
+          - generic [ref=e26]:
+            - img [ref=e27]:
+              - img [ref=e28]
+            - paragraph [ref=e31]: aimarketintool-2-2-2
+          - img [ref=e33]
+        - button "marketingtool" [ref=e37] [cursor=pointer]:
+          - generic [ref=e38]:
+            - figure [ref=e39]:
+              - generic [ref=e40]:
+                - generic [ref=e41]: M
+                - img [ref=e42]
+            - paragraph [ref=e43]: marketingtool
+          - img [ref=e45]
+      - generic [ref=e50]:
+        - link "Account" [ref=e53] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2
+          - generic [ref=e54]:
+            - img [ref=e55]
+            - paragraph [ref=e58]: Account
+        - generic [ref=e59]:
+          - generic [ref=e60]:
+            - paragraph [ref=e61]: Project
+            - link "Overview" [ref=e63] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool
+              - generic [ref=e64]:
+                - img [ref=e65]
+                - paragraph [ref=e72]: Overview
+            - link "Insights" [ref=e74] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/insights
+              - generic [ref=e75]:
+                - img [ref=e76]
+                - paragraph [ref=e83]: Insights
+            - link "Usage" [ref=e85] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/usage
+              - generic [ref=e86]:
+                - img [ref=e87]
+                - paragraph [ref=e90]: Usage
+            - link "Observe" [ref=e92] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/observe
+              - generic [ref=e93]:
+                - img [ref=e94]
+                - paragraph [ref=e97]: Observe
+          - generic [ref=e98]:
+            - paragraph [ref=e99]: Develop
+            - link "Workflows" [ref=e101] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/workflows
+              - generic [ref=e102]:
+                - img [ref=e103]
+                - paragraph [ref=e106]: Workflows
+            - link "Development builds" [ref=e108] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/development-builds
+              - generic [ref=e109]:
+                - img [ref=e110]
+                - paragraph [ref=e113]: Development builds
+          - generic [ref=e114]:
+            - paragraph [ref=e115]: Deploy
+            - link "Builds" [ref=e117] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds
+              - generic [ref=e118]:
+                - img [ref=e119]
+                - paragraph [ref=e122]: Builds
+            - link "Submissions" [ref=e124] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/submissions
+              - generic [ref=e125]:
+                - img [ref=e126]
+                - paragraph [ref=e134]: Submissions
+            - button "Over-the-air updates" [ref=e136] [cursor=pointer]:
+              - generic [ref=e137]:
+                - img [ref=e138]
+                - paragraph [ref=e141]: Over-the-air updates
+              - img [ref=e142]
+            - button "Hosting" [ref=e146] [cursor=pointer]:
+              - generic [ref=e147]:
+                - img [ref=e148]
+                - paragraph [ref=e151]: Hosting
+              - img [ref=e152]
+            - link "Push notifications" [ref=e156] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/push-notifications
+              - generic [ref=e157]:
+                - img [ref=e158]
+                - paragraph [ref=e161]: Push notifications
+          - generic [ref=e162]:
+            - paragraph [ref=e163]: Entities
+            - link "Fingerprints" [ref=e165] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/fingerprints
+              - paragraph [ref=e167]: Fingerprints
+          - generic [ref=e168]:
+            - paragraph [ref=e169]: Project settings
+            - link "General" [ref=e171] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/settings
+              - paragraph [ref=e173]: General
+            - link "Credentials" [ref=e175] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/credentials
+              - paragraph [ref=e177]: Credentials
+            - link "Environment variables" [ref=e179] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/environment-variables
+              - paragraph [ref=e181]: Environment variables
+            - link "Hosting" [ref=e183] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/hosting/settings
+              - paragraph [ref=e185]: Hosting
+            - link "GitHub" [ref=e187] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/github
+              - paragraph [ref=e189]: GitHub
+      - button "User menu Lokendra singh saingar" [ref=e192] [cursor=pointer]:
+        - generic [ref=e193]:
+          - img "User menu" [ref=e194]
+          - paragraph [ref=e195]: Lokendra singh saingar
+        - img [ref=e197]
+    - generic [ref=e205]:
+      - generic [ref=e206]:
+        - generic [ref=e207]:
+          - generic [ref=e209]:
+            - img [ref=e210]
+            - heading "Builds" [level=1] [ref=e213]
+          - button "Build from GitHub" [ref=e216] [cursor=pointer]:
+            - img [ref=e217]
+            - generic [ref=e221]: Build from GitHub
+        - generic [ref=e222]:
+          - generic [ref=e223]:
+            - paragraph [ref=e224]: Platform
+            - combobox [ref=e225] [cursor=pointer]:
+              - generic [ref=e227]:
+                - generic "All":
+                  - generic: All
+              - img [ref=e228]
+          - generic [ref=e231]:
+            - paragraph [ref=e232]: Channel
+            - button "All" [ref=e233] [cursor=pointer]:
+              - generic [ref=e235]: All
+              - img [ref=e236]
+          - generic [ref=e239]:
+            - paragraph [ref=e240]: Runtime
+            - button "All" [ref=e241] [cursor=pointer]:
+              - generic [ref=e243]: All
+              - img [ref=e244]
+          - generic [ref=e247]:
+            - paragraph [ref=e248]: Profile
+            - button "All" [ref=e249] [cursor=pointer]:
+              - generic [ref=e251]: All
+              - img [ref=e252]
+          - generic [ref=e255]:
+            - paragraph [ref=e256]: Mode
+            - combobox [ref=e257] [cursor=pointer]:
+              - generic [ref=e259]:
+                - generic "All":
+                  - generic: All
+              - img [ref=e260]
+      - generic [ref=e265]:
+        - paragraph [ref=e267]: Build
+        - paragraph [ref=e269]: Git ref
+        - generic [ref=e270]:
+          - paragraph [ref=e271]: Profile
+          - button [ref=e272]:
+            - img [ref=e273]
+        - paragraph [ref=e277]: Runtime
+        - paragraph [ref=e279]: Channel
+        - paragraph [ref=e281]: Created by
+        - link "Errored iOS App Store build 1.5.0 (223) about 2 hours ago 20s" [ref=e283] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds/4291f696-fe32-429f-8d1c-c165972de9cf
+          - generic [ref=e286]:
+            - img "Errored" [ref=e289]
+            - generic [ref=e292]:
+              - generic [ref=e293]:
+                - img [ref=e294]
+                - paragraph [ref=e297]:
+                  - text: iOS App Store build
+                  - button "1.5.0 (223)" [ref=e298]
+              - button "about 2 hours ago 20s" [ref=e302]:
+                - paragraph [ref=e303]: about 2 hours ago
+                - generic [ref=e304]:
+                  - img [ref=e305]
+                  - paragraph [ref=e308]: 20s
+        - link "cf6c3b1" [ref=e312] [cursor=pointer]:
+          - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/cf6c3b1f238f005f58472af99f0b5cab3272d128
+          - code [ref=e313]: cf6c3b1
+        - paragraph [ref=e316]: production
+        - link "1.5.0" [ref=e317] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/runtimes/1.5.0
+          - generic [ref=e318]:
+            - img [ref=e320]
+            - paragraph [ref=e325]: 1.5.0
+        - link "production" [ref=e326] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/channels/production
+          - generic [ref=e327]:
+            - img [ref=e328]
+            - paragraph [ref=e331]: production
+        - generic [ref=e333]:
+          - img "Lokendra singh saingar account icon" [ref=e334]
+          - generic [ref=e336]:
+            - paragraph [ref=e337]: Lokendra singh saingar
+            - paragraph [ref=e338]: aimarketintool-2-2-2-2
+        - link "Errored iOS App Store build 1.5.0 (514) 1 day ago 16s" [ref=e340] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds/2a980c00-4f00-437a-a73d-e4f69285227b
+          - generic [ref=e343]:
+            - img "Errored" [ref=e346]
+            - generic [ref=e349]:
+              - generic [ref=e350]:
+                - img [ref=e351]
+                - paragraph [ref=e354]:
+                  - text: iOS App Store build
+                  - button "1.5.0 (514)" [ref=e355]
+              - button "1 day ago 16s" [ref=e359]:
+                - paragraph [ref=e360]: 1 day ago
+                - generic [ref=e361]:
+                  - img [ref=e362]
+                  - paragraph [ref=e365]: 16s
+        - link "edc6890" [ref=e369] [cursor=pointer]:
+          - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/edc6890494f85c00e4953d5e7f5325dfc3f91808
+          - code [ref=e370]: edc6890
+        - paragraph [ref=e373]: production
+        - link "1.5.0" [ref=e374] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/runtimes/1.5.0
+          - generic [ref=e375]:
+            - img [ref=e377]
+            - paragraph [ref=e382]: 1.5.0
+        - link "production" [ref=e383] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/channels/production
+          - generic [ref=e384]:
+            - img [ref=e385]
+            - paragraph [ref=e388]: production
+        - generic [ref=e390]:
+          - img "Lokendra singh saingar account icon" [ref=e391]
+          - generic [ref=e393]:
+            - paragraph [ref=e394]: Lokendra singh saingar
+            - paragraph [ref=e395]: aimarketintool-2-2-2-2
+        - link "Errored iOS App Store build 1.5.0 (514) 1 day ago 18s" [ref=e397] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds/cc0ac6db-93dc-471c-83ff-c99fa062d847
+          - generic [ref=e400]:
+            - img "Errored" [ref=e403]
+            - generic [ref=e406]:
+              - generic [ref=e407]:
+                - img [ref=e408]
+                - paragraph [ref=e411]:
+                  - text: iOS App Store build
+                  - button "1.5.0 (514)" [ref=e412]
+              - button "1 day ago 18s" [ref=e416]:
+                - paragraph [ref=e417]: 1 day ago
+                - generic [ref=e418]:
+                  - img [ref=e419]
+                  - paragraph [ref=e422]: 18s
+        - link "a603d42" [ref=e426] [cursor=pointer]:
+          - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/a603d426019e78b8703c6081921e548a05a413ef
+          - code [ref=e427]: a603d42
+        - paragraph [ref=e430]: production
+        - link "1.5.0" [ref=e431] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/runtimes/1.5.0
+          - generic [ref=e432]:
+            - img [ref=e434]
+            - paragraph [ref=e439]: 1.5.0
+        - link "production" [ref=e440] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/channels/production
+          - generic [ref=e441]:
+            - img [ref=e442]
+            - paragraph [ref=e445]: production
+        - generic [ref=e447]:
+          - img "Lokendra singh saingar account icon" [ref=e448]
+          - generic [ref=e450]:
+            - paragraph [ref=e451]: Lokendra singh saingar
+            - paragraph [ref=e452]: aimarketintool-2-2-2-2
+        - link "Errored iOS App Store build 1.5.0 (514) 1 day ago 16s" [ref=e454] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds/7d093949-dd7f-4cd5-aa88-3e4c91768eef
+          - generic [ref=e457]:
+            - img "Errored" [ref=e460]
+            - generic [ref=e463]:
+              - generic [ref=e464]:
+                - img [ref=e465]
+                - paragraph [ref=e468]:
+                  - text: iOS App Store build
+                  - button "1.5.0 (514)" [ref=e469]
+              - button "1 day ago 16s" [ref=e473]:
+                - paragraph [ref=e474]: 1 day ago
+                - generic [ref=e475]:
+                  - img [ref=e476]
+                  - paragraph [ref=e479]: 16s
+        - link "86690fd" [ref=e483] [cursor=pointer]:
+          - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/86690fd5644c286e07326897c6987e1947599f09
+          - code [ref=e484]: 86690fd
+        - paragraph [ref=e487]: production
+        - link "1.5.0" [ref=e488] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/runtimes/1.5.0
+          - generic [ref=e489]:
+            - img [ref=e491]
+            - paragraph [ref=e496]: 1.5.0
+        - link "production" [ref=e497] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/channels/production
+          - generic [ref=e498]:
+            - img [ref=e499]
+            - paragraph [ref=e502]: production
+        - generic [ref=e504]:
+          - img "Lokendra singh saingar account icon" [ref=e505]
+          - generic [ref=e507]:
+            - paragraph [ref=e508]: Lokendra singh saingar
+            - paragraph [ref=e509]: aimarketintool-2-2-2-2
+        - link "Errored iOS App Store build 1.5.0 (514) 1 day ago 17s" [ref=e511] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds/6c15e2b1-c1d1-4ea9-a119-a0f7a6db88fc
+          - generic [ref=e514]:
+            - img "Errored" [ref=e517]
+            - generic [ref=e520]:
+              - generic [ref=e521]:
+                - img [ref=e522]
+                - paragraph [ref=e525]:
+                  - text: iOS App Store build
+                  - button "1.5.0 (514)" [ref=e526]
+              - button "1 day ago 17s" [ref=e530]:
+                - paragraph [ref=e531]: 1 day ago
+                - generic [ref=e532]:
+                  - img [ref=e533]
+                  - paragraph [ref=e536]: 17s
+        - link "9561f81" [ref=e540] [cursor=pointer]:
+          - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/9561f81fe708bb20e3639aa134544fc87f0f210e
+          - code [ref=e541]: 9561f81
+        - paragraph [ref=e544]: production
+        - link "1.5.0" [ref=e545] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/runtimes/1.5.0
+          - generic [ref=e546]:
+            - img [ref=e548]
+            - paragraph [ref=e553]: 1.5.0
+        - link "production" [ref=e554] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/channels/production
+          - generic [ref=e555]:
+            - img [ref=e556]
+            - paragraph [ref=e559]: production
+        - generic [ref=e561]:
+          - img "Lokendra singh saingar account icon" [ref=e562]
+          - generic [ref=e564]:
+            - paragraph [ref=e565]: Lokendra singh saingar
+            - paragraph [ref=e566]: aimarketintool-2-2-2-2
+        - link "Finished iOS App Store build 1.5.0 (513) 1 day ago 18m 52s" [ref=e568] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds/2f5a87bb-0e1b-4455-aa85-b862f2d5c93c
+          - generic [ref=e571]:
+            - img "Finished" [ref=e574]
+            - generic [ref=e577]:
+              - generic [ref=e578]:
+                - img [ref=e579]
+                - paragraph [ref=e582]:
+                  - text: iOS App Store build
+                  - button "1.5.0 (513)" [ref=e583]
+              - button "1 day ago 18m 52s" [ref=e587]:
+                - paragraph [ref=e588]: 1 day ago
+                - generic [ref=e589]:
+                  - img [ref=e590]
+                  - paragraph [ref=e593]: 18m 52s
+        - link "b176036" [ref=e597] [cursor=pointer]:
+          - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/b1760367715a35dea685ae4fe350e4cf9277d5f6
+          - code [ref=e598]: b176036
+        - paragraph [ref=e601]: production
+        - link "1.5.0" [ref=e602] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/runtimes/1.5.0
+          - generic [ref=e603]:
+            - img [ref=e605]
+            - paragraph [ref=e610]: 1.5.0
+        - link "production" [ref=e611] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/channels/production
+          - generic [ref=e612]:
+            - img [ref=e613]
+            - paragraph [ref=e616]: production
+        - generic [ref=e618]:
+          - img "Lokendra singh saingar account icon" [ref=e619]
+          - generic [ref=e621]:
+            - paragraph [ref=e622]: Lokendra singh saingar
+            - paragraph [ref=e623]: aimarketintool-2-2-2-2
+        - link "Errored Android Play Store build 1.5.0 (512) 2 days ago 5m 49s" [ref=e625] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds/6f0fd687-b543-4e1c-bf46-8d7a2253cfc9
+          - generic [ref=e628]:
+            - img "Errored" [ref=e631]
+            - generic [ref=e634]:
+              - generic [ref=e635]:
+                - img [ref=e636]
+                - paragraph [ref=e639]:
+                  - text: Android Play Store build
+                  - button "1.5.0 (512)" [ref=e640]
+              - button "2 days ago 5m 49s" [ref=e644]:
+                - paragraph [ref=e645]: 2 days ago
+                - generic [ref=e646]:
+                  - img [ref=e647]
+                  - paragraph [ref=e650]: 5m 49s
+        - generic [ref=e651]:
+          - img [ref=e652]
+          - generic [ref=e655]:
+            - generic [ref=e656]:
+              - img [ref=e657]
+              - link "Master" [ref=e664] [cursor=pointer]:
+                - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/tree/refs/heads/Master
+            - link "e9c2401" [ref=e666] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/e9c240137a57ad1c541b8bef6129dd943afdd06a
+              - code [ref=e667]: e9c2401
+        - paragraph [ref=e670]: production
+        - link "1.5.0" [ref=e671] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/runtimes/1.5.0
+          - generic [ref=e672]:
+            - img [ref=e674]
+            - paragraph [ref=e679]: 1.5.0
+        - link "production" [ref=e680] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/channels/production
+          - generic [ref=e681]:
+            - img [ref=e682]
+            - paragraph [ref=e685]: production
+        - generic [ref=e687]:
+          - img "Lokendra singh saingar account icon" [ref=e688]
+          - generic [ref=e690]:
+            - paragraph [ref=e691]: Lokendra singh saingar
+            - paragraph [ref=e692]: aimarketintool-2-2-2-2
+        - link "Errored Android Play Store build 1.5.0 (512) 2 days ago 5m 53s" [ref=e694] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds/d264562b-70d1-4fe0-b283-fbca06d5a923
+          - generic [ref=e697]:
+            - img "Errored" [ref=e700]
+            - generic [ref=e703]:
+              - generic [ref=e704]:
+                - img [ref=e705]
+                - paragraph [ref=e708]:
+                  - text: Android Play Store build
+                  - button "1.5.0 (512)" [ref=e709]
+              - button "2 days ago 5m 53s" [ref=e713]:
+                - paragraph [ref=e714]: 2 days ago
+                - generic [ref=e715]:
+                  - img [ref=e716]
+                  - paragraph [ref=e719]: 5m 53s
+        - generic [ref=e720]:
+          - img [ref=e721]
+          - generic [ref=e724]:
+            - link "copilot/local-all-commit-merge-master" [ref=e726] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/tree/copilot/local-all-commit-merge-master
+            - link "9d30382" [ref=e728] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/9d303821ae28d91317109e22aa80ac2da54940db
+              - code [ref=e729]: 9d30382
+        - paragraph [ref=e732]: production
+        - link "1.5.0" [ref=e733] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/runtimes/1.5.0
+          - generic [ref=e734]:
+            - img [ref=e736]
+            - paragraph [ref=e741]: 1.5.0
+        - link "production" [ref=e742] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/channels/production
+          - generic [ref=e743]:
+            - img [ref=e744]
+            - paragraph [ref=e747]: production
+        - generic [ref=e749]:
+          - img [ref=e750]:
+            - img [ref=e751]
+          - button "GitHub" [ref=e754]:
+            - link "GitHub" [ref=e756] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/github
+              - paragraph [ref=e757]: GitHub
+        - link "Canceled iOS App Store build 2 days ago" [ref=e759] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds/1a7654ed-28b3-4829-8465-aaa7593812f6
+          - generic [ref=e762]:
+            - img "Canceled" [ref=e765]
+            - generic [ref=e768]:
+              - generic [ref=e769]:
+                - img [ref=e770]
+                - paragraph [ref=e773]: iOS App Store build
+              - button "2 days ago" [ref=e777]:
+                - paragraph [ref=e778]: 2 days ago
+        - generic [ref=e779]:
+          - img [ref=e780]
+          - generic [ref=e783]:
+            - link "copilot/local-all-commit-merge-master" [ref=e785] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/tree/copilot/local-all-commit-merge-master
+            - link "9d30382" [ref=e786] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/9d303821ae28d91317109e22aa80ac2da54940db
+              - code [ref=e787]: 9d30382
+        - paragraph [ref=e790]: production
+        - paragraph [ref=e792]: None
+        - link "production" [ref=e793] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/channels/production
+          - generic [ref=e794]:
+            - img [ref=e795]
+            - paragraph [ref=e798]: production
+        - generic [ref=e800]:
+          - img [ref=e801]:
+            - img [ref=e802]
+          - button "GitHub" [ref=e805]:
+            - link "GitHub" [ref=e807] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/github
+              - paragraph [ref=e808]: GitHub
+        - link "Errored Android Play Store build 1.5.0 (512) 2 days ago 5m 33s" [ref=e810] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds/849c0758-f144-4e4d-9f27-c8e94a6025cb
+          - generic [ref=e813]:
+            - img "Errored" [ref=e816]
+            - generic [ref=e819]:
+              - generic [ref=e820]:
+                - img [ref=e821]
+                - paragraph [ref=e824]:
+                  - text: Android Play Store build
+                  - button "1.5.0 (512)" [ref=e825]
+              - button "2 days ago 5m 33s" [ref=e829]:
+                - paragraph [ref=e830]: 2 days ago
+                - generic [ref=e831]:
+                  - img [ref=e832]
+                  - paragraph [ref=e835]: 5m 33s
+        - generic [ref=e836]:
+          - img [ref=e837]
+          - generic [ref=e840]:
+            - link "copilot/local-all-commit-merge-master" [ref=e842] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/tree/copilot/local-all-commit-merge-master
+            - link "9d30382" [ref=e844] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/9d303821ae28d91317109e22aa80ac2da54940db
+              - code [ref=e845]: 9d30382
+        - paragraph [ref=e848]: production
+        - link "1.5.0" [ref=e849] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/runtimes/1.5.0
+          - generic [ref=e850]:
+            - img [ref=e852]
+            - paragraph [ref=e857]: 1.5.0
+        - link "production" [ref=e858] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/channels/production
+          - generic [ref=e859]:
+            - img [ref=e860]
+            - paragraph [ref=e863]: production
+        - generic [ref=e865]:
+          - img [ref=e866]:
+            - img [ref=e867]
+          - button "GitHub" [ref=e870]:
+            - link "GitHub" [ref=e872] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/github
+              - paragraph [ref=e873]: GitHub
+        - link "Errored Android Play Store build 1.5.0 (512) 2 days ago 5m 40s" [ref=e875] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds/cfde7cf2-d7d7-43a5-bdd0-e3d01e408114
+          - generic [ref=e878]:
+            - img "Errored" [ref=e881]
+            - generic [ref=e884]:
+              - generic [ref=e885]:
+                - img [ref=e886]
+                - paragraph [ref=e889]:
+                  - text: Android Play Store build
+                  - button "1.5.0 (512)" [ref=e890]
+              - button "2 days ago 5m 40s" [ref=e894]:
+                - paragraph [ref=e895]: 2 days ago
+                - generic [ref=e896]:
+                  - img [ref=e897]
+                  - paragraph [ref=e900]: 5m 40s
+        - generic [ref=e901]:
+          - img [ref=e902]
+          - generic [ref=e905]:
+            - link "copilot/local-all-commit-merge-master" [ref=e907] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/tree/copilot/local-all-commit-merge-master
+            - link "9d30382" [ref=e909] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/9d303821ae28d91317109e22aa80ac2da54940db
+              - code [ref=e910]: 9d30382
+        - paragraph [ref=e913]: production
+        - link "1.5.0" [ref=e914] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/runtimes/1.5.0
+          - generic [ref=e915]:
+            - img [ref=e917]
+            - paragraph [ref=e922]: 1.5.0
+        - link "production" [ref=e923] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/channels/production
+          - generic [ref=e924]:
+            - img [ref=e925]
+            - paragraph [ref=e928]: production
+        - generic [ref=e930]:
+          - img [ref=e931]:
+            - img [ref=e932]
+          - button "GitHub" [ref=e935]:
+            - link "GitHub" [ref=e937] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/github
+              - paragraph [ref=e938]: GitHub
+        - link "Errored Android Play Store build 1.5.0 (512) 2 days ago 5m 41s" [ref=e940] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds/7a98f572-b5d7-4ca3-8c6f-bc64b51a3796
+          - generic [ref=e943]:
+            - img "Errored" [ref=e946]
+            - generic [ref=e949]:
+              - generic [ref=e950]:
+                - img [ref=e951]
+                - paragraph [ref=e954]:
+                  - text: Android Play Store build
+                  - button "1.5.0 (512)" [ref=e955]
+              - button "2 days ago 5m 41s" [ref=e959]:
+                - paragraph [ref=e960]: 2 days ago
+                - generic [ref=e961]:
+                  - img [ref=e962]
+                  - paragraph [ref=e965]: 5m 41s
+        - generic [ref=e966]:
+          - img [ref=e967]
+          - generic [ref=e970]:
+            - link "copilot/local-all-commit-merge-master" [ref=e972] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/tree/copilot/local-all-commit-merge-master
+            - link "9d30382" [ref=e974] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/9d303821ae28d91317109e22aa80ac2da54940db
+              - code [ref=e975]: 9d30382
+        - paragraph [ref=e978]: production
+        - link "1.5.0" [ref=e979] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/runtimes/1.5.0
+          - generic [ref=e980]:
+            - img [ref=e982]
+            - paragraph [ref=e987]: 1.5.0
+        - link "production" [ref=e988] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/channels/production
+          - generic [ref=e989]:
+            - img [ref=e990]
+            - paragraph [ref=e993]: production
+        - generic [ref=e995]:
+          - img [ref=e996]:
+            - img [ref=e997]
+          - button "GitHub" [ref=e1000]:
+            - link "GitHub" [ref=e1002] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/github
+              - paragraph [ref=e1003]: GitHub
+        - link "Canceled iOS App Store build 2 days ago" [ref=e1005] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds/287def0a-dda2-40db-a130-3ca44a9aa7d9
+          - generic [ref=e1008]:
+            - img "Canceled" [ref=e1011]
+            - generic [ref=e1014]:
+              - generic [ref=e1015]:
+                - img [ref=e1016]
+                - paragraph [ref=e1019]: iOS App Store build
+              - button "2 days ago" [ref=e1023]:
+                - paragraph [ref=e1024]: 2 days ago
+        - generic [ref=e1025]:
+          - img [ref=e1026]
+          - generic [ref=e1029]:
+            - link "copilot/local-all-commit-merge-master" [ref=e1031] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/tree/copilot/local-all-commit-merge-master
+            - link "9d30382" [ref=e1032] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/9d303821ae28d91317109e22aa80ac2da54940db
+              - code [ref=e1033]: 9d30382
+        - paragraph [ref=e1036]: production
+        - paragraph [ref=e1038]: None
+        - link "production" [ref=e1039] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/channels/production
+          - generic [ref=e1040]:
+            - img [ref=e1041]
+            - paragraph [ref=e1044]: production
+        - generic [ref=e1046]:
+          - img [ref=e1047]:
+            - img [ref=e1048]
+          - button "GitHub" [ref=e1051]:
+            - link "GitHub" [ref=e1053] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/github
+              - paragraph [ref=e1054]: GitHub
+        - link "Canceled iOS App Store build 2 days ago" [ref=e1056] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds/f3ca4f43-47d6-49c2-b67f-0ed52962bff6
+          - generic [ref=e1059]:
+            - img "Canceled" [ref=e1062]
+            - generic [ref=e1065]:
+              - generic [ref=e1066]:
+                - img [ref=e1067]
+                - paragraph [ref=e1070]: iOS App Store build
+              - button "2 days ago" [ref=e1074]:
+                - paragraph [ref=e1075]: 2 days ago
+        - generic [ref=e1076]:
+          - img [ref=e1077]
+          - generic [ref=e1080]:
+            - link "copilot/local-all-commit-merge-master" [ref=e1082] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/tree/copilot/local-all-commit-merge-master
+            - link "9d30382" [ref=e1083] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/9d303821ae28d91317109e22aa80ac2da54940db
+              - code [ref=e1084]: 9d30382
+        - paragraph [ref=e1087]: production
+        - paragraph [ref=e1089]: None
+        - link "production" [ref=e1090] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/channels/production
+          - generic [ref=e1091]:
+            - img [ref=e1092]
+            - paragraph [ref=e1095]: production
+        - generic [ref=e1097]:
+          - img [ref=e1098]:
+            - img [ref=e1099]
+          - button "GitHub" [ref=e1102]:
+            - link "GitHub" [ref=e1104] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/github
+              - paragraph [ref=e1105]: GitHub
+        - link "Canceled iOS App Store build 1.5.0 (512) 2 days ago 7m 50s" [ref=e1107] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds/71addfc0-31c5-4747-bd71-8dd5ca3be81a
+          - generic [ref=e1110]:
+            - img "Canceled" [ref=e1113]
+            - generic [ref=e1116]:
+              - generic [ref=e1117]:
+                - img [ref=e1118]
+                - paragraph [ref=e1121]:
+                  - text: iOS App Store build
+                  - button "1.5.0 (512)" [ref=e1122]
+              - button "2 days ago 7m 50s" [ref=e1126]:
+                - paragraph [ref=e1127]: 2 days ago
+                - generic [ref=e1128]:
+                  - img [ref=e1129]
+                  - paragraph [ref=e1132]: 7m 50s
+        - generic [ref=e1133]:
+          - img [ref=e1134]
+          - generic [ref=e1137]:
+            - link "copilot/local-all-commit-merge-master" [ref=e1139] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/tree/copilot/local-all-commit-merge-master
+            - link "9d30382" [ref=e1141] [cursor=pointer]:
+              - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/9d303821ae28d91317109e22aa80ac2da54940db
+              - code [ref=e1142]: 9d30382
+        - paragraph [ref=e1145]: production
+        - link "1.5.0" [ref=e1146] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/runtimes/1.5.0
+          - generic [ref=e1147]:
+            - img [ref=e1149]
+            - paragraph [ref=e1154]: 1.5.0
+        - link "production" [ref=e1155] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/channels/production
+          - generic [ref=e1156]:
+            - img [ref=e1157]
+            - paragraph [ref=e1160]: production
+        - generic [ref=e1162]:
+          - img [ref=e1163]:
+            - img [ref=e1164]
+          - button "GitHub" [ref=e1167]:
+            - link "GitHub" [ref=e1169] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/github
+              - paragraph [ref=e1170]: GitHub
+        - button "Load more" [ref=e1173] [cursor=pointer]:
+          - generic [ref=e1175]: Load more
+  - alert [ref=e1176]

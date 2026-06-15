@@ -1,0 +1,305 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e6]:
+      - generic [ref=e8]:
+        - button "Navigate to home" [ref=e9] [cursor=pointer]:
+          - img "Expo home" [ref=e10]
+        - generic [ref=e12]:
+          - button "Notifications" [ref=e13] [cursor=pointer]:
+            - img [ref=e16]
+          - button "Search" [ref=e19] [cursor=pointer]:
+            - img [ref=e20]
+      - generic [ref=e23]:
+        - button "aimarketintool-2-2-2" [ref=e25] [cursor=pointer]:
+          - generic [ref=e26]:
+            - img [ref=e27]:
+              - img [ref=e28]
+            - paragraph [ref=e31]: aimarketintool-2-2-2
+          - img [ref=e33]
+        - button "marketingtool" [ref=e37] [cursor=pointer]:
+          - generic [ref=e38]:
+            - figure [ref=e213]:
+              - generic [ref=e214]:
+                - generic [ref=e215]: M
+                - img [ref=e216]
+            - paragraph [ref=e41]: marketingtool
+          - img [ref=e43]
+      - generic [ref=e48]:
+        - link "Account" [ref=e51] [cursor=pointer]:
+          - /url: /accounts/aimarketintool-2-2-2
+          - generic [ref=e52]:
+            - img [ref=e53]
+            - paragraph [ref=e56]: Account
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - paragraph [ref=e59]: Project
+            - link "Overview" [ref=e61] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool
+              - generic [ref=e62]:
+                - img [ref=e63]
+                - paragraph [ref=e70]: Overview
+            - link "Insights" [ref=e72] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/insights
+              - generic [ref=e73]:
+                - img [ref=e74]
+                - paragraph [ref=e81]: Insights
+            - link "Usage" [ref=e83] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/usage
+              - generic [ref=e84]:
+                - img [ref=e85]
+                - paragraph [ref=e88]: Usage
+            - link "Observe" [ref=e90] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/observe
+              - generic [ref=e91]:
+                - img [ref=e92]
+                - paragraph [ref=e95]: Observe
+          - generic [ref=e96]:
+            - paragraph [ref=e97]: Develop
+            - link "Workflows" [ref=e99] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/workflows
+              - generic [ref=e100]:
+                - img [ref=e101]
+                - paragraph [ref=e104]: Workflows
+            - link "Development builds" [ref=e106] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/development-builds
+              - generic [ref=e107]:
+                - img [ref=e108]
+                - paragraph [ref=e111]: Development builds
+          - generic [ref=e112]:
+            - paragraph [ref=e113]: Deploy
+            - link "Builds" [ref=e115] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds
+              - generic [ref=e116]:
+                - img [ref=e117]
+                - paragraph [ref=e120]: Builds
+            - link "Submissions" [ref=e122] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/submissions
+              - generic [ref=e123]:
+                - img [ref=e124]
+                - paragraph [ref=e132]: Submissions
+            - button "Over-the-air updates" [ref=e134] [cursor=pointer]:
+              - generic [ref=e135]:
+                - img [ref=e136]
+                - paragraph [ref=e139]: Over-the-air updates
+              - img [ref=e140]
+            - button "Hosting" [ref=e218] [cursor=pointer]:
+              - generic [ref=e219]:
+                - img [ref=e220]
+                - paragraph [ref=e223]: Hosting
+              - img [ref=e224]
+            - link "Push notifications" [ref=e151] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/push-notifications
+              - generic [ref=e152]:
+                - img [ref=e153]
+                - paragraph [ref=e156]: Push notifications
+          - generic [ref=e157]:
+            - paragraph [ref=e158]: Entities
+            - link "Fingerprints" [ref=e160] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/fingerprints
+              - paragraph [ref=e162]: Fingerprints
+          - generic [ref=e163]:
+            - paragraph [ref=e164]: Project settings
+            - link "General" [ref=e166] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/settings
+              - paragraph [ref=e168]: General
+            - link "Credentials" [ref=e170] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/credentials
+              - paragraph [ref=e172]: Credentials
+            - link "Environment variables" [ref=e174] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/environment-variables
+              - paragraph [ref=e176]: Environment variables
+            - link "Hosting" [ref=e228] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/hosting/settings
+              - paragraph [ref=e230]: Hosting
+            - link "GitHub" [ref=e178] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/github
+              - paragraph [ref=e180]: GitHub
+      - button "User menu Lokendra singh saingar" [ref=e183] [cursor=pointer]:
+        - generic [ref=e184]:
+          - img "User menu" [ref=e185]
+          - paragraph [ref=e186]: Lokendra singh saingar
+        - img [ref=e188]
+    - generic [ref=e196]:
+      - generic [ref=e197]:
+        - generic [ref=e198]:
+          - link "Builds" [ref=e199] [cursor=pointer]:
+            - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/builds
+            - generic [ref=e200]:
+              - img [ref=e201]
+              - paragraph [ref=e204]: Builds
+          - img [ref=e205]
+          - paragraph [ref=e209]: 4291f696
+        - generic [ref=e231]:
+          - button "Copy error as prompt" [ref=e233] [cursor=pointer]:
+            - img [ref=e234]
+            - generic [ref=e238]: Copy error as prompt
+          - button "Compare" [ref=e240] [cursor=pointer]:
+            - img [ref=e241]
+            - generic [ref=e247]: Compare
+      - generic [ref=e248]:
+        - generic [ref=e249]:
+          - generic [ref=e251]:
+            - generic [ref=e253]:
+              - generic [ref=e254]:
+                - img [ref=e255]
+                - heading "iOS App Store build" [level=3] [ref=e258]
+              - paragraph [ref=e259]: "cf6c3b1 · build(ios): commit package-lock.json so EAS npm ci runs (fixes the 2s 514 build failure) EAS always runs npm ci, which requires a committed lockfile. It was gitignored/dropped in edc6890, so every 514 build died in ~2s. Regenerated from Master package.json (react 19.2.3)."
+            - button [ref=e262] [cursor=pointer]:
+              - img [ref=e263]
+          - generic [ref=e267]:
+            - generic [ref=e269]:
+              - paragraph [ref=e270]: Profile
+              - button [ref=e271]:
+                - img [ref=e272]
+            - paragraph [ref=e276]: Environment
+            - paragraph [ref=e278]: Deployment
+            - paragraph [ref=e280]: Version
+            - paragraph [ref=e282]: Fingerprint
+            - paragraph [ref=e284]: Commit
+            - paragraph [ref=e286]: Created by
+            - paragraph [ref=e289]: production
+            - link "production" [ref=e290] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/environment-variables?environment=production
+              - paragraph [ref=e292]: production
+            - link "1.5.0 production" [ref=e293] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/deployments/production/1.5.0
+              - generic [ref=e295]:
+                - button "1.5.0" [ref=e296]:
+                  - paragraph [ref=e297]: 1.5.0
+                - button "production" [ref=e298]:
+                  - img [ref=e299]
+                  - paragraph [ref=e302]: production
+            - paragraph [ref=e304]:
+              - button "1.5.0 (223)" [ref=e305]
+            - link "9e50f72" [ref=e306] [cursor=pointer]:
+              - /url: /accounts/aimarketintool-2-2-2/projects/marketingtool/fingerprints/9e50f725d5c663d784617377d407b84c84e5b705
+              - generic [ref=e307]:
+                - img [ref=e308]
+                - paragraph [ref=e311]:
+                  - code [ref=e312]: 9e50f72
+            - generic [ref=e314]:
+              - link "cf6c3b1" [ref=e317] [cursor=pointer]:
+                - /url: https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/commit/cf6c3b1f238f005f58472af99f0b5cab3272d128
+                - code [ref=e318]: cf6c3b1
+              - button [ref=e320] [cursor=pointer]:
+                - img [ref=e321]
+            - generic [ref=e325]:
+              - img "Lokendra singh saingar account icon" [ref=e326]
+              - generic [ref=e328]:
+                - paragraph [ref=e329]: Lokendra singh saingar
+                - paragraph [ref=e330]: aimarketintool-2-2-2-2
+        - generic [ref=e331]:
+          - generic [ref=e333]:
+            - generic [ref=e336]:
+              - img [ref=e337]
+              - heading "Build artifact" [level=4] [ref=e341]
+            - button [ref=e343] [cursor=pointer]:
+              - img [ref=e344]
+          - generic [ref=e351]:
+            - paragraph [ref=e353]: Status
+            - paragraph [ref=e355]: Start time
+            - paragraph [ref=e357]: Wait time
+            - generic [ref=e358]:
+              - paragraph [ref=e359]: Queue time
+              - button [ref=e360]:
+                - img [ref=e361]
+            - paragraph [ref=e365]: Build time
+            - paragraph [ref=e367]: Total time
+            - generic [ref=e368]:
+              - paragraph [ref=e369]: Availability
+              - button [ref=e370]:
+                - img [ref=e371]
+            - generic [ref=e375]:
+              - img "Errored" [ref=e378]
+              - paragraph [ref=e381]: Errored
+            - time [ref=e385]: Jun 10, 2026 10:33 PM
+            - paragraph [ref=e387]: 570ms
+            - paragraph [ref=e389]: 37s
+            - paragraph [ref=e391]: 20s
+            - paragraph [ref=e393]: 58s
+            - paragraph [ref=e395]: 29 days
+        - generic [ref=e396]:
+          - generic [ref=e398]:
+            - generic [ref=e401]:
+              - img [ref=e402]
+              - heading "Logs" [level=4] [ref=e405]
+            - button [ref=e407] [cursor=pointer]:
+              - img [ref=e408]
+          - generic [ref=e414]:
+            - button "Waiting to start 38s" [ref=e416]:
+              - generic [ref=e417]:
+                - img [ref=e418]
+                - img [ref=e422]
+                - paragraph [ref=e426]: Waiting to start
+              - generic [ref=e427]:
+                - paragraph [ref=e428]: 38s
+                - button [ref=e429] [cursor=pointer]:
+                  - img [ref=e430]
+            - button "Spin up build environment 4ms" [ref=e434]:
+              - generic [ref=e435]:
+                - img [ref=e436]
+                - img [ref=e440]
+                - paragraph [ref=e444]: Spin up build environment
+              - generic [ref=e445]:
+                - paragraph [ref=e446]: 4ms
+                - button [ref=e447] [cursor=pointer]:
+                  - img [ref=e448]
+            - button "Prepare project 6s" [ref=e452]:
+              - generic [ref=e453]:
+                - img [ref=e454]
+                - img [ref=e458]
+                - paragraph [ref=e462]: Prepare project
+              - generic [ref=e463]:
+                - paragraph [ref=e464]: 6s
+                - button [ref=e465] [cursor=pointer]:
+                  - img [ref=e466]
+            - button "Pre-install hook 200ms" [ref=e470]:
+              - generic [ref=e471]:
+                - img [ref=e472]
+                - img [ref=e476]
+                - paragraph [ref=e480]: Pre-install hook
+              - generic [ref=e481]:
+                - paragraph [ref=e482]: 200ms
+                - button [ref=e483] [cursor=pointer]:
+                  - img [ref=e484]
+            - button "Read eas.json 1ms" [ref=e488]:
+              - generic [ref=e489]:
+                - img [ref=e490]
+                - img [ref=e494]
+                - paragraph [ref=e498]: Read eas.json
+              - generic [ref=e499]:
+                - paragraph [ref=e500]: 1ms
+                - button [ref=e501] [cursor=pointer]:
+                  - img [ref=e502]
+            - button "Read package.json 1ms" [ref=e506]:
+              - generic [ref=e507]:
+                - img [ref=e508]
+                - img [ref=e512]
+                - paragraph [ref=e516]: Read package.json
+              - generic [ref=e517]:
+                - paragraph [ref=e518]: 1ms
+                - button [ref=e519] [cursor=pointer]:
+                  - img [ref=e520]
+            - button "Install dependencies 2s" [ref=e524]:
+              - generic [ref=e525]:
+                - img [ref=e526]
+                - img [ref=e530]
+                - paragraph [ref=e534]: Install dependencies
+              - generic [ref=e535]:
+                - paragraph [ref=e536]: 2s
+                - button [ref=e537] [cursor=pointer]:
+                  - img [ref=e538]
+            - generic [ref=e541]:
+              - button "Fail job 1ms" [ref=e542]:
+                - generic [ref=e543]:
+                  - img [ref=e544]
+                  - img [ref=e548]
+                  - paragraph [ref=e552]: Fail job
+                - generic [ref=e553]:
+                  - paragraph [ref=e554]: 1ms
+                  - button [ref=e555] [cursor=pointer]:
+                    - img [ref=e556]
+              - generic [ref=e560]:
+                - generic [ref=e561]: "1"
+                - paragraph [ref=e562]: "Build failed npm ci --include=dev exited with non-zero code: 1"
+  - alert [ref=e563]

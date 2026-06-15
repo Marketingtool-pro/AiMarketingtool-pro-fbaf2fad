@@ -1,0 +1,55 @@
+rank,repo,pr_number,pr_title,pr_author,total_comments,reviewer_count,state,pr_url
+1,AiMarketingtool-pro-fbaf2fad,56,"Update dependencies, enhance security, and improve CI workflow",Lokeninfinitypoint,56,4,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/56
+2,AiMarketingtool-pro-fbaf2fad,41,all pull,Lokeninfinitypoint,43,2,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/41
+3,AiMarketingtool-pro-fbaf2fad,63,Ai findings autofix/scripts total rich overhaul.sh,Lokeninfinitypoint,35,3,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/63
+4,AiMarketingtool-pro-fbaf2fad,62,Ai findings autofix/plugins with kotlin ksp fix.js,Lokeninfinitypoint,35,3,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/62
+5,AiMarketingtool-pro-fbaf2fad,65,Mobile overhaul 2026 04 14,Lokeninfinitypoint,34,3,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/65
+6,AiMarketingtool-pro-fbaf2fad,13,Merge pull request #12 from Marketingtool-pro/Lokeninfinitypoint-patch-1,Lokeninfinitypoint,34,2,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/13
+7,AiMarketingtool-pro-fbaf2fad,64,Lokeninfinitypoint patch 1,Lokeninfinitypoint,31,3,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/64
+8,AiMarketingtool-pro-fbaf2fad,66,Add claude GitHub actions 1776199121290,Lokeninfinitypoint,29,3,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/66
+9,AiMarketingtool-pro-fbaf2fad,70,"Enhance code quality, security, and fix vulnerabilities",Lokeninfinitypoint,28,3,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/70
+10,AiMarketingtool-pro-fbaf2fad,67,"Enhance code quality, security, and app functionality for v1.3.2",Lokeninfinitypoint,25,2,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/67
+11,AiMarketingtool-pro-fbaf2fad,68,Copilot/set up copilot instructions,Lokeninfinitypoint,25,3,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/68
+12,AiMarketingtool-pro-fbaf2fad,42,"ci: fix all failing PR #41 checks (CodeQL, Pages, Gradle) + auto-submit EAS",Lokeninfinitypoint,24,3,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/42
+13,AiMarketingtool-pro-fbaf2fad,113,fix(ios): ship-ready IAP build — break the 2.1(b) rejection loop,Lokeninfinitypoint,20,3,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/113
+14,AiMarketingtool-pro-fbaf2fad,120,Fix IAP build issues and improve submission process for iOS,Lokeninfinitypoint,20,2,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/120
+15,AiMarketingtool-pro-fbaf2fad,16,Mobile overhaul 2026 04 14,Lokeninfinitypoint,19,2,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/16
+16,AiMarketingtool-pro-fbaf2fad,35,Copilot/set up copilot instructions,Lokeninfinitypoint,14,2,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/35
+17,AiMarketingtool-pro-fbaf2fad,39,fix(appwrite): phone-session 29% OTP failure (Unexpected token o),Lokeninfinitypoint,14,3,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/39
+18,AiMarketingtool-pro-fbaf2fad,69,Copilot/check all tasks status,Lokeninfinitypoint,12,3,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/69
+19,AiMarketingtool-pro-fbaf2fad,38,fix(android): sync google-services.json + drop useless RN patch,Lokeninfinitypoint,10,2,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/38
+20,AiMarketingtool-pro-fbaf2fad,91,"Enhance code quality, security, and fix build issues",Lokeninfinitypoint,10,2,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/91
+21,AiMarketingtool-pro-fbaf2fad,14,Add Claude Code GitHub Workflow,Lokeninfinitypoint,8,2,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/14
+22,AiMarketingtool-pro-fbaf2fad,73,Add Firebase Performance Monitoring and project documentation files,Lokeninfinitypoint,8,2,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/73
+23,AiMarketingtool-pro-fbaf2fad,128,"Add Gemini CI workflows, IAP entitlement unlock, iap-verify Appwrite function, and config updates",copilot-swe-agent,7,2,OPEN,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/128
+24,AiMarketingtool-pro-fbaf2fad,72,"Enhance code quality, security, and build configurations",Lokeninfinitypoint,7,2,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/72
+25,AiMarketingtool-pro-fbaf2fad,149,Copilot/align tier names and planid,Lokeninfinitypoint,6,2,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/149
+26,AiMarketingtool-pro-fbaf2fad,92,Add Claude Code GitHub Workflow,Lokeninfinitypoint,5,1,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/92
+27,AiMarketingtool-pro-fbaf2fad,93,Add claude GitHub actions 1780371096658,Lokeninfinitypoint,5,2,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/93
+28,AiMarketingtool-pro-fbaf2fad,96,"ci: remove dead Maven + duplicate publish workflows, fix Master triggers",Lokeninfinitypoint,5,2,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/96
+29,AiMarketingtool-pro-fbaf2fad,19,Potential fixes for 2 code quality findings,Lokeninfinitypoint,5,3,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/19
+30,AiMarketingtool-pro-fbaf2fad,31,chore(deps): bump @react-navigation/bottom-tabs from 7.10.1 to 7.15.11,dependabot,4,1,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/31
+31,AiMarketingtool-pro-fbaf2fad,104,Apply suggested fix to android-patches/src/main/kotlin/com/facebook/r…,Lokeninfinitypoint,4,2,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/104
+32,AiMarketingtool-pro-fbaf2fad,20,Potential fixes for 3 code quality findings,Lokeninfinitypoint,3,2,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/20
+33,AiMarketingtool-pro-fbaf2fad,106,Add Claude Code GitHub Workflow,Lokeninfinitypoint,3,2,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/106
+34,AiMarketingtool-pro-fbaf2fad,94,ci: fix failing publish/patch workflows and drop unused Maven CI,Lokeninfinitypoint,3,2,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/94
+35,AiMarketingtool-pro-fbaf2fad,86,Ai finding autofix/auto,Lokeninfinitypoint,3,1,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/86
+36,AiMarketingtool-pro-fbaf2fad,90,Apply suggested fix to SECURITY.md from Copilot Autofix,Lokeninfinitypoint,2,2,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/90
+37,AiMarketingtool-pro-fbaf2fad,132,"fix(billing): align Entitlement tier with PlanId, guard null userId, safe error access",copilot-swe-agent,2,1,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/132
+38,AiMarketingtool-pro-fbaf2fad,103,fix(android): patch RN 0.85.3 edge-to-edge deprecated APIs (replaces stale 0.83.6 AAR),Lokeninfinitypoint,2,2,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/103
+39,AiMarketingtool-pro-fbaf2fad,130,fix: remove hardcoded credentials and improve robustness in asc_clear_sub_rejections.rb,copilot-swe-agent,2,1,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/130
+40,AiMarketingtool-pro-fbaf2fad,85,Apply suggested fix to src/screens/tools/MemeGeneratorScreen.tsx from…,Lokeninfinitypoint,2,2,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/85
+41,AiMarketingtool-pro-fbaf2fad,129,Harden ASC rejection script config and align billing/dashboard/auth typing + platform labels,copilot-swe-agent,2,1,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/129
+42,AiMarketingtool-pro-fbaf2fad,89,Apply suggested fix to App.tsx from Copilot Autofix,Lokeninfinitypoint,2,2,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/89
+43,AiMarketingtool-pro-fbaf2fad,78,Add marketingtool-rn-mcp Claude Code plugin + repo marketplace,Lokeninfinitypoint,2,1,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/78
+44,AiMarketingtool-pro-fbaf2fad,12,Create codeql.yml,Lokeninfinitypoint,2,1,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/12
+45,AiMarketingtool-pro-fbaf2fad,100,fix: react 19.2.6 → 19.2.3 — stops launch crash (matches RN 0.85.3 renderer),Lokeninfinitypoint,2,2,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/100
+46,AiMarketingtool-pro-fbaf2fad,59,Claude/review issues merge prs xs n tw,Lokeninfinitypoint,2,1,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/59
+47,AiMarketingtool-pro-fbaf2fad,74,Potential fixes for 2 code quality findings,Lokeninfinitypoint,1,1,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/74
+48,AiMarketingtool-pro-fbaf2fad,148,"Fix IAP issues, enhance monetization tools, and update dependencies",Lokeninfinitypoint,1,1,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/148
+49,AiMarketingtool-pro-fbaf2fad,79,ci: fix exit-128 submodule cascade + pin actions to full SHA,Lokeninfinitypoint,1,1,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/79
+50,AiMarketingtool-pro-fbaf2fad,117,chore(deps): bump org.jetbrains.kotlin.jvm from 2.3.20 to 2.4.0,dependabot,1,1,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/117
+51,AiMarketingtool-pro-fbaf2fad,75,Potential fix for 1 code quality finding,Lokeninfinitypoint,1,1,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/75
+52,AiMarketingtool-pro-fbaf2fad,146,fix: upgrade joi to 18.2.1 (CVE-2026-48038 / GHSA-q7cg-457f-vx79),copilot-swe-agent,1,1,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/146
+53,AiMarketingtool-pro-fbaf2fad,123,Add claude GitHub actions 1780371096658,Lokeninfinitypoint,1,1,CLOSED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/123
+54,AiMarketingtool-pro-fbaf2fad,97,Potential fix for code scanning alert no. 406: Workflow does not contain permissions,Lokeninfinitypoint,1,1,MERGED,https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/pull/97

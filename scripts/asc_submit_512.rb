@@ -4,11 +4,13 @@
 # and submit it. Runs locally via the ASC API — nothing touches GitHub.
 # DRY_RUN=true (default) only prints the plan. DRY_RUN=false executes.
 require 'jwt'; require 'openssl'; require 'net/http'; require 'json'; require 'uri'
-KEY_ID="69JDXUCPU3"; ISSUER="313ffa8d-5aed-4aad-a012-b1057717634c"; APP="6758618412"
-KEY=File.expand_path("../AuthKey_#{KEY_ID}.p8", __dir__)
+KEY_ID=ENV.fetch("ASC_KEY_ID") { abort "Missing required env var ASC_KEY_ID" }
+ISSUER=ENV.fetch("ASC_ISSUER_ID") { abort "Missing required env var ASC_ISSUER_ID" }
+APP=ENV.fetch("ASC_APP_ID") { abort "Missing required env var ASC_APP_ID" }
+KEY_PATH=ENV.fetch("ASC_KEY_PATH", File.expand_path("../AuthKey_#{KEY_ID}.p8", __dir__))
 WANT_BUILD=ENV.fetch("BUILD_NUMBER","512")
 DRY=ENV.fetch("DRY_RUN","true")!="false"
-pk=OpenSSL::PKey::EC.new(File.read(KEY)); n=Time.now.to_i
+pk=OpenSSL::PKey::EC.new(File.read(KEY_PATH)); n=Time.now.to_i
 TOK=JWT.encode({iss:ISSUER,iat:n,exp:n+1100,aud:"appstoreconnect-v1"},pk,"ES256",{kid:KEY_ID,typ:"JWT"})
 BASE="https://api.appstoreconnect.apple.com"
 def req(m,p,b=nil)
