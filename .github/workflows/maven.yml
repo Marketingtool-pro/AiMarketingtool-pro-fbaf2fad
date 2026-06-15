@@ -1,12 +1,29 @@
-version: 2.1
+name: Java CI with Maven
 
-orbs:
-  maven: circleci/maven@1.4.2
+on:
+  push:
+    branches: [ "main", "Master" ]
+  pull_request:
+    branches: [ "main", "Master" ]
 
-workflows:
-  maven_workflow:
-    jobs:
-      - maven/test:
-          executor:
-            name: cimg/openjdk:21.0.2 # Uses CircleCI's official verified OpenJDK 21 image
-          app_src_directory: 'backend'
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+        cache-dependency-path: backend/pom.xml
+
+    - name: Build with Maven
+      run: mvn -B package --file backend/pom.xml
