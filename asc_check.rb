@@ -25,13 +25,11 @@ require 'net/http'
 require 'json'
 require 'uri'
 
-KEY_ID       = ENV.fetch('ASC_KEY_ID')
-ISSUER_ID    = ENV.fetch('ASC_ISSUER_ID')
-APP_ID       = ENV.fetch('ASC_APP_ID')
-KEY_PATH     = ENV.fetch('ASC_KEY_PATH',  File.expand_path("../AuthKey_#{KEY_ID}.p8", __dir__))
-WANT_BUILD   = ENV['BUILD_NUMBER']
-POLL_INTERVAL = (ENV['POLL_INTERVAL'] || '30').to_i
-MAX_WAIT     = (ENV['MAX_WAIT'] || '1800').to_i
+KEY_ID = ENV.fetch('ASC_KEY_ID') { abort 'Missing required env var ASC_KEY_ID' }
+ISSUER = ENV.fetch('ASC_ISSUER_ID') { abort 'Missing required env var ASC_ISSUER_ID' }
+APP_ID = ENV.fetch('ASC_APP_ID') { abort 'Missing required env var ASC_APP_ID' }
+KEY_PATH = ENV.fetch('ASC_KEY_PATH', "AuthKey_#{KEY_ID}.p8")
+KEY    = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
 
 abort "❌  Key not found: #{KEY_PATH}" unless File.exist?(KEY_PATH)
 
