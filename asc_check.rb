@@ -50,8 +50,17 @@ end
 KEY_ID   = required_env('ASC_KEY_ID')
 ISSUER   = required_env('ASC_ISSUER_ID')
 APP_ID   = required_env('ASC_APP_ID')
-KEY_PATH = ENV.fetch('ASC_KEY_PATH', 'AuthKey_69JDXUCPU3.p8')
+# Default key filename follows the configured KEY_ID instead of a hardcoded
+# (and now-stale) one, so rotating the ASC key no longer breaks this script.
+KEY_PATH = ENV.fetch('ASC_KEY_PATH', "AuthKey_#{KEY_ID}.p8")
 KEY      = load_private_key(KEY_PATH)
+
+# Runtime options — referenced below but never defined (script crashed with
+# "uninitialized constant" until these were added).
+_want_build   = ENV['BUILD_NUMBER'].to_s.strip
+WANT_BUILD    = _want_build.empty? ? nil : _want_build
+POLL_INTERVAL = Integer(ENV['POLL_INTERVAL'] || 30)
+MAX_WAIT      = Integer(ENV['MAX_WAIT'] || 1800)
 
 @cached_token = nil
 @cached_token_exp = 0
@@ -85,7 +94,13 @@ end
 def fetch_builds(after_cursor = nil)
   path  = "/v1/builds?filter[app]=#{APP_ID}&sort=-uploadedDate&limit=25&fields[builds]=version,processingState,uploadedDate"
   path += "&cursor=#{after_cursor}" if after_cursor
-  asc_get(path)
+  code, body = get(path)
+  if code.to_i == 401 || code.to_i == 403
+    detail = body.is_a?(Hash) ? body.dig('errors', 0, 'detail') : body
+    abort("ASC auth failed (HTTP #{code}): #{detail}\nCheck ASC_KEY_ID / ASC_ISSUER_ID / key file (#{KEY_PATH}).")
+  end
+  warn "ASC API error (HTTP #{code})" unless code.to_i == 200
+  body.is_a?(Hash) ? body : { 'data' => [] }
 end
 
 def find_target_build(builds)

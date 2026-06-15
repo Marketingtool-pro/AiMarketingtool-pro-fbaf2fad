@@ -1,4 +1,4 @@
-const { withProjectBuildGradle } = require('@expo/config-plugins');
+const { withProjectBuildGradle } = require('expo/config-plugins');
 
 /**
  * Force androidx.core to 1.17.0 across ALL Gradle subprojects.

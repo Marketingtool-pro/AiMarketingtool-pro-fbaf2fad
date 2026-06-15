@@ -1,6 +1,14 @@
 [tools]
-"github:composer/composer" = "latest"
+azd = "latest"
+cargo-dist = "latest"
+cargo-make = "latest"
+checkmake = "latest"
+# ripgrep removed: redundant with aqua/github ripgrep 15.1.0 in global config (this was an older 14.1.1 source build)
+# composer kept once via the ubi backend below (was duplicated as github: + ubi:)
 jsonschema = "latest"
+make = "latest"
+node = "24"
+pnpm = "latest"
 python = "3.12"
 "ubi:composer/composer" = "latest"
 # mise config files are hierarchical. mise will find all of the config files

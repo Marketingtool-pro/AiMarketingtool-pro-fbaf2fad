@@ -2,7 +2,7 @@
   "expo": {
     "name": "MarketingTool",
     "slug": "marketingtool",
-    "version": "1.5.0",
+    "version": "1.5.4",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -18,7 +18,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "514",
+      "buildNumber": "529",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -46,8 +46,7 @@
       "associatedDomains": [
         "applinks:marketingtool.pro",
         "applinks:app.marketingtool.pro"
-      ],
-      "appleTeamId": "N465W7879Z"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -56,7 +55,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 513,
+      "versionCode": 529,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -65,22 +64,14 @@
       ],
       "intentFilters": [
         {
-          "CFBundleURLSchemes": [
-            "com.googleusercontent.apps.911925145433-f885hn108caqm828puujtqd46eimh6ps"
-          ]
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "marketingtool.pro" },
+            { "scheme": "https", "host": "app.marketingtool.pro" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
         }
-      ],
-      "NSCameraUsageDescription": "Allow MarketingTool to access your camera to upload your profile photo.",
-      "NSPhotoLibraryUsageDescription": "Allow MarketingTool to access your photos to upload a profile picture or share generated content.",
-      "NSFaceIDUsageDescription": "Use Face ID to sign in securely.",
-      "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized marketing content.",
-      "UIBackgroundModes": [
-        "remote-notification"
-      ],
-      "LSApplicationQueriesSchemes": [
-        "mailto",
-        "tel",
-        "sms"
       ]
     },
     "web": {
@@ -170,8 +161,7 @@
           "delayAppMeasurementInit": true
         }
       ]
-    ],
-    "appleTeamId": "N465W7879Z"
+    ]
   },
   "android": {
     "adaptiveIcon": {

@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import * as Haptics from 'expo-haptics';
-import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, type Entitlement } from '../../services/billingService';
+import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, entitlementForProduct, CREDITS_PER_TOKEN_PACK, type Entitlement } from '../../services/billingService';
 import { functions } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 
@@ -37,7 +37,7 @@ interface Plan {
 
 const SubscriptionScreen = () => {
   const navigation = useNavigation();
-  const { profile, refreshProfile, applyLocalEntitlement } = useAuthStore();
+  const { profile, refreshProfile, applyLocalEntitlement, grantEntitlement, grantCredits } = useAuthStore();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [selectedPlan, setSelectedPlan] = useState<string>('pro');
   const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +49,7 @@ const SubscriptionScreen = () => {
     if (Platform.OS === 'web') return;
     billingService.initialize().catch(err => console.error('[Billing] Init failed:', err));
     billingService.startListeners({
-      onSuccess: (_productId: string, entitlement?: Entitlement | null) => {
+      onSuccess: async (productId: string, entitlement?: Entitlement | null) => {
         setIsLoading(false);
         const kind = pendingKindRef.current;
         pendingKindRef.current = null;
