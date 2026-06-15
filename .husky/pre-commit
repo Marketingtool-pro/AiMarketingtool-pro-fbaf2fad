@@ -2,7 +2,10 @@ echo "🔍 Running pre-commit checks..."
 
 # TypeScript check
 echo "📝 Checking TypeScript..."
-npx tsc --noEmit || { echo "❌ TypeScript errors found. Fix before committing."; exit 1; }
+# Use -p typescript so npx runs the real compiler, NOT the decoy "tsc" npm package
+# (the bare "tsc" package prints "This is not the tsc command…" and exits 1, which
+# silently blocked every commit).
+npx -p typescript tsc --noEmit || { echo "❌ TypeScript errors found. Fix before committing."; exit 1; }
 
 # Lint-staged (only staged files)
 npx lint-staged
