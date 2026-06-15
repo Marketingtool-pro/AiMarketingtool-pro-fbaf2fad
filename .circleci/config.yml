@@ -16,7 +16,8 @@ jobs:
           command: |
             ./sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner \
               -Dsonar.projectKey=AiMarketingtool-pro-fbaf2fad \
-              -Dsonar.sources=android/app/src/main/java,src \
+              -Dsonar.organization=marketingtool-pro \
+              -Dsonar.sources=src \
               -Dsonar.host.url=${SONAR_HOST_URL} \
               -Dsonar.login=${SONAR_TOKEN}
 
