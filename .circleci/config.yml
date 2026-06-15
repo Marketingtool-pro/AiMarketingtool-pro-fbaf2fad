@@ -4,6 +4,7 @@ jobs:
   sonarqube:
     docker:
       - image: cimg/android:2024.01.1-node
+    resource_class: marketingtool/pro
     steps:
       - checkout
       - run:
