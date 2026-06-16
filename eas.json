@@ -9,7 +9,9 @@
       "distribution": "internal",
       "channel": "development",
       "node": "24.16.0",
-      "android": { "buildType": "apk" },
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "IS_TESTING": "true",
         "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
@@ -19,7 +21,10 @@
       "distribution": "internal",
       "channel": "preview",
       "node": "24.16.0",
-      "android": { "buildType": "apk", "resourceClass": "large" },
+      "android": {
+        "buildType": "apk",
+        "resourceClass": "large"
+      },
       "env": {
         "IS_TESTING": "true",
         "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"

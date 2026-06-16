@@ -25,6 +25,63 @@ platform :ios do
     )
     UI.success("App Store Connect API key works — latest TestFlight build: #{build_number}")
   end
+
+  # ── LOCAL build + TestFlight upload via local Xcode (no EAS) ────────────────
+  # Usage: bundle exec fastlane ios beta
+  # Requires: Apple Distribution cert in keychain (present: Team N465W7879Z),
+  #           ASC .p8 key (default ~/Downloads/AuthKey_<id>.p8), and a prebuilt
+  #           ios/ native project (expo prebuild + pod install already run).
+  lane :beta do
+    key_id     = ENV.fetch("ASC_KEY_ID", "69JDXUCPU3")
+    issuer_id  = ENV.fetch("ASC_ISSUER_ID", "313ffa8d-5aed-4aad-a012-b1057717634c")
+    key_path   = ENV.fetch("ASC_KEY_PATH", File.expand_path("~/Downloads/AuthKey_#{key_id}.p8"))
+    app_id     = ENV.fetch("ASC_APP_IDENTIFIER", "pro.marketingtool.app")
+    team_id    = ENV.fetch("DEVELOPMENT_TEAM", "N465W7879Z")
+    workspace  = File.expand_path("../ios/MarketingTool.xcworkspace", __dir__)
+    scheme     = ENV.fetch("IOS_SCHEME", "MarketingTool")
+
+    UI.user_error!("ASC key not found at #{key_path}") unless File.exist?(key_path)
+    UI.user_error!("Workspace not found at #{workspace} — run `expo prebuild -p ios` + `pod install`") unless File.exist?(workspace)
+
+    api_key = app_store_connect_api_key(
+      key_id: key_id, issuer_id: issuer_id, key_filepath: key_path, in_house: false
+    )
+
+    # Next build number = latest TestFlight + 1 (clears the rejected 528 cleanly).
+    next_build = (latest_testflight_build_number(api_key: api_key, app_identifier: app_id) || 0) + 1
+    increment_build_number(
+      xcodeproj: File.expand_path("../ios/MarketingTool.xcodeproj", __dir__),
+      build_number: next_build
+    )
+    UI.message("Building #{app_id} build ##{next_build}")
+
+    # Create/download an App Store provisioning profile using the API key.
+    sigh(
+      api_key: api_key, app_identifier: app_id, platform: "ios",
+      readonly: false, output_path: File.expand_path("../ios", __dir__)
+    )
+
+    build_app(
+      workspace: workspace,
+      scheme: scheme,
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: File.expand_path("../ios/build", __dir__),
+      clean: true,
+      export_options: {
+        signingStyle: "manual",
+        teamID: team_id,
+        provisioningProfiles: { app_id => "#{app_id} AppStore" }
+      }
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      app_identifier: app_id,
+      skip_waiting_for_build_processing: true
+    )
+    UI.success("Uploaded build ##{next_build} to TestFlight. Now bundle build+IAPs in ASC web UI and submit.")
+  end
 end
 
 platform :android do
