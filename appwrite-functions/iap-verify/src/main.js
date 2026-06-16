@@ -74,7 +74,7 @@ module.exports = async ({ req, res, log, error }) => {
     body = {};
   }
 
-  const { userId, productId, platform, appleReceipt, transactionId, googlePurchaseToken } = body;
+  const { userId, productId, platform, appleReceipt, googlePurchaseToken } = body;
 
   if (!userId || !productId || !platform) {
     return res.json({ success: false, error: "Missing required fields: userId, productId, platform" }, 400, CORS_HEADERS);
