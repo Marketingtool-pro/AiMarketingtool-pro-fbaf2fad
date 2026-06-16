@@ -128,7 +128,6 @@ export const TOOL_CATEGORIES = [
 // Intentionally kept as require(): this file is stored as .js to avoid archive filtering.
 // Explicit typing prevents implicit `any` and keeps downstream processing type-checked.
 const allToolsRaw = require('../data/tools.js') as RawTool[];
-import { ToolIconImagesKeys, setToolIconOverride, getToolIcon as _getToolIcon } from '../constants/toolIcons';
 
 // Pro lock derivation — basic single-shot content tools stay free so users
 // can taste the catalog; everything advanced (analytics, audits, AI agents,
