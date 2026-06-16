@@ -67,10 +67,19 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "marketingtool.pro" },
-            { "scheme": "https", "host": "app.marketingtool.pro" }
+            {
+              "scheme": "https",
+              "host": "marketingtool.pro"
+            },
+            {
+              "scheme": "https",
+              "host": "app.marketingtool.pro"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -161,150 +170,17 @@
           "delayAppMeasurementInit": true
         }
       ]
-    ]
-  },
-  "android": {
-    "adaptiveIcon": {
-      "foregroundImage": "./assets/adaptive-icon.png",
-      "backgroundColor": "#060b28"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
+      }
     },
-    "googleServicesFile": "./google-services.json",
-    "package": "pro.marketingtool.app",
-    "versionCode": 514,
-    "allowBackup": false,
-    "permissions": [
-      "CAMERA",
-      "USE_BIOMETRIC",
-      "VIBRATE"
-    ],
-    "intentFilters": [
-      {
-        "action": "VIEW",
-        "autoVerify": true,
-        "data": [
-          {
-            "scheme": "https",
-            "host": "marketingtool.pro",
-            "pathPrefix": "/"
-          },
-          {
-            "scheme": "https",
-            "host": "app.marketingtool.pro",
-            "pathPrefix": "/"
-          }
-        ],
-        "category": [
-          "BROWSABLE",
-          "DEFAULT"
-        ]
-      }
-    ]
-  },
-  "web": {
-    "favicon": "./assets/favicon.png",
-    "bundler": "metro"
-  },
-  "plugins": [
-    [
-      "expo-build-properties",
-      {
-        "ios": {
-          "useFrameworks": "static",
-          "deploymentTarget": "16.4",
-          "storeKitVersion": "2",
-          "forceStaticLinking": [
-            "RNFBApp",
-            "RNFBAuth",
-            "RNFBMessaging",
-            "RNFBAnalytics",
-            "RNFBCrashlytics",
-            "RNFBFirestore",
-            "NitroIap"
-          ],
-          "extraPods": [
-            {
-              "name": "RecaptchaEnterprise",
-              "version": "~> 18.0"
-            }
-          ],
-          "extraCCFlags": [
-            "-Wno-everything",
-            "-Xfrontend -disable-implicit-concurrency-module-import"
-          ]
-        },
-        "android": {
-          "compileSdkVersion": 36,
-          "targetSdkVersion": 36,
-          "minSdkVersion": 24,
-          "windowSoftInputMode": "adjustResize",
-          "useMemoryPageSize16KB": true,
-          "ndkVersion": "27.1.12297006",
-          "kotlinVersion": "2.1.20",
-          "kspVersion": "2.1.20-1.0.32"
-        }
-      }
-    ],
-    "@react-native-firebase/app",
-    "@react-native-firebase/auth",
-    "@react-native-firebase/messaging",
-    "@react-native-firebase/app-check",
-    "@react-native-firebase/crashlytics",
-    "./plugins/withEasPodfileFix.js",
-    "./plugins/withIosFirebaseSwiftFix.js",
-    [
-      "react-native-edge-to-edge",
-      {
-        "android": {
-          "parentTheme": "Default",
-          "enforceNavigationBarContrast": false
-        }
-      }
-    ],
-    "./plugins/withAndroid15EdgeToEdge.js",
-    "./plugins/withFirebaseDeferredInit.js",
-    [
-      "expo-splash-screen",
-      {
-        "image": "./assets/icon.png",
-        "resizeMode": "contain",
-        "backgroundColor": "#060b28"
-      }
-    ],
-    "expo-notifications",
-    "react-native-iap",
-    "expo-secure-store",
-    "expo-font",
-    "expo-sharing",
-    "expo-web-browser",
-    "expo-asset",
-    "expo-tracking-transparency",
-    "./plugins/withKotlinKspFix.js",
-    [
-      "react-native-google-mobile-ads",
-      {
-        "androidAppId": "ca-app-pub-2789940907288323~8551339904",
-        "iosAppId": "ca-app-pub-2789940907288323~8551339904",
-        "delayAppMeasurementInit": true
-      }
-    ]
-  ],
-  "extra": {
-    "appwriteEndpoint": "https://api.marketingtool.pro/v1",
-    "appwriteProjectId": "6952c8a0002d3365625d",
-    "aiApiUrl": "https://app.marketingtool.pro",
-    "firebase": {
-      "reCaptchaAndroid": "6LfbGWIsAAAAANFrzk-amOvKmohN6JCkft-uJXsR",
-      "reCaptchaIos": "6LegEWIsAAAAAOgbGP08ISyfgJWExxSRV9iLuanX"
+    "runtimeVersion": {
+      "policy": "appVersion"
     },
-    "eas": {
-      "projectId": "93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
+    "updates": {
+      "url": "https://u.expo.dev/93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
     }
-  },
-  "owner": "aimarketintool-2-2-2",
-  "runtimeVersion": {
-    "policy": "appVersion"
-  },
-  "updates": {
-    "url": "https://u.expo.dev/93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
   }
 }
