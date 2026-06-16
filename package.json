@@ -44,7 +44,6 @@
     "@actions/core": "^3.0.1",
     "@actions/github": "^9.1.1",
     "@apple/app-store-server-library": "^3.1.0",
-    "@circleci/circleci-config-sdk": "^0.12.5",
     "@dev-plugins/react-navigation": "^0.4.0",
     "@expo/app-integrity": "^56.0.3",
     "@expo/fingerprint": "~0.19.4",
