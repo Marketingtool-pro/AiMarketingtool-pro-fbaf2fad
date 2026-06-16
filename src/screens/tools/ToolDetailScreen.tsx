@@ -21,7 +21,7 @@ import { useToolsStore, Tool, ToolInput } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { effectiveTier, hasProAccess } from '../../services/billingService';
 import { imageService, GeneratedImage } from '../../services/imageService';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 
 
@@ -85,18 +85,9 @@ const ToolDetailScreen = () => {
   const handleGenerate = async () => {
     if (!validateInputs() || !tool || isGenerating) return;
 
-    // PRO LOCK: gate Pro tools for free users
-    if (tool.isPro && !canUsePro) {
-      Alert.alert(
-        '🔒 Pro Tool Locked',
-        `${tool.name} is a Professional plan feature. Upgrade to unlock 500+ generations/month, advanced automation, and cross-platform intelligence.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Upgrade to Pro', onPress: () => navigation.navigate('Subscription') },
-        ]
-      );
-      return;
-    }
+    // Per pricing (marketingtool.pro/pricing): ALL plans get identical tool
+    // access — tiers only restrict generation CAPACITY, not which tools open.
+    // So there is no per-tool Pro lock; the generation quota below is the gate.
 
     // QUOTA: gate on real usage fields (generationsUsed/generationsLimit) that
     // authStore actually populates. The old check used profile.credits, which is
@@ -271,11 +262,6 @@ const ToolDetailScreen = () => {
                 'zap' because Tool.icon is hardcoded to 'zap' in toolsStore. */}
             <View style={[styles.toolIcon, { backgroundColor: Colors.secondary + '20' }]}>
               <Image source={getToolIcon(tool.slug)} style={{ width: 48, height: 48 }} resizeMode="contain" />
-              {tool.isPro && !canUsePro && (
-                <View style={styles.lockOverlay}>
-                  <Feather name="lock" size={18} color="#FFF" />
-                </View>
-              )}
             </View>
             <View style={styles.toolMeta}>
               <View style={styles.toolBadges}>
@@ -465,7 +451,9 @@ const ToolDetailScreen = () => {
             user knows BEFORE tapping. */}
         <View style={styles.generateContainer}>
           {(() => {
-            const isLockedForUser = tool.isPro && !canUsePro;
+            // Pricing model: every plan opens every tool, so no tool is ever
+            // "locked" for a user — the generation quota is the only gate.
+            const isLockedForUser = false;
             return (
               <TouchableOpacity
                 onPress={handleGenerate}
@@ -520,7 +508,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    paddingTop: 60,
+    paddingTop: HEADER_TOP_PADDING,
     paddingBottom: Spacing.lg,
     paddingHorizontal: Spacing.lg,
   },

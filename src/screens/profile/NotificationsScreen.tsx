@@ -17,7 +17,7 @@ import {
   markNotificationRead,
   clearNotificationHistory,
 } from '../../services/notificationHistory';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 
 
 interface NotificationItem {
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0D0F1C',
   },
   header: {
-    paddingTop: 60,
+    paddingTop: HEADER_TOP_PADDING,
     paddingBottom: Spacing.lg,
     paddingHorizontal: Spacing.lg,
   },
