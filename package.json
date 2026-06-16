@@ -203,6 +203,7 @@
     "access": "restricted"
   },
   "overrides": {
+    "esbuild": "$esbuild",
     "expo-file-system": "$expo-file-system",
     "@tootallnate/once": "^3.0.1",
     "protobufjs": "^7.5.5",
