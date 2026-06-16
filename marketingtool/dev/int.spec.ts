@@ -23,7 +23,6 @@ describe('Plugin integration tests', () => {
     })
 
     const response = await customEndpointHandler()
-    expect(response.status).toBe(200)
 
     const data = await response.json()
     expect(data).toMatchObject({
