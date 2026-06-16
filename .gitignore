@@ -202,3 +202,12 @@ xcode-build.log
 yarn.lock
 package-lock.json
 .bundle
+
+# Stray non-app junk dirs in repo root — break EAS upload (macOS case-conflict) 2026-06-16
+/AiMarketingtool-pro-fbaf2fa/
+/all function action/
+/foodie/
+/google-cloud-sdk/
+/nuxt-nightly/
+/my_gem/
+/.expo-shared/

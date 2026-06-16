@@ -115,3 +115,10 @@ Pods
 .env
 .env.*
 *.keychain
+
+# junk dirs (mirror of .gitignore) 2026-06-16
+/AiMarketingtool-pro-fbaf2fa/
+/all function action/
+/foodie/
+/nuxt-nightly/
+/.expo-shared/
