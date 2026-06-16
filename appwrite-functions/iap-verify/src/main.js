@@ -98,8 +98,7 @@ module.exports = async ({ req, res, log, error }) => {
       const sharedSecret = process.env.APPLE_SHARED_SECRET;
       if (!sharedSecret) {
         log("WARNING: APPLE_SHARED_SECRET not configured — skipping server-side receipt validation");
-      }
-      if (sharedSecret) {
+      } else {
         const verifyUrl = "https://buy.itunes.apple.com/verifyReceipt";
         const sandboxUrl = "https://sandbox.itunes.apple.com/verifyReceipt";
         const payload = JSON.stringify({ "receipt-data": appleReceipt, password: sharedSecret });
@@ -166,14 +165,21 @@ module.exports = async ({ req, res, log, error }) => {
     } else if (entitlement) {
       // Subscription: upgrade tier if new tier is higher
       const tierRank = { free: 0, starter: 1, pro: 2, enterprise: 3 };
-      const currentRank = tierRank[doc.subscription] ?? 0;
-      const newRank     = tierRank[entitlement.tier] ?? 0;
-      if (newRank >= currentRank) {
-        updates.subscription      = entitlement.tier;
-        updates.generationsLimit  = entitlement.generationsLimit;
-        log(`Subscription: updating userId=${userId} to tier=${entitlement.tier}`);
+      const hasCurrentTier = Object.prototype.hasOwnProperty.call(tierRank, doc.subscription);
+      const hasNewTier = Object.prototype.hasOwnProperty.call(tierRank, entitlement.tier);
+
+      if (!hasCurrentTier || !hasNewTier) {
+        log(`Subscription: invalid tier mapping for userId=${userId} (current=${doc.subscription}, incoming=${entitlement.tier}) — skipping tier update`);
       } else {
-        log(`Subscription: userId=${userId} already on higher tier ${doc.subscription} — skipping downgrade`);
+        const currentRank = tierRank[doc.subscription];
+        const newRank     = tierRank[entitlement.tier];
+        if (newRank >= currentRank) {
+          updates.subscription      = entitlement.tier;
+          updates.generationsLimit  = entitlement.generationsLimit;
+          log(`Subscription: updating userId=${userId} to tier=${entitlement.tier}`);
+        } else {
+          log(`Subscription: userId=${userId} already on higher tier ${doc.subscription} — skipping downgrade`);
+        }
       }
     }
 
@@ -185,8 +191,12 @@ module.exports = async ({ req, res, log, error }) => {
     return res.json({ success: true }, 200, CORS_HEADERS);
   } catch (err) {
     error(`iap-verify DB update error: ${err.message}`);
-    // Return success anyway — the purchase was real, just the DB update failed.
-    // The client has already applied the entitlement locally.
-    return res.json({ success: true, note: "profile update failed; entitlement applied client-side" }, 200, CORS_HEADERS);
+    // Purchase validation may have succeeded, but persistence failed.
+    // Return an explicit partial failure so clients/monitoring can detect it.
+    return res.json(
+      { success: false, partialFailure: true, note: "profile update failed; entitlement applied client-side" },
+      500,
+      CORS_HEADERS
+    );
   }
 };
