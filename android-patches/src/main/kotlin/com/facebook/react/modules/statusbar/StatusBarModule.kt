@@ -52,7 +52,7 @@ internal class StatusBarModule(reactContext: ReactApplicationContext?) :
     val heightPx = if (resId > 0) res.getDimensionPixelSize(resId) else 0
     return mapOf(
         HEIGHT_KEY to PixelUtil.toDIPFromPixel(heightPx.toFloat()),
-        DEFAULT_BACKGROUND_COLOR_KEY to "black",
+        DEFAULT_BACKGROUND_COLOR_KEY to "#000000",
     )
   }
 
