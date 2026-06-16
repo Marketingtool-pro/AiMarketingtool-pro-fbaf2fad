@@ -1,6 +1,8 @@
 [tools]
+"github:composer/composer" = "latest"
 jsonschema = "latest"
 python = "3.12"
+"ubi:composer/composer" = "latest"
 # mise config files are hierarchical. mise will find all of the config files
 # in all parent directories and merge them together.
 # You might have a structure like:

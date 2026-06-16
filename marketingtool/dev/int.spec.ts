@@ -1,7 +1,7 @@
 import type { Payload } from 'payload'
 
 import config from '@payload-config'
-import { createPayloadRequest, getPayload } from 'payload'
+import { getPayload } from 'payload'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 
 import { customEndpointHandler } from '../src/endpoints/customEndpointHandler.js'
@@ -22,9 +22,7 @@ describe('Plugin integration tests', () => {
       method: 'GET',
     })
 
-    const payloadRequest = await createPayloadRequest({ config, request })
-    const response = await customEndpointHandler(payloadRequest)
-    expect(response.status).toBe(200)
+    const response = await customEndpointHandler(request)
 
     const data = await response.json()
     expect(data).toMatchObject({

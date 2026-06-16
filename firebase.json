@@ -20,14 +20,14 @@
       }
     ]
   },
-  "auth": {
-    "providers": {
-      "anonymous": true,
-      "emailPassword": true,
-      "googleSignIn": {
-        "oAuthBrandDisplayName": "MarketingTool Pro",
-        "supportEmail": "help@marketingtool.pro"
-      }
-    }
+  "emulators": {
+    "hosting": {
+      "port": 5000
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    },
+    "singleProjectMode": true
   }
 }
