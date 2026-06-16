@@ -10,18 +10,36 @@ export const BeforeDashboardClient = () => {
 
   useEffect(() => {
     const fetchMessage = async () => {
-      const response = await fetch(
-        formatAdminURL({
-          apiRoute: config.routes.api,
-          path: '/my-plugin-endpoint',
-        }),
-      )
-      const result = await response.json()
-      setMessage(result.message)
+      try {
+        const response = await fetch(
+          formatAdminURL({
+            apiRoute: config.routes.api,
+            path: '/my-plugin-endpoint',
+          }),
+        )
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`)
+        }
+
+        const result: unknown = await response.json()
+        if (
+          typeof result === 'object' &&
+          result !== null &&
+          'message' in result &&
+          typeof (result as { message: unknown }).message === 'string'
+        ) {
+          setMessage((result as { message: string }).message)
+        } else {
+          setMessage('Invalid response from endpoint.')
+        }
+      } catch {
+        setMessage('Failed to load message.')
+      }
     }
 
     void fetchMessage()
-  }, [config.serverURL, config.routes.api])
+  }, [config.routes.api])
 
   return (
     <div>
