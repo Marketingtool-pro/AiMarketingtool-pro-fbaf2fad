@@ -185,8 +185,12 @@ module.exports = async ({ req, res, log, error }) => {
     return res.json({ success: true }, 200, CORS_HEADERS);
   } catch (err) {
     error(`iap-verify DB update error: ${err.message}`);
-    // Return success anyway — the purchase was real, just the DB update failed.
-    // The client has already applied the entitlement locally.
-    return res.json({ success: true, note: "profile update failed; entitlement applied client-side" }, 200, CORS_HEADERS);
+    // Purchase validation may have succeeded, but persistence failed.
+    // Return an explicit partial failure so clients/monitoring can detect it.
+    return res.json(
+      { success: false, partialFailure: true, note: "profile update failed; entitlement applied client-side" },
+      500,
+      CORS_HEADERS
+    );
   }
 };
