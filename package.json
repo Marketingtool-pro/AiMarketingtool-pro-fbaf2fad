@@ -1,6 +1,6 @@
 {
   "name": "@marketingtool-pro/marketingtool",
-  "version": "1.5.6",
+  "version": "1.5.7",
   "description": "Hybrid React Native application using **Appwrite** for core Auth/Data and **Firebase** for AI Functions, Observability, and Hosting.",
   "homepage": "https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad#readme",
   "bugs": {
@@ -18,7 +18,8 @@
     "marketingtool": "bin/RunnerService.js"
   },
   "directories": {
-    "doc": "docs"
+    "doc": "docs",
+    "test": "test"
   },
   "scripts": {
     "start": "expo start",
@@ -36,7 +37,8 @@
     "ship:verified:ios": "npm run iap:verify && npm run ship:ios",
     "ship:ios": "eas build --platform ios --profile production --auto-submit --non-interactive",
     "ship:android": "eas build --platform android --profile production --auto-submit --non-interactive",
-    "build": "expo export --platform web"
+    "build": "expo export --platform web",
+    "lint": "expo lint"
   },
   "dependencies": {
     "@actions/core": "^3.0.1",
@@ -55,7 +57,7 @@
     "@google/adk-devtools": "^1.2.0",
     "@google/genai": "^2.8.0",
     "@lottiefiles/dotlottie-react": "0.19.4",
-    "@react-native-async-storage/async-storage": "3.1.1",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/cli": "^20.1.3",
     "@react-native-community/cli-platform-ios": "^20.1.3",
     "@react-native-community/datetimepicker": "9.1.0",
@@ -75,12 +77,12 @@
     "@react-native-picker/picker": "2.11.4",
     "@react-native-segmented-control/segmented-control": "2.5.7",
     "@react-navigation/bottom-tabs": "7.18.2",
-    "@react-navigation/native": "7.3.3",
+    "@react-navigation/native": "^7.3.3",
     "@react-navigation/native-stack": "7.17.5",
     "@scarf/scarf": "^1.4.0",
-    "@shopify/flash-list": "2.3.2",
+    "@shopify/flash-list": "2.0.2",
     "@shopify/react-native-skia": "^2.6.4",
-    "@stripe/stripe-react-native": "0.67.0",
+    "@stripe/stripe-react-native": "0.64.0",
     "@tamagui/native": "^2.3.0",
     "axios": "^1.18.0",
     "convex": "^1.41.0",
@@ -92,7 +94,7 @@
     "expo-background-fetch": "~56.0.18",
     "expo-blob": "^56.0.3",
     "expo-blur": "~56.0.3",
-    "expo-brownfield": "~56.0.19",
+    "expo-brownfield": "~56.0.20",
     "expo-build-properties": "^56.0.18",
     "expo-checkbox": "~56.0.1",
     "expo-clipboard": "~56.0.4",
@@ -141,12 +143,13 @@
     "lottie-react-native": "~7.3.8",
     "material-symbols": "^0.45.1",
     "mvdan-sh": "^0.10.1",
-    "react": "19.2.7",
-    "react-dom": "19.2.7",
-    "react-native": "0.86.0",
+    "npm": "^11.17.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.85.3",
     "react-native-appwrite": "0.32.0",
     "react-native-edge-to-edge": "^1.8.1",
-    "react-native-gesture-handler": "~3.0.1",
+    "react-native-gesture-handler": "~2.31.1",
     "react-native-google-mobile-ads": "^16.3.3",
     "react-native-iap": "^15.3.2",
     "react-native-keyboard-controller": "^1.21.11",
@@ -178,13 +181,19 @@
     "chai": "^6.2.2",
     "eas-build-cache-provider": "^20.0.0",
     "esbuild": "0.28.1",
-    "eslint": "^9.39.4",
-    "eslint-config-expo": "^56.0.4",
+    "eslint": "^10.5.0",
+    "eslint-config-expo": "~56.0.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
     "eslint-plugin-react": "^7.37.5",
+    "expo-atlas": "^0.4.0",
+    "expo-mcp": "~0.2.1",
     "expo-module-scripts": "^56.0.3",
     "husky": "^9.1.7",
     "lint-staged": "17.0.7",
+    "prettier": "^3.8.4",
     "react-refresh": "^0.18.0",
+    "source-map-explorer": "^2.5.3",
     "typescript": "~6.0.3"
   },
   "optionalDependencies": {
@@ -278,9 +287,6 @@
     "@expo/require-utils@55.0.5": true,
     "@expo/plist@0.3.5": true,
     "@expo/plist@0.2.2": true,
-    "glob@10.5.0": true,
-    "@scarf/scarf@1.4.0": true,
-    "@google/genai@1.52.0": true,
-    "@google/genai@2.8.0": true
+    "glob@10.5.0": true
   }
 }
