@@ -17,7 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: Spacing.lg,
-    paddingTop: 60,
+    paddingTop: HEADER_TOP_PADDING,
     paddingBottom: 40,
   },
   backButton: {

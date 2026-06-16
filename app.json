@@ -2,7 +2,7 @@
   "expo": {
     "name": "MarketingTool",
     "slug": "marketingtool",
-    "version": "1.5.0",
+    "version": "1.5.4",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -18,12 +18,17 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "514",
+      "buildNumber": "529",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "FirebaseAppDelegateProxyEnabled": true,
         "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.911925145433-f885hn108caqm828puujtqd46eimh6ps"
+            ]
+          },
           {
             "CFBundleURLSchemes": [
               "com.googleusercontent.apps.911925145433-f885hn108caqm828puujtqd46eimh6ps"
@@ -35,15 +40,21 @@
         "NSFaceIDUsageDescription": "Use Face ID to sign in securely.",
         "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized marketing content.",
         "UIBackgroundModes": [
+          "remote-notification",
           "remote-notification"
         ],
         "LSApplicationQueriesSchemes": [
+          "mailto",
+          "tel",
+          "sms",
           "mailto",
           "tel",
           "sms"
         ]
       },
       "associatedDomains": [
+        "applinks:marketingtool.pro",
+        "applinks:app.marketingtool.pro",
         "applinks:marketingtool.pro",
         "applinks:app.marketingtool.pro"
       ],
@@ -61,9 +72,18 @@
       "permissions": [
         "CAMERA",
         "USE_BIOMETRIC",
-        "VIBRATE"
+        "VIBRATE",
+        "CAMERA",
+        "USE_BIOMETRIC",
+        "VIBRATE",
+        "com.google.android.gms.permission.AD_ID"
       ],
       "intentFilters": [
+        {
+          "CFBundleURLSchemes": [
+            "com.googleusercontent.apps.911925145433-f885hn108caqm828puujtqd46eimh6ps"
+          ]
+        },
         {
           "CFBundleURLSchemes": [
             "com.googleusercontent.apps.911925145433-f885hn108caqm828puujtqd46eimh6ps"
@@ -75,9 +95,13 @@
       "NSFaceIDUsageDescription": "Use Face ID to sign in securely.",
       "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized marketing content.",
       "UIBackgroundModes": [
+        "remote-notification",
         "remote-notification"
       ],
       "LSApplicationQueriesSchemes": [
+        "mailto",
+        "tel",
+        "sms",
         "mailto",
         "tel",
         "sms"
@@ -171,7 +195,18 @@
         }
       ]
     ],
-    "appleTeamId": "N465W7879Z"
+    "appleTeamId": "N465W7879Z",
+    "extra": {
+      "eas": {
+        "projectId": "e7abf1ac-3cab-4cfb-9cb2-f55c1783dd7e"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e7abf1ac-3cab-4cfb-9cb2-f55c1783dd7e"
+    }
   },
   "android": {
     "adaptiveIcon": {

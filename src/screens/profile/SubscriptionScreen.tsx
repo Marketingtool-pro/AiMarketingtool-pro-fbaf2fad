@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 import * as Haptics from 'expo-haptics';
-import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, type Entitlement } from '../../services/billingService';
+import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, entitlementForProduct, CREDITS_PER_TOKEN_PACK, type Entitlement } from '../../services/billingService';
 import { functions } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 
@@ -37,7 +37,7 @@ interface Plan {
 
 const SubscriptionScreen = () => {
   const navigation = useNavigation();
-  const { profile, refreshProfile, applyLocalEntitlement } = useAuthStore();
+  const { profile, refreshProfile, applyLocalEntitlement, grantCredits, grantEntitlement } = useAuthStore();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [selectedPlan, setSelectedPlan] = useState<string>('pro');
   const [isLoading, setIsLoading] = useState(false);
@@ -49,14 +49,20 @@ const SubscriptionScreen = () => {
     if (Platform.OS === 'web') return;
     billingService.initialize().catch(err => console.error('[Billing] Init failed:', err));
     billingService.startListeners({
-      onSuccess: (_productId: string, entitlement?: Entitlement | null) => {
+      onSuccess: async (productId: string, entitlement?: Entitlement | null) => {
         setIsLoading(false);
         const kind = pendingKindRef.current;
         pendingKindRef.current = null;
         // Apply entitlement immediately so Pro features unlock without waiting
         // for the server round-trip (Guideline 2.1b fix — client-side unlock).
+        // billingService uses tier 'growth' for the top mobile plan; the local
+        // entitlement store's top tier is 'enterprise' — map across so the unlock
+        // type-checks and the highest plan still unlocks.
         if (entitlement) {
-          applyLocalEntitlement(entitlement);
+          applyLocalEntitlement({
+            tier: entitlement.tier === 'growth' ? 'enterprise' : entitlement.tier,
+            generationsLimit: entitlement.generationsLimit,
+          });
         }
         if (kind === 'consumable') {
           // Credit locally first — tokens are "added instantly" (pricing page)
@@ -412,14 +418,21 @@ const SubscriptionScreen = () => {
                       <Text style={styles.planPrice}>Custom</Text>
                     ) : isYearly ? (
                       // Apple 3.1.2(c): the BILLED amount must be the most clear & conspicuous
-                      // price element. Show the total ($/year) large+bold via planPrice, and the
-                      // calculated monthly equivalent subordinate (smaller, dimmer, labelled).
+                      // price element. The total charged ($/year) is the large+bold hero
+                      // (planPrice) with an explicit "billed annually" label; the calculated
+                      // monthly equivalent is rendered clearly subordinate — smaller, dimmer,
+                      // parenthesised and labelled "equivalent" so it cannot be mistaken for
+                      // the amount charged.
                       <>
-                        <Text style={styles.planPrice}>${plan.yearlyTotal}<Text style={{fontSize: 14}}>/year</Text></Text>
-                        <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 }}>${plan.yearlyPrice}/mo equivalent</Text>
+                        <Text style={styles.planPrice}>${plan.yearlyTotal}<Text style={styles.priceUnit}>/year</Text></Text>
+                        <Text style={styles.priceBilledNote}>billed annually</Text>
+                        <Text style={styles.priceEquiv}>(${plan.yearlyPrice}/mo equivalent)</Text>
                       </>
                     ) : (
-                      <Text style={styles.planPrice}>${plan.monthlyPrice}<Text style={{fontSize: 14}}>/mo</Text></Text>
+                      <>
+                        <Text style={styles.planPrice}>${plan.monthlyPrice}<Text style={styles.priceUnit}>/mo</Text></Text>
+                        <Text style={styles.priceBilledNote}>billed monthly</Text>
+                      </>
                     )}
                   </View>
                 </View>
@@ -559,7 +572,12 @@ const styles = StyleSheet.create({
   radioInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#7C3AED' },
   planName: { fontSize: 18, fontWeight: '800', color: '#FFF' },
   planDesc: { fontSize: 12, color: '#A1A1AA', marginTop: 2 },
-  planPrice: { fontSize: 24, fontWeight: '900', color: '#FFF' },
+  // Apple 3.1.2(c): planPrice is the BILLED amount — the most clear & conspicuous
+  // pricing element. Everything below it is intentionally smaller and dimmer.
+  planPrice: { fontSize: 26, fontWeight: '900', color: '#FFF', letterSpacing: -0.5 },
+  priceUnit: { fontSize: 14, fontWeight: '700', color: 'rgba(255,255,255,0.9)' },
+  priceBilledNote: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.7)', marginTop: 2, textAlign: 'right' },
+  priceEquiv: { fontSize: 10, fontWeight: '400', color: 'rgba(255,255,255,0.4)', marginTop: 1, textAlign: 'right' },
   featList: { marginTop: 20, gap: 10 },
   featRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   featText: { fontSize: 14, color: '#D4D4D8' },

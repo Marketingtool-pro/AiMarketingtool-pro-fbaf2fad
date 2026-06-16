@@ -476,7 +476,7 @@ const LoginScreen = () => {
              <TouchableOpacity activeOpacity={0.7} onPress={loginWithFacebook}>
                 <Image source={require('../../../assets/images/platforms/facebook.png')} style={{ width: 56, height: 56 }} resizeMode="contain" />
              </TouchableOpacity>
-             {Platform.OS === 'ios' && (
+             {Platform.OS === 'ios' ? (
                <AppleAuthentication.AppleAuthenticationButton
                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE}
@@ -484,6 +484,17 @@ const LoginScreen = () => {
                  style={{ width: 56, height: 56 }}
                  onPress={loginWithApple}
                />
+             ) : (
+               // Android: native Apple button doesn't exist, so render a matching
+               // 56x56 button (same row/position as iOS) that runs the same OAuth flow.
+               <TouchableOpacity
+                 activeOpacity={0.7}
+                 onPress={loginWithApple}
+                 style={styles.appleButtonAndroid}
+                 accessibilityLabel="Sign in with Apple"
+               >
+                 <Ionicons name="logo-apple" size={32} color="#000000" />
+               </TouchableOpacity>
              )}
           </View>
 
@@ -809,6 +820,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 20,
     marginBottom: 20,
+  },
+  // Android Apple-sign-in button — mirrors the iOS native WHITE_OUTLINE button
+  // (white fill, black logo, 16 radius) so the social row matches across platforms.
+  appleButtonAndroid: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#000000',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emailLoginButton: {
     flexDirection: 'row',

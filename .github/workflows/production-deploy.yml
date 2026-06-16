@@ -9,13 +9,13 @@ name: Production Deploy
 # Requires repo secret ASC_API_KEY_BASE64 (base64 of AuthKey_69JDXUCPU3.p8).
 
 on:
-  # Tag-triggered auto-build/submit is DISABLED so a git push (yours or the
-  # bots') never uploads a build or touches App Store Connect while a manual
-  # submission is being assembled in the web UI. To ship iOS, run it manually:
-  # Actions -> Production Deploy -> Run workflow.
-  # push:
-  #   tags:
-  #     - 'v*.*.*'
+  # Tag push triggers the iOS build+submit job (build-submit-ios has
+  # `if: startsWith(github.ref, 'refs/tags/v')`). A tag push has
+  # event_name=push, so the android jobs (gated on workflow_dispatch) are
+  # skipped — i.e. a `v*.*.*` tag builds iOS ONLY.
+  push:
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
 
 permissions:

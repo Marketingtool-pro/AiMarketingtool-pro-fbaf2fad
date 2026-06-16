@@ -183,11 +183,6 @@ const ToolsScreen = () => {
               <View style={styles.iconLiquid}>
                 <View style={styles.iconGlow} />
                 <Image source={getToolIcon(tool.slug)} style={styles.cardIcon} resizeMode="contain" />
-                {tool.isPro && !canUsePro && (
-                  <View style={styles.lockOverlay}>
-                    <Feather name="lock" size={20} color="#FFF" />
-                  </View>
-                )}
               </View>
               <View style={styles.badgeRow}>
                 {tool.isPro && (

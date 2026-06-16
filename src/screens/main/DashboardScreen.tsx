@@ -30,7 +30,7 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { hasProAccess } from '../../services/billingService';
 import { useAuthStore } from '../../store/authStore';
 import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 import LottieView from 'lottie-react-native';
 import Glass3DLogo from '../../components/common/Glass3DLogo';
@@ -549,13 +549,6 @@ const DashboardScreen = () => {
                       style={{ width: 32, height: 32 }}
                       resizeMode="contain"
                     />
-                    {/* Same Pro lock visual as ToolsScreen / ToolDetailScreen
-                        so locked state is consistent across every screen. */}
-                    {(tool as any).isPro && !canUsePro && (
-                      <View style={styles.dashLockOverlay}>
-                        <Feather name="lock" size={14} color="#FFF" />
-                      </View>
-                    )}
                   </View>
                   <View>
                     <View style={styles.popularNameRow}>
@@ -611,7 +604,7 @@ const styles = StyleSheet.create({
     height: 100,
   },
   header: {
-    paddingTop: 60,
+    paddingTop: HEADER_TOP_PADDING,
     paddingBottom: Spacing.lg,
     paddingHorizontal: Spacing.lg,
     backgroundColor: Colors.background,

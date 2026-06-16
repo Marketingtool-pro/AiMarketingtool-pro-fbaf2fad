@@ -1,4 +1,12 @@
 // MarketingTool Theme - Dark Mode (Vision UI Pro inspired)
+import { initialWindowMetrics } from 'react-native-safe-area-context';
+
+// Single source of truth for every screen header's top padding. Driven by the
+// real device safe-area inset so iOS (notch ~47-59px) and Android (status bar
+// ~24-40px) align identically, instead of the old hardcoded 60px that only
+// looked right on iOS. Change it here once and every screen stays in sync.
+export const HEADER_TOP_PADDING = (initialWindowMetrics?.insets?.top ?? 24) + 12;
+
 export const Colors = {
   // Primary Brand Colors (Deep Navy)
   primary: '#0f1535',

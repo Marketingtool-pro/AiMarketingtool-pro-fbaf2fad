@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from'react-nativ
 import { LinearGradient } from'expo-linear-gradient';
 import { Feather } from'@expo/vector-icons';
 import { useNavigation } from'@react-navigation/native';
-import { Colors, Gradients, Spacing, BorderRadius } from'../../constants/theme';
+import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from'../../constants/theme';
 
 
 const PrivacyScreen = () => {
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     backgroundColor:'#0D0F1C',
   },
   header: {
-    paddingTop: 60,
+    paddingTop: HEADER_TOP_PADDING,
     paddingBottom: Spacing.lg,
     paddingHorizontal: Spacing.lg,
   },

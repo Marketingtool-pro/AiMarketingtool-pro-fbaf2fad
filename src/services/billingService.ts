@@ -396,7 +396,7 @@ export const billingService = {
       // Resolve the highest entitlement among the restored purchases so the caller
       // can unlock Pro locally even when the server verify is unavailable (same
       // root cause as the purchase flow — must not depend on a server round-trip).
-      const rank = { starter: 1, pro: 2, enterprise: 3 } as const;
+      const rank = { starter: 1, pro: 2, growth: 3 } as const;
       let entitlement: Entitlement | null = null;
       for (const p of purchases) {
         const pid = (p as any).productId || (p as any).id || '';
