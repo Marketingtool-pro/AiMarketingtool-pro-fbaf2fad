@@ -166,14 +166,21 @@ module.exports = async ({ req, res, log, error }) => {
     } else if (entitlement) {
       // Subscription: upgrade tier if new tier is higher
       const tierRank = { free: 0, starter: 1, pro: 2, enterprise: 3 };
-      const currentRank = tierRank[doc.subscription] ?? 0;
-      const newRank     = tierRank[entitlement.tier] ?? 0;
-      if (newRank >= currentRank) {
-        updates.subscription      = entitlement.tier;
-        updates.generationsLimit  = entitlement.generationsLimit;
-        log(`Subscription: updating userId=${userId} to tier=${entitlement.tier}`);
+      const hasCurrentTier = Object.prototype.hasOwnProperty.call(tierRank, doc.subscription);
+      const hasNewTier = Object.prototype.hasOwnProperty.call(tierRank, entitlement.tier);
+
+      if (!hasCurrentTier || !hasNewTier) {
+        log(`Subscription: invalid tier mapping for userId=${userId} (current=${doc.subscription}, incoming=${entitlement.tier}) — skipping tier update`);
       } else {
-        log(`Subscription: userId=${userId} already on higher tier ${doc.subscription} — skipping downgrade`);
+        const currentRank = tierRank[doc.subscription];
+        const newRank     = tierRank[entitlement.tier];
+        if (newRank >= currentRank) {
+          updates.subscription      = entitlement.tier;
+          updates.generationsLimit  = entitlement.generationsLimit;
+          log(`Subscription: updating userId=${userId} to tier=${entitlement.tier}`);
+        } else {
+          log(`Subscription: userId=${userId} already on higher tier ${doc.subscription} — skipping downgrade`);
+        }
       }
     }
 
