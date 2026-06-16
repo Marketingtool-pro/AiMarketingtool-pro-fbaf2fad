@@ -22,7 +22,7 @@ describe('Plugin integration tests', () => {
       method: 'GET',
     })
 
-    const response = await customEndpointHandler()
+    const response = await customEndpointHandler(request)
 
     const data = await response.json()
     expect(data).toMatchObject({
