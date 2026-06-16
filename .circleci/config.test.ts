@@ -92,8 +92,8 @@ describe(".circleci/config.yml", () => {
         expect(buildJob.docker).to.be.an("array").with.length.greaterThan(0);
       });
 
-      it("should use the cimg/ruby:3.3 Docker image", () => {
-        expect(buildJob.docker![0].image).to.equal("cimg/ruby:3.3");
+      it("should use the cimg/ruby:3.3.0 Docker image", () => {
+        expect(buildJob.docker![0].image).to.equal("cimg/ruby:3.3.0");
       });
 
       it("should define steps", () => {
