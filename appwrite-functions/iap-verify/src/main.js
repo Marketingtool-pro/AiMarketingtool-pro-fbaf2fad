@@ -25,7 +25,7 @@
  *   APPLE_SHARED_SECRET            App Store shared secret for receipt validation
  *   GOOGLE_SERVICE_ACCOUNT_JSON    Base64-encoded Google service-account JSON
  */
-const { Client, Databases, ID, Query } = require("node-appwrite");
+const { Client, Databases, Query } = require("node-appwrite");
 
 // ── Entitlement map (mirrors billingService.ts PRODUCT_TO_ENTITLEMENT) ───────
 const PRODUCT_TO_ENTITLEMENT = {
