@@ -142,7 +142,6 @@
     "lottie-react-native": "~7.3.8",
     "material-symbols": "^0.45.1",
     "mvdan-sh": "^0.10.1",
-    "npm": "^11.17.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.85.3",

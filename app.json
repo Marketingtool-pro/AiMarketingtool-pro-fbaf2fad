@@ -2,6 +2,7 @@
   "expo": {
     "name": "MarketingTool",
     "slug": "marketingtool",
+    "owner": "aimarketintool-2-2-2",
     "version": "1.5.4",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -28,11 +29,6 @@
             "CFBundleURLSchemes": [
               "com.googleusercontent.apps.911925145433-f885hn108caqm828puujtqd46eimh6ps"
             ]
-          },
-          {
-            "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.911925145433-f885hn108caqm828puujtqd46eimh6ps"
-            ]
           }
         ],
         "NSCameraUsageDescription": "Allow MarketingTool to access your camera to upload your profile photo.",
@@ -40,13 +36,9 @@
         "NSFaceIDUsageDescription": "Use Face ID to sign in securely.",
         "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized marketing content.",
         "UIBackgroundModes": [
-          "remote-notification",
           "remote-notification"
         ],
         "LSApplicationQueriesSchemes": [
-          "mailto",
-          "tel",
-          "sms",
           "mailto",
           "tel",
           "sms"
@@ -54,11 +46,8 @@
       },
       "associatedDomains": [
         "applinks:marketingtool.pro",
-        "applinks:app.marketingtool.pro",
-        "applinks:marketingtool.pro",
         "applinks:app.marketingtool.pro"
-      ],
-      "appleTeamId": "N465W7879Z"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -73,38 +62,7 @@
         "CAMERA",
         "USE_BIOMETRIC",
         "VIBRATE",
-        "CAMERA",
-        "USE_BIOMETRIC",
-        "VIBRATE",
         "com.google.android.gms.permission.AD_ID"
-      ],
-      "intentFilters": [
-        {
-          "CFBundleURLSchemes": [
-            "com.googleusercontent.apps.911925145433-f885hn108caqm828puujtqd46eimh6ps"
-          ]
-        },
-        {
-          "CFBundleURLSchemes": [
-            "com.googleusercontent.apps.911925145433-f885hn108caqm828puujtqd46eimh6ps"
-          ]
-        }
-      ],
-      "NSCameraUsageDescription": "Allow MarketingTool to access your camera to upload your profile photo.",
-      "NSPhotoLibraryUsageDescription": "Allow MarketingTool to access your photos to upload a profile picture or share generated content.",
-      "NSFaceIDUsageDescription": "Use Face ID to sign in securely.",
-      "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized marketing content.",
-      "UIBackgroundModes": [
-        "remote-notification",
-        "remote-notification"
-      ],
-      "LSApplicationQueriesSchemes": [
-        "mailto",
-        "tel",
-        "sms",
-        "mailto",
-        "tel",
-        "sms"
       ]
     },
     "web": {
@@ -195,17 +153,16 @@
         }
       ]
     ],
-    "appleTeamId": "N465W7879Z",
     "extra": {
       "eas": {
-        "projectId": "e7abf1ac-3cab-4cfb-9cb2-f55c1783dd7e"
+        "projectId": "93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/e7abf1ac-3cab-4cfb-9cb2-f55c1783dd7e"
+      "url": "https://u.expo.dev/93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
     }
   },
   "android": {
