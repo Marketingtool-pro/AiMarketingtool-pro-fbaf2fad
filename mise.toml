@@ -1,24 +1,70 @@
 [tools]
 "github:composer/composer" = "latest"
 jsonschema = "latest"
-python = "3.12"
+python = "latest"
 "ubi:composer/composer" = "latest"
 bun = "latest"
 node = "latest"
-ruby = "latest"
-aws-cli = { version = "latest", symlink_bins = "true" }
+ruby = "3.3.11"
+aws-cli = { version = "latest", symlink_bins = true }
 "aqua:aws/aws-cli" = "latest"
+act = "latest"
+"npm:@antfu/ni" = "latest"
+"cargo:starship" = "latest"
+cocoapods = "latest"
+aapt2 = "latest"
+action-validator = "latest"
+adr-tools = "latest"
+android-sdk = "latest"
+ant = "latest"
+atuin = "latest"
+bazel = "latest"
+cargo-binstall = "latest"
+cosign = "latest"
+circleci-cli = "latest"
+fly = "latest"
+gcloud = "latest"
+firebase = "latest"
+gemini-cli = "latest"
+yarn = "latest"
+uv = "latest"
+jc = "latest"
+gradle = "latest"
+maven = "latest"
+mvnd = "latest"
+kotlin = "latest"
+tuist = "latest"
+cmake = "latest"
+xcodes = "latest"
+sonobuoy = "latest"
+ruff = "latest"
+crossplane-cli = "latest"
+conform = "latest"
+pipx = "latest"
+devspace = "latest"
+fx = "latest"
+gitui = "latest"
+localstack = "latest"
+gh = "latest"
 
 [env]
 mise = { file = ".env" }
+_ = { path = "[./bin]" }
 
+[tasks]
+"npx expo start" = { run = "" }
+"npm run dev" = { run = "" }
+"npm run" = { run = "" }
+"bun upgrade" = { run = "" }
+"bun install" = { run = "" }
 
 [deps]
-npm = { auto = true }
-bun = { auto = true }
-bundler = { auto = true }
+npm = { auto = false }
+bun = { auto = false }
+yarn = { auto = false }
 
 [settings]
+all_compile = true
 always_keep_download = true
 auto_env = true
 github = {}
@@ -28,7 +74,20 @@ swift = {}
 enable_tools = []
 node = {}
 java = {}
-npm = {}
 oci = {}
-yes = true
 terminal_progress = true
+fetch_remote_versions_timeout = "20s"
+activate_aggressive = true
+auto_install = true
+cargo = {}
+cd = ""
+ceiling_paths = []
+env = []
+exec_auto_install = true
+gitlab = {}
+system_config_file = ""
+netrc = true
+silent = true
+experimental = true
+os = ""
+task = {}
