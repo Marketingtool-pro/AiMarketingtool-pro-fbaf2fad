@@ -77,6 +77,7 @@ interface AuthState {
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
   grantEntitlement: (tier: UserProfile['subscription'], generationsLimit: number) => Promise<void>;
   grantCredits: (amount: number) => Promise<void>;
+  incrementGenerationsUsed: (by?: number) => Promise<void>;
   refreshProfile: () => Promise<void>;
   applyLocalEntitlement: (entitlement: LocalEntitlement) => void;
   clearError: () => void;
@@ -563,6 +564,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ profile: updated as UserProfile });
     } catch (error: any) {
       console.warn('[AuthStore] grantCredits persist failed (local credit kept):', error);
+    }
+  },
+
+  // Count a successful generation against the user's plan quota. Optimistic
+  // local increment first (the counter must move immediately so the "X
+  // remaining" display updates and the quota gate works), then best-effort
+  // persist to the same field so refreshProfile() reads back a consistent
+  // value. A failed write must not lose the count or block the user.
+  incrementGenerationsUsed: async (by = 1) => {
+    const { profile } = get();
+    if (!profile) return;
+    const generationsUsed = (profile.generationsUsed ?? 0) + by;
+    set({ profile: { ...profile, generationsUsed } });
+    try {
+      const updated = await dbService.updateDocument<UserProfile & Models.Document>(
+        COLLECTIONS.USERS,
+        profile.$id,
+        { generationsUsed }
+      );
+      set({ profile: updated as UserProfile });
+    } catch (error: any) {
+      console.warn('[AuthStore] incrementGenerationsUsed persist failed (local count kept):', error);
     }
   },
 

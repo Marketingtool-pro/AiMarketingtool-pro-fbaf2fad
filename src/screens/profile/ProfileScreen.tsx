@@ -144,7 +144,19 @@ const ProfileScreen = () => {
             style={styles.heroGradient}
           />
           <View style={styles.headerTop}>
-            <Text style={styles.headerTitle}>Profile</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  // Profile is a bottom-tab root; "back" returns to Home (Dashboard tab).
+                  if (navigation.canGoBack()) navigation.goBack();
+                  else (navigation as any).navigate('Dashboard');
+                }}
+                style={styles.settingsButton}
+              >
+                <Feather name="arrow-left" size={22} color={Colors.white} />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Profile</Text>
+            </View>
             <TouchableOpacity
               onPress={() => navigation.navigate('Settings')}
               style={styles.settingsButton}
@@ -205,7 +217,11 @@ const ProfileScreen = () => {
 
             {/* Stats Section */}
             <View style={styles.statsRow}>
-              <StatItem label="Generations" value={profile?.generationsUsed || 0} iconName="zap" />
+              <StatItem
+                label="Generations"
+                value={`${profile?.generationsUsed || 0}/${(profile?.generationsLimit ?? 0) >= 9999 ? '∞' : (profile?.generationsLimit ?? 0)}`}
+                iconName="zap"
+              />
               <StatItem label="Saved" value={profile?.savedCount || 0} iconName="bookmark" />
               <StatItem label="Tools Used" value={profile?.toolsUsed || 0} iconName="grid" />
             </View>

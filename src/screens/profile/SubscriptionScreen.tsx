@@ -473,7 +473,7 @@ const SubscriptionScreen = () => {
           <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>
             <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)', marginRight: 14 }} />
             <View style={{ flex: 1 }}>
-              <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '700' }}>100 AI Tools</Text>
+              <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '700' }}>100 Generations</Text>
               <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 2 }}>Added instantly to your account</Text>
             </View>
             <Text style={{ color: '#A78BFA', fontSize: 22, fontWeight: '900' }}>$3</Text>

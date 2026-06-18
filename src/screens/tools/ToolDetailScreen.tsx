@@ -33,7 +33,7 @@ const ToolDetailScreen = () => {
   const route = useRoute<RouteType>();
   const { toolSlug, prefillInputs } = route.params;
   const { tools, generateContent, isGenerating } = useToolsStore();
-  const { profile, localSubscriptionOverride } = useAuthStore();
+  const { profile, localSubscriptionOverride, incrementGenerationsUsed } = useAuthStore();
   // Tier-aware gating: Starter unlocks the standard platform, PRO-badged tools
   // need Pro or higher (matches marketingtool.pro/pricing).
   const tier = effectiveTier(profile?.subscription, localSubscriptionOverride);
@@ -92,13 +92,18 @@ const ToolDetailScreen = () => {
     // QUOTA: gate on real usage fields (generationsUsed/generationsLimit) that
     // authStore actually populates. The old check used profile.credits, which is
     // never set, so it evaluated to 0<=0 and blocked EVERY free generation.
-    if (
-      tier === 'free' &&
-      (profile?.generationsUsed ?? 0) >= (profile?.generationsLimit ?? 10)
-    ) {
+    // Plan-based credit gate: every plan opens every tool, but each plan has a
+    // monthly generation quota (Free trial, Starter 200, Pro 500, Growth 1,500).
+    // Enforce for every finite tier; a limit of 9999+ means unlimited
+    // (Agency / App Store reviewer account).
+    const genLimit = profile?.generationsLimit ?? 10;
+    const genUsed = profile?.generationsUsed ?? 0;
+    if (genLimit < 9999 && genUsed >= genLimit) {
       Alert.alert(
-        'Daily Limit Reached',
-        'Free trial allows 3 generations per day. Upgrade to Starter ($29/mo, 200 generations) or Pro ($59/mo, 500 generations).',
+        'Generation Limit Reached',
+        tier === 'free'
+          ? 'Your free trial generations are used up. Upgrade to Starter (200/mo), Pro (500/mo) or Growth (1,500/mo) — or buy 100 more for $3.'
+          : `You've used all ${genLimit} generations on your ${tier} plan this cycle. Buy 100 more for $3, or upgrade your plan.`,
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'See Plans', onPress: () => navigation.navigate('Subscription') },
@@ -125,6 +130,7 @@ const ToolDetailScreen = () => {
           platform: /story/.test(tool.slug) ? 'instagram-story' : 'instagram-post',
         });
         setGeneratedImage(img);
+        await incrementGenerationsUsed();
         return;
       }
 
@@ -134,6 +140,8 @@ const ToolDetailScreen = () => {
         language: selectedLanguage,
         outputCount,
       });
+
+      await incrementGenerationsUsed();
 
       navigation.navigate('ToolResult', {
         toolSlug: tool.slug,
@@ -264,13 +272,9 @@ const ToolDetailScreen = () => {
               <Image source={getToolIcon(tool.slug)} style={{ width: 48, height: 48 }} resizeMode="contain" />
             </View>
             <View style={styles.toolMeta}>
-              <View style={styles.toolBadges}>
-                {tool.isPro && (
-                  <View style={[styles.badge, { backgroundColor: Colors.accent }]}>
-                    <Text style={styles.badgeText}>PRO</Text>
-                  </View>
-                )}
-              </View>
+              {/* No "PRO" lock badge: every plan includes every tool per
+                  marketingtool.pro/pricing. Usage quota is the only gate. */}
+              <View style={styles.toolBadges} />
               <Text style={styles.toolName}>{tool.name}</Text>
               <Text style={styles.toolDescription}>{tool.shortDescription}</Text>
             </View>

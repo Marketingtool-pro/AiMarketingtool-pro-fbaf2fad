@@ -286,6 +286,13 @@
     "@expo/require-utils@55.0.5": true,
     "@expo/plist@0.3.5": true,
     "@expo/plist@0.2.2": true,
-    "glob@10.5.0": true
+    "glob@10.5.0": true,
+    "@firebase/util@1.15.1": true,
+    "@google/genai@1.52.0": true,
+    "@google/genai@2.8.0": true,
+    "@scarf/scarf@1.4.0": true,
+    "esbuild@0.28.1": true,
+    "protobufjs@7.6.4": true,
+    "sqlite3@5.1.7": true
   }
 }
