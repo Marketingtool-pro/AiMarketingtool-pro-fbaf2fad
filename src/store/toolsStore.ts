@@ -3,6 +3,8 @@ import { Models } from 'react-native-appwrite';
 import { dbService, COLLECTIONS, Query } from '../services/appwrite';
 import { generateAIContent } from '../services/aiService';
 import { ToolIconImagesKeys, setToolIconOverride, getToolIcon as _getToolIcon } from '../constants/toolIcons';
+import { useAuthStore } from './authStore';
+import { effectiveTier } from '../services/billingService';
 
 export interface Tool {
   $id: string;
@@ -362,6 +364,11 @@ export const useToolsStore = create<ToolsState>((set, get) => ({
 
       const outputCount = inputs.outputCount || 3;
 
+      // Plan enforcement: tell the server which tier is generating, so Free runs
+      // in simulation mode and paid tiers get real execution (per pricing page).
+      const { profile, localSubscriptionOverride } = useAuthStore.getState();
+      const tier = effectiveTier(profile?.subscription, localSubscriptionOverride);
+
       // Call REAL AI service - no mock, no sample
       const result = await generateAIContent({
         toolSlug: tool.slug,
@@ -370,6 +377,9 @@ export const useToolsStore = create<ToolsState>((set, get) => ({
         tone: inputs.tone,
         language: inputs.language,
         outputCount,
+        userId: profile?.userId || profile?.$id,
+        tier,
+        simulation: tier === 'free',
       });
 
       if (!result.success || result.outputs.length === 0) {
