@@ -172,7 +172,7 @@
     },
     "googleServicesFile": "./google-services.json",
     "package": "pro.marketingtool.app",
-    "versionCode": 515,
+    "versionCode": 535,
     "allowBackup": false,
     "permissions": [
       "CAMERA",
