@@ -1469,20 +1469,53 @@ export function setToolIconOverride(slug: string, icon: any) {
   slugIconOverride[slug] = icon;
 }
 
+// Tokenise icon keys once for keyword matching.
+let _iconKeyTokens: Array<{ key: string; tokens: string[] }> | null = null;
+function iconKeyTokens() {
+  if (!_iconKeyTokens) {
+    _iconKeyTokens = ToolIconImagesKeys.map((key) => ({
+      key,
+      tokens: key.toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length > 2),
+    }));
+  }
+  return _iconKeyTokens;
+}
+const slugResolveCache: Record<string, any> = {};
+
 export function getToolIcon(slug: string, category?: string): any {
   if (slugIconOverride[slug]) return slugIconOverride[slug];
 
   const cleanSlug = slug.toLowerCase().trim();
   if (ToolIconImages[cleanSlug]) return ToolIconImages[cleanSlug];
+  if (slugResolveCache[cleanSlug]) return slugResolveCache[cleanSlug];
 
   if (category) {
     const cleanCategory = category.toLowerCase().trim();
     if (ToolIconImages[cleanCategory]) return ToolIconImages[cleanCategory];
   }
 
-  // Hash-based deterministic fallback so every tool gets a valid icon
+  // Tool slugs (e.g. "ad-copy-analyzer") never match icon keys exactly, so pick
+  // the icon whose name shares the most words with the slug — a topically
+  // relevant icon instead of a random one. A slug-hash tiebreak spreads ties so
+  // similar tools don't all collapse onto the same icon. Cached per slug.
+  const slugTokens = cleanSlug.split(/[^a-z0-9]+/).filter((t) => t.length > 2);
   let h = 0;
   for (let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0;
-  const key = ToolIconImagesKeys[h % ToolIconImagesKeys.length];
-  return ToolIconImages[key] || DEFAULT_ICON;
+  let best: string | null = null;
+  let bestScore = 0;
+  for (const { key, tokens } of iconKeyTokens()) {
+    let score = 0;
+    for (const t of slugTokens) {
+      if (tokens.includes(t)) score += 3;
+      else if (tokens.some((k) => k.includes(t) || t.includes(k))) score += 1;
+    }
+    if (score > bestScore || (score === bestScore && score > 0 && (h + key.length) % 2 === 0)) {
+      bestScore = score;
+      best = key;
+    }
+  }
+  if (!best || bestScore === 0) best = ToolIconImagesKeys[h % ToolIconImagesKeys.length];
+  const icon = ToolIconImages[best] || DEFAULT_ICON;
+  slugResolveCache[cleanSlug] = icon;
+  return icon;
 }

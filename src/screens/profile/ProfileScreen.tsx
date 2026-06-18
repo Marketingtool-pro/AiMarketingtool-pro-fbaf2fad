@@ -54,6 +54,10 @@ const StatItem = ({ label, value, iconName }: { label: string; value: string | n
 const ProfileScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user, profile, logout, localSubscriptionOverride } = useAuthStore();
+  // Display name source-of-truth is the profile document (user.name isn't
+  // updated for phone-OTP sessions). Ignore phone-number-looking values.
+  const rawName = (profile?.name || user?.name || '').trim();
+  const displayName = rawName && !/^\+?\d+$/.test(rawName) ? rawName : 'User';
 
   const handleLogout = () => {
     Alert.alert(
@@ -176,7 +180,7 @@ const ProfileScreen = () => {
                     <Image source={{ uri: profile.avatar }} style={styles.avatarImg} />
                   ) : (
                     <Text style={styles.avatarText}>
-                      {user?.name && !/^\+?\d+$/.test(user.name) ? user.name.charAt(0).toUpperCase() : 'U'}
+                      {displayName !== 'User' ? displayName.charAt(0).toUpperCase() : 'U'}
                     </Text>
                   )}
                 </View>
@@ -189,9 +193,7 @@ const ProfileScreen = () => {
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.userName}>
-                {user?.name && !/^\+?\d+$/.test(user.name) ? user.name : 'User'}
-              </Text>
+              <Text style={styles.userName}>{displayName}</Text>
               <Text style={styles.email}>{user?.email || 'help@marketingtool.pro'}</Text>
 
               {(() => {
