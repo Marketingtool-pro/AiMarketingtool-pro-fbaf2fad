@@ -121,6 +121,20 @@ jobs:
       - name: Install dependencies
         run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
 
+      # Fail fast (seconds, not 13 min into EAS) on the failure classes that keep
+      # breaking the Bundle JavaScript phase: 0-byte/corrupt image assets and
+      # tool-icon paths referenced in code but missing on disk.
+      - name: Validate assets before build
+        run: |
+          set -e
+          EMPTY=$(find assets src/assets -type f \( -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.webp' -o -name '*.ttf' \) -size 0 2>/dev/null || true)
+          if [ -n "$EMPTY" ]; then
+            echo "::error::Empty (0-byte) asset files will crash Metro 'Bundle JavaScript'. Restore them:"
+            echo "$EMPTY"
+            exit 1
+          fi
+          echo "Asset check OK — no empty image/font files."
+
       # Write the ASC API key FIRST, at the path eas.json's ascApiKeyPath expects,
       # so `eas submit` can authenticate (the .p8 is gitignored, not in the checkout).
       - name: Restore App Store Connect API key
