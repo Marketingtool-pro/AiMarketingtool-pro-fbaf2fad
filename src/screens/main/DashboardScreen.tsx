@@ -27,7 +27,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
-import { hasProAccess } from '../../services/billingService';
+import { hasProAccess, generationsLimitForTier } from '../../services/billingService';
 import { useAuthStore } from '../../store/authStore';
 import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
 import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
@@ -207,9 +207,9 @@ const DashboardScreen = () => {
 
   // Credits left this cycle, shown on the home screen so customers always see
   // their remaining generations (9999+ = unlimited plan -> shown as ∞).
-  const genLimit = profile?.generationsLimit ?? 0;
+  const genLimit = generationsLimitForTier(profile?.subscription, localSubscriptionOverride);
   const genUsed = profile?.generationsUsed ?? 0;
-  const creditsLeft = genLimit >= 9999 ? '∞' : String(Math.max(0, genLimit - genUsed));
+  const creditsLeft = genLimit >= 999999 ? '∞' : String(Math.max(0, genLimit - genUsed));
 
   const stats = [
     { label: 'Credits Left', value: creditsLeft, icon: 'zap', img: require('../../../assets/images/tool-icons-v2/ai-3d.png'), color: Colors.secondary, badge: 'Upgrade', screen: 'Subscription' },

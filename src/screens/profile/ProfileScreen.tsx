@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
+import { generationsLimitForTier } from '../../services/billingService';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 
 const { width } = Dimensions.get('window');
@@ -219,11 +220,16 @@ const ProfileScreen = () => {
 
             {/* Stats Section */}
             <View style={styles.statsRow}>
-              <StatItem
-                label="Generations"
-                value={`${profile?.generationsUsed || 0}/${(profile?.generationsLimit ?? 0) >= 9999 ? '∞' : (profile?.generationsLimit ?? 0)}`}
-                iconName="zap"
-              />
+              {(() => {
+                const lim = generationsLimitForTier(profile?.subscription, localSubscriptionOverride);
+                return (
+                  <StatItem
+                    label="Generations"
+                    value={`${profile?.generationsUsed || 0}/${lim >= 999999 ? '∞' : lim}`}
+                    iconName="zap"
+                  />
+                );
+              })()}
               <StatItem label="Saved" value={profile?.savedCount || 0} iconName="bookmark" />
               <StatItem label="Tools Used" value={profile?.toolsUsed || 0} iconName="grid" />
             </View>

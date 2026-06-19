@@ -19,7 +19,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore, Tool, ToolInput } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
-import { effectiveTier, hasProAccess } from '../../services/billingService';
+import { effectiveTier, hasProAccess, generationsLimitForTier } from '../../services/billingService';
 import { imageService, GeneratedImage } from '../../services/imageService';
 import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
@@ -96,9 +96,9 @@ const ToolDetailScreen = () => {
     // monthly generation quota (Free trial, Starter 200, Pro 500, Growth 1,500).
     // Enforce for every finite tier; a limit of 9999+ means unlimited
     // (Agency / App Store reviewer account).
-    const genLimit = profile?.generationsLimit ?? 10;
+    const genLimit = generationsLimitForTier(profile?.subscription, localSubscriptionOverride);
     const genUsed = profile?.generationsUsed ?? 0;
-    if (genLimit < 9999 && genUsed >= genLimit) {
+    if (genLimit < 999999 && genUsed >= genLimit) {
       Alert.alert(
         'Generation Limit Reached',
         tier === 'free'
@@ -438,7 +438,7 @@ const ToolDetailScreen = () => {
           <View style={styles.creditsInfo}>
             <Feather name="zap" size={20} color={Colors.warning} />
             <Text style={styles.creditsText}>
-              {Math.max(0, (profile?.generationsLimit ?? 10) - (profile?.generationsUsed ?? 0))} generations remaining
+              {Math.max(0, generationsLimitForTier(profile?.subscription, localSubscriptionOverride) - (profile?.generationsUsed ?? 0))} generations remaining
             </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Subscription')}>
               <Text style={styles.upgradeLink}>{tier === 'free' ? 'Upgrade' : 'Get more'}</Text>
