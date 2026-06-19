@@ -1481,29 +1481,32 @@ function iconKeyTokens() {
   return _iconKeyTokens;
 }
 const slugResolveCache: Record<string, any> = {};
+// Every tool gets a UNIQUE icon (1:1). With ~1451 paid icons and ~314 tools,
+// uniqueness is always achievable, so no two tools ever share an icon.
+const usedIconKeys = new Set<string>();
 
 export function getToolIcon(slug: string, category?: string): any {
   if (slugIconOverride[slug]) return slugIconOverride[slug];
 
   const cleanSlug = slug.toLowerCase().trim();
-  if (ToolIconImages[cleanSlug]) return ToolIconImages[cleanSlug];
   if (slugResolveCache[cleanSlug]) return slugResolveCache[cleanSlug];
 
-  if (category) {
-    const cleanCategory = category.toLowerCase().trim();
-    if (ToolIconImages[cleanCategory]) return ToolIconImages[cleanCategory];
+  // Exact slug match wins and is reserved so nothing else reuses that icon.
+  if (ToolIconImages[cleanSlug]) {
+    usedIconKeys.add(cleanSlug);
+    slugResolveCache[cleanSlug] = ToolIconImages[cleanSlug];
+    return ToolIconImages[cleanSlug];
   }
 
-  // Tool slugs (e.g. "ad-copy-analyzer") never match icon keys exactly, so pick
-  // the icon whose name shares the most words with the slug — a topically
-  // relevant icon instead of a random one. A slug-hash tiebreak spreads ties so
-  // similar tools don't all collapse onto the same icon. Cached per slug.
+  // Pick the most keyword-relevant icon that is NOT already taken by another
+  // tool, so each tool ends up with a distinct 1:1 icon. Cached per slug.
   const slugTokens = cleanSlug.split(/[^a-z0-9]+/).filter((t) => t.length > 2);
   let h = 0;
   for (let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0;
   let best: string | null = null;
   let bestScore = 0;
   for (const { key, tokens } of iconKeyTokens()) {
+    if (usedIconKeys.has(key)) continue;
     let score = 0;
     for (const t of slugTokens) {
       if (tokens.includes(t)) score += 3;
@@ -1514,7 +1517,17 @@ export function getToolIcon(slug: string, category?: string): any {
       best = key;
     }
   }
-  if (!best || bestScore === 0) best = ToolIconImagesKeys[h % ToolIconImagesKeys.length];
+  // No relevant icon left unused -> take the next unused icon deterministically.
+  if (!best || bestScore === 0) {
+    const n = ToolIconImagesKeys.length;
+    best = null;
+    for (let i = 0; i < n; i++) {
+      const key = ToolIconImagesKeys[(h + i) % n];
+      if (!usedIconKeys.has(key)) { best = key; break; }
+    }
+    if (!best) best = ToolIconImagesKeys[h % n]; // every icon used (won't happen)
+  }
+  usedIconKeys.add(best);
   const icon = ToolIconImages[best] || DEFAULT_ICON;
   slugResolveCache[cleanSlug] = icon;
   return icon;

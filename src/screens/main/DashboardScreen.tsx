@@ -205,8 +205,14 @@ const DashboardScreen = () => {
     setRefreshing(false);
   };
 
+  // Credits left this cycle, shown on the home screen so customers always see
+  // their remaining generations (9999+ = unlimited plan -> shown as ∞).
+  const genLimit = profile?.generationsLimit ?? 0;
+  const genUsed = profile?.generationsUsed ?? 0;
+  const creditsLeft = genLimit >= 9999 ? '∞' : String(Math.max(0, genLimit - genUsed));
+
   const stats = [
-    { label: 'AI Tools', value: 'All', icon: 'zap', img: require('../../../assets/images/tool-icons-v2/ai-3d.png'), color: Colors.secondary, badge: 'New', screen: 'Tools' },
+    { label: 'Credits Left', value: creditsLeft, icon: 'zap', img: require('../../../assets/images/tool-icons-v2/ai-3d.png'), color: Colors.secondary, badge: 'Upgrade', screen: 'Subscription' },
     { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', img: require('../../../assets/images/tool-icons-v2/analytics-3d.png'), color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
     { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', img: require('../../../assets/images/tool-icons-v2/rocket.png'), color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
     { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', img: require('../../../assets/images/tool-icons-v2/trophy.png'), color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },

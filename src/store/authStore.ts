@@ -130,16 +130,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       };
       // Still try to fetch/create a real profile in Appwrite so the app
       // behaves normally, but ignore errors so the reviewer isn't blocked.
-      // Whatever the server says, the reviewer account is always full Pro —
-      // the review notes promise it, and a server-side 'free' profile here is
-      // what made Apple see locked Pro tools ("10 generations remaining").
+      // Guideline 2.1(b): the reviewer account is a FREE account with its trial
+      // generations used up, so App Review can SEE the post-trial In-App Purchase
+      // flow — tapping Generate (or Profile -> Manage Plan) opens the StoreKit
+      // paywall. All tools are open on every plan now, so a free account no
+      // longer shows "locked" tools; only the generation quota gates.
       try {
         const profile = await get().fetchOrCreateProfile(mockUser as any);
         const reviewerProfile: UserProfile = {
           ...profile,
-          subscription: 'pro',
-          generationsUsed: 0,
-          generationsLimit: 9999,
+          subscription: 'free',
+          generationsUsed: 3,
+          generationsLimit: 3,
         };
         set({ user: mockUser as any, profile: reviewerProfile, isAuthenticated: true, isLoading: false });
       } catch {
@@ -148,9 +150,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           userId: 'reviewer_bypass',
           name: 'App Store Reviewer',
           email: 'demo@marketingtool.pro',
-          subscription: 'pro',
-          generationsUsed: 0,
-          generationsLimit: 9999,
+          subscription: 'free',
+          generationsUsed: 3,
+          generationsLimit: 3,
           createdAt: new Date().toISOString(),
         };
         set({ user: mockUser as any, profile: fallbackProfile, isAuthenticated: true, isLoading: false });

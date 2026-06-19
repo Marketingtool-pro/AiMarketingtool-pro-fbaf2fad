@@ -3,7 +3,7 @@
     "name": "MarketingTool",
     "slug": "marketingtool",
     "owner": "aimarketintool-2-2-2",
-    "version": "1.5.4",
+    "version": "1.5.7",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -19,7 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "535",
+      "buildNumber": "536",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -306,7 +306,11 @@
   "runtimeVersion": {
     "policy": "appVersion"
   },
-  "updates": {
-    "url": "https://u.expo.dev/93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
+    "updates": {
+      "url": "https://u.expo.dev/93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
+    },
+    "plugins": [
+      "expo-dev-launcher",
+      "expo-updates"
+    ]
   }
-}
