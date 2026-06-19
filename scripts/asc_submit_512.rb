@@ -38,7 +38,7 @@ puts "\nIn-progress review submissions to CLEAR (#{inflight.size}):"
 inflight.each{|s| puts "  - #{s['id']} state=#{s['attributes']['state']} items=#{(s.dig('relationships','items','data')||[]).size}"}
 
 # IAPs
-c,g=req(:get,"/v1/apps/#{APP}/subscriptionGroups?include=subscriptions&limit=50")
+_,g=req(:get,"/v1/apps/#{APP}/subscriptionGroups?include=subscriptions&limit=50")
 sbs=((g["included"]||[]).select{|i| i["type"]=="subscriptions"})
 c,i=req(:get,"/v1/apps/#{APP}/inAppPurchasesV2?limit=50")
 cons=(i["data"]||[])
