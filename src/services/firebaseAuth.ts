@@ -82,8 +82,14 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
 
     if (__DEV__) console.log('[FirebaseAuth] Sending OTP to:', normalizedPhone);
 
-    // Ensure APNs token is registered so Firebase uses silent push (no reCAPTCHA)
-    await ensureAPNsRegistered();
+    // Ensure APNs token is registered so Firebase uses silent push (no reCAPTCHA).
+    // BUT don't let it block the OTP send: the permission prompt + push-token
+    // round-trip can take seconds, which made OTP feel slow. Bound it to ~2.5s,
+    // then send anyway (Firebase falls back to reCAPTCHA if the token isn't ready).
+    await Promise.race([
+      ensureAPNsRegistered(),
+      new Promise<void>((resolve) => setTimeout(resolve, 2500)),
+    ]);
 
     const confirmation = await firebaseAuth().signInWithPhoneNumber(normalizedPhone);
     verificationId = confirmation.verificationId;
