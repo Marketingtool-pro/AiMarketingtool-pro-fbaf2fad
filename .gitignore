@@ -206,4 +206,7 @@ package-lock.json
 # Expo
 .expo
 dist/
-web-build/
+web-build/.env
+
+# Turborepo
+.turbo

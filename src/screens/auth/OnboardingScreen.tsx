@@ -36,7 +36,7 @@ const ONBOARDING_DATA: OnboardingItem[] = [
   {
     id: '2',
     title: 'Create Content Instantly',
-    description: 'Generate high-converting ads, engaging social posts, and SEO-optimized content in seconds with Claude AI.',
+    description: 'Generate high-converting ads, engaging social posts, and SEO-optimized content in seconds with MarketBot AI.',
     icon: require('../../../assets/images/tool-icons-v2/copywriting.png'),
   },
   {

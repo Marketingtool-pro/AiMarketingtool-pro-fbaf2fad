@@ -18,7 +18,7 @@ env:
 
 jobs:
   build-patched-aar:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: write   # create/update the react-android-* release
       packages: write
