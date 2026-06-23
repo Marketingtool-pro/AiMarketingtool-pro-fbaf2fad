@@ -15,6 +15,7 @@ aws-cli = { version = "latest", symlink_bins = true }
 "vfox-npm:prettier" = "latest"
 pre-commit = "latest"
 gemini-cli = { version = "latest", allow_builds = ["@github/keytar", "node-pty"] }
+ruff = "latest"
 
 [env]
 _file = ".env"  # Automatically hooks and injects your local .env file variables
