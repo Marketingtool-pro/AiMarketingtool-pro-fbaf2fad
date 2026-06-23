@@ -458,7 +458,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
           )}
           <View style={styles.creditsContainer}>
             <Feather name="zap" size={14} color={Colors.gold} />
-            <Text style={styles.creditsText}>{profile?.generationsCount || 10}</Text>
+            <Text style={styles.creditsText}>{Math.max(0, (profile?.generationsLimit ?? 0) - (profile?.generationsUsed ?? 0))}</Text>
           </View>
         </View>
       </View>
