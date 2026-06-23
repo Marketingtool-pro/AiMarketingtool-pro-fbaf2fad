@@ -226,9 +226,14 @@ const HistoryScreen = () => {
           <TouchableOpacity
             style={styles.expandBtn}
             onPress={() => {
+              // Generations store the tool's $id in `toolId`; ToolResultScreen needs the slug.
+              const toolSlug = tools.find(t => t.$id === item.toolId)?.slug ?? item.toolId;
               navigation.navigate('ToolResult', {
-                result: item.output,
-                toolSlug: item.toolId,
+                // ToolResultScreen expects result.outputs: string[]; the saved output is a
+                // single string joined with this separator when generated.
+                result: { outputs: item.output.split('\n\n---\n\n') },
+                toolSlug,
+                inputs: item.input,
               } as any);
             }}
           >
