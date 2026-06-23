@@ -102,12 +102,6 @@ const ToolResultScreen = () => {
     return isDesktopCategory || isDesktopSlug || isLongContent;
   }, [tool, outputs]);
 
-  const desktopUrl = tool ? `https://app.marketingtool.pro/dashboard/tool/${tool.slug}` : '';
-
-  const handleViewOnDesktop = () => {
-    Linking.openURL(desktopUrl);
-  };
-
   const handleEmailResult = async () => {
     const allContent = outputs.map(o => o.content).join('\n\n---\n\n');
     const subject = encodeURIComponent(`${tool?.name || 'Tool'} Result - MarketingTool`);
@@ -281,28 +275,24 @@ const ToolResultScreen = () => {
               <Text style={styles.outputText}>{output.content}</Text>
             )}
 
-            {/* Desktop banner for large/complex tool outputs */}
+            {/* Long-result banner — full output is available on this screen */}
             {isLargeOutput && (
               <View style={styles.desktopBanner}>
                 <View style={styles.desktopBannerHeader}>
-                  <Feather name="monitor" size={18} color={Colors.secondary} />
-                  <Text style={styles.desktopBannerTitle}>Best viewed on desktop</Text>
+                  <Feather name="file-text" size={18} color={Colors.secondary} />
+                  <Text style={styles.desktopBannerTitle}>Long result</Text>
                 </View>
                 <Text style={styles.desktopBannerText}>
-                  The tool completed successfully. This result is long, so we show a preview on mobile for readability. You can view the full output on desktop anytime.
+                  This result is long, so we show a preview for readability. Tap “Show full result” above to expand it, or email/copy the full text below.
                 </Text>
                 <View style={styles.desktopActions}>
-                  <TouchableOpacity style={styles.desktopActionBtn} onPress={handleViewOnDesktop}>
-                    <Feather name="external-link" size={16} color={Colors.white} />
-                    <Text style={styles.desktopActionText}>View Full on Desktop</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={handleEmailResult}>
-                    <Feather name="mail" size={16} color={Colors.secondary} />
-                    <Text style={styles.desktopActionOutlineText}>Email Full Result</Text>
+                  <TouchableOpacity style={styles.desktopActionBtn} onPress={handleEmailResult}>
+                    <Feather name="mail" size={16} color={Colors.white} />
+                    <Text style={styles.desktopActionText}>Email Full Result</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={() => handleCopy(output.content, output.id)}>
                     <Feather name="copy" size={16} color={Colors.secondary} />
-                    <Text style={styles.desktopActionOutlineText}>Copy Summary</Text>
+                    <Text style={styles.desktopActionOutlineText}>Copy Full Result</Text>
                   </TouchableOpacity>
                 </View>
               </View>
