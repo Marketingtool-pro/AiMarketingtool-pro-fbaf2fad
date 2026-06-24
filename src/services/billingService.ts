@@ -306,12 +306,13 @@ export const billingService = {
       // offerToken, not a flat sku. (This is the fix for zero Android sales.)
       if (Platform.OS === 'android' && isSub) {
         const map = ANDROID_SUB[sku];
+        type AndroidSubscriptionOffer = { basePlanId: string; offerId?: string; offerToken?: string };
         type AndroidProduct = {
           // `subscriptionOfferDetailsAndroid` is the field name used by react-native-iap v15+,
           // while `subscriptionOfferDetails` was used in earlier v12/v13 releases.
           // Both are checked for compatibility with different library versions.
-          subscriptionOfferDetailsAndroid?: Array<{ basePlanId: string; offerId?: string; offerToken?: string }>;
-          subscriptionOfferDetails?: Array<{ basePlanId: string; offerId?: string; offerToken?: string }>;
+          subscriptionOfferDetailsAndroid?: AndroidSubscriptionOffer[];
+          subscriptionOfferDetails?: AndroidSubscriptionOffer[];
         };
         const product = map && available.find((p: unknown) => getObjectProductId(p) === map.product) as AndroidProduct | undefined;
         if (!product) {
@@ -319,10 +320,10 @@ export const billingService = {
             ? 'Subscription products are not available yet. Please try again shortly.'
             : 'This plan is not available right now. Please contact support.' };
         }
-        const offers = product.subscriptionOfferDetailsAndroid || product.subscriptionOfferDetails || [];
+        const offers: AndroidSubscriptionOffer[] = product.subscriptionOfferDetailsAndroid || product.subscriptionOfferDetails || [];
         // Prefer the bare base plan (no intro/promo offerId); else any offer on it.
-        const offer = offers.find((o: any) => o.basePlanId === map.basePlan && !o.offerId)
-                   || offers.find((o: any) => o.basePlanId === map.basePlan);
+        const offer = offers.find((o: AndroidSubscriptionOffer) => o.basePlanId === map.basePlan && !o.offerId)
+                   || offers.find((o: AndroidSubscriptionOffer) => o.basePlanId === map.basePlan);
         if (!offer?.offerToken) {
           return { success: false, error: 'This plan is not available right now. Please contact support.' };
         }
