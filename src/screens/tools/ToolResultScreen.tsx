@@ -91,7 +91,7 @@ const ToolResultScreen = () => {
       }
     };
     autoSave();
-  }, []);
+  }, [result, user, tool, isSaved, addGeneration, savedInputs]);
 
   // Detect if this is a large/desktop-preferred result
   const isLargeOutput = useMemo(() => {
