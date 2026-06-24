@@ -2,6 +2,7 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
+import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 let auth: any = null;
 let apnsRegistered = false;
@@ -179,7 +180,7 @@ export async function clearVerification(): Promise<void> {
 }
 
 export function onAuthStateChanged(
-  callback: (user: any | null) => void
+  callback: (user: FirebaseAuthTypes.User | null) => void
 ): () => void {
   const firebaseAuth = getAuth();
   if (!firebaseAuth) return () => {};
