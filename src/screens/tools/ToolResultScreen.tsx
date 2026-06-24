@@ -398,7 +398,7 @@ const ToolResultScreen = () => {
 
         <TouchableOpacity
           style={styles.primaryButton}
-          onPress={() => navigation.navigate('Main' as any)}
+          onPress={() => navigation.navigate('Main')}
         >
           <LinearGradient colors={Gradients.primary} style={styles.primaryButtonGradient}>
             <Feather name="plus" size={20} color={Colors.white} />
