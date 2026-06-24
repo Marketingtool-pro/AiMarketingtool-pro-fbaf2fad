@@ -100,7 +100,7 @@ const AnimatedRipple = () => {
     ]);
     anim.start();
     return () => anim.stop();
-  }, []);
+  }, [ripple1, ripple2, ripple3]);
 
   const createRippleStyle = (anim: Animated.Value) => ({
     position: 'absolute' as const,
