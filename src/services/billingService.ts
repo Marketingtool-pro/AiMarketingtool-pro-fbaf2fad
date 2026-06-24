@@ -284,9 +284,8 @@ export const billingService = {
    */
   async requestPurchase(sku: string, userId: string): Promise<{ success: boolean; pending?: boolean; error?: string }> {
     const getProductId = (product: unknown): string | undefined => {
-      if (!product || typeof product !== 'object') return undefined;
-      const p = product as { id?: string; productId?: string };
-      return p.id || p.productId;
+      const id = getObjectProductId(product);
+      return id || undefined;
     };
 
     if (!iapAvailable()) {
