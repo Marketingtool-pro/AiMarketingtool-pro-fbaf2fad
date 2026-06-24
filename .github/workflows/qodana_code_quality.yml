@@ -1,11 +1,11 @@
 name: Qodana Configuration Upload
 
 on:
-    push:
-        branches: [ main, dev ]
-    pull_request:
-        branches: [ main ]
-    workflow_dispatch:
+  push:
+    branches: [ Master ]
+  pull_request:
+    branches: [ Master ]
+  workflow_dispatch:
 
 jobs:
   qodana:
@@ -15,10 +15,10 @@ jobs:
       pull-requests: write
       checks: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}  # to check out the actual pull request commit, not the merge commit
-          fetch-depth: 0  # a full history is required for pull request analysis
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
       - name: 'Qodana Scan'
         uses: JetBrains/qodana-action@v2026.1
         with:
@@ -26,28 +26,3 @@ jobs:
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_1994299711 }}
           QODANA_ENDPOINT: 'https://qodana.cloud'
-
-          ####################################################################################################################
-# WARNING: Do not store sensitive information in this file, as its contents will be included in the Qodana report. #
-####################################################################################################################
-version: "1.0"
-profile:
-  name: qodana.starter
-    upload-qodana-config:
-        runs-on: ubuntu-latest
-
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
-
-            - name: Run Qodana Configuration Uploader
-              env:
-                  QODANA_CONFIGURATIONS_TOKEN: ${{ secrets.QODANA_CONFIGURATIONS_TOKEN }}
-                  QODANA_ENDPOINT: 'https://qodana.cloud'
-              run: |
-                  docker run --rm \
-                    -v $(pwd):/workspace \
-                    -w /workspace \
-                    -e QODANA_CONFIGURATIONS_TOKEN=$QODANA_CONFIGURATIONS_TOKEN \
-                    jetbrains/qodana-configuration-uploader:latest \
-                    --global-configs-file qodana-global-configurations.yaml
