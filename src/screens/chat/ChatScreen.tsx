@@ -265,10 +265,6 @@ const ChatScreen = () => {
     }, 100);
   };
 
-  // Track consecutive errors for smart recovery
-  const [consecutiveErrors, setConsecutiveErrors] = useState(0);
-  const lastFailedMessage = useRef<string | null>(null);
-
   const handleSend = async (text?: string) => {
     const messageText = text || inputText.trim();
     if (!messageText) return;
@@ -285,8 +281,6 @@ const ChatScreen = () => {
 
       const assistantMessage = createMessage('assistant', response);
       setMessages(prev => [...prev, assistantMessage]);
-      setConsecutiveErrors(0);
-      lastFailedMessage.current = null;
     } catch (error: any) {
       const errorMessage = createMessage(
         'assistant',
@@ -294,8 +288,6 @@ const ChatScreen = () => {
         { isError: true, retryMessage: messageText },
       );
       setMessages(prev => [...prev, errorMessage]);
-      setConsecutiveErrors(prev => prev + 1);
-      lastFailedMessage.current = messageText;
     } finally {
       setIsTyping(false);
       scrollToBottom();
