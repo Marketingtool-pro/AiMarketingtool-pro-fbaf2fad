@@ -415,10 +415,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0D0F1C',
   },
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
   header: {
     paddingTop: HEADER_TOP_PADDING,
     paddingBottom: Spacing.lg,
