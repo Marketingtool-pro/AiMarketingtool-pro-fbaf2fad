@@ -91,7 +91,7 @@ const ToolResultScreen = () => {
       }
     };
     autoSave();
-  }, []);
+  }, [result, user, tool, isSaved, addGeneration, savedInputs]);
 
   // Detect if this is a large/desktop-preferred result
   const isLargeOutput = useMemo(() => {
@@ -398,7 +398,7 @@ const ToolResultScreen = () => {
 
         <TouchableOpacity
           style={styles.primaryButton}
-          onPress={() => navigation.navigate('Main' as any)}
+          onPress={() => navigation.navigate('Main')}
         >
           <LinearGradient colors={Gradients.primary} style={styles.primaryButtonGradient}>
             <Feather name="plus" size={20} color={Colors.white} />
@@ -414,10 +414,6 @@ const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
     backgroundColor: '#0D0F1C',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
   },
   header: {
     paddingTop: HEADER_TOP_PADDING,
