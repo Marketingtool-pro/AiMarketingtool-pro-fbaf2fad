@@ -1,7 +1,7 @@
-// Unused platform import removed
-
 /**
  * PRO Tool Icon Mapping (auto-generated, paid icon pack)
+ * Sources every primary icon from assets/images/tool-icons-v2 — 1000+ unique icons.
+ * ALL PHYSICALLY IDENTICAL DUPLICATES REMOVED.
  * Sources every primary icon from assets/images/tool-icons-v2 — 1000+ unique icons.
  * ALL PHYSICALLY IDENTICAL DUPLICATES REMOVED.
  */
