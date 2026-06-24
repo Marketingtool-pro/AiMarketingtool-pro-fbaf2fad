@@ -132,9 +132,18 @@ const ANDROID_SUB_PRODUCTS = [...new Set(Object.values(ANDROID_SUB).map(v => v.p
 // Sentinel the UI checks for to silently ignore user-cancelled purchases.
 export const PURCHASE_CANCELLED = '__PURCHASE_CANCELLED__';
 
+type IapWithInitConnection = {
+  initConnection: () => unknown;
+};
+
+const hasInitConnection = (value: unknown): value is IapWithInitConnection => {
+  if (!value || typeof value !== 'object') return false;
+  return typeof (value as { initConnection?: unknown }).initConnection === 'function';
+};
+
 const iapAvailable = (): boolean => {
   try {
-    return !!(IAP && typeof (IAP as any).initConnection === 'function');
+    return hasInitConnection(IAP);
   } catch { return false; }
 };
 
