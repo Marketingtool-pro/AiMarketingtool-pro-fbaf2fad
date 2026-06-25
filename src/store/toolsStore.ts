@@ -364,8 +364,8 @@ export const useToolsStore = create<ToolsState>((set, get) => ({
 
       const outputCount = inputs.outputCount || 3;
 
-      // Plan enforcement: tell the server which tier is generating, so Free runs
-      // in simulation mode and paid tiers get real execution (per pricing page).
+      // Plan enforcement: tell the server which tier is generating. Per the mobile
+      // policy, ALL tiers run REAL execution — free is limited by QUOTA, not by demo.
       const { profile, localSubscriptionOverride } = useAuthStore.getState();
       const tier = effectiveTier(profile?.subscription, localSubscriptionOverride);
 
@@ -379,7 +379,7 @@ export const useToolsStore = create<ToolsState>((set, get) => ({
         outputCount,
         userId: profile?.userId || profile?.$id,
         tier,
-        simulation: tier === 'free',
+        simulation: false, // mobile policy: real backend for ALL tiers (no demo/sample)
       });
 
       if (!result.success || result.outputs.length === 0) {
