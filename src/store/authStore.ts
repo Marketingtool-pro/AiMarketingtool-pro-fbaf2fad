@@ -555,13 +555,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   grantCredits: async (amount: number) => {
     const { profile } = get();
     if (!profile) return;
+<<<<<<< HEAD
     const generationsLimit = (profile.generationsLimit ?? 0) + amount;
     set({ profile: { ...profile, generationsLimit } });
+=======
+    const credits = (profile.credits ?? 0) + amount;
+    set({ profile: { ...profile, credits } });
+>>>>>>> 5173b9a096 (new eas build auto sumbit both platform)
     try {
       const updated = await dbService.updateDocument<UserProfile & Models.Document>(
         COLLECTIONS.USERS,
         profile.$id,
+<<<<<<< HEAD
         { generationsLimit }
+=======
+        { credits }
+>>>>>>> 5173b9a096 (new eas build auto sumbit both platform)
       );
       set({ profile: updated as UserProfile });
     } catch (error: any) {

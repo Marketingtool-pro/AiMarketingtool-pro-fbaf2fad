@@ -221,7 +221,11 @@ const ProfileScreen = () => {
             {/* Stats Section */}
             <View style={styles.statsRow}>
               {(() => {
+<<<<<<< HEAD
                 const lim = generationsLimitForTier(profile?.subscription, localSubscriptionOverride);
+=======
+                const lim = generationsLimitForTier(profile?.subscription, localSubscriptionOverride) + (profile?.credits ?? 0);
+>>>>>>> 5173b9a096 (new eas build auto sumbit both platform)
                 return (
                   <StatItem
                     label="Generations"

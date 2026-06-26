@@ -109,6 +109,16 @@ const ToolResultScreen = () => {
     Linking.openURL(`mailto:?subject=${subject}&body=${body}`);
   };
 
+<<<<<<< HEAD
+=======
+  // Open the result on the web app's REAL tool route (not /dashboard/tool/<slug>,
+  // which 404s). MOBILE_TOOLS_POLICY.md: "View Full on Desktop" must land on a working page.
+  const handleViewOnDesktop = () => {
+    const slug = tool?.slug || '';
+    Linking.openURL(slug ? `https://app.marketingtool.pro/tools/${slug}` : 'https://app.marketingtool.pro/tools');
+  };
+
+>>>>>>> 5173b9a096 (new eas build auto sumbit both platform)
   const handleCopy = async (content: string, id: string) => {
     await Clipboard.setStringAsync(content);
     setCopiedId(id);
@@ -279,6 +289,7 @@ const ToolResultScreen = () => {
             {isLargeOutput && (
               <View style={styles.desktopBanner}>
                 <View style={styles.desktopBannerHeader}>
+<<<<<<< HEAD
                   <Feather name="file-text" size={18} color={Colors.secondary} />
                   <Text style={styles.desktopBannerTitle}>Long result</Text>
                 </View>
@@ -293,6 +304,26 @@ const ToolResultScreen = () => {
                   <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={() => handleCopy(output.content, output.id)}>
                     <Feather name="copy" size={16} color={Colors.secondary} />
                     <Text style={styles.desktopActionOutlineText}>Copy Full Result</Text>
+=======
+                  <Feather name="monitor" size={18} color={Colors.secondary} />
+                  <Text style={styles.desktopBannerTitle}>Best viewed on desktop</Text>
+                </View>
+                <Text style={styles.desktopBannerText}>
+                  The tool completed successfully. This result is long, so we show a preview on mobile for readability. You can view the full output on desktop anytime.
+                </Text>
+                <View style={styles.desktopActions}>
+                  <TouchableOpacity style={styles.desktopActionBtn} onPress={handleViewOnDesktop}>
+                    <Feather name="external-link" size={16} color={Colors.white} />
+                    <Text style={styles.desktopActionText}>View Full on Desktop</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={handleEmailResult}>
+                    <Feather name="mail" size={16} color={Colors.secondary} />
+                    <Text style={styles.desktopActionOutlineText}>Email Full Result</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={() => handleCopy(output.content, output.id)}>
+                    <Feather name="copy" size={16} color={Colors.secondary} />
+                    <Text style={styles.desktopActionOutlineText}>Copy Summary</Text>
+>>>>>>> 5173b9a096 (new eas build auto sumbit both platform)
                   </TouchableOpacity>
                 </View>
               </View>
