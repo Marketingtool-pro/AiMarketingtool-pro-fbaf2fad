@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
+import { generationsLimitForTier } from '../../services/billingService';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 
 const { width } = Dimensions.get('window');
@@ -54,6 +55,10 @@ const StatItem = ({ label, value, iconName }: { label: string; value: string | n
 const ProfileScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user, profile, logout, localSubscriptionOverride } = useAuthStore();
+  // Display name source-of-truth is the profile document (user.name isn't
+  // updated for phone-OTP sessions). Ignore phone-number-looking values.
+  const rawName = (profile?.name || user?.name || '').trim();
+  const displayName = rawName && !/^\+?\d+$/.test(rawName) ? rawName : 'User';
 
   const handleLogout = () => {
     Alert.alert(
@@ -144,7 +149,19 @@ const ProfileScreen = () => {
             style={styles.heroGradient}
           />
           <View style={styles.headerTop}>
-            <Text style={styles.headerTitle}>Profile</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  // Profile is a bottom-tab root; "back" returns to Home (Dashboard tab).
+                  if (navigation.canGoBack()) navigation.goBack();
+                  else (navigation as any).navigate('Dashboard');
+                }}
+                style={styles.settingsButton}
+              >
+                <Feather name="arrow-left" size={22} color={Colors.white} />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Profile</Text>
+            </View>
             <TouchableOpacity
               onPress={() => navigation.navigate('Settings')}
               style={styles.settingsButton}
@@ -164,7 +181,7 @@ const ProfileScreen = () => {
                     <Image source={{ uri: profile.avatar }} style={styles.avatarImg} />
                   ) : (
                     <Text style={styles.avatarText}>
-                      {user?.name && !/^\+?\d+$/.test(user.name) ? user.name.charAt(0).toUpperCase() : 'U'}
+                      {displayName !== 'User' ? displayName.charAt(0).toUpperCase() : 'U'}
                     </Text>
                   )}
                 </View>
@@ -177,9 +194,7 @@ const ProfileScreen = () => {
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.userName}>
-                {user?.name && !/^\+?\d+$/.test(user.name) ? user.name : 'User'}
-              </Text>
+              <Text style={styles.userName}>{displayName}</Text>
               <Text style={styles.email}>{user?.email || 'help@marketingtool.pro'}</Text>
 
               {(() => {
@@ -205,7 +220,20 @@ const ProfileScreen = () => {
 
             {/* Stats Section */}
             <View style={styles.statsRow}>
-              <StatItem label="Generations" value={profile?.generationsUsed || 0} iconName="zap" />
+              {(() => {
+<<<<<<< HEAD
+                const lim = generationsLimitForTier(profile?.subscription, localSubscriptionOverride);
+=======
+                const lim = generationsLimitForTier(profile?.subscription, localSubscriptionOverride) + (profile?.credits ?? 0);
+>>>>>>> 5173b9a096 (new eas build auto sumbit both platform)
+                return (
+                  <StatItem
+                    label="Generations"
+                    value={`${profile?.generationsUsed || 0}/${lim >= 999999 ? '∞' : lim}`}
+                    iconName="zap"
+                  />
+                );
+              })()}
               <StatItem label="Saved" value={profile?.savedCount || 0} iconName="bookmark" />
               <StatItem label="Tools Used" value={profile?.toolsUsed || 0} iconName="grid" />
             </View>

@@ -77,6 +77,7 @@ interface AuthState {
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
   grantEntitlement: (tier: UserProfile['subscription'], generationsLimit: number) => Promise<void>;
   grantCredits: (amount: number) => Promise<void>;
+  incrementGenerationsUsed: (by?: number) => Promise<void>;
   refreshProfile: () => Promise<void>;
   applyLocalEntitlement: (entitlement: LocalEntitlement) => void;
   clearError: () => void;
@@ -129,16 +130,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       };
       // Still try to fetch/create a real profile in Appwrite so the app
       // behaves normally, but ignore errors so the reviewer isn't blocked.
-      // Whatever the server says, the reviewer account is always full Pro —
-      // the review notes promise it, and a server-side 'free' profile here is
-      // what made Apple see locked Pro tools ("10 generations remaining").
+      // Guideline 2.1(b): the reviewer account is a FREE account with its trial
+      // generations used up, so App Review can SEE the post-trial In-App Purchase
+      // flow — tapping Generate (or Profile -> Manage Plan) opens the StoreKit
+      // paywall. All tools are open on every plan now, so a free account no
+      // longer shows "locked" tools; only the generation quota gates.
       try {
         const profile = await get().fetchOrCreateProfile(mockUser as any);
         const reviewerProfile: UserProfile = {
           ...profile,
-          subscription: 'pro',
-          generationsUsed: 0,
-          generationsLimit: 9999,
+          subscription: 'free',
+          generationsUsed: 3,
+          generationsLimit: 3,
         };
         set({ user: mockUser as any, profile: reviewerProfile, isAuthenticated: true, isLoading: false });
       } catch {
@@ -147,9 +150,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           userId: 'reviewer_bypass',
           name: 'App Store Reviewer',
           email: 'demo@marketingtool.pro',
-          subscription: 'pro',
-          generationsUsed: 0,
-          generationsLimit: 9999,
+          subscription: 'free',
+          generationsUsed: 3,
+          generationsLimit: 3,
           createdAt: new Date().toISOString(),
         };
         set({ user: mockUser as any, profile: fallbackProfile, isAuthenticated: true, isLoading: false });
@@ -552,17 +555,48 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   grantCredits: async (amount: number) => {
     const { profile } = get();
     if (!profile) return;
+<<<<<<< HEAD
     const generationsLimit = (profile.generationsLimit ?? 0) + amount;
     set({ profile: { ...profile, generationsLimit } });
+=======
+    const credits = (profile.credits ?? 0) + amount;
+    set({ profile: { ...profile, credits } });
+>>>>>>> 5173b9a096 (new eas build auto sumbit both platform)
     try {
       const updated = await dbService.updateDocument<UserProfile & Models.Document>(
         COLLECTIONS.USERS,
         profile.$id,
+<<<<<<< HEAD
         { generationsLimit }
+=======
+        { credits }
+>>>>>>> 5173b9a096 (new eas build auto sumbit both platform)
       );
       set({ profile: updated as UserProfile });
     } catch (error: any) {
       console.warn('[AuthStore] grantCredits persist failed (local credit kept):', error);
+    }
+  },
+
+  // Count a successful generation against the user's plan quota. Optimistic
+  // local increment first (the counter must move immediately so the "X
+  // remaining" display updates and the quota gate works), then best-effort
+  // persist to the same field so refreshProfile() reads back a consistent
+  // value. A failed write must not lose the count or block the user.
+  incrementGenerationsUsed: async (by = 1) => {
+    const { profile } = get();
+    if (!profile) return;
+    const generationsUsed = (profile.generationsUsed ?? 0) + by;
+    set({ profile: { ...profile, generationsUsed } });
+    try {
+      const updated = await dbService.updateDocument<UserProfile & Models.Document>(
+        COLLECTIONS.USERS,
+        profile.$id,
+        { generationsUsed }
+      );
+      set({ profile: updated as UserProfile });
+    } catch (error: any) {
+      console.warn('[AuthStore] incrementGenerationsUsed persist failed (local count kept):', error);
     }
   },
 

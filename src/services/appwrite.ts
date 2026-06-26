@@ -7,9 +7,9 @@ import { makeRedirectUri } from 'expo-auth-session';
 WebBrowser.maybeCompleteAuthSession();
 
 // Appwrite Configuration
-const APPWRITE_ENDPOINT = 'https://api.marketingtool.pro/v1';
-const APPWRITE_PROJECT_ID = '6952c8a0002d3365625d';
-const APPWRITE_PLATFORM = 'pro.marketingtool.app';
+const APPWRITE_ENDPOINT = process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT || 'https://api.marketingtool.pro/v1';
+const APPWRITE_PROJECT_ID = process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID || '6952c8a0002d3365625d';
+const APPWRITE_PLATFORM = process.env.EXPO_PUBLIC_APPWRITE_PLATFORM || 'pro.marketingtool.app';
 
 // Database IDs
 // The Appwrite database ID on the server is 'main' (was wrongly 'marketingtool_db',

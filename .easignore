@@ -109,6 +109,25 @@ Pods
 *.xcarchive
 *.ipa
 
+# =====================================================================
+# CRITICAL: the ~20 GB of unrelated dirs that made every EAS upload fail
+# (archive limit is 2 GB → "Compressing project files" hung/failed → 0 builds).
+# Verified by `du -sh */`. These are NOT part of the RN app — and the list is
+# SURGICAL: it excludes ONLY unrelated subprojects, NOT anything the build needs
+# (patches/, plugins/, assets/, src/, *.config.js are intentionally kept).
+# =====================================================================
+all function action/
+AiMarketingtool-pro-fbaf2fa/
+Xcode_27_beta/
+macports-ports/
+my-app/
+my-project/
+cargo/
+foodie/
+nuxt-nightly/
+marketingtool/
+marketing-tool/
+
 # Security: secrets must never reach the EAS build archive.
 # If a future build needs an EXPO_PUBLIC_* value from .env, mirror it in
 # EAS environment variables (eas env) instead of shipping the file.

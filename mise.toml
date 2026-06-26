@@ -1,26 +1,45 @@
 [tools]
-"github:composer/composer" = "latest"
-jsonschema = "latest"
+node = "24"      # Force mise to manage Node.js version 24
+ruby = "3.3"
+pi = "latest"
+bun = "latest"
+go = "1.25.8"
 python = "3.12"
-"ubi:composer/composer" = "latest"
-# mise config files are hierarchical. mise will find all of the config files
-# in all parent directories and merge them together.
-# You might have a structure like:
-#
-# * ~/work/project/mise.toml   # a config file for a specific work project
-# * ~/work/mise.toml           # a config file for projects related to work
-# * ~/.config/mise/config.toml # the global config file
-# * /etc/mise/config.toml      # the system config file
-#
-# This setup allows you to define default versions and configuration across
-# all projects but override them for specific projects.
+uv = "latest"
+bazel = "latest"
+azure = { version = "latest", uvx_args = "--prerelease=allow" }
+npm = "latest"
+aws-cli = { version = "latest", symlink_bins = true }
+"aqua:aws/aws-cli" = "latest"
+"pkgx:stedolan.github.io/jq" = "1.7.1"
+"vfox-npm:prettier" = "latest"
+pre-commit = "latest"
+gemini-cli = { version = "latest", allow_builds = ["@github/keytar", "node-pty"] }
+ruff = "latest"
 
-# [env]
-# NODE_ENV = "development"
-# mise.file = ".env"                # load vars from a dotenv file
-# mise.path = "./node_modules/.bin" # add a directory to PATH
+[env]
+_file = ".env"  # Automatically hooks and injects your local .env file variables
+TEST_ENV_VAR = 'python = "{ venv = { path = .venv, create = true }"'
 
-# [tools]
-# node = "22"
-# python = "3.12"
-# go = "latest"
+[tasks]
+start = "npx expo start"
+dev = "npm run dev"
+
+[deps]
+npm = { auto = true }
+bun = { auto = true }
+go = { auto = true }
+uv = { auto = true }
+bundler = { auto = true }
+
+[settings]
+# REMOVED disable_tools to let mise manage Node and Rust automatically
+activate_aggressive = true
+all_compile = true
+always_keep_install = true
+silent = true
+terminal_progress = true
+always_keep_download = true
+exec_auto_install = true
+global_config_root = ""
+

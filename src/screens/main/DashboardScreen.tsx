@@ -27,10 +27,10 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
-import { hasProAccess } from '../../services/billingService';
+import { hasProAccess, generationsLimitForTier } from '../../services/billingService';
 import { useAuthStore } from '../../store/authStore';
 import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 import LottieView from 'lottie-react-native';
 import Glass3DLogo from '../../components/common/Glass3DLogo';
@@ -205,8 +205,18 @@ const DashboardScreen = () => {
     setRefreshing(false);
   };
 
+  // Credits left this cycle, shown on the home screen so customers always see
+  // their remaining generations (9999+ = unlimited plan -> shown as ∞).
+  const genLimit = generationsLimitForTier(profile?.subscription, localSubscriptionOverride);
+  const genUsed = profile?.generationsUsed ?? 0;
+<<<<<<< HEAD
+  const creditsLeft = genLimit >= 999999 ? '∞' : String(Math.max(0, genLimit - genUsed));
+=======
+  const creditsLeft = genLimit >= 999999 ? '∞' : String(Math.max(0, genLimit + (profile?.credits ?? 0) - genUsed));
+>>>>>>> 5173b9a096 (new eas build auto sumbit both platform)
+
   const stats = [
-    { label: 'AI Tools', value: 'All', icon: 'zap', img: require('../../../assets/images/tool-icons-v2/ai-3d.png'), color: Colors.secondary, badge: 'New', screen: 'Tools' },
+    { label: 'Credits Left', value: creditsLeft, icon: 'zap', img: require('../../../assets/images/tool-icons-v2/ai-3d.png'), color: Colors.secondary, badge: 'Upgrade', screen: 'Subscription' },
     { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', img: require('../../../assets/images/tool-icons-v2/analytics-3d.png'), color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
     { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', img: require('../../../assets/images/tool-icons-v2/rocket.png'), color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
     { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', img: require('../../../assets/images/tool-icons-v2/trophy.png'), color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },
@@ -549,13 +559,6 @@ const DashboardScreen = () => {
                       style={{ width: 32, height: 32 }}
                       resizeMode="contain"
                     />
-                    {/* Same Pro lock visual as ToolsScreen / ToolDetailScreen
-                        so locked state is consistent across every screen. */}
-                    {(tool as any).isPro && !canUsePro && (
-                      <View style={styles.dashLockOverlay}>
-                        <Feather name="lock" size={14} color="#FFF" />
-                      </View>
-                    )}
                   </View>
                   <View>
                     <View style={styles.popularNameRow}>
@@ -611,7 +614,7 @@ const styles = StyleSheet.create({
     height: 100,
   },
   header: {
-    paddingTop: 60,
+    paddingTop: HEADER_TOP_PADDING,
     paddingBottom: Spacing.lg,
     paddingHorizontal: Spacing.lg,
     backgroundColor: Colors.background,

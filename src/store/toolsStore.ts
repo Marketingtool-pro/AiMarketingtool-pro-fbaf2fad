@@ -3,6 +3,8 @@ import { Models } from 'react-native-appwrite';
 import { dbService, COLLECTIONS, Query } from '../services/appwrite';
 import { generateAIContent } from '../services/aiService';
 import { ToolIconImagesKeys, setToolIconOverride, getToolIcon as _getToolIcon } from '../constants/toolIcons';
+import { useAuthStore } from './authStore';
+import { effectiveTier } from '../services/billingService';
 
 export interface Tool {
   $id: string;
@@ -128,7 +130,6 @@ export const TOOL_CATEGORIES = [
 // Intentionally kept as require(): this file is stored as .js to avoid archive filtering.
 // Explicit typing prevents implicit `any` and keeps downstream processing type-checked.
 const allToolsRaw = require('../data/tools.js') as RawTool[];
-import { ToolIconImagesKeys, setToolIconOverride, getToolIcon as _getToolIcon } from '../constants/toolIcons';
 
 // Pro lock derivation — basic single-shot content tools stay free so users
 // can taste the catalog; everything advanced (analytics, audits, AI agents,
@@ -363,6 +364,11 @@ export const useToolsStore = create<ToolsState>((set, get) => ({
 
       const outputCount = inputs.outputCount || 3;
 
+      // Plan enforcement: tell the server which tier is generating. Per the mobile
+      // policy, ALL tiers run REAL execution — free is limited by QUOTA, not by demo.
+      const { profile, localSubscriptionOverride } = useAuthStore.getState();
+      const tier = effectiveTier(profile?.subscription, localSubscriptionOverride);
+
       // Call REAL AI service - no mock, no sample
       const result = await generateAIContent({
         toolSlug: tool.slug,
@@ -371,6 +377,9 @@ export const useToolsStore = create<ToolsState>((set, get) => ({
         tone: inputs.tone,
         language: inputs.language,
         outputCount,
+        userId: profile?.userId || profile?.$id,
+        tier,
+        simulation: false, // mobile policy: real backend for ALL tiers (no demo/sample)
       });
 
       if (!result.success || result.outputs.length === 0) {

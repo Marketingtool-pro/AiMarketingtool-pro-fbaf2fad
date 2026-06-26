@@ -18,7 +18,7 @@ import * as Clipboard from 'expo-clipboard';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 
 
@@ -91,7 +91,7 @@ const ToolResultScreen = () => {
       }
     };
     autoSave();
-  }, []);
+  }, [result, user, tool, isSaved, addGeneration, savedInputs]);
 
   // Detect if this is a large/desktop-preferred result
   const isLargeOutput = useMemo(() => {
@@ -102,12 +102,6 @@ const ToolResultScreen = () => {
     return isDesktopCategory || isDesktopSlug || isLongContent;
   }, [tool, outputs]);
 
-  const desktopUrl = tool ? `https://app.marketingtool.pro/dashboard/tool/${tool.slug}` : '';
-
-  const handleViewOnDesktop = () => {
-    Linking.openURL(desktopUrl);
-  };
-
   const handleEmailResult = async () => {
     const allContent = outputs.map(o => o.content).join('\n\n---\n\n');
     const subject = encodeURIComponent(`${tool?.name || 'Tool'} Result - MarketingTool`);
@@ -115,6 +109,16 @@ const ToolResultScreen = () => {
     Linking.openURL(`mailto:?subject=${subject}&body=${body}`);
   };
 
+<<<<<<< HEAD
+=======
+  // Open the result on the web app's REAL tool route (not /dashboard/tool/<slug>,
+  // which 404s). MOBILE_TOOLS_POLICY.md: "View Full on Desktop" must land on a working page.
+  const handleViewOnDesktop = () => {
+    const slug = tool?.slug || '';
+    Linking.openURL(slug ? `https://app.marketingtool.pro/tools/${slug}` : 'https://app.marketingtool.pro/tools');
+  };
+
+>>>>>>> 5173b9a096 (new eas build auto sumbit both platform)
   const handleCopy = async (content: string, id: string) => {
     await Clipboard.setStringAsync(content);
     setCopiedId(id);
@@ -281,10 +285,26 @@ const ToolResultScreen = () => {
               <Text style={styles.outputText}>{output.content}</Text>
             )}
 
-            {/* Desktop banner for large/complex tool outputs */}
+            {/* Long-result banner — full output is available on this screen */}
             {isLargeOutput && (
               <View style={styles.desktopBanner}>
                 <View style={styles.desktopBannerHeader}>
+<<<<<<< HEAD
+                  <Feather name="file-text" size={18} color={Colors.secondary} />
+                  <Text style={styles.desktopBannerTitle}>Long result</Text>
+                </View>
+                <Text style={styles.desktopBannerText}>
+                  This result is long, so we show a preview for readability. Tap “Show full result” above to expand it, or email/copy the full text below.
+                </Text>
+                <View style={styles.desktopActions}>
+                  <TouchableOpacity style={styles.desktopActionBtn} onPress={handleEmailResult}>
+                    <Feather name="mail" size={16} color={Colors.white} />
+                    <Text style={styles.desktopActionText}>Email Full Result</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={() => handleCopy(output.content, output.id)}>
+                    <Feather name="copy" size={16} color={Colors.secondary} />
+                    <Text style={styles.desktopActionOutlineText}>Copy Full Result</Text>
+=======
                   <Feather name="monitor" size={18} color={Colors.secondary} />
                   <Text style={styles.desktopBannerTitle}>Best viewed on desktop</Text>
                 </View>
@@ -303,6 +323,7 @@ const ToolResultScreen = () => {
                   <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={() => handleCopy(output.content, output.id)}>
                     <Feather name="copy" size={16} color={Colors.secondary} />
                     <Text style={styles.desktopActionOutlineText}>Copy Summary</Text>
+>>>>>>> 5173b9a096 (new eas build auto sumbit both platform)
                   </TouchableOpacity>
                 </View>
               </View>
@@ -408,7 +429,7 @@ const ToolResultScreen = () => {
 
         <TouchableOpacity
           style={styles.primaryButton}
-          onPress={() => navigation.navigate('Main' as any)}
+          onPress={() => navigation.navigate('Main')}
         >
           <LinearGradient colors={Gradients.primary} style={styles.primaryButtonGradient}>
             <Feather name="plus" size={20} color={Colors.white} />
@@ -425,12 +446,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0D0F1C',
   },
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
   header: {
-    paddingTop: 60,
+    paddingTop: HEADER_TOP_PADDING,
     paddingBottom: Spacing.lg,
     paddingHorizontal: Spacing.lg,
   },

@@ -95,6 +95,22 @@ export const effectiveTier = (
 export const hasProAccess = (profileTier?: string | null, override?: string | null): boolean =>
   TIER_RANK[effectiveTier(profileTier, override)] >= TIER_RANK.pro;
 
+// Monthly generation allowance per tier (matches marketingtool.pro/pricing).
+// The displayed/enforced limit MUST come from the user's plan, not the stale
+// profile.generationsLimit (which defaults to 10) — otherwise a Growth member
+// wrongly sees "0/10". Enterprise/Agency = effectively unlimited.
+export const TIER_GENERATIONS: Record<Tier, number> = {
+  free: 10,
+  starter: 200,
+  pro: 500,
+  growth: 1500,
+  enterprise: 999999,
+};
+export const generationsLimitForTier = (
+  profileTier?: string | null,
+  override?: string | null
+): number => TIER_GENERATIONS[effectiveTier(profileTier, override)];
+
 // ── Google Play subscription model ───────────────────────────────────────────
 // iOS = 6 flat App Store product ids (PLAN_TO_SKU above). Google Play = 3
 // subscription PRODUCTS, each with `monthly` / `yearly` BASE PLANS, purchased via
@@ -396,7 +412,7 @@ export const billingService = {
       // Resolve the highest entitlement among the restored purchases so the caller
       // can unlock Pro locally even when the server verify is unavailable (same
       // root cause as the purchase flow — must not depend on a server round-trip).
-      const rank = { starter: 1, pro: 2, enterprise: 3 } as const;
+      const rank = { starter: 1, pro: 2, growth: 3 } as const;
       let entitlement: Entitlement | null = null;
       for (const p of purchases) {
         const pid = (p as any).productId || (p as any).id || '';

@@ -1,0 +1,20 @@
+diff --git a/node_modules/react-native/ReactCommon/react/renderer/observers/events/EventPerformanceLogger.cpp b/node_modules/react-native/ReactCommon/react/renderer/observers/events/EventPerformanceLogger.cpp
+index a5c1a62..5b04fa2 100644
+--- a/node_modules/react-native/ReactCommon/react/renderer/observers/events/EventPerformanceLogger.cpp
++++ b/node_modules/react-native/ReactCommon/react/renderer/observers/events/EventPerformanceLogger.cpp
+@@ -55,7 +55,14 @@ using SupportedEventTypeRegistry =
+     std::unordered_map<StrKey, std::string_view, StrKeyHash>;
+ 
+ const SupportedEventTypeRegistry& getSupportedEvents() {
+-  static SupportedEventTypeRegistry SUPPORTED_EVENTS = {
++  // Intentionally leaked (allocated with `new`, never destroyed). During
++  // process exit, __cxa_finalize can destroy a function-local static while the
++  // RN thread is still dispatching teardown events (e.g. RNScreens
++  // onWillDisappear). If this map is already destroyed, onEventStart()'s
++  // supportedEvents.find(name) reads a freed unordered_map and crashes with
++  // EXC_BAD_ACCESS on app termination. Leaking it removes that shutdown race.
++  static const SupportedEventTypeRegistry& SUPPORTED_EVENTS =
++      *new SupportedEventTypeRegistry{
+       {StrKey("topAuxClick"), "auxclick"},
+       {StrKey("topClick"), "click"},
+       {StrKey("topContextMenu"), "contextmenu"},

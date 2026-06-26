@@ -2,7 +2,7 @@ import { gcpAuthService } from './gcpAuthService';
 
 const PROJECT_ID = 'marketing-tool-484720';
 const REGION = 'us-central1'; // vertex ai region
-const MODEL_ID = 'gemini-2.5-flash-lite';
+const MODEL_ID = 'gemini-3.1-flash-lite-preview';
 
 export interface AdsAgentRequest {
   objective: string;

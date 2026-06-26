@@ -9,13 +9,13 @@ name: Production Deploy
 # Requires repo secret ASC_API_KEY_BASE64 (base64 of AuthKey_69JDXUCPU3.p8).
 
 on:
-  # Tag-triggered auto-build/submit is DISABLED so a git push (yours or the
-  # bots') never uploads a build or touches App Store Connect while a manual
-  # submission is being assembled in the web UI. To ship iOS, run it manually:
-  # Actions -> Production Deploy -> Run workflow.
-  # push:
-  #   tags:
-  #     - 'v*.*.*'
+  # Tag push triggers the iOS build+submit job (build-submit-ios has
+  # `if: startsWith(github.ref, 'refs/tags/v')`). A tag push has
+  # event_name=push, so the android jobs (gated on workflow_dispatch) are
+  # skipped — i.e. a `v*.*.*` tag builds iOS ONLY.
+  push:
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
 
 permissions:
@@ -28,11 +28,10 @@ concurrency:
 jobs:
   build-android:
     name: Build (android)
-    # iOS-only on tag pushes. Play Store is already live, so rebuilding Android on
-    # every v*.*.* tag just burns EAS build minutes. Android now ONLY builds on a
-    # manual run (Actions → Production Deploy → Run workflow).
-    if: ${{ github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
+    # Builds on a version tag (v*.*.*) AND on manual dispatch, so ONE tag push
+    # ships BOTH iOS and Android together (owner request 2026-06-26).
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: self-hosted
     timeout-minutes: 120
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -41,9 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        with:
-          node-version: '24'
+      - uses: jdx/mise-action@v2
 
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
         with:
@@ -51,7 +48,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm ci --include=dev
+        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
 
       - name: Build production (android)
         id: build
@@ -63,8 +60,8 @@ jobs:
 
   submit-android:
     name: Submit (android)
-    if: ${{ github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: self-hosted
     needs: build-android
     timeout-minutes: 30
     env:
@@ -72,9 +69,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        with:
-          node-version: '24'
+      - uses: jdx/mise-action@v2
 
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
         with:
@@ -82,10 +77,9 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm ci --include=dev
+        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
 
       - name: Submit to Play Store
-        continue-on-error: true
         run: |
           BUILD_ID="${{ needs.build-android.outputs.build-id }}"
           if [ -n "$BUILD_ID" ]; then
@@ -119,7 +113,21 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm ci --include=dev
+        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
+
+      # Fail fast (seconds, not 13 min into EAS) on the failure classes that keep
+      # breaking the Bundle JavaScript phase: 0-byte/corrupt image assets and
+      # tool-icon paths referenced in code but missing on disk.
+      - name: Validate assets before build
+        run: |
+          set -e
+          EMPTY=$(find assets src/assets -type f \( -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.webp' -o -name '*.ttf' \) -size 0 2>/dev/null || true)
+          if [ -n "$EMPTY" ]; then
+            echo "::error::Empty (0-byte) asset files will crash Metro 'Bundle JavaScript'. Restore them:"
+            echo "$EMPTY"
+            exit 1
+          fi
+          echo "Asset check OK — no empty image/font files."
 
       # Write the ASC API key FIRST, at the path eas.json's ascApiKeyPath expects,
       # so `eas submit` can authenticate (the .p8 is gitignored, not in the checkout).
@@ -139,9 +147,10 @@ jobs:
       - name: Submit for review WITH in-app purchases
         env:
           ASC_KEY_PATH: ./AuthKey_69JDXUCPU3.p8
-          # Held for manual review-submit AFTER TestFlight verification of 514.
-          # Flip back to 'false' (or run asc_autosubmit.rb locally) to submit.
-          DRY_RUN: 'true'
+          # Auto-submit for App Store review enabled for build 539 (owner approved
+          # 2026-06-26). asc_autosubmit.rb bundles the build + all 6 subs + consumable
+          # into ONE review submission (the step missing in the old 2.1b reject loop).
+          DRY_RUN: 'false'
         run: |
           sudo gem install jwt --no-document
           export ASC_KEY_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyId")"

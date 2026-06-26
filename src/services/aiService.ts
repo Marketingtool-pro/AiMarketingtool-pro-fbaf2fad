@@ -17,6 +17,11 @@ export interface AIGenerationRequest {
   language?: string;
   outputCount?: number;
   userId?: string;
+  // Plan enforcement: the server (tool-executor → Windmill) uses these to gate
+  // by plan — Free tier runs in simulation mode, paid tiers get real execution
+  // (matches marketingtool.pro/pricing: "we limit usage, not access").
+  tier?: string;
+  simulation?: boolean;
 }
 
 export interface AIGenerationResponse {
@@ -29,7 +34,7 @@ export interface AIGenerationResponse {
 
 // Main AI Generation — calls Appwrite Function, falls back to Next.js API
 export async function generateAIContent(request: AIGenerationRequest): Promise<AIGenerationResponse> {
-  const { toolSlug, toolName, inputs, tone, language, outputCount = 3, userId } = request;
+  const { toolSlug, toolName, inputs, tone, language, outputCount = 3, userId, tier, simulation } = request;
 
   // Build user prompt from inputs
   const inputsText = Object.entries(inputs)
@@ -59,6 +64,8 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         inputs: { ...inputs, tone: tone || 'professional', language: language || 'English' },
         output_count: outputCount,
         user_id: userId,
+        tier: tier || 'free',
+        simulation: simulation ?? false, // mobile policy: REAL execution for all tiers (quota-limited, never demo/sample)
         options: { tone: tone || 'professional', language: language || 'English' },
         model: geminiModel,
       }),

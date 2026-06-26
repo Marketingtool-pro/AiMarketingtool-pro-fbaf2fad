@@ -183,17 +183,11 @@ const ToolsScreen = () => {
               <View style={styles.iconLiquid}>
                 <View style={styles.iconGlow} />
                 <Image source={getToolIcon(tool.slug)} style={styles.cardIcon} resizeMode="contain" />
-                {tool.isPro && !canUsePro && (
-                  <View style={styles.lockOverlay}>
-                    <Feather name="lock" size={20} color="#FFF" />
-                  </View>
-                )}
               </View>
-              <View style={styles.badgeRow}>
-                {tool.isPro && (
-                  <View style={styles.proBadge}><Text style={styles.proBadgeText}>PRO</Text></View>
-                )}
-              </View>
+              {/* No per-tool "PRO" lock: per marketingtool.pro/pricing every plan
+                  gets ALL tools ("We limit usage, not access"). The differentiator
+                  is the monthly generation quota, not which tools open. */}
+              <View style={styles.badgeRow} />
               <Text style={styles.cardName} numberOfLines={2}>{tool.name}</Text>
             </TouchableOpacity>
           ))}
