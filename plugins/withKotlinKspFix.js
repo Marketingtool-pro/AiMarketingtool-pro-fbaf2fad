@@ -123,11 +123,9 @@ allprojects {
     if (!buildGradle.includes('skip-metadata-version-check')) {
       buildGradle += `
 allprojects {
-    afterEvaluate {
-        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-            kotlinOptions {
-                freeCompilerArgs += ["-Xskip-metadata-version-check"]
-            }
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            freeCompilerArgs += ["-Xskip-metadata-version-check"]
         }
     }
 }
