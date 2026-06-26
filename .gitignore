@@ -1,1 +1,73 @@
+# ── existing ──
 book
+
+# ── SECRETS / SIGNING (never commit — public repo) ──
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.pem
+*.key
+*.keystore
+*.jks
+*.mobileprovision
+*.cer
+AuthKey_*.p8
+client_secret*.json
+**/client_secret*.json
+**/client_secrets.json
+**/credentials.json
+**/creds.json
+**/user_creds.json
+**/api_key.json
+fastlane/api_key.json
+*service-account*.json
+*-sa-key*.json
+
+# ── build artifacts / binaries ──
+*.ipa
+*.apk
+*.aab
+*.tar.gz
+*.pkg
+*.gem
+*.phar
+*.hprof
+
+# ── node / expo / RN ──
+node_modules/
+.expo/
+.expo-shared/
+dist/
+build/
+web-build/
+*.log
+patch-package-errors.log
+
+# ── package-manager / tooling caches ──
+.gradle/
+.cxx/
+.bundle/
+.cargo/
+.cache/
+
+# ── stray vendored junk (do NOT track) ──
+externals/
+google-cloud-sdk/
+google-cloud-sdk*/
+vcpkg/
+bazel-central-registry/
+circleci-runner
+swiftly.pkg
+.playwright-mcp/
+CoreSimulator/
+CommandLineTools/
+DeveloperDiskImages/
+PrivateFrameworks/
+
+# ── macOS / editor ──
+.DS_Store
+.idea/
+.vscode/
+*.swp
