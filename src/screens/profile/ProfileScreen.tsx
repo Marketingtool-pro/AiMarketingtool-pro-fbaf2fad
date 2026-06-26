@@ -221,7 +221,7 @@ const ProfileScreen = () => {
             {/* Stats Section */}
             <View style={styles.statsRow}>
               {(() => {
-                const lim = generationsLimitForTier(profile?.subscription, localSubscriptionOverride);
+                const lim = generationsLimitForTier(profile?.subscription, localSubscriptionOverride) + (profile?.credits ?? 0);
                 return (
                   <StatItem
                     label="Generations"

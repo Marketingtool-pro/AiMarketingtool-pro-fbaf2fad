@@ -209,7 +209,7 @@ const DashboardScreen = () => {
   // their remaining generations (9999+ = unlimited plan -> shown as ∞).
   const genLimit = generationsLimitForTier(profile?.subscription, localSubscriptionOverride);
   const genUsed = profile?.generationsUsed ?? 0;
-  const creditsLeft = genLimit >= 999999 ? '∞' : String(Math.max(0, genLimit - genUsed));
+  const creditsLeft = genLimit >= 999999 ? '∞' : String(Math.max(0, genLimit + (profile?.credits ?? 0) - genUsed));
 
   const stats = [
     { label: 'Credits Left', value: creditsLeft, icon: 'zap', img: require('../../../assets/images/tool-icons-v2/ai-3d.png'), color: Colors.secondary, badge: 'Upgrade', screen: 'Subscription' },

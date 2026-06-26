@@ -96,7 +96,7 @@ const ToolDetailScreen = () => {
     // monthly generation quota (Free trial, Starter 200, Pro 500, Growth 1,500).
     // Enforce for every finite tier; a limit of 9999+ means unlimited
     // (Agency / App Store reviewer account).
-    const genLimit = generationsLimitForTier(profile?.subscription, localSubscriptionOverride);
+    const genLimit = generationsLimitForTier(profile?.subscription, localSubscriptionOverride) + (profile?.credits ?? 0);
     const genUsed = profile?.generationsUsed ?? 0;
     if (genLimit < 999999 && genUsed >= genLimit) {
       Alert.alert(
@@ -438,7 +438,7 @@ const ToolDetailScreen = () => {
           <View style={styles.creditsInfo}>
             <Feather name="zap" size={20} color={Colors.warning} />
             <Text style={styles.creditsText}>
-              {Math.max(0, generationsLimitForTier(profile?.subscription, localSubscriptionOverride) - (profile?.generationsUsed ?? 0))} generations remaining
+              {Math.max(0, generationsLimitForTier(profile?.subscription, localSubscriptionOverride) + (profile?.credits ?? 0) - (profile?.generationsUsed ?? 0))} generations remaining
             </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Subscription')}>
               <Text style={styles.upgradeLink}>{tier === 'free' ? 'Upgrade' : 'Get more'}</Text>

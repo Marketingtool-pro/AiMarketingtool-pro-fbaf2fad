@@ -25,6 +25,7 @@ import { functions, account } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 import { getToolIcon } from '../../constants/toolIcons';
 import { useToolsStore, Tool } from '../../store/toolsStore';
+import { generationsLimitForTier } from '../../services/billingService';
 
 const { width } = Dimensions.get('window');
 
@@ -151,7 +152,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const ChatScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { profile } = useAuthStore();
+  const { profile, localSubscriptionOverride } = useAuthStore();
   const { tools, categories } = useToolsStore();
   const scrollViewRef = useRef<ScrollView>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -458,7 +459,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
           )}
           <View style={styles.creditsContainer}>
             <Feather name="zap" size={14} color={Colors.gold} />
-            <Text style={styles.creditsText}>{Math.max(0, (profile?.generationsLimit ?? 0) - (profile?.generationsUsed ?? 0))}</Text>
+            <Text style={styles.creditsText}>{Math.max(0, generationsLimitForTier(profile?.subscription, localSubscriptionOverride) + (profile?.credits ?? 0) - (profile?.generationsUsed ?? 0))}</Text>
           </View>
         </View>
       </View>
