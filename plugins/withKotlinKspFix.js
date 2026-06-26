@@ -115,6 +115,25 @@ allprojects {
       buildGradle += resolutionStrategyBlock;
     }
 
+    // 🚨 AdMob fix: react-native-google-mobile-ads@16.4.0 pulls play-services-ads:25.4.0,
+    // which Google compiled with Kotlin 2.3.0 metadata. Our pinned Kotlin 2.1.20 can't read
+    // newer metadata -> ':react-native-google-mobile-ads:compileReleaseKotlin' FAILED.
+    // Skip the metadata-version check globally so the 2.1.20 compiler consumes the newer
+    // AAR (lower risk than bumping the whole toolchain to bleeding-edge Kotlin 2.3.0).
+    if (!buildGradle.includes('skip-metadata-version-check')) {
+      buildGradle += `
+allprojects {
+    afterEvaluate {
+        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            kotlinOptions {
+                freeCompilerArgs += ["-Xskip-metadata-version-check"]
+            }
+        }
+    }
+}
+`;
+    }
+
     config.modResults.contents = buildGradle;
     return config;
   });
