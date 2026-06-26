@@ -99,7 +99,6 @@
     "expo-contacts": "~56.0.9",
     "expo-crypto": "~56.0.4",
     "expo-dev-client": "^56.0.20",
-    "expo-dev-menu": "^56.0.17",
     "expo-device": "~56.0.4",
     "expo-file-system": "~56.0.8",
     "expo-font": "~56.0.6",
@@ -141,7 +140,6 @@
     "lottie-react-native": "~7.3.8",
     "material-symbols": "^0.45.1",
     "mvdan-sh": "^0.10.1",
-    "npm": "^11.17.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "react-native": "0.86.0",
@@ -241,7 +239,13 @@
         "react",
         "react-dom",
         "react-native-keyboard-controller",
-        "react-native-svg"
+        "react-native-svg",
+        "@expo/config-plugins",
+        "@react-native-async-storage/async-storage",
+        "react-native-gesture-handler",
+        "@shopify/flash-list",
+        "@stripe/stripe-react-native",
+        "react-native"
       ]
     }
   },
