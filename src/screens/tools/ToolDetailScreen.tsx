@@ -19,7 +19,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore, Tool, ToolInput } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
-import { effectiveTier, hasProAccess, generationsLimitForTier } from '../../services/billingService';
+import { effectiveTier, generationsLimitForTier } from '../../services/billingService';
 import { imageService, GeneratedImage } from '../../services/imageService';
 import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
@@ -37,7 +37,6 @@ const ToolDetailScreen = () => {
   // Tier-aware gating: Starter unlocks the standard platform, PRO-badged tools
   // need Pro or higher (matches marketingtool.pro/pricing).
   const tier = effectiveTier(profile?.subscription, localSubscriptionOverride);
-  const canUsePro = hasProAccess(profile?.subscription, localSubscriptionOverride);
 
   const [tool, setTool] = useState<Tool | null>(null);
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
