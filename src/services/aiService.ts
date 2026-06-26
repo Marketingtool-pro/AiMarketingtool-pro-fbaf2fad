@@ -65,7 +65,7 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         output_count: outputCount,
         user_id: userId,
         tier: tier || 'free',
-        simulation: simulation ?? (tier === 'free' || !tier),
+        simulation: simulation ?? false, // mobile policy: REAL execution for all tiers (quota-limited, never demo/sample)
         options: { tone: tone || 'professional', language: language || 'English' },
         model: geminiModel,
       }),
