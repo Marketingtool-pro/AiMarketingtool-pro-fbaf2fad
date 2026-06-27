@@ -264,23 +264,9 @@ const ToolResultScreen = () => {
               selectedOutput !== output.id && styles.outputCardHidden,
             ]}
           >
-            {/* Show truncated preview for large outputs, full for small tools */}
-            {isLargeOutput && !showFullContent ? (
-              <>
-                <Text style={styles.outputText} numberOfLines={12}>
-                  {output.content}
-                </Text>
-                <TouchableOpacity
-                  style={styles.showMoreBtn}
-                  onPress={() => setShowFullContent(true)}
-                >
-                  <Feather name="chevron-down" size={16} color={Colors.secondary} />
-                  <Text style={styles.showMoreText}>Show full result</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <Text style={styles.outputText}>{output.content}</Text>
-            )}
+            {/* Always show the FULL result inline on mobile (same as web) — no truncation,
+                so the customer always sees the complete output and never needs desktop. */}
+            <Text style={styles.outputText}>{output.content}</Text>
 
             {/* Long-result banner — full output is available on this screen */}
             {isLargeOutput && (

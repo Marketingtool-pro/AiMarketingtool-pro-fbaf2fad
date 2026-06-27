@@ -559,11 +559,7 @@ const DashboardScreen = () => {
                   <View>
                     <View style={styles.popularNameRow}>
                       <Text style={styles.popularName}>{tool.name}</Text>
-                      {(tool as any).isPro && (
-                        <View style={styles.dashProBadge}>
-                          <Text style={styles.dashProBadgeText}>PRO</Text>
-                        </View>
-                      )}
+                      {/* No PRO badge: every plan opens every tool (usage quota is the only gate). */}
                     </View>
                     <Text style={styles.popularUsesText}>{tool.category}</Text>
                   </View>
