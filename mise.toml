@@ -1,5 +1,5 @@
 [tools]
-node = "24"      # Force mise to manage Node.js version 24
+node = "24.16.0"
 ruby = "3.3"
 pi = "latest"
 bun = "latest"
