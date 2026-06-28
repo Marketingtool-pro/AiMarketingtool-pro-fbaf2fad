@@ -81,7 +81,7 @@ const ToolResultScreen = () => {
       }
     };
     autoSave();
-  }, [result, user, tool, isSaved, addGeneration, savedInputs]);
+  }, []);
 
   // Collapse only long results for readability — purely a mobile display choice.
   // The full output is always available inline via "Show full result".
@@ -410,7 +410,7 @@ const ToolResultScreen = () => {
 
         <TouchableOpacity
           style={styles.primaryButton}
-          onPress={() => navigation.navigate('Main')}
+          onPress={() => navigation.navigate('Main' as any)}
         >
           <LinearGradient colors={Gradients.primary} style={styles.primaryButtonGradient}>
             <Feather name="plus" size={20} color={Colors.white} />
@@ -426,6 +426,10 @@ const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
     backgroundColor: '#0D0F1C',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
   },
   header: {
     paddingTop: HEADER_TOP_PADDING,

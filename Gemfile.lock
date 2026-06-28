@@ -107,15 +107,15 @@ GEM
       ffi (>= 1.15.0)
       logger
     excon (0.112.0)
-    faraday (1.10.5)
+    faraday (1.9.0)
       faraday-em_http (~> 1.0)
       faraday-em_synchrony (~> 1.0)
       faraday-excon (~> 1.1)
-      faraday-httpclient (~> 1.0)
+      faraday-httpclient (< 3)
       faraday-multipart (~> 1.0)
-      faraday-net_http (~> 1.0)
-      faraday-net_http_persistent (~> 1.0)
-      faraday-patron (~> 1.0)
+      faraday-net_http (< 3)
+      faraday-net_http_persistent (< 3)
+      faraday-patron (< 3)
       faraday-rack (~> 1.0)
       faraday-retry (~> 1.0)
       ruby2_keywords (>= 0.0.4)
@@ -125,12 +125,16 @@ GEM
     faraday-em_http (1.0.0)
     faraday-em_synchrony (1.0.1)
     faraday-excon (1.1.0)
-    faraday-httpclient (1.0.1)
+    faraday-httpclient (2.0.2)
+      httpclient (>= 2.2)
     faraday-multipart (1.2.0)
       multipart-post (~> 2.0)
-    faraday-net_http (1.0.2)
-    faraday-net_http_persistent (1.2.0)
-    faraday-patron (1.0.0)
+    faraday-net_http (2.1.0)
+    faraday-net_http_persistent (2.0.2)
+      faraday-net_http (< 3)
+      net-http-persistent (~> 4.0)
+    faraday-patron (2.0.2)
+      patron (>= 0.4.2)
     faraday-rack (1.0.0)
     faraday-retry (1.0.4)
     faraday_middleware (1.2.1)
@@ -272,6 +276,7 @@ GEM
     optparse (0.8.1)
     os (1.1.4)
     ostruct (0.6.3)
+    patron (0.13.4)
     plist (3.7.2)
     pstore (0.2.1)
     public_suffix (4.0.7)
@@ -360,7 +365,6 @@ CHECKSUMS
   base64 (0.3.0) sha256=27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b
   benchmark (0.5.0) sha256=465df122341aedcb81a2a24b4d3bd19b6c67c1530713fd533f3ff034e419236c
   bigdecimal (4.1.2) sha256=53d217666027eab4280346fba98e7d5b66baaae1b9c3c1c0ffe89d48188a3fbd
-  bundler (4.0.14) sha256=d09a0a965cf772266a7e49e83610be7c2f4e49e61134c42a56804bb383cc24b8
   claide (1.1.0) sha256=6d3c5c089dde904d96aa30e73306d0d4bd444b1accb9b3125ce14a3c0183f82e
   cocoapods (1.16.2) sha256=0ff1c860f32df3db8b16df09b58da1a6bb2a12fe55f6d5e8be994a74fadd1e5e
   cocoapods-core (1.16.2) sha256=4bb1b5c420691e60cf36fa227dec6bc48c096c34c97bb7aa512ea7f3246fc12b
@@ -385,16 +389,16 @@ CHECKSUMS
   escape (0.0.4) sha256=e49f44ae2b4f47c6a3abd544ae77fe4157802794e32f19b8e773cbc4dcec4169
   ethon (0.18.0) sha256=b598afc9f30448cb068b850714b7d6948e941476095d04f90a4ac65b8d6efcb2
   excon (0.112.0) sha256=daf9ac3a4c2fc9aa48383a33da77ecb44fa395111e973084d5c52f6f214ae0f0
-  faraday (1.10.5) sha256=b144f1d2b045652fa820b5f532723e1643cc28b93dae911d784e5c5f88e8f6ed
+  faraday (1.9.0) sha256=d85144cebf4bc84aacbcdf95c41dcc3cf3b3960617b9c7a8a7aed1e3c67a80f5
   faraday-cookie_jar (0.0.8) sha256=0140605823f8cc63c7028fccee486aaed8e54835c360cffc1f7c8c07c4299dbb
   faraday-em_http (1.0.0) sha256=7a3d4c7079789121054f57e08cd4ef7e40ad1549b63101f38c7093a9d6c59689
   faraday-em_synchrony (1.0.1) sha256=bf3ce45dcf543088d319ab051f80985ea6d294930635b7a0b966563179f81750
   faraday-excon (1.1.0) sha256=b055c842376734d7f74350fe8611542ae2000c5387348d9ba9708109d6e40940
-  faraday-httpclient (1.0.1) sha256=4c8ff1f0973ff835be8d043ef16aaf54f47f25b7578f6d916deee8399a04d33b
+  faraday-httpclient (2.0.2) sha256=d95fbe60cce5a87e157957d67c539a4c22fb8b0b0611d493a939cdde19d8d67c
   faraday-multipart (1.2.0) sha256=7d89a949693714176f612323ca13746a2ded204031a6ba528adee788694ef757
-  faraday-net_http (1.0.2) sha256=63992efea42c925a20818cf3c0830947948541fdcf345842755510d266e4c682
-  faraday-net_http_persistent (1.2.0) sha256=0b0cbc8f03dab943c3e1cc58d8b7beb142d9df068b39c718cd83e39260348335
-  faraday-patron (1.0.0) sha256=dc2cd7b340bb3cc8e36bcb9e6e7eff43d134b6d526d5f3429c7a7680ddd38fa7
+  faraday-net_http (2.1.0) sha256=92ebb7aafce17719ef01ae02faba0d888e04c546530bc400b8fce1fc1ee4d1e5
+  faraday-net_http_persistent (2.0.2) sha256=ab6272a1358464b6c6867d00f980453537d900613335c13144f423e24baa48aa
+  faraday-patron (2.0.2) sha256=cd4b77d48e3c638ce25c22b6affe2714cf13af99bfa8348c1c7f6733fc5f2086
   faraday-rack (1.0.0) sha256=ef60ec969a2bb95b8dbf24400155aee64a00fc8ba6c6a4d3968562bcc92328c0
   faraday-retry (1.0.4) sha256=dc659233777fabf96c69c2ffe56c0a5d2c102af90321a42cc6c90157bcd716aa
   faraday_middleware (1.2.1) sha256=d45b78c8ee864c4783fbc276f845243d4a7918a67301c052647bacabec0529e9
@@ -450,6 +454,7 @@ CHECKSUMS
   optparse (0.8.1) sha256=42bea10d53907ccff4f080a69991441d611fbf8733b60ed1ce9ee365ce03bd1a
   os (1.1.4) sha256=57816d6a334e7bd6aed048f4b0308226c5fb027433b67d90a9ab435f35108d3f
   ostruct (0.6.3) sha256=95a2ed4a4bd1d190784e666b47b2d3f078e4a9efda2fccf18f84ddc6538ed912
+  patron (0.13.4) sha256=c4ae37404a028772541e2f19a71e19be970aa53fdf8a3d70c5a9c1350bab3b09
   plist (3.7.2) sha256=d37a4527cc1116064393df4b40e1dbbc94c65fa9ca2eec52edf9a13616718a42
   pstore (0.2.1) sha256=03904d0f2c66579e96d1e6704cdabc0c88df7ea8ed8782d9f3569f6f6c702c1a
   public_suffix (4.0.7) sha256=8be161e2421f8d45b0098c042c06486789731ea93dc3a896d30554ee38b573b8
@@ -481,4 +486,4 @@ CHECKSUMS
   xcpretty-travis-formatter (1.0.1) sha256=aacc332f17cb7b2cba222994e2adc74223db88724fe76341483ad3098e232f93
 
 BUNDLED WITH
-  4.0.14
+  4.0.15
