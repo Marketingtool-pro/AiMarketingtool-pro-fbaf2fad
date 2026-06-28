@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Share,
   Alert,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -111,6 +112,21 @@ const ToolResultScreen = () => {
         output.id === id ? { ...output, liked: !output.liked } : output
       )
     );
+  };
+
+  // Open the result on the web app. Point at the app root (working entry where a
+  // logged-in user sees their saved generations — results auto-save to the shared
+  // Appwrite history), NOT a /tools/<slug> deep route, which 404s. The web app's
+  // own 404 (expired Firebase key) is a web-side fix on the web-app-router repo.
+  const handleViewOnDesktop = () => {
+    Linking.openURL('https://app.marketingtool.pro');
+  };
+
+  const handleEmailResult = async () => {
+    const allContent = outputs.map(o => o.content).join('\n\n---\n\n');
+    const subject = encodeURIComponent(`${tool?.name || 'Tool'} Result - MarketingTool`);
+    const body = encodeURIComponent(allContent);
+    Linking.openURL(`mailto:?subject=${subject}&body=${body}`);
   };
 
   const handleRegenerate = () => {
@@ -264,6 +280,34 @@ const ToolResultScreen = () => {
                 <Feather name="chevron-up" size={16} color={Colors.secondary} />
                 <Text style={styles.showMoreText}>Collapse</Text>
               </TouchableOpacity>
+            )}
+
+            {/* Long-result options: full output is available inline above; these
+                are extra ways to read/keep it (desktop = the web app, email). */}
+            {isLargeOutput && (
+              <View style={styles.desktopBanner}>
+                <View style={styles.desktopBannerHeader}>
+                  <Feather name="monitor" size={18} color={Colors.secondary} />
+                  <Text style={styles.desktopBannerTitle}>More ways to view this</Text>
+                </View>
+                <Text style={styles.desktopBannerText}>
+                  Tap “Show full result” above to read the whole output here. You can also open it on desktop or email it to yourself.
+                </Text>
+                <View style={styles.desktopActions}>
+                  <TouchableOpacity style={styles.desktopActionBtn} onPress={handleViewOnDesktop}>
+                    <Feather name="external-link" size={16} color={Colors.white} />
+                    <Text style={styles.desktopActionText}>View Full on Desktop</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={handleEmailResult}>
+                    <Feather name="mail" size={16} color={Colors.secondary} />
+                    <Text style={styles.desktopActionOutlineText}>Email Full Result</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={() => handleCopy(output.content, output.id)}>
+                    <Feather name="copy" size={16} color={Colors.secondary} />
+                    <Text style={styles.desktopActionOutlineText}>Copy Summary</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             )}
 
             {/* Action Buttons */}
@@ -504,6 +548,65 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.secondary,
     fontWeight: '600',
+  },
+  desktopBanner: {
+    backgroundColor: Colors.secondary + '12',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.secondary + '30',
+  },
+  desktopBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  desktopBannerTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.secondary,
+  },
+  desktopBannerText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+    marginBottom: Spacing.md,
+  },
+  desktopActions: {
+    gap: Spacing.sm,
+  },
+  desktopActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.secondary,
+    paddingVertical: 10,
+    borderRadius: BorderRadius.sm,
+    gap: 8,
+    marginBottom: 6,
+  },
+  desktopActionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.white,
+  },
+  desktopActionBtnOutline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.secondary + '50',
+    paddingVertical: 10,
+    borderRadius: BorderRadius.sm,
+    gap: 8,
+    marginBottom: 6,
+  },
+  desktopActionOutlineText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.secondary,
   },
   outputActions: {
     flexDirection: 'row',

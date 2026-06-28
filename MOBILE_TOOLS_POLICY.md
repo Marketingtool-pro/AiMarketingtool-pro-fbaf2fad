@@ -60,13 +60,14 @@ When a tool output is marked as large:
   output inline, on-device (and a "Collapse" toggle to re-hide it)
 - Keep Copy / Share / Save available for the full result
 
-NOTE (2026-06-28, owner decision): the full result is shown inline on the
-phone. The previous "Best viewed on desktop" / "View Full on Desktop"
-hand-off was removed — its destination (app.marketingtool.pro/tools/<slug>)
-404s, and the web app is off-limits, so the hand-off could not be made to
-work. Showing the full output on-device satisfies the mandatory trust rules
-below (full result accessible, nothing silently truncated) without relying
-on an unreachable desktop route.
+NOTE (2026-06-28, owner decision): BOTH are provided. The full result is shown
+inline on the phone (preview + "Show full result"), AND a "View Full on Desktop"
+button opens the web app at its root `https://app.marketingtool.pro` (the working
+entry; the old `/tools/<slug>` deep route 404s). The web app's own 404 (expired
+Firebase key) is a web-side fix on the web-app-router repo, off-limits here — the
+phone only links to the correct URL. This satisfies the mandatory trust rules
+(full result accessible inline, nothing silently truncated) while keeping the
+policy-mandated desktop hand-off the owner wants.
 
 ---
 
