@@ -558,8 +558,8 @@ const DashboardScreen = () => {
                   </View>
                   <View>
                     <View style={styles.popularNameRow}>
+                      {/* No "PRO" badge: every plan includes every tool (quota-gated only) */}
                       <Text style={styles.popularName}>{tool.name}</Text>
-                      {/* No PRO badge: every plan opens every tool (usage quota is the only gate). */}
                     </View>
                     <Text style={styles.popularUsesText}>{tool.category}</Text>
                   </View>

@@ -55,12 +55,18 @@ The mobile app must always:
 
 ## Recommended Mobile Actions for Long Results
 When a tool output is marked as large:
-- Show a short preview
-- Display a "Best viewed on desktop" note
-- Provide one or more actions:
-  - View Full on Desktop
-  - Email Full Result
-  - Copy Summary
+- Show a short preview (first lines)
+- Provide a visible "Show full result" toggle that expands the COMPLETE
+  output inline, on-device (and a "Collapse" toggle to re-hide it)
+- Keep Copy / Share / Save available for the full result
+
+NOTE (2026-06-28, owner decision): the full result is shown inline on the
+phone. The previous "Best viewed on desktop" / "View Full on Desktop"
+hand-off was removed — its destination (app.marketingtool.pro/tools/<slug>)
+404s, and the web app is off-limits, so the hand-off could not be made to
+work. Showing the full output on-device satisfies the mandatory trust rules
+below (full result accessible, nothing silently truncated) without relying
+on an unreachable desktop route.
 
 ---
 
