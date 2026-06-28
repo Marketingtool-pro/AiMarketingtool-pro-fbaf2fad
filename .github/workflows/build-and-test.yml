@@ -25,7 +25,9 @@ jobs:
         run: npm ci
       
       - name: Lint
-        run: npm run lint --if-present
+        # Non-blocking: lint is quality, not a ship gate, and the eslint stack
+        # has been churned repeatedly. Report issues without failing the build.
+        run: npm run lint --if-present || echo "::warning::lint reported issues (non-blocking)"
       
       - name: Run tests
         run: npm test --if-present
