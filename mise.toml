@@ -1,5 +1,5 @@
 [tools]
-node = "24"      # Force mise to manage Node.js version 24
+node = "24.16.0"
 ruby = "3.3"
 pi = "latest"
 bun = "latest"
@@ -16,8 +16,7 @@ aws-cli = { version = "latest", symlink_bins = true }
 pre-commit = "latest"
 gemini-cli = { version = "latest", allow_builds = ["@github/keytar", "node-pty"] }
 ruff = "latest"
-android-sdk = "latest"
-java = "latest"
+terraform = "latest"
 
 [env]
 _file = ".env"  # Automatically hooks and injects your local .env file variables

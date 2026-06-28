@@ -28,11 +28,10 @@ concurrency:
 jobs:
   build-android:
     name: Build (android)
-    # iOS-only on tag pushes. Play Store is already live, so rebuilding Android on
-    # every v*.*.* tag just burns EAS build minutes. Android now ONLY builds on a
-    # manual run (Actions → Production Deploy → Run workflow).
-    if: ${{ github.event_name == 'workflow_dispatch' }}
-    runs-on: self-hosted
+    # Builds on a version tag (v*.*.*) AND on manual dispatch, so ONE tag push
+    # ships BOTH iOS and Android together (owner request 2026-06-26).
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -41,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
 
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
         with:
@@ -61,8 +60,8 @@ jobs:
 
   submit-android:
     name: Submit (android)
-    if: ${{ github.event_name == 'workflow_dispatch' }}
-    runs-on: self-hosted
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
     needs: build-android
     timeout-minutes: 30
     env:
@@ -70,7 +69,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
 
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
         with:
@@ -81,7 +80,6 @@ jobs:
         run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
 
       - name: Submit to Play Store
-        continue-on-error: true
         run: |
           BUILD_ID="${{ needs.build-android.outputs.build-id }}"
           if [ -n "$BUILD_ID" ]; then
@@ -149,9 +147,10 @@ jobs:
       - name: Submit for review WITH in-app purchases
         env:
           ASC_KEY_PATH: ./AuthKey_69JDXUCPU3.p8
-          # Held for manual review-submit AFTER TestFlight verification of 514.
-          # Flip back to 'false' (or run asc_autosubmit.rb locally) to submit.
-          DRY_RUN: 'true'
+          # Auto-submit for App Store review enabled for build 539 (owner approved
+          # 2026-06-26). asc_autosubmit.rb bundles the build + all 6 subs + consumable
+          # into ONE review submission (the step missing in the old 2.1b reject loop).
+          DRY_RUN: 'false'
         run: |
           sudo gem install jwt --no-document
           export ASC_KEY_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyId")"

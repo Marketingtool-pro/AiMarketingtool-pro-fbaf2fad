@@ -19,7 +19,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore, Tool, ToolInput } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
-import { effectiveTier, hasProAccess, generationsLimitForTier } from '../../services/billingService';
+import { effectiveTier, generationsLimitForTier } from '../../services/billingService';
 import { imageService, GeneratedImage } from '../../services/imageService';
 import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
@@ -37,7 +37,6 @@ const ToolDetailScreen = () => {
   // Tier-aware gating: Starter unlocks the standard platform, PRO-badged tools
   // need Pro or higher (matches marketingtool.pro/pricing).
   const tier = effectiveTier(profile?.subscription, localSubscriptionOverride);
-  const canUsePro = hasProAccess(profile?.subscription, localSubscriptionOverride);
 
   const [tool, setTool] = useState<Tool | null>(null);
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
@@ -96,7 +95,7 @@ const ToolDetailScreen = () => {
     // monthly generation quota (Free trial, Starter 200, Pro 500, Growth 1,500).
     // Enforce for every finite tier; a limit of 9999+ means unlimited
     // (Agency / App Store reviewer account).
-    const genLimit = generationsLimitForTier(profile?.subscription, localSubscriptionOverride);
+    const genLimit = generationsLimitForTier(profile?.subscription, localSubscriptionOverride) + (profile?.credits ?? 0);
     const genUsed = profile?.generationsUsed ?? 0;
     if (genLimit < 999999 && genUsed >= genLimit) {
       Alert.alert(
@@ -438,7 +437,7 @@ const ToolDetailScreen = () => {
           <View style={styles.creditsInfo}>
             <Feather name="zap" size={20} color={Colors.warning} />
             <Text style={styles.creditsText}>
-              {Math.max(0, generationsLimitForTier(profile?.subscription, localSubscriptionOverride) - (profile?.generationsUsed ?? 0))} generations remaining
+              {Math.max(0, generationsLimitForTier(profile?.subscription, localSubscriptionOverride) + (profile?.credits ?? 0) - (profile?.generationsUsed ?? 0))} generations remaining
             </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Subscription')}>
               <Text style={styles.upgradeLink}>{tier === 'free' ? 'Upgrade' : 'Get more'}</Text>

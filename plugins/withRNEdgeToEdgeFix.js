@@ -23,7 +23,7 @@
  * No EAS secrets required — the GitHub Release is publicly downloadable.
  */
 
-const { withDangerousMod, withProjectBuildGradle } = require('@expo/config-plugins');
+const { withDangerousMod, withProjectBuildGradle } = require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');

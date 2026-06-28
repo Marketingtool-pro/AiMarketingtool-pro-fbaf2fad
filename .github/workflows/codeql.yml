@@ -11,13 +11,14 @@
 #
 name: "CodeQL Advanced"
 
+# Manual-only: GitHub's DEFAULT CodeQL setup is enabled for this repo (the
+# "CodeQL" run, which succeeds). An advanced config cannot also upload SARIF
+# while default setup is on ("CodeQL analyses from advanced configurations
+# cannot be processed when the default setup is enabled") — so this workflow
+# failed on every push. Disable default setup in repo Settings > Code security
+# if you want this advanced config on push/schedule instead.
 on:
-  push:
-    branches: [ "Master" ]
-  pull_request:
-    branches: [ "Master" ]
-  schedule:
-    - cron: '22 21 * * 2'
+  workflow_dispatch:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true

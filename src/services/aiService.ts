@@ -42,7 +42,11 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
     .map(([key, value]) => `${key}: ${value}`)
     .join('\n');
 
-  const userPrompt = `${toolName}\n\n${inputsText}\n\nTone: ${tone || 'professional'}\nLanguage: ${language || 'English'}`;
+  // Language must be enforced firmly and last (recency): a weak "Language: X" line
+  // mid-prompt was being ignored, so tools sometimes answered in French. State it
+  // as an imperative at the end so the model writes the whole response in that language.
+  const outputLanguage = language || 'English';
+  const userPrompt = `${toolName}\n\n${inputsText}\n\nTone: ${tone || 'professional'}\n\nIMPORTANT: Write the ENTIRE response in ${outputLanguage}. Do not use any other language under any circumstances.`;
 
   // Primary: Appwrite Function (tool-executor → Windmill → Claude)
   try {
@@ -65,7 +69,7 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         output_count: outputCount,
         user_id: userId,
         tier: tier || 'free',
-        simulation: simulation ?? (tier === 'free' || !tier),
+        simulation: simulation ?? false, // mobile policy: REAL execution for all tiers (quota-limited, never demo/sample)
         options: { tone: tone || 'professional', language: language || 'English' },
         model: geminiModel,
       }),

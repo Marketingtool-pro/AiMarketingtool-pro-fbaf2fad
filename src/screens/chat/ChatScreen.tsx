@@ -25,6 +25,7 @@ import { functions, account } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 import { getToolIcon } from '../../constants/toolIcons';
 import { useToolsStore, Tool } from '../../store/toolsStore';
+import { generationsLimitForTier } from '../../services/billingService';
 
 const { width } = Dimensions.get('window');
 
@@ -151,7 +152,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const ChatScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { profile } = useAuthStore();
+  const { profile, localSubscriptionOverride } = useAuthStore();
   const { tools, categories } = useToolsStore();
   const scrollViewRef = useRef<ScrollView>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -281,20 +282,33 @@ const ChatScreen = () => {
     scrollToBottom();
 
     try {
-      const response = await callWindmillChat(messageText, messages);
+      // The customer must NEVER see a raw error. The server already fails over
+      // Claude -> Gemini -> GPT; we add silent client-side retries for transient
+      // network blips so the chat stays "always active". No "error"/"Retry" UI.
+      let response: string | null = null;
+      let lastErr: any = null;
+      for (let attempt = 0; attempt < 3 && response == null; attempt++) {
+        try {
+          response = await callWindmillChat(messageText, messages, attempt);
+        } catch (e) {
+          lastErr = e;
+          if (attempt < 2) await new Promise(r => setTimeout(r, 600 * (attempt + 1)));
+        }
+      }
+      if (response == null) throw lastErr;
 
       const assistantMessage = createMessage('assistant', response);
       setMessages(prev => [...prev, assistantMessage]);
       setConsecutiveErrors(0);
       lastFailedMessage.current = null;
     } catch (error: any) {
-      const errorMessage = createMessage(
+      // Absolute last resort (total backend/network outage). Soft, on-brand,
+      // non-alarming — never the word "error", never a Retry button.
+      const softMessage = createMessage(
         'assistant',
-        'I encountered an error connecting to the AI. Please try again.',
-        { isError: true, retryMessage: messageText },
+        "I'm just catching my breath for a second — please send that again and I'll jump right back in. 🙂",
       );
-      setMessages(prev => [...prev, errorMessage]);
-      setConsecutiveErrors(prev => prev + 1);
+      setMessages(prev => [...prev, softMessage]);
       lastFailedMessage.current = messageText;
     } finally {
       setIsTyping(false);
@@ -458,7 +472,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
           )}
           <View style={styles.creditsContainer}>
             <Feather name="zap" size={14} color={Colors.gold} />
-            <Text style={styles.creditsText}>{Math.max(0, (profile?.generationsLimit ?? 0) - (profile?.generationsUsed ?? 0))}</Text>
+            <Text style={styles.creditsText}>{Math.max(0, generationsLimitForTier(profile?.subscription, localSubscriptionOverride) + (profile?.credits ?? 0) - (profile?.generationsUsed ?? 0))}</Text>
           </View>
         </View>
       </View>
@@ -591,12 +605,8 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                       </View>
                       <View style={styles.toolListInfo}>
                         <View style={styles.toolListNameRow}>
+                          {/* No "PRO" badge: every plan includes every tool (quota-gated only) */}
                           <Text style={styles.toolListName} numberOfLines={1}>{tool.name}</Text>
-                          {tool.isPro && (
-                            <View style={styles.proBadge}>
-                              <Text style={styles.proBadgeText}>PRO</Text>
-                            </View>
-                          )}
                         </View>
                         <Text style={styles.toolListDesc} numberOfLines={1}>{tool.shortDescription}</Text>
                       </View>
