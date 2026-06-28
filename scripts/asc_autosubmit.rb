@@ -75,10 +75,26 @@ end
 abort "❌ no usable build#{WANT_BUILD ? " #{WANT_BUILD}" : ''}" unless build
 puts "Build to ship: #{build['attributes']['version']} (#{build['id']}) uploaded #{build['attributes']['uploadedDate']}"
 
-# 2) editable iOS app store version
+# 2) editable iOS app store version. If the only version is live (READY_FOR_SALE),
+#    CREATE a fresh editable version (VERSION_STRING, e.g. 1.5.6) — you cannot
+#    attach a build to a live version (that was the 409 "attach build failed").
+EDITABLE = %w[PREPARE_FOR_SUBMISSION REJECTED DEVELOPER_REJECTED METADATA_REJECTED
+              WAITING_FOR_REVIEW INVALID_BINARY DEVELOPER_REMOVED_FROM_SALE].freeze
 code, vers = get("/v1/apps/#{APP_ID}/appStoreVersions?filter[platform]=IOS&limit=5")
-ver = (vers['data'] || []).find { |v| %w[PREPARE_FOR_SUBMISSION REJECTED DEVELOPER_REJECTED METADATA_REJECTED].include?(v['attributes']['appStoreState']) } || vers['data']&.first
-abort "❌ no app store version found" unless ver
+ver = (vers['data'] || []).find { |v| EDITABLE.include?(v['attributes']['appStoreState']) }
+if ver.nil?
+  want = ENV['VERSION_STRING'] || abort("❌ no editable version and VERSION_STRING not set")
+  puts "No editable version (only live). Creating version #{want}…"
+  unless DRY_RUN
+    code, created = req(:post, '/v1/appStoreVersions',
+      { data: { type: 'appStoreVersions',
+                attributes: { platform: 'IOS', versionString: want },
+                relationships: { app: { data: { type: 'apps', id: APP_ID } } } } })
+    abort "❌ create version #{want} failed #{code}: #{created}" unless [200, 201].include?(code)
+    ver = created['data']
+  end
+end
+abort "❌ no app store version found/created" unless ver
 puts "Version: #{ver['attributes']['versionString']} state=#{ver['attributes']['appStoreState']} (#{ver['id']})"
 
 # 3) the IAP items to bundle
@@ -90,11 +106,19 @@ puts "\nIAPs to include in the submission:"
 subs.each { |s| puts "  [sub] #{s['attributes']['productId']}  state=#{s['attributes']['state']}  (#{s['id']})" }
 consumables.each { |c| puts "  [iap] #{c['attributes']['productId']}  state=#{c['attributes']['state']}  (#{c['id']})" }
 
+# If every IAP is already APPROVED, they do NOT need to be bundled with the
+# build (the 2.1(b) "first-time IAP" rule only applies to un-reviewed IAPs).
+# In that case submit the build/version alone — the approved IAPs stay live.
+all_iaps = subs + consumables
+iaps_approved = !all_iaps.empty? && all_iaps.all? { |x| x['attributes']['state'] == 'APPROVED' }
+
 items = []
 items << { type: 'appStoreVersions', id: ver['id'] }
-subs.each        { |s| items << { type: 'subscriptions', id: s['id'] } }
-consumables.each { |c| items << { type: 'inAppPurchases', id: c['id'] } }
-puts "\nSubmission will contain #{items.size} items (1 build version + #{subs.size} subs + #{consumables.size} consumable)."
+unless iaps_approved
+  subs.each        { |s| items << { type: 'subscriptions', id: s['id'] } }
+  consumables.each { |c| items << { type: 'inAppPurchases', id: c['id'] } }
+end
+puts "\nIAPs approved: #{iaps_approved} → submission has #{items.size} item(s)#{iaps_approved ? ' (build/version only; IAPs already approved)' : " (build + #{subs.size} subs + #{consumables.size} consumable)"}."
 
 if DRY_RUN
   puts "\n✅ DRY RUN complete — nothing was changed. Re-run with DRY_RUN=false to attach + submit."
