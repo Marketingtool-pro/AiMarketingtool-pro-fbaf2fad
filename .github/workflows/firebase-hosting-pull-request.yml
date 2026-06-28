@@ -13,7 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - run: npm ci && npm run build
+      # bun repo (no package-lock.json) — `npm ci` failed instantly. Use plain install.
+      - run: npm install --legacy-peer-deps --no-audit --no-fund && npm run build
       - uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a # v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

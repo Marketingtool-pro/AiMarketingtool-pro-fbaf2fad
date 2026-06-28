@@ -112,6 +112,17 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
     if (error.code === 'auth/quota-exceeded') {
       return { success: false, error: 'SMS quota exceeded. Please try again later.' };
     }
+    // Android App Check / Play Integrity failures (the classic Android-only OTP block):
+    // app verification couldn't complete, so Firebase refuses to send the SMS.
+    if (error.code === 'auth/missing-client-identifier') {
+      return { success: false, error: 'This device could not be verified. Update Google Play services and try again.' };
+    }
+    if (error.code === 'auth/app-not-authorized') {
+      return { success: false, error: 'This app is not authorized for phone sign-in on Android. Please update the app or contact support.' };
+    }
+    if (error.code === 'auth/internal-error') {
+      return { success: false, error: 'Verification service temporarily blocked this request. Please try again shortly.' };
+    }
 
     return { success: false, error: error.message || 'Failed to send OTP' };
   }
