@@ -605,12 +605,8 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                       </View>
                       <View style={styles.toolListInfo}>
                         <View style={styles.toolListNameRow}>
+                          {/* No "PRO" badge: every plan includes every tool (quota-gated only) */}
                           <Text style={styles.toolListName} numberOfLines={1}>{tool.name}</Text>
-                          {tool.isPro && (
-                            <View style={styles.proBadge}>
-                              <Text style={styles.proBadgeText}>PRO</Text>
-                            </View>
-                          )}
                         </View>
                         <Text style={styles.toolListDesc} numberOfLines={1}>{tool.shortDescription}</Text>
                       </View>

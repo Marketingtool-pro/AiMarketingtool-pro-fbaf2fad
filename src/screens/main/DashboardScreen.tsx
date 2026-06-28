@@ -558,12 +558,8 @@ const DashboardScreen = () => {
                   </View>
                   <View>
                     <View style={styles.popularNameRow}>
+                      {/* No "PRO" badge: every plan includes every tool (quota-gated only) */}
                       <Text style={styles.popularName}>{tool.name}</Text>
-                      {(tool as any).isPro && (
-                        <View style={styles.dashProBadge}>
-                          <Text style={styles.dashProBadgeText}>PRO</Text>
-                        </View>
-                      )}
                     </View>
                     <Text style={styles.popularUsesText}>{tool.category}</Text>
                   </View>
