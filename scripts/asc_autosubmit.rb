@@ -133,6 +133,27 @@ code, _ = req(:patch, "/v1/appStoreVersions/#{ver['id']}",
 abort "❌ attach build failed #{code}" unless [200, 204].include?(code)
 puts "✔ build #{build['attributes']['version']} attached to version"
 
+# 3b) "What's New" is REQUIRED before a version can be submitted — an empty new
+#     version returns 409 "this resource cannot be reviewed". Set it on every
+#     iOS localization. Override text via env WHATS_NEW.
+whats_new = ENV['WHATS_NEW'] ||
+  "Performance improvements and fixes. All tools now open on every plan, and full results are viewable on-device."
+code, locs = get("/v1/appStoreVersions/#{ver['id']}/appStoreVersionLocalizations?limit=50")
+(locs['data'] || []).each do |loc|
+  lc = loc['attributes']['locale']
+  c2, _ = req(:patch, "/v1/appStoreVersionLocalizations/#{loc['id']}",
+    { data: { type: 'appStoreVersionLocalizations', id: loc['id'],
+              attributes: { whatsNew: whats_new } } })
+  puts "  #{[200, 204].include?(c2) ? '✔' : "✗ #{c2}"} What's New set for #{lc}"
+end
+
+# 3c) export compliance — a build with no encryption answer can block submission.
+#     Standard HTTPS-only apps are exempt → usesNonExemptEncryption=false.
+#     Non-fatal: it may already be set via Info.plist (ITSAppUsesNonExemptEncryption).
+cc, _ = req(:patch, "/v1/builds/#{build['id']}",
+  { data: { type: 'builds', id: build['id'], attributes: { usesNonExemptEncryption: false } } })
+puts "  #{[200, 204].include?(cc) ? '✔' : "· (#{cc})"} export compliance set (usesNonExemptEncryption=false)"
+
 # 4) create review submission
 code, rs = req(:post, '/v1/reviewSubmissions',
   { data: { type: 'reviewSubmissions',
