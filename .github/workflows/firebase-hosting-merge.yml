@@ -2,10 +2,13 @@
 # https://github.com/firebase/firebase-tools
 
 name: Deploy to Firebase Hosting on merge
+# Manual-only: this deploys a web build (expo export --platform web) to Firebase
+# Hosting "live" from the PHONE repo. Per project rule the web app is not deployed
+# from here (it lives in the web-app-router repo / VPS2), and this job failed on
+# every push. Removed the push trigger so it stops auto-deploying + failing CI.
+# Re-add `push: branches: [Master]` only if the phone repo should publish web.
 on:
-  push:
-    branches:
-      - Master
+  workflow_dispatch:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
