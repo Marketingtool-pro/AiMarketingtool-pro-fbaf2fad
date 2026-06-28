@@ -127,12 +127,14 @@ foodie/
 nuxt-nightly/
 marketingtool/
 marketing-tool/
-tools/
-starter-workflows/
-mac-cli/
-learn-terraform-init/
-learn-terraform-modules-use/
-my_gem/
+# Leading slash = repo-ROOT only. Without it, `tools/` also matched
+# src/screens/tools/ and stripped the app's tool screens from the build.
+/tools/
+/starter-workflows/
+/mac-cli/
+/learn-terraform-init/
+/learn-terraform-modules-use/
+/my_gem/
 
 # Security: secrets must never reach the EAS build archive.
 # If a future build needs an EXPO_PUBLIC_* value from .env, mirror it in
