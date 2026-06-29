@@ -105,7 +105,7 @@ abort "❌ no app store version found/created" unless ver
 puts "Version: #{ver['attributes']['versionString']} state=#{ver['attributes']['appStoreState']} (#{ver['id']})"
 
 # 3) the IAP items to bundle
-code, groups = get("/v1/apps/#{APP_ID}/subscriptionGroups?include=subscriptions&limit=50")
+_, groups = get("/v1/apps/#{APP_ID}/subscriptionGroups?include=subscriptions&limit=50")
 subs = ((groups['included'] || []).select { |i| i['type'] == 'subscriptions' })
 code, iaps = get("/v1/apps/#{APP_ID}/inAppPurchasesV2?limit=50")
 consumables = (iaps['data'] || [])
