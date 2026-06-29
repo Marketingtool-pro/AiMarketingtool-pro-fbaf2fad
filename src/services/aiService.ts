@@ -148,7 +148,9 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         return {
           outputs: splitOutputs(data.output, outputCount),
           success: true,
-          model: 'claude',
+          // White-label: never surface the underlying provider/model name to the
+          // client. Tag results with our own brand engine, not "claude".
+          model: 'marketingtool',
         };
       }
     }
@@ -174,7 +176,9 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         return {
           outputs: splitOutputs(data2.result, outputCount),
           success: true,
-          model: data2.model || 'claude',
+          // White-label: ignore any provider/model name the backend returns
+          // (could be "claude"/"gemini") and report our own brand engine.
+          model: 'marketingtool',
         };
       }
     }
@@ -211,7 +215,8 @@ function parseExecutionResponse(responseBody: string, outputCount: number): AIGe
         outputs,
         success: true,
         tokensUsed: result.tokensUsed || result.tokens_used,
-        model: result.model,
+        // White-label: do not pass the backend's provider/model name through.
+        model: 'marketingtool',
       };
     }
 
@@ -222,7 +227,8 @@ function parseExecutionResponse(responseBody: string, outputCount: number): AIGe
         outputs: splitOutputs(String(content), outputCount),
         success: true,
         tokensUsed: result.tokensUsed || result.tokens_used,
-        model: result.model,
+        // White-label: do not pass the backend's provider/model name through.
+        model: 'marketingtool',
       };
     }
 

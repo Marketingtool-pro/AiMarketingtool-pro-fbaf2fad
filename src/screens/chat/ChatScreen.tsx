@@ -323,6 +323,22 @@ const ChatScreen = () => {
     handleSend(retryText);
   };
 
+  // White-label safety net. The chat-ai → Windmill backend owns the real system
+  // prompt and sometimes ignores the client white-label instruction, so the model
+  // leaks "I'm Claude, made by Anthropic". This catches an identity-reveal in the
+  // reply BEFORE it is shown and swaps in the brand answer. Scoped to self-identity
+  // (vendor name + an identity cue) so it doesn't mangle legitimate marketing copy
+  // that merely mentions these brands.
+  const sanitizeBotIdentity = (text: string): string => {
+    if (!text) return text;
+    const vendor = /(anthropic|claude|openai|chatgpt|gpt-?[0-9]|gemini|google['’]?s|bard|llama|meta\b|mistral|cohere)/i;
+    const identityCue = /(i['’]?m|i am|i was|made by|built (?:on|by)|powered by|based on|trained by|created by|developed by|my (?:model|underlying|architecture)|language model|large language model|\bllm\b|which (?:model|ai|llm))/i;
+    if (vendor.test(text) && identityCue.test(text)) {
+      return "I'm MarketBot, MarketingTool.pro's own AI marketing assistant. The engine under the hood is our own — what matters is getting you results. What marketing goal can I help with right now?";
+    }
+    return text;
+  };
+
   // AI Chat via Appwrite Functions (server-side proxy to Windmill)
   // The Windmill token is stored server-side in the Appwrite Function environment,
   // never exposed to the client app binary.
@@ -378,14 +394,14 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
 
       const result = parseAppwriteResponse(execution.responseBody);
       if (result.error) throw new Error(result.error);
-      return (
+      const reply =
         result.response ||
         result.content ||
         result.message ||
         result.result ||
         result.text ||
-        'I could not generate a response.'
-      );
+        'I could not generate a response.';
+      return sanitizeBotIdentity(reply);
     } catch (error) {
       // Retry once with reduced history (handles payload size / timeout issues)
       if (retryCount < 1) {
