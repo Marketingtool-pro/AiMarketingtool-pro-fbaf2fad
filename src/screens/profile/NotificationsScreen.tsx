@@ -39,6 +39,10 @@ const NotificationsScreen = () => {
     setPushEnabled(status === 'granted');
   };
 
+  useEffect(() => {
+    checkPermission();
+  }, []);
+
   const togglePush = async () => {
     if (!pushEnabled) {
       const { status } = await Notifications.requestPermissionsAsync();
