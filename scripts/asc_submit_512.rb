@@ -3,20 +3,31 @@
 # build 512, then create ONE submission with the version + 6 subs + consumable
 # and submit it. Runs locally via the ASC API — nothing touches GitHub.
 # DRY_RUN=true (default) only prints the plan. DRY_RUN=false executes.
-require 'jwt'; require 'openssl'; require 'net/http'; require 'json'; require 'uri'
+require 'jwt'
+require 'openssl'
+require 'net/http'
+require 'json'
+require 'uri'
 KEY_ID=ENV.fetch("ASC_KEY_ID") { abort "Missing required env var ASC_KEY_ID" }
 ISSUER=ENV.fetch("ASC_ISSUER_ID") { abort "Missing required env var ASC_ISSUER_ID" }
 APP=ENV.fetch("ASC_APP_ID") { abort "Missing required env var ASC_APP_ID" }
 KEY_PATH=ENV.fetch("ASC_KEY_PATH", File.expand_path("../AuthKey_#{KEY_ID}.p8", __dir__))
 WANT_BUILD=ENV.fetch("BUILD_NUMBER","512")
 DRY=ENV.fetch("DRY_RUN","true")!="false"
-pk=OpenSSL::PKey::EC.new(File.read(KEY_PATH)); n=Time.now.to_i
-TOK=JWT.encode({iss:ISSUER,iat:n,exp:n+1100,aud:"appstoreconnect-v1"},pk,"ES256",{kid:KEY_ID,typ:"JWT"})
+private_key=OpenSSL::PKey::EC.new(File.read(KEY_PATH)); current_timestamp=Time.now.to_i
+TOK=JWT.encode({iss:ISSUER,iat:current_timestamp,exp:current_timestamp+1100,aud:"appstoreconnect-v1"},private_key,"ES256",{kid:KEY_ID,typ:"JWT"})
 BASE="https://api.appstoreconnect.apple.com"
 def req(m,p,b=nil)
   u=URI("#{BASE}#{p}");k={get:Net::HTTP::Get,post:Net::HTTP::Post,patch:Net::HTTP::Patch,delete:Net::HTTP::Delete}[m]
   r=k.new(u);r["Authorization"]="Bearer #{TOK}";r["Content-Type"]="application/json";r.body=JSON.generate(b) if b
-  res=Net::HTTP.start(u.host,u.port,use_ssl:true){|h|h.request(r)};[res.code.to_i,(JSON.parse(res.body) rescue {})]
+  res=Net::HTTP.start(u.host,u.port,use_ssl:true){|h|h.request(r)}
+  parsed = begin
+    JSON.parse(res.body)
+  rescue JSON::ParserError => e
+    warn "Failed to parse JSON response for #{p} (status=#{res.code}): #{e.message}"
+    {}
+  end
+  [res.code.to_i, parsed]
 end
 puts "=== MODE: #{DRY ? 'DRY RUN (no changes)' : 'LIVE'} ==="
 
