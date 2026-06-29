@@ -27,7 +27,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { hasProAccess, generationsLimitForTier } from '../../services/billingService';
 import { useAuthStore } from '../../store/authStore';
-import { generationsLimitForTier } from '../../services/billingService';
 import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 import LottieView from 'lottie-react-native';
