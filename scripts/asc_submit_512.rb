@@ -3,7 +3,11 @@
 # build 512, then create ONE submission with the version + 6 subs + consumable
 # and submit it. Runs locally via the ASC API — nothing touches GitHub.
 # DRY_RUN=true (default) only prints the plan. DRY_RUN=false executes.
-require 'jwt'; require 'openssl'; require 'net/http'; require 'json'; require 'uri'
+require 'jwt'
+require 'openssl'
+require 'net/http'
+require 'json'
+require 'uri'
 KEY_ID=ENV.fetch("ASC_KEY_ID") { abort "Missing required env var ASC_KEY_ID" }
 ISSUER=ENV.fetch("ASC_ISSUER_ID") { abort "Missing required env var ASC_ISSUER_ID" }
 APP=ENV.fetch("ASC_APP_ID") { abort "Missing required env var ASC_APP_ID" }
