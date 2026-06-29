@@ -25,9 +25,7 @@ const CARD_WIDTH = (width - 48 - 16) / 3;
 const ToolsScreen = () => {
   const navigation = useNavigation<any>();
   const { tools } = useToolsStore();
-  const { profile, localSubscriptionOverride } = useAuthStore();
-  const isFreeUser = (!profile?.subscription || profile.subscription === 'free') && localSubscriptionOverride === 'free';
-  // PRO-badged tools need the Pro tier or higher, not just any paid plan.
+  useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [activePlatform, setActivePlatform] = useState('All');
   const [activeSubcategory, setActiveSubcategory] = useState('All');
