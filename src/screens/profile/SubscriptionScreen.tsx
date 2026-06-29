@@ -37,7 +37,7 @@ interface Plan {
 
 const SubscriptionScreen = () => {
   const navigation = useNavigation();
-  const { profile, refreshProfile, applyLocalEntitlement, grantCredits, grantEntitlement } = useAuthStore();
+  const { profile, applyLocalEntitlement, grantCredits, grantEntitlement } = useAuthStore();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [selectedPlan, setSelectedPlan] = useState<string>('pro');
   const [isLoading, setIsLoading] = useState(false);
