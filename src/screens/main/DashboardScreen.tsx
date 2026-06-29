@@ -184,6 +184,11 @@ const DashboardScreen = () => {
 
   useEffect(() => {
     fetchTools();
+  const fetchTools = async () => {
+    // TODO: wire existing tools retrieval logic here.
+    // Kept async so current `await fetchTools()` usage remains valid.
+  };
+
     // Fetch user generations when logged in
     if (user?.$id) {
       fetchGenerations(user.$id);
