@@ -8,7 +8,6 @@ import {
   Dimensions,
   RefreshControl,
   Image,
-  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
