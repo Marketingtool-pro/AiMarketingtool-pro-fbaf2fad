@@ -66,6 +66,10 @@ const NotificationsScreen = () => {
     })));
   };
 
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
   const markAsRead = (id: string) => {
     setNotifications(prev =>
       prev.map(n => (n.id === id ? { ...n, read: true } : n))
