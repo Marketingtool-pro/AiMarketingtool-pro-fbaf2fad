@@ -19,19 +19,18 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
-import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { functions, account } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 import { getToolIcon } from '../../constants/toolIcons';
-import { useToolsStore, Tool } from '../../store/toolsStore';
+import { useToolsStore } from '../../store/toolsStore';
 import { generationsLimitForTier } from '../../services/billingService';
 
 const { width } = Dimensions.get('window');
 
 // Chat bot image
 const ChatBotImage = require('../../../assets/images/screens/chat-bot.jpg');
-const AiAssistantImage = require('../../../assets/images/screens/ai-assistant.jpg');
 const LogoImage = require('../../../assets/images/logo.jpeg');
 
 interface Message {
@@ -267,7 +266,7 @@ const ChatScreen = () => {
   };
 
   // Track consecutive errors for smart recovery
-  const [consecutiveErrors, setConsecutiveErrors] = useState(0);
+  const [, setConsecutiveErrors] = useState(0);
   const lastFailedMessage = useRef<string | null>(null);
 
   const handleSend = async (text?: string) => {
