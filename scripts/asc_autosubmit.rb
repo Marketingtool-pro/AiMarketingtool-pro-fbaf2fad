@@ -27,7 +27,8 @@ DRY_RUN   = ENV.fetch('DRY_RUN', 'true') != 'false'
 WANT_BUILD = ENV['BUILD_NUMBER']
 
 abort "❌ key not found: #{KEY_PATH}" unless File.exist?(KEY_PATH)
-pk = OpenSSL::PKey::EC.new(File.read(KEY_PATH)); now = Time.now.to_i
+pk = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+now = Time.now.to_i
 TOKEN = JWT.encode({ iss: ISSUER_ID, iat: now, exp: now + 1100, aud: 'appstoreconnect-v1' },
                    pk, 'ES256', { kid: KEY_ID, typ: 'JWT' })
 BASE = 'https://api.appstoreconnect.apple.com'
@@ -35,12 +36,18 @@ BASE = 'https://api.appstoreconnect.apple.com'
 def req(method, path, body = nil)
   uri = URI("#{BASE}#{path}")
   klass = { get: Net::HTTP::Get, post: Net::HTTP::Post, patch: Net::HTTP::Patch }[method]
+  raise ArgumentError, "Unsupported HTTP method: #{method.inspect}. Supported: :get, :post, :patch" unless klass
   r = klass.new(uri)
   r['Authorization'] = "Bearer #{TOKEN}"
   r['Content-Type'] = 'application/json'
   r.body = JSON.generate(body) if body
   res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(r) }
-  [res.code.to_i, (JSON.parse(res.body) rescue {})]
+  parsed = JSON.parse(res.body)
+rescue JSON::ParserError => e
+  warn "⚠️ Failed to parse JSON response for #{method.to_s.upcase} #{path} (status=#{res.code}): #{e.message}; body=#{res.body.to_s[0, 500].inspect}"
+  parsed = {}
+ensure
+  return [res.code.to_i, parsed]
 end
 def get(p) = req(:get, p)
 
