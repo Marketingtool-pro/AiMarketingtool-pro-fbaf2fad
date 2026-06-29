@@ -16,7 +16,14 @@ BASE="https://api.appstoreconnect.apple.com"
 def req(m,p,b=nil)
   u=URI("#{BASE}#{p}");k={get:Net::HTTP::Get,post:Net::HTTP::Post,patch:Net::HTTP::Patch,delete:Net::HTTP::Delete}[m]
   r=k.new(u);r["Authorization"]="Bearer #{TOK}";r["Content-Type"]="application/json";r.body=JSON.generate(b) if b
-  res=Net::HTTP.start(u.host,u.port,use_ssl:true){|h|h.request(r)};[res.code.to_i,(JSON.parse(res.body) rescue {})]
+  res=Net::HTTP.start(u.host,u.port,use_ssl:true){|h|h.request(r)}
+  parsed = begin
+    JSON.parse(res.body)
+  rescue JSON::ParserError => e
+    warn "Failed to parse JSON response for #{p} (status=#{res.code}): #{e.message}"
+    {}
+  end
+  [res.code.to_i, parsed]
 end
 puts "=== MODE: #{DRY ? 'DRY RUN (no changes)' : 'LIVE'} ==="
 
