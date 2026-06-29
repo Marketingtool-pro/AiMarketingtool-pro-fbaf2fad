@@ -170,4 +170,11 @@ jobs:
           export ASC_KEY_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyId")"
           export ASC_ISSUER_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyIssuerId")"
           export ASC_APP_ID="$(node -pe "require('./eas.json').submit.production.ios.ascAppId")"
+          # Tell asc_autosubmit.rb which version/build to ship. Without VERSION_STRING
+          # it grabbed the LIVE version (1.5.4 READY_FOR_SALE) and got "attach build
+          # failed 409". Pass the app.json version so it CREATES a fresh editable
+          # version and attaches THIS build.
+          export VERSION_STRING="$(node -pe "require('./app.json').expo.version")"
+          export BUILD_NUMBER="$(node -pe "require('./app.json').expo.ios.buildNumber")"
+          echo "Submitting version $VERSION_STRING build $BUILD_NUMBER"
           ruby scripts/asc_autosubmit.rb
