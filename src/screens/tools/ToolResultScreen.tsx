@@ -114,13 +114,9 @@ const ToolResultScreen = () => {
     );
   };
 
-  // Per MOBILE_TOOLS_POLICY.md (owner decision 2026-06-28): keep a "View Full on
-  // Desktop" hand-off ALONGSIDE the inline full result. Point at the web app ROOT
-  // (working entry; logged-in users see their saved generations via shared Appwrite
-  // history) — NOT a /tools/<slug> deep route, which 404s.
-  const handleViewOnDesktop = () => {
-    Linking.openURL('https://app.marketingtool.pro');
-  };
+  // Desktop hand-off REMOVED (2026-06-29): app.marketingtool.pro 404s and the web
+  // app is off-limits. The full result is shown inline on mobile; users email or
+  // copy it instead. No external open.
 
   const handleEmailResult = async () => {
     const allContent = outputs.map(o => o.content).join('\n\n---\n\n');
@@ -282,31 +278,27 @@ const ToolResultScreen = () => {
               </TouchableOpacity>
             )}
 
-            {/* Long results: the FULL output is available inline above via "Show
-                full result". Per MOBILE_TOOLS_POLICY.md (owner decision 2026-06-28)
-                we ALSO keep a "View Full on Desktop" hand-off (web app root), plus
-                Email + Copy. Nothing is silently truncated; full result accessible. */}
+            {/* Long results render FULL inline via "Show full result" above. The
+                desktop hand-off was REMOVED — app.marketingtool.pro 404s and the web
+                app is off-limits, so everything stays on the phone. Email + Copy give
+                the complete output; nothing is truncated and nothing leaves the app. */}
             {isLargeOutput && (
               <View style={styles.desktopBanner}>
                 <View style={styles.desktopBannerHeader}>
-                  <Feather name="monitor" size={18} color={Colors.secondary} />
-                  <Text style={styles.desktopBannerTitle}>More ways to view this</Text>
+                  <Feather name="check-circle" size={18} color={Colors.success} />
+                  <Text style={styles.desktopBannerTitle}>Your full result is right here</Text>
                 </View>
                 <Text style={styles.desktopBannerText}>
-                  Tap “Show full result” above to read the whole output here. You can also open it on desktop or email it to yourself.
+                  Tap “Show full result” above to read the entire output on your phone. You can also email the full result to yourself or copy it.
                 </Text>
                 <View style={styles.desktopActions}>
-                  <TouchableOpacity style={styles.desktopActionBtn} onPress={handleViewOnDesktop}>
-                    <Feather name="external-link" size={16} color={Colors.white} />
-                    <Text style={styles.desktopActionText}>View Full on Desktop</Text>
-                  </TouchableOpacity>
                   <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={handleEmailResult}>
                     <Feather name="mail" size={16} color={Colors.secondary} />
                     <Text style={styles.desktopActionOutlineText}>Email Full Result</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={() => handleCopy(output.content, output.id)}>
                     <Feather name="copy" size={16} color={Colors.secondary} />
-                    <Text style={styles.desktopActionOutlineText}>Copy Summary</Text>
+                    <Text style={styles.desktopActionOutlineText}>Copy Full Result</Text>
                   </TouchableOpacity>
                 </View>
               </View>
