@@ -31,7 +31,6 @@ const { width } = Dimensions.get('window');
 
 // Chat bot image
 const ChatBotImage = require('../../../assets/images/screens/chat-bot.jpg');
-const AiAssistantImage = require('../../../assets/images/screens/ai-assistant.jpg');
 const LogoImage = require('../../../assets/images/logo.jpeg');
 
 interface Message {
