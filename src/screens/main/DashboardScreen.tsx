@@ -36,8 +36,6 @@ import NativeAdCard from '../../components/NativeAdCard';
 
 const { width } = Dimensions.get('window');
 
-const isVisionOS = (Platform.OS as any) === 'visionos';
-
 const Animations = {
   aiRobot: require('../../../assets/animations/ai-robot.js'),
   pulseGlow: require('../../../assets/animations/pulse-glow.js'),
