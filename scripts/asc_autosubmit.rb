@@ -40,7 +40,12 @@ def req(method, path, body = nil)
   r['Content-Type'] = 'application/json'
   r.body = JSON.generate(body) if body
   res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(r) }
-  [res.code.to_i, (JSON.parse(res.body) rescue {})]
+  parsed = JSON.parse(res.body)
+rescue JSON::ParserError => e
+  warn "⚠️ Failed to parse JSON response for #{method.to_s.upcase} #{path} (status=#{res.code}): #{e.message}; body=#{res.body.to_s[0, 500].inspect}"
+  parsed = {}
+ensure
+  return [res.code.to_i, parsed]
 end
 def get(p) = req(:get, p)
 
