@@ -267,7 +267,7 @@ const ChatScreen = () => {
   };
 
   // Track consecutive errors for smart recovery
-  const [consecutiveErrors, setConsecutiveErrors] = useState(0);
+  const [, setConsecutiveErrors] = useState(0);
   const lastFailedMessage = useRef<string | null>(null);
 
   const handleSend = async (text?: string) => {
