@@ -27,7 +27,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { hasProAccess, generationsLimitForTier } from '../../services/billingService';
 import { useAuthStore } from '../../store/authStore';
-import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
+import { generationsLimitForTier } from '../../services/billingService';
 import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 import LottieView from 'lottie-react-native';
@@ -177,8 +177,6 @@ const DashboardScreen = () => {
     localSubscriptionOverride === 'free';
   // PRO-badged tools need the Pro tier or higher, not just any paid plan.
   const canUsePro = hasProAccess(profile?.subscription, localSubscriptionOverride);
-  const { tools, fetchTools, generations, fetchGenerations } = useToolsStore();
-  const [refreshing, setRefreshing] = React.useState(false);
 
   // Update counts when generations change
   const userGenerations = (user?.$id && generations.length > 0) ? generations.filter(g => g.userId === user.$id) : [];
