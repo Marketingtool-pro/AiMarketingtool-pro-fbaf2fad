@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,6 @@ import {
   Dimensions,
   RefreshControl,
   Image,
-  Animated,
-  Easing,
-  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -27,9 +24,8 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
-import { hasProAccess, generationsLimitForTier } from '../../services/billingService';
+import { generationsLimitForTier } from '../../services/billingService';
 import { useAuthStore } from '../../store/authStore';
-import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
 import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 import LottieView from 'lottie-react-native';
@@ -37,8 +33,6 @@ import Glass3DLogo from '../../components/common/Glass3DLogo';
 import NativeAdCard from '../../components/NativeAdCard';
 
 const { width } = Dimensions.get('window');
-
-const isVisionOS = (Platform.OS as any) === 'visionos';
 
 const Animations = {
   aiRobot: require('../../../assets/animations/ai-robot.js'),
@@ -177,10 +171,6 @@ const DashboardScreen = () => {
   const isFreeUser =
     (!profile?.subscription || profile.subscription === 'free') &&
     localSubscriptionOverride === 'free';
-  // PRO-badged tools need the Pro tier or higher, not just any paid plan.
-  const canUsePro = hasProAccess(profile?.subscription, localSubscriptionOverride);
-  const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
-  const [refreshing, setRefreshing] = React.useState(false);
 
   // Update counts when generations change
   const userGenerations = (user?.$id && generations.length > 0) ? generations.filter(g => g.userId === user.$id) : [];
