@@ -24,6 +24,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import { hasProAccess, generationsLimitForTier } from '../../services/billingService';
 import { generationsLimitForTier } from '../../services/billingService';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
@@ -166,7 +167,7 @@ const DashboardScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user, profile, localSubscriptionOverride } = useAuthStore();
   // A user is free only if BOTH the server profile and the local purchase
-  // override say so — the override is set by a finished StoreKit transaction
+  const { user, profile, localSubscriptionOverride, generations } = useAuthStore();
   // and must win even when the server write failed (e.g. Apple's sandbox).
   const isFreeUser =
     (!profile?.subscription || profile.subscription === 'free') &&
@@ -180,6 +181,11 @@ const DashboardScreen = () => {
 
   useEffect(() => {
     fetchTools();
+  const fetchTools = async () => {
+    // TODO: wire existing tools retrieval logic here.
+    // Kept async so current `await fetchTools()` usage remains valid.
+  };
+
     // Fetch user generations when logged in
     if (user?.$id) {
       fetchGenerations(user.$id);
