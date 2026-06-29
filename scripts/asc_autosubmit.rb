@@ -35,6 +35,7 @@ BASE = 'https://api.appstoreconnect.apple.com'
 def req(method, path, body = nil)
   uri = URI("#{BASE}#{path}")
   klass = { get: Net::HTTP::Get, post: Net::HTTP::Post, patch: Net::HTTP::Patch }[method]
+  raise ArgumentError, "Unsupported HTTP method: #{method.inspect}. Supported: :get, :post, :patch" unless klass
   r = klass.new(uri)
   r['Authorization'] = "Bearer #{TOKEN}"
   r['Content-Type'] = 'application/json'
