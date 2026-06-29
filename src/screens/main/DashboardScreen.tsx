@@ -168,7 +168,7 @@ const DashboardScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user, profile, localSubscriptionOverride } = useAuthStore();
   // A user is free only if BOTH the server profile and the local purchase
-  // override say so — the override is set by a finished StoreKit transaction
+  const { user, profile, localSubscriptionOverride, generations } = useAuthStore();
   // and must win even when the server write failed (e.g. Apple's sandbox).
   const isFreeUser =
     (!profile?.subscription || profile.subscription === 'free') &&
