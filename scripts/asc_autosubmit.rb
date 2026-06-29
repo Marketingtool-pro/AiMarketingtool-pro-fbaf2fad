@@ -138,7 +138,7 @@ puts "✔ build #{build['attributes']['version']} attached to version"
 #     iOS localization. Override text via env WHATS_NEW.
 whats_new = ENV['WHATS_NEW'] ||
   "Performance improvements and fixes. All tools now open on every plan, and full results are viewable on-device."
-code, locs = get("/v1/appStoreVersions/#{ver['id']}/appStoreVersionLocalizations?limit=50")
+_, locs = get("/v1/appStoreVersions/#{ver['id']}/appStoreVersionLocalizations?limit=50")
 (locs['data'] || []).each do |loc|
   lc = loc['attributes']['locale']
   c2, _ = req(:patch, "/v1/appStoreVersionLocalizations/#{loc['id']}",
