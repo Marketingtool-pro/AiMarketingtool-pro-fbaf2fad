@@ -1,0 +1,54 @@
+name: OTA Update (production)
+
+# THE MISSING HOOK. Code committed to Master never reached the live app because
+# nothing ran `eas update` — fixes just sat in the repo (that's why "fixes always
+# revert / nothing works on the live app"). This workflow publishes an EAS Update
+# (JS + assets OTA) to the production channel via the org self-hosted runner:
+# reaches every live 1.5.x device in ~1-2 min, no Apple/Play review, no rebuild.
+#
+# MANUAL ONLY (workflow_dispatch): you click "Run workflow" when you want to ship.
+# Deliberately NOT auto-on-push — the Copilot agent churns Master, and auto-
+# deploying every commit to production would be dangerous. You stay in control.
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: "Update message shown in EAS"
+        required: false
+        default: "Manual OTA update"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ota-update-production
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish OTA (production)
+    # Org self-hosted runner (free) — same label build-and-test.yml uses.
+    runs-on: self-hosted
+    timeout-minutes: 30
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: '24'
+
+      - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
+        with:
+          eas-version: 18.13.1
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
+
+      # Message passed via env (never interpolated into the shell).
+      - name: Publish EAS Update (production channel)
+        env:
+          UPDATE_MSG: ${{ inputs.message }}
+        run: eas update --branch production --message "$UPDATE_MSG" --non-interactive
