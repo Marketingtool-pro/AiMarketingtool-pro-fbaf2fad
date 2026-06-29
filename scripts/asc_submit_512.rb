@@ -10,8 +10,8 @@ APP=ENV.fetch("ASC_APP_ID") { abort "Missing required env var ASC_APP_ID" }
 KEY_PATH=ENV.fetch("ASC_KEY_PATH", File.expand_path("../AuthKey_#{KEY_ID}.p8", __dir__))
 WANT_BUILD=ENV.fetch("BUILD_NUMBER","512")
 DRY=ENV.fetch("DRY_RUN","true")!="false"
-pk=OpenSSL::PKey::EC.new(File.read(KEY_PATH)); n=Time.now.to_i
-TOK=JWT.encode({iss:ISSUER,iat:n,exp:n+1100,aud:"appstoreconnect-v1"},pk,"ES256",{kid:KEY_ID,typ:"JWT"})
+private_key=OpenSSL::PKey::EC.new(File.read(KEY_PATH)); current_timestamp=Time.now.to_i
+TOK=JWT.encode({iss:ISSUER,iat:current_timestamp,exp:current_timestamp+1100,aud:"appstoreconnect-v1"},private_key,"ES256",{kid:KEY_ID,typ:"JWT"})
 BASE="https://api.appstoreconnect.apple.com"
 def req(m,p,b=nil)
   u=URI("#{BASE}#{p}");k={get:Net::HTTP::Get,post:Net::HTTP::Post,patch:Net::HTTP::Patch,delete:Net::HTTP::Delete}[m]
