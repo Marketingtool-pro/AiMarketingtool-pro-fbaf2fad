@@ -27,7 +27,8 @@ DRY_RUN   = ENV.fetch('DRY_RUN', 'true') != 'false'
 WANT_BUILD = ENV['BUILD_NUMBER']
 
 abort "❌ key not found: #{KEY_PATH}" unless File.exist?(KEY_PATH)
-pk = OpenSSL::PKey::EC.new(File.read(KEY_PATH)); now = Time.now.to_i
+pk = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+now = Time.now.to_i
 TOKEN = JWT.encode({ iss: ISSUER_ID, iat: now, exp: now + 1100, aud: 'appstoreconnect-v1' },
                    pk, 'ES256', { kid: KEY_ID, typ: 'JWT' })
 BASE = 'https://api.appstoreconnect.apple.com'
