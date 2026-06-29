@@ -8,8 +8,6 @@ import {
   Dimensions,
   RefreshControl,
   Image,
-  Animated,
-  Easing,
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
