@@ -24,7 +24,7 @@ import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { functions, account } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 import { getToolIcon } from '../../constants/toolIcons';
-import { useToolsStore, Tool } from '../../store/toolsStore';
+import { useToolsStore } from '../../store/toolsStore';
 import { generationsLimitForTier } from '../../services/billingService';
 
 const { width } = Dimensions.get('window');
