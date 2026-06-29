@@ -35,7 +35,7 @@ def req(m,p,b=nil)
 end
 puts "=== MODE: #{DRY ? 'DRY RUN (no changes)' : 'LIVE'} ==="
 SUBS.each do |sid|
-  c,loc=req(:get,"/v1/subscriptions/#{sid}/subscriptionLocalizations")
+  _,loc=req(:get,"/v1/subscriptions/#{sid}/subscriptionLocalizations")
   (loc["data"]||[]).each do |l|
     lid=l["id"]; a=l["attributes"]||{}; locale=a["locale"]; desc=a["description"].to_s; name=a["name"]
     newdesc = desc.end_with?(".") ? desc[0..-2] : desc + "."
