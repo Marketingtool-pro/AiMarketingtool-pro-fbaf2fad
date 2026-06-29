@@ -273,7 +273,7 @@ function splitOutputs(content: string, count: number): string[] {
   }
 
   // Try numbered variations
-  const numberedRegex = /(?:^|\n)(?:\d+\.|Option \d+|Variation \d+)[:\s]/gi;
+  const numberedRegex = /(?:^|\n)(?:\d+\.|Option \d+|Variation \d+)[:\s]/i;
   const parts = content.split(numberedRegex).filter(p => p.trim().length > 50);
   if (parts.length >= count) {
     return parts.slice(0, count).map(p => p.trim());
