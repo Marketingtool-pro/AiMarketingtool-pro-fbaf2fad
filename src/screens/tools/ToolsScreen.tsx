@@ -15,7 +15,6 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useToolsStore, Tool, TOOL_CATEGORIES, PLATFORMS } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
-import { hasProAccess } from '../../services/billingService';
 import { Colors } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 import * as Haptics from 'expo-haptics';
@@ -29,7 +28,6 @@ const ToolsScreen = () => {
   const { profile, localSubscriptionOverride } = useAuthStore();
   const isFreeUser = (!profile?.subscription || profile.subscription === 'free') && localSubscriptionOverride === 'free';
   // PRO-badged tools need the Pro tier or higher, not just any paid plan.
-  const canUsePro = hasProAccess(profile?.subscription, localSubscriptionOverride);
   const [searchQuery, setSearchQuery] = useState('');
   const [activePlatform, setActivePlatform] = useState('All');
   const [activeSubcategory, setActiveSubcategory] = useState('All');
