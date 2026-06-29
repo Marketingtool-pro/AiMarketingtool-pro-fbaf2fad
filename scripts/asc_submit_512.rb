@@ -27,7 +27,7 @@ abort "build #{WANT_BUILD} not VALID/found" unless build
 puts "Build: #{WANT_BUILD} (#{build['id']})"
 
 # version
-c,v=req(:get,"/v1/apps/#{APP}/appStoreVersions?filter[platform]=IOS&limit=5")
+_,v=req(:get,"/v1/apps/#{APP}/appStoreVersions?filter[platform]=IOS&limit=5")
 ver=(v["data"]||[]).find{|x| %w[PREPARE_FOR_SUBMISSION READY_FOR_REVIEW REJECTED DEVELOPER_REJECTED METADATA_REJECTED].include?(x["attributes"]["appStoreState"])} || v["data"][0]
 puts "Version: #{ver['attributes']['versionString']} state=#{ver['attributes']['appStoreState']} (#{ver['id']})"
 
