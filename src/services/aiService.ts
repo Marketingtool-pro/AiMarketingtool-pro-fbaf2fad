@@ -87,28 +87,7 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
       }
     }
 
-    // Polling for the result
-    let status = execution.status;
-    let executionId = execution.$id;
-    let attempts = 0;
-    const maxAttempts = 45; // Longer timeout for complex tools
-
-    while ((status === 'waiting' || status === 'processing') && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const updatedExecution = await functions.getExecution(TOOL_EXECUTOR_FUNCTION_ID, executionId);
-      status = updatedExecution.status;
-      
-      if (status === 'completed') {
-        const result = parseExecutionResponse(updatedExecution.responseBody, outputCount);
-        if (result.success && result.outputs.length > 0) {
-          if (__DEV__) console.log(`[AI] Function success: ${result.outputs.length} outputs`);
-          return result;
-        }
-      }
-      attempts++;
-    }
-
-    if (__DEV__) console.log(`[AI] Function timed out or failed with status ${status}, trying fallback`);
+    if (__DEV__) console.log(`[AI] Function failed with status ${execution.status}, trying fallback`);
   } catch (error: any) {
     if (__DEV__) console.log(`[AI] Function error: ${error.message}, trying fallback`);
   }
