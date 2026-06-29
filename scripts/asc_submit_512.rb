@@ -32,7 +32,7 @@ ver=(v["data"]||[]).find{|x| %w[PREPARE_FOR_SUBMISSION READY_FOR_REVIEW REJECTED
 puts "Version: #{ver['attributes']['versionString']} state=#{ver['attributes']['appStoreState']} (#{ver['id']})"
 
 # existing review submissions (the 409 source)
-c,subs=req(:get,"/v1/reviewSubmissions?filter[app]=#{APP}&include=items")
+_,subs=req(:get,"/v1/reviewSubmissions?filter[app]=#{APP}&include=items")
 inflight=(subs["data"]||[]).reject{|s| s["attributes"]["state"]=="COMPLETE"}
 puts "\nIn-progress review submissions to CLEAR (#{inflight.size}):"
 inflight.each{|s| puts "  - #{s['id']} state=#{s['attributes']['state']} items=#{(s.dig('relationships','items','data')||[]).size}"}
