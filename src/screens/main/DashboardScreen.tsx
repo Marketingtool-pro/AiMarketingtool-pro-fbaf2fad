@@ -207,9 +207,17 @@ const DashboardScreen = () => {
 
   // Credits left this cycle, shown on the home screen so customers always see
   // their remaining generations (9999+ = unlimited plan -> shown as ∞).
+  // Only show a real, plan-based balance once the user's profile/plan has loaded.
+  // Before that, profile?.subscription is undefined and the tier helper falls back
+  // to free's 10 — a fabricated "demo" credit we must not show. Render '—' until real.
+  const hasLoadedPlan = !!(profile?.subscription || localSubscriptionOverride);
   const genLimit = generationsLimitForTier(profile?.subscription, localSubscriptionOverride);
   const genUsed = profile?.generationsUsed ?? 0;
-  const creditsLeft = genLimit >= 999999 ? '∞' : String(Math.max(0, genLimit + (profile?.credits ?? 0) - genUsed));
+  const creditsLeft = !hasLoadedPlan
+    ? '—'
+    : genLimit >= 999999
+      ? '∞'
+      : String(Math.max(0, genLimit + (profile?.credits ?? 0) - genUsed));
 
   const stats = [
     { label: 'Credits Left', value: creditsLeft, icon: 'zap', img: require('../../../assets/images/tool-icons-v2/ai-3d.png'), color: Colors.secondary, badge: 'Upgrade', screen: 'Subscription' },

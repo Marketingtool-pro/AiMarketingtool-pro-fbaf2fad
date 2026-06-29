@@ -433,16 +433,20 @@ const ToolDetailScreen = () => {
           </View>
 
           {/* Credits Info — visible for every tier: paid users and token
-              buyers must see their remaining generations too. */}
-          <View style={styles.creditsInfo}>
-            <Feather name="zap" size={20} color={Colors.warning} />
-            <Text style={styles.creditsText}>
-              {Math.max(0, generationsLimitForTier(profile?.subscription, localSubscriptionOverride) + (profile?.credits ?? 0) - (profile?.generationsUsed ?? 0))} generations remaining
-            </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Subscription')}>
-              <Text style={styles.upgradeLink}>{tier === 'free' ? 'Upgrade' : 'Get more'}</Text>
-            </TouchableOpacity>
-          </View>
+              buyers must see their remaining generations too. Only render the
+              number once the real plan/profile has loaded; before that the tier
+              helper falls back to free's 10, a fabricated "demo" credit. */}
+          {!!(profile?.subscription || localSubscriptionOverride) && (
+            <View style={styles.creditsInfo}>
+              <Feather name="zap" size={20} color={Colors.warning} />
+              <Text style={styles.creditsText}>
+                {Math.max(0, generationsLimitForTier(profile?.subscription, localSubscriptionOverride) + (profile?.credits ?? 0) - (profile?.generationsUsed ?? 0))} generations remaining
+              </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Subscription')}>
+                <Text style={styles.upgradeLink}>{tier === 'free' ? 'Upgrade' : 'Get more'}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={{ height: 120 }} />
         </ScrollView>
