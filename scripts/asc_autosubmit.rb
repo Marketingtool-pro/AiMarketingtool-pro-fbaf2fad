@@ -38,16 +38,18 @@ def req(method, path, body = nil)
   parsed = {}
   res = nil
   parsed = {}
+  res = nil
+  parsed = {}
   uri = URI("#{BASE}#{path}")
   klass = { get: Net::HTTP::Get, post: Net::HTTP::Post, patch: Net::HTTP::Patch }[method]
   raise ArgumentError, "Unsupported HTTP method: #{method.inspect}. Supported: :get, :post, :patch" unless klass
   r = klass.new(uri)
   r['Authorization'] = "Bearer #{TOKEN}"
   r['Content-Type'] = 'application/json'
-  r.body = JSON.generate(body) if body
+  warn "⚠️ Failed to parse JSON response for #{method.to_s.upcase} #{path} (status=#{res&.code || 'n/a'}): #{e.message}; body=#{res&.body.to_s[0, 500].inspect}"
   res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(r) }
   status = res&.code || 'no-response'
-  body_preview = res&.body.to_s[0, 500]
+  return [res&.code.to_i, parsed]
   warn "⚠️ Failed to parse JSON response for #{method.to_s.upcase} #{path} (status=#{status}): #{e.message}; body=#{body_preview.inspect}"
 rescue JSON::ParserError => e
   status = res&.code || 'no-response'
