@@ -34,6 +34,8 @@ TOKEN = JWT.encode({ iss: ISSUER_ID, iat: now, exp: now + 1100, aud: 'appstoreco
 BASE = 'https://api.appstoreconnect.apple.com'
 
 def req(method, path, body = nil)
+  res = nil
+  parsed = {}
   uri = URI("#{BASE}#{path}")
   klass = { get: Net::HTTP::Get, post: Net::HTTP::Post, patch: Net::HTTP::Patch }[method]
   raise ArgumentError, "Unsupported HTTP method: #{method.inspect}. Supported: :get, :post, :patch" unless klass
@@ -44,10 +46,12 @@ def req(method, path, body = nil)
   res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(r) }
   parsed = JSON.parse(res.body)
 rescue JSON::ParserError => e
-  warn "⚠️ Failed to parse JSON response for #{method.to_s.upcase} #{path} (status=#{res.code}): #{e.message}; body=#{res.body.to_s[0, 500].inspect}"
+  status = res&.code || 'no-response'
+  body_preview = res&.body.to_s[0, 500].inspect
+  warn "⚠️ Failed to parse JSON response for #{method.to_s.upcase} #{path} (status=#{status}): #{e.message}; body=#{body_preview}"
   parsed = {}
 ensure
-  return [res.code.to_i, parsed]
+  return [(res&.code || 0).to_i, parsed]
 end
 def get(p) = req(:get, p)
 
