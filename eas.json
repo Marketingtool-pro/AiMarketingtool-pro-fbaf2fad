@@ -7,43 +7,48 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "development"
+      "channel": "development",
+      "node": "24.18.0",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "IS_TESTING": "true",
+        "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview"
-    },
-    "simulator": {
-      "channel": "production",
-      "environment": "production",
-      "ios": {
-        "simulator": true
-      }
-    },
-    "simulator": {
-      "ios": {
-        "simulator": true
+      "channel": "preview",
+      "node": "24.18.0",
+      "android": {
+        "buildType": "apk",
+        "resourceClass": "large"
+      },
+      "env": {
+        "IS_TESTING": "true",
+        "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
       }
     },
     "production": {
-      "autoIncrement": true,
+      "autoIncrement": false,
       "channel": "production",
-      "environment": "production",
-      "resourceClass": "large",
+      "node": "24.18.0",
       "android": {
         "resourceClass": "large"
+      },
+      "env": {
+        "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
       }
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "6758618412",
-        "appleId": "help@marketingtool.pro"
-      },
-      "android": {
-        "track": "production",
-        "releaseStatus": "completed"
+        "ascApiKeyPath": "./AuthKey_69JDXUCPU3.p8",
+        "ascApiKeyId": "69JDXUCPU3",
+        "ascApiKeyIssuerId": "313ffa8d-5aed-4aad-a012-b1057717634c",
+        "ascAppId": "6758618412"
       }
     }
   }

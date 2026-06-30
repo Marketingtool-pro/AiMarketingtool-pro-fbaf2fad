@@ -10,13 +10,11 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Animated,
-  Dimensions,
-  Easing,
   Image,
   Modal,
   FlatList,
   AppState,
+  Dimensions,
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -32,7 +30,7 @@ import { clearVerification as clearFirebaseVerification } from '../../services/f
 
 import * as AppleAuthentication from 'expo-apple-authentication';
 
-const { width } = Dimensions.get('window');
+
 
 // Country data for phone login
 interface Country {
@@ -55,7 +53,7 @@ const LoginScreen = () => {
   const {
     login, loginWithGoogle, loginWithApple, loginWithFacebook,
     sendPhoneOTP, verifyPhoneOTP, verifyTOTP, authenticateWithBiometric, isLoading, 
-    mfaPending, clearError,
+    mfaPending,
   } = useAuthStore();
 
   const [email, setEmail] = useState('');
@@ -142,12 +140,14 @@ const LoginScreen = () => {
   // user is forced to re-send for the new identifier.
   useEffect(() => {
     if (!otpSent) return;
-    setOtpSent(false);
-    setOtpCode('');
-    setOtpError('');
-    setShowOtpModal(false);
-    useAuthStore.getState().clearOtpTemp();
-    clearFirebaseVerification();
+    setTimeout(() => {
+      setOtpSent(false);
+      setOtpCode('');
+      setOtpError('');
+      setShowOtpModal(false);
+      useAuthStore.getState().clearOtpTemp();
+      clearFirebaseVerification();
+    }, 0);
     SecureStore.deleteItemAsync('pendingOTP').catch(() => {});
   }, [phoneNumber, selectedCountry.code]);
 
@@ -191,7 +191,10 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     try {
-      await login(email, password);
+      // Trim email (passwords are left intact — they may legitimately contain
+      // spaces). iOS autofill/QuickType often appends a trailing space to the
+      // email field, which otherwise breaks exact-match login + the demo bypass.
+      await login(email.trim(), password);
     } catch (err: any) {
       Alert.alert('Login Failed', err.message || 'Please check your credentials');
     }
@@ -473,7 +476,7 @@ const LoginScreen = () => {
              <TouchableOpacity activeOpacity={0.7} onPress={loginWithFacebook}>
                 <Image source={require('../../../assets/images/platforms/facebook.png')} style={{ width: 56, height: 56 }} resizeMode="contain" />
              </TouchableOpacity>
-             {Platform.OS === 'ios' && (
+             {Platform.OS === 'ios' ? (
                <AppleAuthentication.AppleAuthenticationButton
                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE}
@@ -481,6 +484,17 @@ const LoginScreen = () => {
                  style={{ width: 56, height: 56 }}
                  onPress={loginWithApple}
                />
+             ) : (
+               // Android: native Apple button doesn't exist, so render a matching
+               // 56x56 button (same row/position as iOS) that runs the same OAuth flow.
+               <TouchableOpacity
+                 activeOpacity={0.7}
+                 onPress={loginWithApple}
+                 style={styles.appleButtonAndroid}
+                 accessibilityLabel="Sign in with Apple"
+               >
+                 <Ionicons name="logo-apple" size={32} color="#000000" />
+               </TouchableOpacity>
              )}
           </View>
 
@@ -496,7 +510,7 @@ const LoginScreen = () => {
           </TouchableOpacity>
 
           <View style={styles.footer}>
-             <Text style={styles.footerText}>Don't have an account? </Text>
+             <Text style={styles.footerText}>Don&apos;t have an account? </Text>
              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
                 <Text style={styles.signupText}>Sign Up Free</Text>
              </TouchableOpacity>
@@ -806,6 +820,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 20,
     marginBottom: 20,
+  },
+  // Android Apple-sign-in button — mirrors the iOS native WHITE_OUTLINE button
+  // (white fill, black logo, 16 radius) so the social row matches across platforms.
+  appleButtonAndroid: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#000000',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emailLoginButton: {
     flexDirection: 'row',

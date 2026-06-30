@@ -23,12 +23,12 @@
  * No EAS secrets required — the GitHub Release is publicly downloadable.
  */
 
-const { withDangerousMod, withProjectBuildGradle } = require('@expo/config-plugins');
+const { withDangerousMod, withProjectBuildGradle } = require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const PATCHED_VERSION = '0.83.6-e2e.1';
+const PATCHED_VERSION = '0.85.3-e2e.2';
 const PATCHED_AAR_URL =
   'https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/releases/download/' +
   `react-android-${PATCHED_VERSION}/react-android-${PATCHED_VERSION}.aar`;

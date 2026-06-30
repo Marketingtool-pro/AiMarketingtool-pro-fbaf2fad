@@ -1,0 +1,10 @@
+FROM cimg/openjdk:26.0.1
+
+RUN curl -fsSL https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz | sudo tar -xz -C /opt && sudo ln -s /opt/apache-maven-3.9.6/bin/mvn /usr/local/bin/mvn
+
+WORKDIR /app
+COPY --chown=circleci:circleci . .
+
+RUN mvn install -DskipTests
+
+CMD mvn test

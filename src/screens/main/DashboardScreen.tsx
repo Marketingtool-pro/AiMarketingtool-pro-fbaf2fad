@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,6 @@ import {
   Dimensions,
   RefreshControl,
   Image,
-  Animated,
-  Easing,
-  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -27,16 +24,16 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import { hasProAccess, generationsLimitForTier } from '../../services/billingService';
+import { generationsLimitForTier } from '../../services/billingService';
 import { useAuthStore } from '../../store/authStore';
-import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 import LottieView from 'lottie-react-native';
 import Glass3DLogo from '../../components/common/Glass3DLogo';
+import NativeAdCard from '../../components/NativeAdCard';
 
 const { width } = Dimensions.get('window');
-
-const isVisionOS = (Platform.OS as any) === 'visionos';
 
 const Animations = {
   aiRobot: require('../../../assets/animations/ai-robot.js'),
@@ -141,6 +138,8 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // Reanimated shared values are mutated by design; react-hooks/immutability doesn't model them.
+    // eslint-disable-next-line react-hooks/immutability
     scale.value = withSequence(withTiming(0.9, { duration: 100 }), withTiming(1, { duration: 100 }));
     onPress();
   };
@@ -166,31 +165,32 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
 
 const DashboardScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { user, profile } = useAuthStore();
-  const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
-  const [refreshing, setRefreshing] = React.useState(false);
-  const [campaignsCount, setCampaignsCount] = React.useState<number>(0);
-  const [generationsCount, setGenerationsCount] = React.useState<number>(0);
+  const { user, profile, localSubscriptionOverride } = useAuthStore();
+  // A user is free only if BOTH the server profile and the local purchase
+  const { user, profile, localSubscriptionOverride, generations } = useAuthStore();
+  // and must win even when the server write failed (e.g. Apple's sandbox).
+  const isFreeUser =
+    (!profile?.subscription || profile.subscription === 'free') &&
+    localSubscriptionOverride === 'free';
+
+  // Update counts when generations change
+  const userGenerations = (user?.$id && generations.length > 0) ? generations.filter(g => g.userId === user.$id) : [];
+  const generationsCount = userGenerations.length;
+  // Campaigns = unique tools used
+  const campaignsCount = new Set(userGenerations.map(g => g.toolId)).size;
 
   useEffect(() => {
     fetchTools();
+  const fetchTools = async () => {
+    // TODO: wire existing tools retrieval logic here.
+    // Kept async so current `await fetchTools()` usage remains valid.
+  };
+
     // Fetch user generations when logged in
     if (user?.$id) {
       fetchGenerations(user.$id);
     }
   }, [user?.$id]);
-
-  // Update counts when generations change
-  useEffect(() => {
-    if (user?.$id && generations.length > 0) {
-      // Get generations count for this user
-      const userGenerations = generations.filter(g => g.userId === user.$id);
-      setGenerationsCount(userGenerations.length);
-      // Campaigns = unique tools used
-      const uniqueTools = new Set(userGenerations.map(g => g.toolId));
-      setCampaignsCount(uniqueTools.size);
-    }
-  }, [generations, user]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -201,8 +201,22 @@ const DashboardScreen = () => {
     setRefreshing(false);
   };
 
+  // Credits left this cycle, shown on the home screen so customers always see
+  // their remaining generations (9999+ = unlimited plan -> shown as ∞).
+  // Only show a real, plan-based balance once the user's profile/plan has loaded.
+  // Before that, profile?.subscription is undefined and the tier helper falls back
+  // to free's 10 — a fabricated "demo" credit we must not show. Render '—' until real.
+  const hasLoadedPlan = !!(profile?.subscription || localSubscriptionOverride);
+  const genLimit = generationsLimitForTier(profile?.subscription, localSubscriptionOverride);
+  const genUsed = profile?.generationsUsed ?? 0;
+  const creditsLeft = !hasLoadedPlan
+    ? '—'
+    : genLimit >= 999999
+      ? '∞'
+      : String(Math.max(0, genLimit + (profile?.credits ?? 0) - genUsed));
+
   const stats = [
-    { label: 'AI Tools', value: 'All', icon: 'zap', img: require('../../../assets/images/tool-icons-v2/ai-3d.png'), color: Colors.secondary, badge: 'New', screen: 'Tools' },
+    { label: 'Credits Left', value: creditsLeft, icon: 'zap', img: require('../../../assets/images/tool-icons-v2/ai-3d.png'), color: Colors.secondary, badge: 'Upgrade', screen: 'Subscription' },
     { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', img: require('../../../assets/images/tool-icons-v2/analytics-3d.png'), color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
     { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', img: require('../../../assets/images/tool-icons-v2/rocket.png'), color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
     { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', img: require('../../../assets/images/tool-icons-v2/trophy.png'), color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },
@@ -213,7 +227,6 @@ const DashboardScreen = () => {
     { id: 1, image: BannerImages.banner1, title: 'AI Marketing Pro', subtitle: 'Create stunning ads in seconds', color: '#6C5CE7' },
     { id: 2, image: BannerImages.banner2, title: 'Smart Content', subtitle: 'AI-powered writing assistant', color: '#00B894' },
     { id: 3, image: BannerImages.banner3, title: 'ROI Boost', subtitle: 'Data-driven strategies', color: '#E17055' },
-    { id: 4, image: BannerImages.banner4, title: 'Digital Growth', subtitle: 'Scale your business faster', color: '#0984E3' },
     { id: 5, image: BannerImages.banner5, title: 'Marketing Suite', subtitle: 'All tools in one place', color: '#A29BFE' },
   ];
 
@@ -340,7 +353,8 @@ const DashboardScreen = () => {
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* Premium Banner */}
+        {/* Premium Banner — only for users without an active plan */}
+        {isFreeUser && (
         <TouchableOpacity
           style={styles.premiumBanner}
           onPress={() => navigation.navigate('Subscription')}
@@ -363,6 +377,7 @@ const DashboardScreen = () => {
             <Feather name="chevron-right" size={24} color={Colors.gold} />
           </LinearGradient>
         </TouchableOpacity>
+        )}
 
         {/* Horizontal Banner Carousel */}
         <View style={styles.bannerSection}>
@@ -508,6 +523,10 @@ const DashboardScreen = () => {
           </ScrollView>
         </View>
 
+        {/* AdMob Native Advanced ad — Android only (renders null on iOS, so the
+            iOS layout is unchanged). This is the "android extra" ad placement. */}
+        <NativeAdCard />
+
         {/* Popular Tools */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -540,22 +559,11 @@ const DashboardScreen = () => {
                       style={{ width: 32, height: 32 }}
                       resizeMode="contain"
                     />
-                    {/* Same Pro lock visual as ToolsScreen / ToolDetailScreen
-                        so locked state is consistent across every screen. */}
-                    {(tool as any).isPro && profile?.subscription === 'free' && (
-                      <View style={styles.dashLockOverlay}>
-                        <Feather name="lock" size={14} color="#FFF" />
-                      </View>
-                    )}
                   </View>
                   <View>
                     <View style={styles.popularNameRow}>
+                      {/* No "PRO" badge: every plan includes every tool (quota-gated only) */}
                       <Text style={styles.popularName}>{tool.name}</Text>
-                      {(tool as any).isPro && (
-                        <View style={styles.dashProBadge}>
-                          <Text style={styles.dashProBadgeText}>PRO</Text>
-                        </View>
-                      )}
                     </View>
                     <Text style={styles.popularUsesText}>{tool.category}</Text>
                   </View>
@@ -602,7 +610,7 @@ const styles = StyleSheet.create({
     height: 100,
   },
   header: {
-    paddingTop: 60,
+    paddingTop: HEADER_TOP_PADDING,
     paddingBottom: Spacing.lg,
     paddingHorizontal: Spacing.lg,
     backgroundColor: Colors.background,

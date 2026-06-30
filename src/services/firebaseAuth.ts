@@ -82,8 +82,14 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
 
     if (__DEV__) console.log('[FirebaseAuth] Sending OTP to:', normalizedPhone);
 
-    // Ensure APNs token is registered so Firebase uses silent push (no reCAPTCHA)
-    await ensureAPNsRegistered();
+    // Ensure APNs token is registered so Firebase uses silent push (no reCAPTCHA).
+    // BUT don't let it block the OTP send: the permission prompt + push-token
+    // round-trip can take seconds, which made OTP feel slow. Bound it to ~2.5s,
+    // then send anyway (Firebase falls back to reCAPTCHA if the token isn't ready).
+    await Promise.race([
+      ensureAPNsRegistered(),
+      new Promise<void>((resolve) => setTimeout(resolve, 2500)),
+    ]);
 
     const confirmation = await firebaseAuth().signInWithPhoneNumber(normalizedPhone);
     verificationId = confirmation.verificationId;
@@ -105,6 +111,17 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
     }
     if (error.code === 'auth/quota-exceeded') {
       return { success: false, error: 'SMS quota exceeded. Please try again later.' };
+    }
+    // Android App Check / Play Integrity failures (the classic Android-only OTP block):
+    // app verification couldn't complete, so Firebase refuses to send the SMS.
+    if (error.code === 'auth/missing-client-identifier') {
+      return { success: false, error: 'This device could not be verified. Update Google Play services and try again.' };
+    }
+    if (error.code === 'auth/app-not-authorized') {
+      return { success: false, error: 'This app is not authorized for phone sign-in on Android. Please update the app or contact support.' };
+    }
+    if (error.code === 'auth/internal-error') {
+      return { success: false, error: 'Verification service temporarily blocked this request. Please try again shortly.' };
     }
 
     return { success: false, error: error.message || 'Failed to send OTP' };

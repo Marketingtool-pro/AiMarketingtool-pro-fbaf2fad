@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "marketing-tool-484720"
-  }
+    "default": "marketing-tool-484720",
+    "production": "marketing-tool-484720"
+  },
+  "targets": {},
+  "etags": {}
 }

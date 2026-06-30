@@ -1,0 +1,53 @@
+default_platform(:ios)
+
+platform :ios do
+  lane :test_iap_config do
+    key_id = ENV.fetch("ASC_KEY_ID")
+    issuer_id = ENV.fetch("ASC_ISSUER_ID")
+    key_path = ENV.fetch("ASC_KEY_PATH", File.join(Dir.pwd, "AuthKey_#{key_id}.p8"))
+    app_identifier = ENV.fetch("ASC_APP_IDENTIFIER", "pro.marketingtool.app")
+
+    UI.user_error!("App Store Connect key file not found at #{key_path}") unless File.exist?(key_path)
+   
+sigh(
+    api_key = app_store_connect_api_key(
+      key_id: key_id,
+      issuer_id: issuer_id,
+      key_filepath: key_path,
+      force: true
+    )
+
+
+
+
+platform :android do
+  # Google Play service account JSON used by supply + Play Developer API.
+  # NEVER commit this file (it's gitignored).
+  json_key_path = ENV.fetch("SUPPLY_JSON_KEY", File.join(Dir.pwd, "..", "google-play-service-account.json"))
+  package_name  = ENV.fetch("ANDROID_PACKAGE", "pro.marketingtool.app")
+
+  # Validate the Play Store service account key can authenticate + has access.
+  lane :validate_play_key do
+    UI.user_error!("Play service account JSON not found at #{json_key_path}") unless File.exist?(json_key_path)
+    validate_play_store_json_key(json_key: json_key_path)
+    UI.success("Play Store JSON key validated for #{package_name}")
+  end
+
+  # Upload an AAB to Google Play (no `match` — Android uses the service account).
+  # Usage: bundle exec fastlane android release aab:/path/to/app.aab track:internal
+  lane :release do |options|
+    aab   = options[:aab] || ENV["ANDROID_AAB_PATH"]
+    track = options[:track] || "internal"
+    UI.user_error!("Pass aab:/path/to/app.aab") if aab.nil? || !File.exist?(aab)
+    supply(
+      package_name: package_name,
+      json_key: json_key_path,
+      aab: aab,
+      track: track,
+      release_status: "draft",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+end

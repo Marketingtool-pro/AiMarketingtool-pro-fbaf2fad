@@ -14,7 +14,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 
 const ContactScreen = () => {
   const navigation = useNavigation();
@@ -57,7 +57,7 @@ const ContactScreen = () => {
           {/* Info Card */}
           <View style={styles.infoCard}>
             <Feather name="headphones" size={28} color={Colors.secondary} />
-            <Text style={styles.infoTitle}>We're here to help</Text>
+            <Text style={styles.infoTitle}>We&apos;re here to help</Text>
             <Text style={styles.infoDesc}>
               Have a question, feedback, or need support? Fill out the form below or reach us directly.
             </Text>
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0D0F1C',
   },
   header: {
-    paddingTop: 60,
+    paddingTop: HEADER_TOP_PADDING,
     paddingBottom: Spacing.lg,
     paddingHorizontal: Spacing.lg,
     backgroundColor: '#0D0F1C',

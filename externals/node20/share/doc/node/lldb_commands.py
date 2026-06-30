@@ -11,7 +11,6 @@ from __future__ import print_function
 import os
 import re
 
-import lldb
 
 #####################
 # Helper functions. #
@@ -76,11 +75,10 @@ def jss(debugger, *args):
       "v8::internal::Isolate::Current()->thread_local_top()->js_entry_sp_;") \
        .GetValue()
   sizeof_void = frame.EvaluateExpression("sizeof(void*)").GetValue()
-  rbp = frame.FindRegister("rbp")
-  rsp = frame.FindRegister("rsp")
+  frame.FindRegister("rbp")
+  frame.FindRegister("rsp")
   pc = frame.FindRegister("pc")
-  rbp = js_entry_sp
-  rsp = js_entry_sp + 2 *sizeof_void
+  js_entry_sp + 2 *sizeof_void
   pc.value = js_entry_sp + sizeof_void
 
 def bta(debugger, *args):

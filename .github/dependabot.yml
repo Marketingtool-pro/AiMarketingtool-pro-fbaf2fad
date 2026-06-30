@@ -1,21 +1,8 @@
 version: 2
-updates:
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    groups:
-      dependencies:
-        patterns: ["*"]
-    open-pull-requests-limit: 5
-
-  - package-ecosystem: "gradle"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    open-pull-requests-limit: 5
-
-  # github-actions pinned to commit SHAs manually — Dependabot disabled to prevent spam
-  # - package-ecosystem: "github-actions"
+# Dependabot DISABLED 2026-06-29. Its grouped npm bump ("dependencies", patterns *)
+# kept upgrading react-native (0.85.3 -> 0.86) and @react-native-firebase (24->25),
+# which ORPHANS the patches in patches/ (incl. the EventPerformanceLogger launch-crash
+# fix) -> iOS app stops opening. PR #213 auto-merged and re-broke it. Leave OFF until
+# deps are pinned with constraints that never cross RN 0.85.x / firebase 24.x.
+# Also turn OFF Dependabot auto-merge in GitHub repo Settings to be fully safe.
+updates: []

@@ -1,4 +1,4 @@
-const { withDangerousMod } = require('@expo/config-plugins');
+const { withDangerousMod } = require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -49,7 +49,7 @@ module.exports = function withEasPodfileFix(config) {
           bc.build_settings['SWIFT_VERSION'] = '5'
         end
 
-        if target.name.start_with?('RNFB') || target.name.start_with?('RNIap')
+        if target.name.start_with?('RNFB') || target.name.start_with?('RNIap') || target.name.start_with?('NitroIap')
           bc.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) "$(PODS_ROOT)/Headers/Public/React-Core" "$(PODS_ROOT)/Headers/Public/React-RCTBridge" "$(PODS_ROOT)/Headers/Public/FirebaseCore" "$(PODS_ROOT)/Headers/Public/FirebaseAuth" "$(PODS_ROOT)/Headers/Public/FirebaseAppCheck"'
           bc.build_settings['DEFINES_MODULE'] = 'NO'
         end

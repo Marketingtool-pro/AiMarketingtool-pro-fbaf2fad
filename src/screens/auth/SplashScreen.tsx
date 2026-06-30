@@ -1,16 +1,16 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Dimensions, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, Animated, Image } from 'react-native';
 import { Colors } from '../../constants/theme';
 
-const { width, height } = Dimensions.get('window');
+
 
 // App logo - MarketingTool M+signal icon
 const AppLogo = require('../../../assets/images/logo-icon.png');
 
 const SplashScreen = () => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const glowAnim = useRef(new Animated.Value(0.4)).current;
+  const [fadeAnim] = useState(() => new Animated.Value(0));
+  const [scaleAnim] = useState(() => new Animated.Value(0.8));
+  const [glowAnim] = useState(() => new Animated.Value(0.4));
 
   useEffect(() => {
     Animated.parallel([

@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
+import { generationsLimitForTier } from '../../services/billingService';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 
 const { width } = Dimensions.get('window');
@@ -53,7 +54,11 @@ const StatItem = ({ label, value, iconName }: { label: string; value: string | n
 
 const ProfileScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { user, profile, logout } = useAuthStore();
+  const { user, profile, logout, localSubscriptionOverride } = useAuthStore();
+  // Display name source-of-truth is the profile document (user.name isn't
+  // updated for phone-OTP sessions). Ignore phone-number-looking values.
+  const rawName = (profile?.name || user?.name || '').trim();
+  const displayName = rawName && !/^\+?\d+$/.test(rawName) ? rawName : 'User';
 
   const handleLogout = () => {
     Alert.alert(
@@ -61,7 +66,7 @@ const ProfileScreen = () => {
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', onPress: () => logout(), style: 'destructive' },
+        { text: 'Logout', onPress: async () => { await logout(); }, style: 'destructive' },
       ]
     );
   };
@@ -94,7 +99,7 @@ const ProfileScreen = () => {
     {
       title: 'Subscription',
       items: [
-        { iconName: 'star', label: 'Manage Plan', screen: 'Subscription', badge: profile?.subscription === 'free' ? 'Upgrade' : null },
+        { iconName: 'star', label: 'Manage Plan', screen: 'Subscription', badge: (profile?.subscription === 'free' && localSubscriptionOverride === 'free') ? 'Upgrade' : null },
         // Platform-native subscription management. Apple 3.1.1 / Google Play
         // policy require IAP subs to be managed via the platform's own
         // settings — no external payment links permitted in the app.
@@ -144,7 +149,19 @@ const ProfileScreen = () => {
             style={styles.heroGradient}
           />
           <View style={styles.headerTop}>
-            <Text style={styles.headerTitle}>Profile</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  // Profile is a bottom-tab root; "back" returns to Home (Dashboard tab).
+                  if (navigation.canGoBack()) navigation.goBack();
+                  else (navigation as any).navigate('Dashboard');
+                }}
+                style={styles.settingsButton}
+              >
+                <Feather name="arrow-left" size={22} color={Colors.white} />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Profile</Text>
+            </View>
             <TouchableOpacity
               onPress={() => navigation.navigate('Settings')}
               style={styles.settingsButton}
@@ -164,7 +181,7 @@ const ProfileScreen = () => {
                     <Image source={{ uri: profile.avatar }} style={styles.avatarImg} />
                   ) : (
                     <Text style={styles.avatarText}>
-                      {user?.name && !/^\+?\d+$/.test(user.name) ? user.name.charAt(0).toUpperCase() : 'U'}
+                      {displayName !== 'User' ? displayName.charAt(0).toUpperCase() : 'U'}
                     </Text>
                   )}
                 </View>
@@ -177,25 +194,42 @@ const ProfileScreen = () => {
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.userName}>
-                {user?.name && !/^\+?\d+$/.test(user.name) ? user.name : 'User'}
-              </Text>
+              <Text style={styles.userName}>{displayName}</Text>
               <Text style={styles.email}>{user?.email || 'help@marketingtool.pro'}</Text>
 
-              <View style={[
-                styles.planBadge,
-                { backgroundColor: profile?.subscription === 'pro' ? '#f59e0b' : 'rgba(255,255,255,0.1)' }
-              ]}>
-                <Feather name="user" size={12} color="#fff" style={{ marginRight: 4 }} />
-                <Text style={styles.planText}>
-                  {profile?.subscription === 'pro' ? 'Pro Member' : 'Free Plan'}
-                </Text>
-              </View>
+              {(() => {
+                const activeSubscription = profile?.subscription !== 'free' ? profile?.subscription : localSubscriptionOverride;
+                const hasSub = activeSubscription && activeSubscription !== 'free';
+                let badgeLabel = 'Free Plan';
+                if (activeSubscription === 'starter') badgeLabel = 'Starter Member';
+                if (activeSubscription === 'pro') badgeLabel = 'Pro Member';
+                if (activeSubscription === 'growth') badgeLabel = 'Growth Member';
+                if (activeSubscription === 'enterprise') badgeLabel = 'Enterprise Member';
+
+                return (
+                  <View style={[
+                    styles.planBadge,
+                    { backgroundColor: hasSub ? '#f59e0b' : 'rgba(255,255,255,0.1)' }
+                  ]}>
+                    <Feather name={hasSub ? 'star' : 'user'} size={12} color="#fff" style={{ marginRight: 4 }} />
+                    <Text style={styles.planText}>{badgeLabel}</Text>
+                  </View>
+                );
+              })()}
             </View>
 
             {/* Stats Section */}
             <View style={styles.statsRow}>
-              <StatItem label="Generations" value={profile?.generationsUsed || 0} iconName="zap" />
+              {(() => {
+                const lim = generationsLimitForTier(profile?.subscription, localSubscriptionOverride) + (profile?.credits ?? 0);
+                return (
+                  <StatItem
+                    label="Generations"
+                    value={`${profile?.generationsUsed || 0}/${lim >= 999999 ? '∞' : lim}`}
+                    iconName="zap"
+                  />
+                );
+              })()}
               <StatItem label="Saved" value={profile?.savedCount || 0} iconName="bookmark" />
               <StatItem label="Tools Used" value={profile?.toolsUsed || 0} iconName="grid" />
             </View>
@@ -203,7 +237,7 @@ const ProfileScreen = () => {
         </View>
 
         {/* Upgrade Banner */}
-        {profile?.subscription === 'free' && (
+        {profile?.subscription === 'free' && localSubscriptionOverride === 'free' && (
           <TouchableOpacity
             style={styles.upgradeBanner}
             onPress={() => navigation.navigate('Subscription')}

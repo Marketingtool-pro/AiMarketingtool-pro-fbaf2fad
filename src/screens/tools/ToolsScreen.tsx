@@ -25,8 +25,7 @@ const CARD_WIDTH = (width - 48 - 16) / 3;
 const ToolsScreen = () => {
   const navigation = useNavigation<any>();
   const { tools } = useToolsStore();
-  const { profile } = useAuthStore();
-  const isFreeUser = !profile?.subscription || profile.subscription === 'free';
+  useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [activePlatform, setActivePlatform] = useState('All');
   const [activeSubcategory, setActiveSubcategory] = useState('All');
@@ -37,7 +36,7 @@ const ToolsScreen = () => {
     'Meta / Facebook': ['facebook-ads', 'meta-content'],
     'Social Media': ['social-media', 'instagram', 'tiktok', 'youtube', 'linkedin', 'twitter', 'pinterest'],
     'Content & SEO': ['google-seo', 'google-content', 'content-creation', 'copywriting'],
-    'An-Analytics': ['google-analytics'],
+    'Analytics': ['google-analytics'],
     'E-commerce': ['shopify-products', 'shopify-ads', 'email-marketing', 'ecommerce-seo'],
     'AI Tools': ['ai-agents'],
   };
@@ -72,7 +71,7 @@ const ToolsScreen = () => {
     { name: 'Meta / Facebook', img: require('../../../assets/images/platforms/plat-meta.png') },
     { name: 'Social Media', img: require('../../../assets/images/platforms/plat-social.png') },
     { name: 'Content & SEO', img: require('../../../assets/images/platforms/plat-seo.png') },
-    { name: 'An-Analytics', img: require('../../../assets/images/platforms/plat-analytics.png') },
+    { name: 'Analytics', img: require('../../../assets/images/platforms/plat-analytics.png') },
     { name: 'E-commerce', img: require('../../../assets/images/platforms/plat-ecommerce.png') },
     { name: 'AI Tools', img: require('../../../assets/images/platforms/plat-ai.png') },
   ];
@@ -180,17 +179,11 @@ const ToolsScreen = () => {
               <View style={styles.iconLiquid}>
                 <View style={styles.iconGlow} />
                 <Image source={getToolIcon(tool.slug)} style={styles.cardIcon} resizeMode="contain" />
-                {tool.isPro && isFreeUser && (
-                  <View style={styles.lockOverlay}>
-                    <Feather name="lock" size={20} color="#FFF" />
-                  </View>
-                )}
               </View>
-              <View style={styles.badgeRow}>
-                {tool.isPro && (
-                  <View style={styles.proBadge}><Text style={styles.proBadgeText}>PRO</Text></View>
-                )}
-              </View>
+              {/* No per-tool "PRO" lock: per marketingtool.pro/pricing every plan
+                  gets ALL tools ("We limit usage, not access"). The differentiator
+                  is the monthly generation quota, not which tools open. */}
+              <View style={styles.badgeRow} />
               <Text style={styles.cardName} numberOfLines={2}>{tool.name}</Text>
             </TouchableOpacity>
           ))}

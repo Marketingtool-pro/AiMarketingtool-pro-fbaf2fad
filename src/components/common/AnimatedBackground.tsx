@@ -13,10 +13,17 @@ const FloatingParticle = ({ delay, size, startX, startY, color }: {
   startY: number;
   color: string;
 }) => {
-  const translateY = React.useRef(new RNAnimated.Value(0)).current;
-  const translateX = React.useRef(new RNAnimated.Value(0)).current;
-  const opacity = React.useRef(new RNAnimated.Value(0)).current;
-  const scale = React.useRef(new RNAnimated.Value(0.5)).current;
+  const [translateY] = React.useState(() => new RNAnimated.Value(0));
+  const [translateX] = React.useState(() => new RNAnimated.Value(0));
+  const [opacity] = React.useState(() => new RNAnimated.Value(0));
+  const [scale] = React.useState(() => new RNAnimated.Value(0.5));
+
+  // Deterministic per-particle jitter (0..1) derived from this particle's
+  // position/delay. Uses Math.sin, NOT Math.random — purely cosmetic animation
+  // variation, and avoids the PRNG that Sonar S2245 flags as a security risk.
+  const jitterDuration = Math.abs(Math.sin(startX + delay));
+  const jitterDrift = Math.abs(Math.sin(startY + delay * 1.3));
+  const jitterDurationX = Math.abs(Math.sin(startX * 1.7 + startY));
 
   React.useEffect(() => {
     const anim = RNAnimated.loop(
@@ -25,13 +32,13 @@ const FloatingParticle = ({ delay, size, startX, startY, color }: {
         RNAnimated.parallel([
           RNAnimated.timing(translateY, {
             toValue: -height * 0.4,
-            duration: 8000 + Math.random() * 4000,
+            duration: 8000 + jitterDuration * 4000,
             easing: RNEasing.out(RNEasing.ease),
             useNativeDriver: true,
           }),
           RNAnimated.timing(translateX, {
-            toValue: (Math.random() - 0.5) * 100,
-            duration: 8000 + Math.random() * 4000,
+            toValue: (jitterDrift - 0.5) * 100,
+            duration: 8000 + jitterDurationX * 4000,
             easing: RNEasing.inOut(RNEasing.ease),
             useNativeDriver: true,
           }),

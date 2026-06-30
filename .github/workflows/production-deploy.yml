@@ -1,11 +1,32 @@
 name: Production Deploy
 
+# iOS auto-build + submit IS enabled again, fixed for the 2.1(b) loop:
+# the old `eas submit` made a binary-only ("1 Item") submission that could not
+# carry the in-app purchases -> auto-rejected. The build-submit-ios job below
+# instead uploads the binary, then runs scripts/asc_autosubmit.rb which creates
+# ONE App Store Connect review submission containing the BUILD + all 6
+# subscriptions + the consumable (the step that was missing all 14 times).
+# Requires repo secret ASC_API_KEY_BASE64 (base64 of AuthKey_69JDXUCPU3.p8).
+
 on:
+  # A `v*.*.*` tag push auto-builds + submits BOTH platforms.
+  # A manual run (workflow_dispatch) builds + submits whatever the `platforms`
+  # input selects — default `both`, so one click ships iOS AND Android.
+  # Per-job `if:` conditions below enforce this.
   push:
-    branches: [main, Master]
     tags:
       - 'v*.*.*'
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: "Platforms to build + submit (manual runs)"
+        type: choice
+        required: true
+        default: both
+        options:
+          - both
+          - ios
+          - android
 
 permissions:
   contents: read
@@ -17,6 +38,9 @@ concurrency:
 jobs:
   build-android:
     name: Build (android)
+    # Runs on a version tag (ships both platforms) OR a manual run selecting
+    # both/android (owner request 2026-06-26).
+    if: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && (inputs.platforms == 'both' || inputs.platforms == 'android')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -28,8 +52,7 @@ jobs:
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '24'
 
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
         with:
@@ -37,7 +60,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
 
       - name: Build production (android)
         id: build
@@ -49,6 +72,7 @@ jobs:
 
   submit-android:
     name: Submit (android)
+    if: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && (inputs.platforms == 'both' || inputs.platforms == 'android')) }}
     runs-on: ubuntu-latest
     needs: build-android
     timeout-minutes: 30
@@ -59,8 +83,7 @@ jobs:
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '24'
 
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
         with:
@@ -68,10 +91,9 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
 
       - name: Submit to Play Store
-        continue-on-error: true
         run: |
           BUILD_ID="${{ needs.build-android.outputs.build-id }}"
           if [ -n "$BUILD_ID" ]; then
@@ -82,21 +104,22 @@ jobs:
             eas submit --platform android --profile production --non-interactive --latest
           fi
 
-  build-ios:
-    name: Build (ios)
+  build-submit-ios:
+    name: Build + Submit (iOS, with IAPs)
+    # Runs on a version tag (ships both platforms) OR a manual run selecting
+    # both/ios. Default manual run = both, so the runner auto-submits iOS too.
+    # Pick `android` on a manual run to avoid burning an iOS build while iterating.
+    if: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && (inputs.platforms == 'both' || inputs.platforms == 'ios')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    outputs:
-      build-id: ${{ steps.build.outputs.build-id }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '24'
 
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
         with:
@@ -104,47 +127,54 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
 
-      - name: Build production (ios)
-        id: build
+      # Fail fast (seconds, not 13 min into EAS) on the failure classes that keep
+      # breaking the Bundle JavaScript phase: 0-byte/corrupt image assets and
+      # tool-icon paths referenced in code but missing on disk.
+      - name: Validate assets before build
         run: |
-          eas build --platform ios --profile production --non-interactive 2>&1 | tee /tmp/eas-build-ios.log
-          BUILD_ID=$(grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' /tmp/eas-build-ios.log | head -1)
-          echo "build-id=$BUILD_ID" >> $GITHUB_OUTPUT
-          echo "Captured EAS Build ID: $BUILD_ID"
-
-  submit-ios:
-    name: Submit (ios)
-    runs-on: ubuntu-latest
-    needs: build-ios
-    timeout-minutes: 30
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
-        with:
-          eas-version: 18.13.1
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Submit to App Store
-        continue-on-error: true
-        run: |
-          BUILD_ID="${{ needs.build-ios.outputs.build-id }}"
-          if [ -n "$BUILD_ID" ]; then
-            echo "Submitting build ID: $BUILD_ID"
-            eas submit --platform ios --profile production --non-interactive --id "$BUILD_ID"
-          else
-            echo "No build ID captured, falling back to --latest"
-            eas submit --platform ios --profile production --non-interactive --latest
+          set -e
+          EMPTY=$(find assets src/assets -type f \( -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.webp' -o -name '*.ttf' \) -size 0 2>/dev/null || true)
+          if [ -n "$EMPTY" ]; then
+            echo "::error::Empty (0-byte) asset files will crash Metro 'Bundle JavaScript'. Restore them:"
+            echo "$EMPTY"
+            exit 1
           fi
+          echo "Asset check OK — no empty image/font files."
+
+      # Write the ASC API key FIRST, at the path eas.json's ascApiKeyPath expects,
+      # so `eas submit` can authenticate (the .p8 is gitignored, not in the checkout).
+      - name: Restore App Store Connect API key
+        env:
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+        run: |
+          printf '%s' "$ASC_API_KEY_BASE64" | base64 -d > AuthKey_69JDXUCPU3.p8
+          test -s AuthKey_69JDXUCPU3.p8 && echo "ASC key restored" || (echo "ASC key empty — set ASC_API_KEY_BASE64 secret" && exit 1)
+
+      - name: Build production (iOS)
+        run: eas build --platform ios --profile production --non-interactive --wait
+
+      - name: Upload binary to App Store Connect (TestFlight)
+        run: eas submit --platform ios --profile production --non-interactive --latest
+
+      - name: Submit for review WITH in-app purchases
+        env:
+          ASC_KEY_PATH: ./AuthKey_69JDXUCPU3.p8
+          # Auto-submit for App Store review enabled for build 539 (owner approved
+          # 2026-06-26). asc_autosubmit.rb bundles the build + all 6 subs + consumable
+          # into ONE review submission (the step missing in the old 2.1b reject loop).
+          DRY_RUN: 'false'
+        run: |
+          sudo gem install jwt --no-document
+          export ASC_KEY_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyId")"
+          export ASC_ISSUER_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyIssuerId")"
+          export ASC_APP_ID="$(node -pe "require('./eas.json').submit.production.ios.ascAppId")"
+          # Tell asc_autosubmit.rb which version/build to ship. Without VERSION_STRING
+          # it grabbed the LIVE version (1.5.4 READY_FOR_SALE) and got "attach build
+          # failed 409". Pass the app.json version so it CREATES a fresh editable
+          # version and attaches THIS build.
+          export VERSION_STRING="$(node -pe "require('./app.json').expo.version")"
+          export BUILD_NUMBER="$(node -pe "require('./app.json').expo.ios.buildNumber")"
+          echo "Submitting version $VERSION_STRING build $BUILD_NUMBER"
+          ruby scripts/asc_autosubmit.rb

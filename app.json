@@ -2,7 +2,8 @@
   "expo": {
     "name": "MarketingTool",
     "slug": "marketingtool",
-    "version": "1.5.0",
+    "owner": "aimarketintool-2-2-2",
+    "version": "1.5.8",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -18,7 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "480",
+      "buildNumber": "545",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -55,12 +56,13 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 480,
+      "versionCode": 545,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
         "USE_BIOMETRIC",
-        "VIBRATE"
+        "VIBRATE",
+        "com.google.android.gms.permission.AD_ID"
       ],
       "intentFilters": [
         {
@@ -104,7 +106,6 @@
               "RNFBAnalytics",
               "RNFBCrashlytics",
               "RNFBFirestore",
-              "RNFBPerf",
               "NitroIap"
             ],
             "extraPods": [
@@ -125,8 +126,8 @@
             "windowSoftInputMode": "adjustResize",
             "useMemoryPageSize16KB": true,
             "ndkVersion": "27.1.12297006",
-            "kotlinVersion": "2.1.20",
-            "kspVersion": "2.1.20-1.0.32"
+            "kotlinVersion": "2.3.0",
+            "kspVersion": "2.3.0"
           }
         }
       ],
@@ -135,7 +136,6 @@
       "@react-native-firebase/messaging",
       "@react-native-firebase/app-check",
       "@react-native-firebase/crashlytics",
-      "@react-native-firebase/perf",
       "./plugins/withEasPodfileFix.js",
       "./plugins/withIosFirebaseSwiftFix.js",
       [
@@ -165,7 +165,16 @@
       "expo-web-browser",
       "expo-asset",
       "expo-tracking-transparency",
-      "./plugins/withKotlinKspFix.js"
+      "./plugins/withKotlinKspFix.js",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-2789940907288323~8551339904",
+          "delayAppMeasurementInit": true
+        }
+      ],
+      "expo-dev-launcher",
+      "expo-updates"
     ],
     "extra": {
       "appwriteEndpoint": "https://api.marketingtool.pro/v1",
@@ -179,7 +188,6 @@
         "projectId": "93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
       }
     },
-    "owner": "aimarketintool-2-2-2",
     "runtimeVersion": {
       "policy": "appVersion"
     },

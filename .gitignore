@@ -1,137 +1,73 @@
-# dependencies
-node_modules/
+# ── existing ──
+book
 
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
-.kotlin/
-*.orig.*
-*.jks
+# ── SECRETS / SIGNING (never commit — public repo) ──
+.env
+.env.*
+!.env.example
 *.p8
 *.p12
-*.key
-*.mobileprovision
-
-# SECURE: BLOCK ALL CREDENTIALS & JSON SECRETS
-credentials/
-*.json
-!app.json
-!package.json
-!package-lock.json
-!tsconfig.json
-!google-services.json
-!GoogleService-Info.plist
-!firebase.json
-!assets/animations/*.json
-!src/assets/animations/*.json
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
 *.pem
+*.key
+*.keystore
+*.jks
+*.mobileprovision
+*.cer
+AuthKey_*.p8
+client_secret*.json
+**/client_secret*.json
+**/client_secrets.json
+**/credentials.json
+**/creds.json
+**/user_creds.json
+**/api_key.json
+fastlane/api_key.json
+*service-account*.json
+*-sa-key*.json
 
-# local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-# generated native folders
-/ios
-/android
-
-.gemini/
-gha-creds-*.json
-asc-api-key.p8
-google-play-service-account.json
-.env
-.env.production
-
-# EAS Submit — Google Play service account (NEVER commit)
-.eas-google-play-sa.json
-GoogleService-Info.plist.bak-*
-idv-quickstart/
-
-# Build artifacts — regenerable, must never be in git
-*.aab
-*.apk
+# ── build artifacts / binaries ──
 *.ipa
-*.app
-*.dSYM.zip
+*.apk
+*.aab
+*.tar.gz
+*.pkg
+*.gem
+*.phar
+*.hprof
 
-# Ignore Gradle project-specific cache directory
-.gradle
+# ── node / expo / RN ──
+node_modules/
+.expo/
+.expo-shared/
+dist/
+build/
+web-build/
+*.log
+patch-package-errors.log
 
-# Ignore Gradle build output directory
-build
+# ── package-manager / tooling caches ──
+.gradle/
+.cxx/
+.bundle/
+.cargo/
+.cache/
 
-# Ignore Kotlin plugin data
-.kotlin
-
-# Tool version managers
-.rbenv-gemsets
-.sdkmanrc
-rbenv-plugin/
-testing-chruby/
-mise-oci/
-
-# Package manager artifacts
+# ── stray vendored junk (do NOT track) ──
+externals/
+google-cloud-sdk/
+google-cloud-sdk*/
 vcpkg/
-bats/
-bin/
+bazel-central-registry/
+circleci-runner
+swiftly.pkg
+.playwright-mcp/
+CoreSimulator/
+CommandLineTools/
+DeveloperDiskImages/
+PrivateFrameworks/
 
-# Build/wrapper artifacts  
-gradle/wrapper/
-0.6
-find_large_files.sh
-install.sh
-
-# Config symlinks (likely pointing to versioned .yml files)
-docker-compose.dev
-docker-compose.prod
-docker-compose.test
-app.config
-babel.config
-react-native.config
-tamagui.config
-
-# Downloaded documentation
-www.ruby
-www.ruby-lang.org/
-
-# Language artifacts
-Node.js
-YAML
-actions-runner-osx-arm64-*.tar.gz
-env.sh
-.cargo-features-manager-wwAJS2/
-
-# Nested git repos that were accidentally committed as broken submodules
-# (no .gitmodules backing them) and broke every CI checkout with exit 128.
-# Untracked here; files remain on local disk.
-agent-skills/
-ant-ivy/
-go-licenses/
-spring-petclinic-migration/
-
-# ── Claude Code plugin: marketingtool-rn-mcp ──────────────────────────────
-# These negations must stay at the END of this file so they win as the
-# last-matching .gitignore rule over the broad `*.json` (line 21) and
-# `node_modules/` (line 2) guards above. The plugin's MCP server is vendored
-# offline, so its node_modules is intentionally committed.
-!.claude-plugin/marketplace.json
-!plugin-rn-mcp/.claude-plugin/plugin.json
-!plugin-rn-mcp/.mcp.json
-!plugin-rn-mcp/server/node_modules/
-!plugin-rn-mcp/server/node_modules/**
+# ── macOS / editor ──
+.DS_Store
+.idea/
+.vscode/
+*.swp

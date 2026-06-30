@@ -18,23 +18,13 @@ import * as Clipboard from 'expo-clipboard';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 
 
-// Desktop-preferred tool categories (big/complex tools — show preview on mobile)
-const DESKTOP_PREFERRED_CATEGORIES = [
-  'google-ads', 'google-analytics', 'ai-agents',
-];
-
-// Desktop-preferred tool slugs (specific big tools regardless of category)
-const DESKTOP_PREFERRED_SLUGS = [
-  'google-pmax', 'ga4-reports', 'ads-grader', 'schema-markup',
-  'social-calendar', 'ai-campaign-optimizer', 'ai-content-planner',
-  'ai-analyzer', 'ai-budget',
-];
-
-// Character threshold — outputs longer than this get the "best on desktop" banner
+// Character threshold — outputs longer than this start collapsed for readability,
+// with an inline "Show full result" toggle. Every tool renders its FULL result on
+// mobile; nothing is punted to desktop. (No desktop hand-off — that route 404s.)
 const LARGE_OUTPUT_THRESHOLD = 2000;
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -93,27 +83,12 @@ const ToolResultScreen = () => {
     autoSave();
   }, []);
 
-  // Detect if this is a large/desktop-preferred result
-  const isLargeOutput = useMemo(() => {
-    if (!tool) return false;
-    const isDesktopCategory = DESKTOP_PREFERRED_CATEGORIES.includes(tool.category);
-    const isDesktopSlug = DESKTOP_PREFERRED_SLUGS.includes(tool.slug);
-    const isLongContent = outputs.some(o => o.content.length > LARGE_OUTPUT_THRESHOLD);
-    return isDesktopCategory || isDesktopSlug || isLongContent;
-  }, [tool, outputs]);
-
-  const desktopUrl = tool ? `https://app.marketingtool.pro/dashboard/tool/${tool.slug}` : '';
-
-  const handleViewOnDesktop = () => {
-    Linking.openURL(desktopUrl);
-  };
-
-  const handleEmailResult = async () => {
-    const allContent = outputs.map(o => o.content).join('\n\n---\n\n');
-    const subject = encodeURIComponent(`${tool?.name || 'Tool'} Result - MarketingTool`);
-    const body = encodeURIComponent(allContent);
-    Linking.openURL(`mailto:?subject=${subject}&body=${body}`);
-  };
+  // Collapse only long results for readability — purely a mobile display choice.
+  // The full output is always available inline via "Show full result".
+  const isLargeOutput = useMemo(
+    () => outputs.some(o => o.content.length > LARGE_OUTPUT_THRESHOLD),
+    [outputs]
+  );
 
   const handleCopy = async (content: string, id: string) => {
     await Clipboard.setStringAsync(content);
@@ -137,6 +112,17 @@ const ToolResultScreen = () => {
         output.id === id ? { ...output, liked: !output.liked } : output
       )
     );
+  };
+
+  // Desktop hand-off REMOVED (2026-06-29): app.marketingtool.pro 404s and the web
+  // app is off-limits. The full result is shown inline on mobile; users email or
+  // copy it instead. No external open.
+
+  const handleEmailResult = async () => {
+    const allContent = outputs.map(o => o.content).join('\n\n---\n\n');
+    const subject = encodeURIComponent(`${tool?.name || 'Tool'} Result - MarketingTool`);
+    const body = encodeURIComponent(allContent);
+    Linking.openURL(`mailto:?subject=${subject}&body=${body}`);
   };
 
   const handleRegenerate = () => {
@@ -263,7 +249,7 @@ const ToolResultScreen = () => {
               selectedOutput !== output.id && styles.outputCardHidden,
             ]}
           >
-            {/* Show truncated preview for large outputs, full for small tools */}
+            {/* Long results start collapsed; tap "Show full result" for the full output inline */}
             {isLargeOutput && !showFullContent ? (
               <>
                 <Text style={styles.outputText} numberOfLines={12}>
@@ -281,28 +267,38 @@ const ToolResultScreen = () => {
               <Text style={styles.outputText}>{output.content}</Text>
             )}
 
-            {/* Desktop banner for large/complex tool outputs */}
+            {/* Collapse toggle for already-expanded long results */}
+            {isLargeOutput && showFullContent && (
+              <TouchableOpacity
+                style={styles.showMoreBtn}
+                onPress={() => setShowFullContent(false)}
+              >
+                <Feather name="chevron-up" size={16} color={Colors.secondary} />
+                <Text style={styles.showMoreText}>Collapse</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Long results render FULL inline via "Show full result" above. The
+                desktop hand-off was REMOVED — app.marketingtool.pro 404s and the web
+                app is off-limits, so everything stays on the phone. Email + Copy give
+                the complete output; nothing is truncated and nothing leaves the app. */}
             {isLargeOutput && (
               <View style={styles.desktopBanner}>
                 <View style={styles.desktopBannerHeader}>
-                  <Feather name="monitor" size={18} color={Colors.secondary} />
-                  <Text style={styles.desktopBannerTitle}>Best viewed on desktop</Text>
+                  <Feather name="check-circle" size={18} color={Colors.success} />
+                  <Text style={styles.desktopBannerTitle}>Your full result is right here</Text>
                 </View>
                 <Text style={styles.desktopBannerText}>
-                  The tool completed successfully. This result is long, so we show a preview on mobile for readability. You can view the full output on desktop anytime.
+                  Tap “Show full result” above to read the entire output on your phone. You can also email the full result to yourself or copy it.
                 </Text>
                 <View style={styles.desktopActions}>
-                  <TouchableOpacity style={styles.desktopActionBtn} onPress={handleViewOnDesktop}>
-                    <Feather name="external-link" size={16} color={Colors.white} />
-                    <Text style={styles.desktopActionText}>View Full on Desktop</Text>
-                  </TouchableOpacity>
                   <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={handleEmailResult}>
                     <Feather name="mail" size={16} color={Colors.secondary} />
                     <Text style={styles.desktopActionOutlineText}>Email Full Result</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={() => handleCopy(output.content, output.id)}>
                     <Feather name="copy" size={16} color={Colors.secondary} />
-                    <Text style={styles.desktopActionOutlineText}>Copy Summary</Text>
+                    <Text style={styles.desktopActionOutlineText}>Copy Full Result</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -430,7 +426,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    paddingTop: 60,
+    paddingTop: HEADER_TOP_PADDING,
     paddingBottom: Spacing.lg,
     paddingHorizontal: Spacing.lg,
   },

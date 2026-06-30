@@ -12,7 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 
 const ForgotPasswordScreen = () => {
@@ -44,7 +44,7 @@ const ForgotPasswordScreen = () => {
           </View>
           <Text style={styles.successTitle}>Check Your Email</Text>
           <Text style={styles.successText}>
-            We've sent a password reset link to {email}
+            We&apos;ve sent a password reset link to {email}
           </Text>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backToLogin}>
             <Text style={styles.backToLoginText}>Back to Login</Text>
@@ -65,7 +65,7 @@ const ForgotPasswordScreen = () => {
           <Feather name="key" size={60} color={Colors.secondary} style={styles.icon} />
           <Text style={styles.title}>Forgot Password?</Text>
           <Text style={styles.subtitle}>
-            Enter your email and we'll send you a link to reset your password
+            Enter your email and we&apos;ll send you a link to reset your password
           </Text>
         </View>
 
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: Spacing.lg,
-    paddingTop: 60,
+    paddingTop: HEADER_TOP_PADDING,
   },
   backButton: {
     width: 44,

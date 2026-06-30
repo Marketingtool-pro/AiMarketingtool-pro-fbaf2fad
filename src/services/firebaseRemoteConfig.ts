@@ -12,7 +12,7 @@
 import { Platform } from 'react-native';
 
 const DEFAULTS = {
-  gemini_model: 'gemini-2.5-flash-lite',
+  gemini_model: 'gemini-3.1-flash-lite-preview',
 } as const;
 
 type Key = keyof typeof DEFAULTS;

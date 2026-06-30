@@ -9,11 +9,13 @@ action: warn
 ⚠️ **Governance flow check before stopping**
 
 Before coding in this workspace:
-- Read `SECURITY.md` and the relevant root `*.md` files first
-- Work in the matching local repo under `/Users/anshsingh/Desktop/Developer`
+- Read the real project CODE first (src/, functions/, appwrite-functions/) — not .md files
+- Work in the matching local repo under `/Users/loken/Developer`
 - Do not jump to unrelated folders or skip repo context
 
 Before claiming completion:
+- No scam. No skip. No fake. No demo.
+- Do real work — never stall by asking yes/no or offering A/B menus.
 - Fix issues one-by-one, including the small ones
 - Do not skip or bypass listed issues
 - Review dependency / lockfile changes carefully for this paid production app

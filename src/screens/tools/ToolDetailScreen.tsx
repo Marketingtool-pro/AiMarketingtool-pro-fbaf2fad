@@ -19,7 +19,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore, Tool, ToolInput } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { effectiveTier, generationsLimitForTier } from '../../services/billingService';
+import { imageService, GeneratedImage } from '../../services/imageService';
+import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 
 
@@ -31,7 +33,10 @@ const ToolDetailScreen = () => {
   const route = useRoute<RouteType>();
   const { toolSlug, prefillInputs } = route.params;
   const { tools, generateContent, isGenerating } = useToolsStore();
-  const { profile } = useAuthStore();
+  const { profile, localSubscriptionOverride, incrementGenerationsUsed } = useAuthStore();
+  // Tier-aware gating: Starter unlocks the standard platform, PRO-badged tools
+  // need Pro or higher (matches marketingtool.pro/pricing).
+  const tier = effectiveTier(profile?.subscription, localSubscriptionOverride);
 
   const [tool, setTool] = useState<Tool | null>(null);
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
@@ -39,6 +44,8 @@ const ToolDetailScreen = () => {
   const [selectedLanguage, setSelectedLanguage] = useState('English');
   const [outputCount, setOutputCount] = useState(3);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  // Real media output for image-type tools (rendered inline, sharable to IG)
+  const [generatedImage, setGeneratedImage] = useState<GeneratedImage | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const tones = ['Professional', 'Casual', 'Friendly', 'Persuasive', 'Formal', 'Creative'];
@@ -47,13 +54,15 @@ const ToolDetailScreen = () => {
   useEffect(() => {
     const foundTool = tools.find(t => t.slug === toolSlug);
     if (foundTool) {
-      setTool(foundTool);
-      // Initialize input values (prefill if coming from regenerate)
-      const initialValues: Record<string, string> = {};
-      foundTool.inputs.forEach(input => {
-        initialValues[input.name] = prefillInputs?.[input.name] || '';
-      });
-      setInputValues(initialValues);
+      setTimeout(() => {
+        setTool(foundTool);
+        // Initialize input values (prefill if coming from regenerate)
+        const initialValues: Record<string, string> = {};
+        foundTool.inputs.forEach(input => {
+          initialValues[input.name] = prefillInputs?.[input.name] || '';
+        });
+        setInputValues(initialValues);
+      }, 0);
     }
   }, [toolSlug, tools]);
 
@@ -75,29 +84,25 @@ const ToolDetailScreen = () => {
   const handleGenerate = async () => {
     if (!validateInputs() || !tool || isGenerating) return;
 
-    // PRO LOCK: gate Pro tools for free users
-    if (tool.isPro && profile?.subscription === 'free') {
-      Alert.alert(
-        '🔒 Pro Tool Locked',
-        `${tool.name} is a Professional plan feature. Upgrade to unlock 500+ generations/month, advanced automation, and cross-platform intelligence.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Upgrade to Pro', onPress: () => navigation.navigate('Subscription') },
-        ]
-      );
-      return;
-    }
+    // Per pricing (marketingtool.pro/pricing): ALL plans get identical tool
+    // access — tiers only restrict generation CAPACITY, not which tools open.
+    // So there is no per-tool Pro lock; the generation quota below is the gate.
 
     // QUOTA: gate on real usage fields (generationsUsed/generationsLimit) that
     // authStore actually populates. The old check used profile.credits, which is
     // never set, so it evaluated to 0<=0 and blocked EVERY free generation.
-    if (
-      profile?.subscription === 'free' &&
-      (profile?.generationsUsed ?? 0) >= (profile?.generationsLimit ?? 10)
-    ) {
+    // Plan-based credit gate: every plan opens every tool, but each plan has a
+    // monthly generation quota (Free trial, Starter 200, Pro 500, Growth 1,500).
+    // Enforce for every finite tier; a limit of 9999+ means unlimited
+    // (Agency / App Store reviewer account).
+    const genLimit = generationsLimitForTier(profile?.subscription, localSubscriptionOverride) + (profile?.credits ?? 0);
+    const genUsed = profile?.generationsUsed ?? 0;
+    if (genLimit < 999999 && genUsed >= genLimit) {
       Alert.alert(
-        'Daily Limit Reached',
-        'Free trial allows 3 generations per day. Upgrade to Starter ($29/mo, 200 generations) or Pro ($59/mo, 500 generations).',
+        'Generation Limit Reached',
+        tier === 'free'
+          ? 'Your free trial generations are used up. Upgrade to Starter (200/mo), Pro (500/mo) or Growth (1,500/mo) — or buy 100 more for $3.'
+          : `You've used all ${genLimit} generations on your ${tier} plan this cycle. Buy 100 more for $3, or upgrade your plan.`,
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'See Plans', onPress: () => navigation.navigate('Subscription') },
@@ -113,12 +118,29 @@ const ToolDetailScreen = () => {
     }, 1000);
 
     try {
+      // Image-type tools produce a REAL image (Gemini image model) instead of
+      // text: rendered inline below, savable, and sharable straight to Instagram.
+      const isImageTool = /image|photo|thumbnail|logo|banner|carousel|visual/.test(tool.slug);
+      if (isImageTool) {
+        const img = await imageService.generateImage({
+          prompt: Object.values(inputValues).filter(Boolean).join('. '),
+          toolSlug: tool.slug,
+          style: selectedTone,
+          platform: /story/.test(tool.slug) ? 'instagram-story' : 'instagram-post',
+        });
+        setGeneratedImage(img);
+        await incrementGenerationsUsed();
+        return;
+      }
+
       const result = await generateContent(tool.$id, {
         ...inputValues,
         tone: selectedTone,
         language: selectedLanguage,
         outputCount,
       });
+
+      await incrementGenerationsUsed();
 
       navigation.navigate('ToolResult', {
         toolSlug: tool.slug,
@@ -247,20 +269,11 @@ const ToolDetailScreen = () => {
                 'zap' because Tool.icon is hardcoded to 'zap' in toolsStore. */}
             <View style={[styles.toolIcon, { backgroundColor: Colors.secondary + '20' }]}>
               <Image source={getToolIcon(tool.slug)} style={{ width: 48, height: 48 }} resizeMode="contain" />
-              {tool.isPro && profile?.subscription === 'free' && (
-                <View style={styles.lockOverlay}>
-                  <Feather name="lock" size={18} color="#FFF" />
-                </View>
-              )}
             </View>
             <View style={styles.toolMeta}>
-              <View style={styles.toolBadges}>
-                {tool.isPro && (
-                  <View style={[styles.badge, { backgroundColor: Colors.accent }]}>
-                    <Text style={styles.badgeText}>PRO</Text>
-                  </View>
-                )}
-              </View>
+              {/* No "PRO" lock badge: every plan includes every tool per
+                  marketingtool.pro/pricing. Usage quota is the only gate. */}
+              <View style={styles.toolBadges} />
               <Text style={styles.toolName}>{tool.name}</Text>
               <Text style={styles.toolDescription}>{tool.shortDescription}</Text>
             </View>
@@ -280,8 +293,62 @@ const ToolDetailScreen = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Honest deliverable note — tools whose names imply media rendering,
+              scheduling or live data state clearly what the AI delivers. */}
+          {!!tool.deliverable && (
+            <View style={{
+              flexDirection: 'row', alignItems: 'center', gap: 8,
+              backgroundColor: 'rgba(124,58,237,0.12)', borderRadius: 10,
+              padding: 10, marginBottom: 12,
+            }}>
+              <Feather name="info" size={14} color="#A78BFA" />
+              <Text style={{ color: '#C4B5FD', fontSize: 12, flex: 1 }}>{tool.deliverable}</Text>
+            </View>
+          )}
+
           {/* Dynamic Inputs */}
           {tool.inputs.map(renderInput)}
+
+          {/* Real image result — render, caption, and share to Instagram */}
+          {!!generatedImage && (
+            <View style={{
+              backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14,
+              padding: 12, marginTop: 16,
+            }}>
+              <Image
+                source={{ uri: generatedImage.image }}
+                style={{ width: '100%', aspectRatio: 1, borderRadius: 10 }}
+                resizeMode="cover"
+              />
+              <Text style={{ color: Colors.textSecondary, fontSize: 13, marginTop: 10 }}>
+                {generatedImage.caption}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+                <TouchableOpacity
+                  onPress={() => imageService.share(generatedImage.image).catch((e) =>
+                    Alert.alert('Share failed', e?.message || 'Please try again'))}
+                  style={{
+                    flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
+                    gap: 6, backgroundColor: '#7C3AED', borderRadius: 10, paddingVertical: 12,
+                  }}
+                >
+                  <Feather name="instagram" size={16} color="#FFF" />
+                  <Text style={{ color: '#FFF', fontWeight: '600' }}>Share / Post</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setGeneratedImage(null)}
+                  style={{
+                    flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
+                    gap: 6, borderColor: '#7C3AED', borderWidth: 1, borderRadius: 10,
+                    paddingVertical: 12, paddingHorizontal: 16,
+                  }}
+                >
+                  <Feather name="refresh-cw" size={16} color="#A78BFA" />
+                  <Text style={{ color: '#A78BFA', fontWeight: '600' }}>New</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
 
           {/* Tone Selection */}
           <View style={styles.inputGroup}>
@@ -365,15 +432,18 @@ const ToolDetailScreen = () => {
             </View>
           </View>
 
-          {/* Credits Info */}
-          {profile?.subscription === 'free' && (
+          {/* Credits Info — visible for every tier: paid users and token
+              buyers must see their remaining generations too. Only render the
+              number once the real plan/profile has loaded; before that the tier
+              helper falls back to free's 10, a fabricated "demo" credit. */}
+          {!!(profile?.subscription || localSubscriptionOverride) && (
             <View style={styles.creditsInfo}>
               <Feather name="zap" size={20} color={Colors.warning} />
               <Text style={styles.creditsText}>
-                {Math.max(0, (profile?.generationsLimit ?? 10) - (profile?.generationsUsed ?? 0))} generations remaining
+                {Math.max(0, generationsLimitForTier(profile?.subscription, localSubscriptionOverride) + (profile?.credits ?? 0) - (profile?.generationsUsed ?? 0))} generations remaining
               </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Subscription')}>
-                <Text style={styles.upgradeLink}>Upgrade</Text>
+                <Text style={styles.upgradeLink}>{tier === 'free' ? 'Upgrade' : 'Get more'}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -388,7 +458,9 @@ const ToolDetailScreen = () => {
             user knows BEFORE tapping. */}
         <View style={styles.generateContainer}>
           {(() => {
-            const isLockedForUser = tool.isPro && profile?.subscription === 'free';
+            // Pricing model: every plan opens every tool, so no tool is ever
+            // "locked" for a user — the generation quota is the only gate.
+            const isLockedForUser = false;
             return (
               <TouchableOpacity
                 onPress={handleGenerate}
@@ -443,7 +515,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    paddingTop: 60,
+    paddingTop: HEADER_TOP_PADDING,
     paddingBottom: Spacing.lg,
     paddingHorizontal: Spacing.lg,
   },
