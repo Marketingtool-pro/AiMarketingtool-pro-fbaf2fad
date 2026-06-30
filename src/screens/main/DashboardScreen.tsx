@@ -165,7 +165,6 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
 
 const DashboardScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  // A user is free only if BOTH the server profile and the local purchase
   const { user, profile, localSubscriptionOverride, generations } = useAuthStore();
   // and must win even when the server write failed (e.g. Apple's sandbox).
   const isFreeUser =
