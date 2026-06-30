@@ -36,6 +36,8 @@ BASE = 'https://api.appstoreconnect.apple.com'
 def req(method, path, body = nil)
   res = nil
   parsed = {}
+  res = nil
+  parsed = {}
   uri = URI("#{BASE}#{path}")
   klass = { get: Net::HTTP::Get, post: Net::HTTP::Post, patch: Net::HTTP::Patch }[method]
   raise ArgumentError, "Unsupported HTTP method: #{method.inspect}. Supported: :get, :post, :patch" unless klass
@@ -44,10 +46,12 @@ def req(method, path, body = nil)
   r['Content-Type'] = 'application/json'
   r.body = JSON.generate(body) if body
   res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(r) }
-  parsed = JSON.parse(res.body)
+  status = res&.code || 'no-response'
+  body_preview = res&.body.to_s[0, 500]
+  warn "⚠️ Failed to parse JSON response for #{method.to_s.upcase} #{path} (status=#{status}): #{e.message}; body=#{body_preview.inspect}"
 rescue JSON::ParserError => e
   status = res&.code || 'no-response'
-  body_preview = res&.body.to_s[0, 500].inspect
+  return [(res&.code || 0).to_i, parsed]
   warn "⚠️ Failed to parse JSON response for #{method.to_s.upcase} #{path} (status=#{status}): #{e.message}; body=#{body_preview}"
   parsed = {}
 ensure
