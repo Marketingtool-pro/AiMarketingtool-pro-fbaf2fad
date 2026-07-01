@@ -150,13 +150,13 @@ allprojects {
     }
 
     // 🚨 16 KB page size alignment fix
-    if (!contents.includes("useLegacyPackaging = false")) {
+    if (!contents.includes("useLegacyPackaging = true")) {
       contents = contents.replace(
         /android\s*\{/,
         `android {
     packagingOptions {
         jniLibs {
-            useLegacyPackaging = false
+            useLegacyPackaging = true
         }
     }`
       );

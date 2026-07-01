@@ -25,8 +25,8 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { hasProAccess, generationsLimitForTier } from '../../services/billingService';
-import { generationsLimitForTier } from '../../services/billingService';
 import { useAuthStore } from '../../store/authStore';
+import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
 import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 import LottieView from 'lottie-react-native';
@@ -165,7 +165,9 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
 
 const DashboardScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { user, profile, localSubscriptionOverride, generations } = useAuthStore();
+  const { user, profile, localSubscriptionOverride } = useAuthStore();
+  const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
+  const [refreshing, setRefreshing] = React.useState(false);
   // and must win even when the server write failed (e.g. Apple's sandbox).
   const isFreeUser =
     (!profile?.subscription || profile.subscription === 'free') &&
@@ -179,11 +181,6 @@ const DashboardScreen = () => {
 
   useEffect(() => {
     fetchTools();
-  const fetchTools = async () => {
-    // TODO: wire existing tools retrieval logic here.
-    // Kept async so current `await fetchTools()` usage remains valid.
-  };
-
     // Fetch user generations when logged in
     if (user?.$id) {
       fetchGenerations(user.$id);
