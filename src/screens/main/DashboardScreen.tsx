@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,9 @@ import {
   Dimensions,
   RefreshControl,
   Image,
+  Animated,
+  Easing,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -34,6 +37,8 @@ import Glass3DLogo from '../../components/common/Glass3DLogo';
 import NativeAdCard from '../../components/NativeAdCard';
 
 const { width } = Dimensions.get('window');
+
+const isVisionOS = (Platform.OS as any) === 'visionos';
 
 const Animations = {
   aiRobot: require('../../../assets/animations/ai-robot.js'),
@@ -166,12 +171,18 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
 const DashboardScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user, profile, localSubscriptionOverride } = useAuthStore();
+  // A user is free only if BOTH the server profile and the local purchase
+  // override say so — the override is set by a finished StoreKit transaction
   const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
   const [refreshing, setRefreshing] = React.useState(false);
   // and must win even when the server write failed (e.g. Apple's sandbox).
   const isFreeUser =
     (!profile?.subscription || profile.subscription === 'free') &&
     localSubscriptionOverride === 'free';
+  // PRO-badged tools need the Pro tier or higher, not just any paid plan.
+  const canUsePro = hasProAccess(profile?.subscription, localSubscriptionOverride);
+  const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
+  const [refreshing, setRefreshing] = React.useState(false);
 
   // Update counts when generations change
   const userGenerations = (user?.$id && generations.length > 0) ? generations.filter(g => g.userId === user.$id) : [];
