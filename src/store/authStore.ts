@@ -633,7 +633,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       email: user.email,
       subscription: 'free',
       generationsUsed: 0,
-      generationsLimit: 10,
+      generationsLimit: 3,
       createdAt: new Date().toISOString(),
     };
 
@@ -665,7 +665,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             email: user.email,
             subscription: 'free',
             generationsUsed: 0,
-            generationsLimit: 10,
+            generationsLimit: 3,
             createdAt: new Date().toISOString(),
           }
         ),
