@@ -181,8 +181,6 @@ const DashboardScreen = () => {
     localSubscriptionOverride === 'free';
   // PRO-badged tools need the Pro tier or higher, not just any paid plan.
   const canUsePro = hasProAccess(profile?.subscription, localSubscriptionOverride);
-  const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
-  const [refreshing, setRefreshing] = React.useState(false);
 
   // Update counts when generations change
   const userGenerations = (user?.$id && generations.length > 0) ? generations.filter(g => g.userId === user.$id) : [];
