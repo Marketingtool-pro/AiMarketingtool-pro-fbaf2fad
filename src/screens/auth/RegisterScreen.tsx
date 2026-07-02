@@ -17,7 +17,8 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
+import { Colors, Gradients, BorderRadius, HEADER_TOP_PADDING} from '../../constants/theme';
+import { Spacing } from '../../constants/spacing';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;

@@ -99,67 +99,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
 
-    // Reviewer bypass for App Store / Play Store — allows entry even if
-    // Appwrite is unreachable or the demo account wasn't created.
-    // Normalize email (trim + lowercase) and trim the password so iOS autofill
-    // whitespace or an auto-capitalized first letter can never defeat the match.
-    // Reviewer password(s): prefer EXPO_PUBLIC_REVIEWER_PASSWORDS (comma-separated) so the
-    // value can be overridden via EAS env / .env. Falls back to the throwaway demo password
-    // printed in the App Store Connect review notes so the bypass ALWAYS works for the
-    // reviewer even if the env var didn't make it into the build (this mirrors the hardcoded
-    // OTP fallback '123456' below). This is a reviewer-only demo account with no real data.
-    const REVIEWER_PASSWORDS = (process.env.EXPO_PUBLIC_REVIEWER_PASSWORDS || 'MarketingTool2026Demo!')
-      .split(',')
-      .map((p: string) => p.trim())
-      .filter(Boolean);
-    if (
-      email.trim().toLowerCase() === 'demo@marketingtool.pro' &&
-      REVIEWER_PASSWORDS.length > 0 &&
-      REVIEWER_PASSWORDS.includes(password.trim())
-    ) {
-      const mockUser = {
-        $id: 'reviewer_bypass',
-        name: 'App Store Reviewer',
-        email: 'demo@marketingtool.pro',
-        registration: new Date().toISOString(),
-        status: true,
-        passwordUpdate: new Date().toISOString(),
-        emailVerification: true,
-        phoneVerification: true,
-        prefs: {},
-      };
-      // Still try to fetch/create a real profile in Appwrite so the app
-      // behaves normally, but ignore errors so the reviewer isn't blocked.
-      // Guideline 2.1(b): the reviewer account is a FREE account with its trial
-      // generations used up, so App Review can SEE the post-trial In-App Purchase
-      // flow — tapping Generate (or Profile -> Manage Plan) opens the StoreKit
-      // paywall. All tools are open on every plan now, so a free account no
-      // longer shows "locked" tools; only the generation quota gates.
-      try {
-        const profile = await get().fetchOrCreateProfile(mockUser as any);
-        const reviewerProfile: UserProfile = {
-          ...profile,
-          subscription: 'free',
-          generationsUsed: 3,
-          generationsLimit: 3,
-        };
-        set({ user: mockUser as any, profile: reviewerProfile, isAuthenticated: true, isLoading: false });
-      } catch {
-        const fallbackProfile: UserProfile = {
-          $id: 'reviewer_bypass',
-          userId: 'reviewer_bypass',
-          name: 'App Store Reviewer',
-          email: 'demo@marketingtool.pro',
-          subscription: 'free',
-          generationsUsed: 3,
-          generationsLimit: 3,
-          createdAt: new Date().toISOString(),
-        };
-        set({ user: mockUser as any, profile: fallbackProfile, isAuthenticated: true, isLoading: false });
-      }
-      return;
-    }
-
     try {
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Login timeout')), 30000)
@@ -318,22 +257,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const cleaned = phoneNumber.replace(/\D/g, '');
       const formatted = phoneNumber.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
 
-      // Reviewer bypass — App Store/Play review team uses a fixed test number.
-      // Prefer EXPO_PUBLIC_REVIEWER_PHONE from .env / EAS secrets, but this code
-      // also falls back to a hardcoded default review number if the env var is unset.
-      const reviewerPhone = process.env.EXPO_PUBLIC_REVIEWER_PHONE || '+919999999999';
-      const cleanFormatted = formatted.replace(/\D/g, '');
-      const cleanReviewer = reviewerPhone.replace(/\D/g, '');
-      
-      // Match if the last 10 digits are the same (handles +1 vs +91 vs no prefix)
-      const isReviewer = cleanFormatted.endsWith(cleanReviewer.slice(-10)) || formatted === reviewerPhone;
-
-      if (isReviewer) {
-        if (__DEV__) console.log('[Auth] Reviewer bypass active for', formatted);
-        set({ tempPhone: formatted, tempVerificationId: formatted });
-        return formatted;
-      }
-
       if (__DEV__) console.log('[Auth] Sending OTP via Firebase to', formatted);
       const result = await firebaseSendOTP(formatted);
       if (!result.success) {
@@ -361,24 +284,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       let firebaseUid: string;
 
-      // Reviewer bypass — accept fixed OTP for the configured reviewer phone.
-      const reviewerPhone = process.env.EXPO_PUBLIC_REVIEWER_PHONE || '+919999999999';
-      const reviewerCode = process.env.EXPO_PUBLIC_REVIEWER_OTP ?? '123456';
-      
-      const cleanPhone = phone.replace(/\D/g, '');
-      const cleanReviewer = reviewerPhone.replace(/\D/g, '');
-      const isReviewer = cleanPhone.endsWith(cleanReviewer.slice(-10)) || phone === reviewerPhone;
-
-      if (isReviewer && code === reviewerCode) {
-        firebaseUid = 'reviewer_bypass_' + cleanPhone.slice(-10);
-      } else {
-        if (__DEV__) console.log('[Auth] Verifying OTP via Firebase for', phone);
-        const verifyResult = await firebaseVerifyOTP(code);
-        if (!verifyResult.success || !verifyResult.user) {
-          throw new Error(verifyResult.error || 'Invalid OTP. Please try again.');
-        }
-        firebaseUid = verifyResult.user.uid;
+      if (__DEV__) console.log('[Auth] Verifying OTP via Firebase for', phone);
+      const verifyResult = await firebaseVerifyOTP(code);
+      if (!verifyResult.success || !verifyResult.user) {
+        throw new Error(verifyResult.error || 'Invalid OTP. Please try again.');
       }
+      firebaseUid = verifyResult.user.uid;
 
       // Mint Appwrite session via phone-session function. The function takes
       // firebaseUid + phone and returns a one-time secret we exchange for a

@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Gradients, BorderRadius} from '../../constants/theme';
+import { Spacing } from '../../constants/spacing';
 
 interface ButtonProps {
   title: string;

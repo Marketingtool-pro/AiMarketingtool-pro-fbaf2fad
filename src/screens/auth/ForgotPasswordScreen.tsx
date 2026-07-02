@@ -12,7 +12,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
+import { Colors, Gradients, BorderRadius, HEADER_TOP_PADDING} from '../../constants/theme';
+import { Spacing } from '../../constants/spacing';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 
 const ForgotPasswordScreen = () => {

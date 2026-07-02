@@ -21,7 +21,8 @@ import { useToolsStore, Tool, ToolInput } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { effectiveTier, generationsLimitForTier } from '../../services/billingService';
 import { imageService, GeneratedImage } from '../../services/imageService';
-import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
+import { Colors, Gradients, BorderRadius, HEADER_TOP_PADDING} from '../../constants/theme';
+import { Spacing } from '../../constants/spacing';
 import { getToolIcon } from '../../constants/toolIcons';
 
 

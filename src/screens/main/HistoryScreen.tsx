@@ -19,7 +19,8 @@ import * as Clipboard from 'expo-clipboard';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore, Generation } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Gradients, BorderRadius} from '../../constants/theme';
+import { Spacing } from '../../constants/spacing';
 
 
 const { width } = Dimensions.get('window');

@@ -24,7 +24,8 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import ViewShot from 'react-native-view-shot';
 import { RootStackParamList } from '../../navigation/AppNavigator';
-import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
+import { Colors, Gradients, BorderRadius, HEADER_TOP_PADDING} from '../../constants/theme';
+import { Spacing } from '../../constants/spacing';
 
 
 const { width, height } = Dimensions.get('window');

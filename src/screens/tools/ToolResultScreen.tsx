@@ -18,7 +18,8 @@ import * as Clipboard from 'expo-clipboard';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
+import { Colors, Gradients, BorderRadius, HEADER_TOP_PADDING} from '../../constants/theme';
+import { Spacing } from '../../constants/spacing';
 import { getToolIcon } from '../../constants/toolIcons';
 
 

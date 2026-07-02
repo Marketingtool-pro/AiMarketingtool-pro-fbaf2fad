@@ -6,7 +6,8 @@ import {
   ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors, BorderRadius, Shadow, Spacing } from '../../constants/theme';
+import { Colors, BorderRadius, Shadow} from '../../constants/theme';
+import { Spacing } from '../../constants/spacing';
 
 interface CardProps {
   children: React.ReactNode;

@@ -19,9 +19,6 @@ import { initializeAppCheck } from './src/services/firebaseAppCheck';
 // Firebase Performance removed: RNFBPerf with useFrameworks:static crashes iOS
 // on cold start, and the Android deferred-init workaround doesn't cover iOS.
 // Perf is non-essential monitoring — dropped to ship a stable IAP build.
-import crashlytics from '@react-native-firebase/crashlytics';
-import analytics from '@react-native-firebase/analytics';
-import messaging from '@react-native-firebase/messaging';
 import * as TrackingTransparency from 'expo-tracking-transparency';
 import { initRemoteConfig } from './src/services/firebaseRemoteConfig';
 import { initAds } from './src/services/adsService';
@@ -53,11 +50,11 @@ export default function App() {
           return Promise.race([p, timeoutPromise]);
         };
 
-        // App Check must be ready BEFORE the user reaches the login screen.
-        // Firebase Phone Auth on iOS uses the App Check token to verify the
-        // device — without it, Auth falls back to reCAPTCHA Enterprise SDK
-        // which isn't linked. Capping at 2s so a slow attestation call
-        // doesn't block the splash forever.
+        // Start App Check in the background so the splash screen isn't blocked by
+        // Play Integrity / App Attest startup. The OTP flow now waits for a short
+        // readiness window before sending SMS, which makes Android sign-in more reliable.
+        void initializeAppCheck().catch((e: unknown) => console.warn('App Check init warning:', e));
+
         await Promise.all([
           // Load the bundled Poppins family the theme references (theme.ts FontFamily).
           // Previously only Feather icons were loaded, so every `fontFamily: 'Poppins-*'`
@@ -72,9 +69,8 @@ export default function App() {
             'Poppins-Bold': require('./assets/fonts/Poppins-Bold.ttf'),
           }), 3000),
           withTimeout(checkAuth(), 1500),
-          withTimeout(initializeAppCheck(), 2000),
         ]);
-      } catch (e) {
+      } catch (e: unknown) {
         console.warn('Error loading app resources:', e);
       } finally {
         setAppIsReady(true);
@@ -95,6 +91,26 @@ export default function App() {
       // Note: App Check init moved to prepare() above so the token is ready
       // when the user reaches the login screen. Don't call it again here.
 
+      let firebaseModules: any = null;
+      try {
+        firebaseModules = {
+          crashlytics: require('@react-native-firebase/crashlytics').default,
+          analytics: require('@react-native-firebase/analytics').default,
+          messaging: require('@react-native-firebase/messaging').default,
+        };
+      } catch (e: unknown) {
+        console.warn('Firebase deferred init modules unavailable:', e);
+      }
+
+      if (!firebaseModules) {
+        matomo.init().catch((e: unknown) => console.warn('Matomo init error', e));
+        initRemoteConfig().catch((e: unknown) => console.warn('RemoteConfig init error', e));
+        initAds().catch((e: unknown) => console.warn('Ads init error', e));
+        return;
+      }
+
+      const { crashlytics, analytics, messaging } = firebaseModules;
+
       // Firebase auto-init is OFF in AndroidManifest (see
       // withFirebaseDeferredInit.js). On low-end devices in markets with
       // bad networks (India: Infinix, realme, vivo) the FID registration
@@ -104,40 +120,40 @@ export default function App() {
       // onLayoutRootView, so the user-visible startup completes BEFORE
       // Firebase reaches for the network.
       messaging().setAutoInitEnabled(true)
-        .catch(e => console.warn('Messaging auto-init enable error:', e));
+        .catch((e: unknown) => console.warn('Messaging auto-init enable error:', e));
 
       crashlytics().setCrashlyticsCollectionEnabled(true)
         .then(() => crashlytics().log('App started'))
-        .catch(e => console.warn('Crashlytics init error:', e));
+        .catch((e: unknown) => console.warn('Crashlytics init error:', e));
 
       analytics().setAnalyticsCollectionEnabled(true)
         .then(() => analytics().logAppOpen())
-        .catch(e => console.warn('Analytics init error:', e));
+        .catch((e: unknown) => console.warn('Analytics init error:', e));
 
       messaging().requestPermission()
-        .then(async (authStatus) => {
+        .then(async (authStatus: number) => {
           if (!mounted) return;
           if (authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
               authStatus === messaging.AuthorizationStatus.PROVISIONAL) {
             const token = await messaging().getToken();
             if (!mounted) return;
             if (__DEV__) console.log('[FCM] Token:', token?.substring(0, 20) + '...');
-            unsubscribeFcm = messaging().onMessage(async (msg) => {
+            unsubscribeFcm = messaging().onMessage(async (msg: any) => {
               if (__DEV__) console.log('[FCM] Foreground:', msg.notification?.title);
             });
           }
         })
-        .catch(e => console.warn('FCM init error:', e));
+        .catch((e: unknown) => console.warn('FCM init error:', e));
 
-      matomo.init().catch(e => console.warn('Matomo init error', e));
+      matomo.init().catch((e: unknown) => console.warn('Matomo init error', e));
 
       // Remote Config — deferred so it doesn't block first paint. Falls back
       // to baked-in defaults if fetch fails (see firebaseRemoteConfig.ts).
-      initRemoteConfig().catch(e => console.warn('RemoteConfig init error', e));
+      initRemoteConfig().catch((e: unknown) => console.warn('RemoteConfig init error', e));
 
       // AdMob / Ad Manager — Android only (excluded from iOS). Deferred so the
       // SDK init network call never gates the splash / cold start.
-      initAds().catch(e => console.warn('Ads init error', e));
+      initAds().catch((e: unknown) => console.warn('Ads init error', e));
     }
 
     prepare();

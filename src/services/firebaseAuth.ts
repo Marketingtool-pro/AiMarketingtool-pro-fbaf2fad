@@ -2,6 +2,7 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
+import { ensureAppCheckReady } from './firebaseAppCheck';
 
 let auth: any = null;
 let apnsRegistered = false;
@@ -91,6 +92,16 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
       new Promise<void>((resolve) => setTimeout(resolve, 2500)),
     ]);
 
+    const appCheckTimeoutMs = Platform.OS === 'android' ? 10000 : 6000;
+    const appCheckReady = await ensureAppCheckReady(appCheckTimeoutMs);
+    if (!appCheckReady) {
+      if (Platform.OS === 'android') {
+        if (__DEV__) console.warn('[FirebaseAuth] Android App Check was not ready before OTP request; continuing with a short retry window.');
+      } else if (__DEV__) {
+        console.warn('[FirebaseAuth] App Check was not ready before OTP request; continuing anyway.');
+      }
+    }
+
     const confirmation = await firebaseAuth().signInWithPhoneNumber(normalizedPhone);
     verificationId = confirmation.verificationId;
     // Persist verificationId so it survives app restart from reCAPTCHA
@@ -144,6 +155,12 @@ export async function verifyPhoneOTP(code: string): Promise<{
     }
 
     if (__DEV__) console.log('[FirebaseAuth] Verifying OTP...');
+
+    const appCheckTimeoutMs = Platform.OS === 'android' ? 10000 : 6000;
+    const appCheckReady = await ensureAppCheckReady(appCheckTimeoutMs);
+    if (!appCheckReady && Platform.OS === 'android') {
+      if (__DEV__) console.warn('[FirebaseAuth] Android App Check was not ready before OTP verification; continuing with Firebase fallback.');
+    }
 
     const credential = firebaseAuth.PhoneAuthProvider.credential(verificationId, code);
     const userCredential = await firebaseAuth().signInWithCredential(credential);

@@ -18,7 +18,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { generationsLimitForTier } from '../../services/billingService';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, BorderRadius} from '../../constants/theme';
+import { Spacing } from '../../constants/spacing';
 
 const { width } = Dimensions.get('window');
 

@@ -19,7 +19,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { authService, functions } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
-import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
+import { Colors, BorderRadius, HEADER_TOP_PADDING} from '../../constants/theme';
+import { Spacing } from '../../constants/spacing';
 import { biometricService } from '../../services/biometric';
 
 const SettingsScreen = () => {
@@ -71,8 +72,8 @@ const SettingsScreen = () => {
     try {
       setNameSaving(true);
       // The Appwrite ACCOUNT name update only works for email/password sessions.
-      // Users signed in via Firebase phone OTP (or the reviewer bypass) have no
-      // Appwrite session, so this used to throw and fail the whole rename.
+      // Users signed in via Firebase phone OTP may not have a usable Appwrite
+      // session, so this update can fail and should be treated as non-blocking.
       // The profile document below is the app's source of truth for the name.
       try {
         await authService.updateProfile(trimmed);
@@ -106,13 +107,6 @@ const SettingsScreen = () => {
   }, [user]);
 
   const handle2FAToggle = async () => {
-    // Reviewer/demo bypass account has no real Appwrite session, so 2FA setup
-    // (needs the 'account' scope) fails with "guests missing scopes". Show a clear
-    // message instead of a scary failure so App Review isn't confused.
-    if (user?.$id === 'reviewer_bypass') {
-      Alert.alert('Demo Account', 'Two-factor authentication isn’t available on the demo/review account.');
-      return;
-    }
     if (mfaEnabled) {
       Alert.alert(
         'Disable 2FA',
@@ -229,15 +223,6 @@ const SettingsScreen = () => {
             try {
               if (!user?.$id) {
                 throw new Error('User session not found. Please log in again.');
-              }
-              // Reviewer/demo bypass account has no real Appwrite session, so the
-              // delete-account function would fail with "guests missing scopes".
-              // Simulate a successful deletion (clear state + sign out) so App Review
-              // can verify the account-deletion flow (Guideline 5.1.1(v)).
-              if (user.$id === 'reviewer_bypass') {
-                Alert.alert('Account Deleted', 'Your account has been successfully deleted.');
-                await logout();
-                return;
               }
               const execution = await functions.createExecution(
                 'delete-account',

@@ -9,7 +9,8 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, BorderRadius} from '../../constants/theme';
+import { Spacing } from '../../constants/spacing';
 
 interface InputProps extends TextInputProps {
   label?: string;

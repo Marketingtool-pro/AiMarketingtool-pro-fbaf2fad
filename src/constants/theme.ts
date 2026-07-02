@@ -1,5 +1,6 @@
 // MarketingTool Theme - Dark Mode (Vision UI Pro inspired)
 import { initialWindowMetrics } from 'react-native-safe-area-context';
+import { Spacing } from './spacing';
 
 // Single source of truth for every screen header's top padding. Driven by the
 // real device safe-area inset so iOS (notch ~47-59px) and Android (status bar
@@ -100,15 +101,7 @@ export const Gradients: Record<string, readonly [string, string, ...string[]]> =
   purple: ['#7C3AED', '#A78BFA'] as const,
 };
 
-export const Spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
-  xxxl: 64,
-};
+export { Spacing } from './spacing';
 
 export const FontSize = {
   xs: 10,

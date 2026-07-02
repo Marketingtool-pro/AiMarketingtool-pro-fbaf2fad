@@ -9,7 +9,8 @@ const DEFAULTS = {
   googlePlayServicesVersion: '18.0.0',
   gradleVersion: '8.13',
   crashlyticsVersion: '3.0.3',
-  googleServicesVersion: '4.4.2'
+  googleServicesVersion: '4.4.2',
+  buildToolsVersion: '36.0.0'
 };
 
 /**
@@ -21,7 +22,8 @@ const withKotlinKspFix = (config, options) => {
   const { 
     kotlinVersion, kspVersion, agpVersion, 
     googlePlayServicesVersion, gradleVersion,
-    crashlyticsVersion, googleServicesVersion
+    crashlyticsVersion, googleServicesVersion,
+    buildToolsVersion
   } = opts;
 
   // 1. Project-level build.gradle
@@ -36,9 +38,9 @@ const withKotlinKspFix = (config, options) => {
       { name: 'kotlinVersion', value: `'${kotlinVersion}'` },
       { name: 'kspVersion', value: `'${kspVersion}'` },
       { name: 'googlePlayServicesVersion', value: `"${googlePlayServicesVersion}"` },
-      { name: 'compileSdkVersion', value: '35' },
-      { name: 'targetSdkVersion', value: '35' },
-      { name: 'buildToolsVersion', value: '"35.0.0"' },
+      { name: 'compileSdkVersion', value: '36' },
+      { name: 'targetSdkVersion', value: '36' },
+      { name: 'buildToolsVersion', value: `"${buildToolsVersion}"` },
       { name: 'minSdkVersion', value: '24' },
     ];
     
@@ -85,7 +87,7 @@ const withKotlinKspFix = (config, options) => {
         );
     }
 
-    const resolutionStrategyBlock = `
+   const resolutionStrategyBlock = `
 allprojects {
     configurations.all {
         resolutionStrategy.eachDependency { DependencyResolveDetails details ->
@@ -95,10 +97,6 @@ allprojects {
             }
             if (requested.group == 'com.google.devtools.ksp') {
                 details.useVersion kspVersion
-            }
-            // 🚨 Pin to SDK 35 compatible versions
-            if (requested.group == 'androidx.core' && (requested.name == 'core-ktx' || requested.name == 'core')) {
-                details.useVersion '1.15.0'
             }
             if (requested.group == 'androidx.activity') {
                 details.useVersion '1.10.1'

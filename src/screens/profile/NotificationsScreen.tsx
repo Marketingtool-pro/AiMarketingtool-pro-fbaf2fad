@@ -17,7 +17,8 @@ import {
   markNotificationRead,
   clearNotificationHistory,
 } from '../../services/notificationHistory';
-import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
+import { Colors, Gradients, BorderRadius, HEADER_TOP_PADDING} from '../../constants/theme';
+import { Spacing } from '../../constants/spacing';
 
 
 interface NotificationItem {

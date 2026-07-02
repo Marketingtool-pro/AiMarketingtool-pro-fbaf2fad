@@ -7,7 +7,8 @@ import {
   ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Gradients, BorderRadius} from '../../constants/theme';
+import { Spacing } from '../../constants/spacing';
 
 interface LoadingProps {
   size?: 'small' | 'large';
