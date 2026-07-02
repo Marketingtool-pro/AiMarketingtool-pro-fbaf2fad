@@ -38,6 +38,14 @@ import NativeAdCard from '../../components/NativeAdCard';
 
 const { width } = Dimensions.get('window');
 
+type PopularToolItem = {
+  name: string;
+  slug: string;
+  category: string;
+  color: string;
+  img?: any;
+};
+
 const isVisionOS = (Platform.OS as any) === 'visionos';
 
 const Animations = {
@@ -181,8 +189,6 @@ const DashboardScreen = () => {
     localSubscriptionOverride === 'free';
   // PRO-badged tools need the Pro tier or higher, not just any paid plan.
   const canUsePro = hasProAccess(profile?.subscription, localSubscriptionOverride);
-  const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
-  const [refreshing, setRefreshing] = React.useState(false);
 
   // Update counts when generations change
   const userGenerations = (user?.$id && generations.length > 0) ? generations.filter(g => g.userId === user.$id) : [];
@@ -233,7 +239,7 @@ const DashboardScreen = () => {
     { id: 1, image: BannerImages.banner1, title: 'AI Marketing Pro', subtitle: 'Create stunning ads in seconds', color: '#6C5CE7' },
     { id: 2, image: BannerImages.banner2, title: 'Smart Content', subtitle: 'AI-powered writing assistant', color: '#00B894' },
     { id: 3, image: BannerImages.banner3, title: 'ROI Boost', subtitle: 'Data-driven strategies', color: '#E17055' },
-    { id: 5, image: BannerImages.banner5, title: 'Marketing Suite', subtitle: 'All tools in one place', color: '#A29BFE' },
+    { id: 4, image: BannerImages.banner5, title: 'Marketing Suite', subtitle: 'All tools in one place', color: '#A29BFE' },
   ];
 
   const quickActions = [
@@ -443,7 +449,15 @@ const DashboardScreen = () => {
                   if (action.screen === 'MemeGenerator') {
                     navigation.navigate('MemeGenerator');
                   } else if (action.screen === 'Chat' || action.screen === 'Tools' || action.screen === 'History') {
-                    navigation.navigate('Main', { screen: action.screen === 'Chat' ? 'Chat' : action.screen === 'Tools' ? 'Tools' : 'History' } as any);
+                    const mainScreenMap: Record<'Chat' | 'Tools' | 'History', 'Chat' | 'Tools' | 'History'> = {
+                      Chat: 'Chat',
+                      Tools: 'Tools',
+                      History: 'History',
+                    };
+                    const targetScreen = mainScreenMap[action.screen as 'Chat' | 'Tools' | 'History'];
+                    if (targetScreen) {
+                      navigation.navigate('Main', { screen: targetScreen } as any);
+                    }
                   }
                 }}
               >
@@ -543,7 +557,7 @@ const DashboardScreen = () => {
           </View>
 
           <View style={styles.popularList}>
-            {popularTools.map((tool: typeof popularTools[number], index: number) => (
+            {popularTools.map((tool: PopularToolItem, index: number) => (
               <TouchableOpacity
                 key={index}
                 style={[
@@ -561,7 +575,7 @@ const DashboardScreen = () => {
                 <View style={styles.popularInfo}>
                   <View style={[styles.popularIcon, { backgroundColor: tool.color + '20' }]}>
                     <Image
-                      source={(tool as any).img || getToolIcon(tool.slug, tool.category)}
+                      source={tool.img || getToolIcon(tool.slug, tool.category)}
                       style={{ width: 32, height: 32 }}
                       resizeMode="contain"
                     />
