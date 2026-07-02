@@ -17,7 +17,13 @@ export function parseAppwriteResponse(rb: any): any {
   if (typeof rb === 'object') return rb;
   if (typeof rb === 'string') {
     try { return JSON.parse(rb); }
-    catch (error: any) { return { success: false, message: rb }; }
+    catch (error: any) {
+      console.warn('[authStore] Failed to parse Appwrite responseBody as JSON', {
+        error: error?.message ?? String(error),
+        responseBody: rb,
+      });
+      return { success: false, message: rb };
+    }
   }
   return {};
 }
