@@ -2,9 +2,9 @@ name: Build and Test
 
 on:
   push:
-    branches: [Master, main, develop]
+    branches: [Master, develop]
   pull_request:
-    branches: [Master, main, develop]
+    branches: [Master, develop]
   workflow_dispatch:
 
 permissions:
@@ -49,5 +49,5 @@ jobs:
         run: npm install --legacy-peer-deps --no-audit --no-fund
       
       # iOS held — Android only in CI (iOS is built/submitted manually).
-      - name: Build preview for Android
+      - name: Build preview for Android & Ios
         run: eas build --platform android --profile preview --non-interactive
