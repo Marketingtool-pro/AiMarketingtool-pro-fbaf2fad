@@ -81,7 +81,7 @@ const ToolResultScreen = () => {
       }
     };
     autoSave();
-  }, []);
+  }, [result, user, tool, isSaved, addGeneration, savedInputs]);
 
   // Collapse only long results for readability — purely a mobile display choice.
   // The full output is always available inline via "Show full result".
@@ -376,7 +376,7 @@ const ToolResultScreen = () => {
           <View style={styles.statRow}>
             <Text style={styles.statLabel}>Words</Text>
             <Text style={styles.statValue}>
-              {outputs.find(o => o.id === selectedOutput)?.content.split(' ').length || 0}
+              {outputs.find(o => o.id === selectedOutput)?.content.split(/\s+/).filter(Boolean).length || 0}
             </Text>
           </View>
           <View style={styles.statRow}>
@@ -388,7 +388,7 @@ const ToolResultScreen = () => {
           <View style={styles.statRow}>
             <Text style={styles.statLabel}>Reading Time</Text>
             <Text style={styles.statValue}>
-              {Math.ceil((outputs.find(o => o.id === selectedOutput)?.content.split(' ').length || 0) / 200)} min
+              {Math.ceil((outputs.find(o => o.id === selectedOutput)?.content.split(/\s+/).filter(Boolean).length || 0) / 200)} min
             </Text>
           </View>
         </View>
@@ -416,7 +416,7 @@ const ToolResultScreen = () => {
 
         <TouchableOpacity
           style={styles.primaryButton}
-          onPress={() => navigation.navigate('Main' as any)}
+          onPress={() => navigation.navigate('Main')}
         >
           <LinearGradient colors={Gradients.primary} style={styles.primaryButtonGradient}>
             <Feather name="plus" size={20} color={Colors.white} />
@@ -432,10 +432,6 @@ const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
     backgroundColor: '#0D0F1C',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
   },
   header: {
     paddingTop: HEADER_TOP_PADDING,

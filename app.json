@@ -3,7 +3,7 @@
     "name": "MarketingTool",
     "slug": "marketingtool",
     "owner": "aimarketintool-2-2-2",
-    "version": "1.5.8",
+    "version": "1.5.11",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -19,11 +19,12 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "545",
+      "buildNumber": "550",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "FirebaseAppDelegateProxyEnabled": true,
+        "GADApplicationIdentifier": "ca-app-pub-3940256099942544~1458002511",
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
@@ -56,7 +57,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 545,
+      "versionCode": 550,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -124,7 +125,8 @@
             "targetSdkVersion": 36,
             "minSdkVersion": 24,
             "windowSoftInputMode": "adjustResize",
-            "useMemoryPageSize16KB": true,
+            "useLegacyPackaging": true,
+            "buildArchs": ["armeabi-v7a", "arm64-v8a"],
             "ndkVersion": "27.1.12297006",
             "kotlinVersion": "2.3.0",
             "kspVersion": "2.3.0"
@@ -170,6 +172,7 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-2789940907288323~8551339904",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
           "delayAppMeasurementInit": true
         }
       ],

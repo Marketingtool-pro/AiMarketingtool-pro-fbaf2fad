@@ -19,12 +19,14 @@
 # =============================================================================
 require 'jwt'; require 'openssl'; require 'net/http'; require 'json'; require 'uri'
 
-KEY_ID    = ENV.fetch('ASC_KEY_ID') { abort '❌ Missing required env var ASC_KEY_ID' }
-ISSUER_ID = ENV.fetch('ASC_ISSUER_ID') { abort '❌ Missing required env var ASC_ISSUER_ID' }
-APP_ID    = ENV.fetch('ASC_APP_ID') { abort '❌ Missing required env var ASC_APP_ID' }
+KEY_ID    = ENV.fetch('ASC_KEY_ID') { abort '❌ Missing required env var: ASC_KEY_ID' }
+ISSUER_ID = ENV.fetch('ASC_ISSUER_ID') { abort '❌ Missing required env var: ASC_ISSUER_ID' }
+APP_ID    = ENV.fetch('ASC_APP_ID') { abort '❌ Missing required env var: ASC_APP_ID' }
 KEY_PATH  = ENV.fetch('ASC_KEY_PATH', File.expand_path("../AuthKey_#{KEY_ID}.p8", __dir__))
 DRY_RUN   = ENV.fetch('DRY_RUN', 'true') != 'false'
 WANT_BUILD = ENV['BUILD_NUMBER']
+MAX_BUILD_WAIT_ATTEMPTS = 40
+BUILD_POLL_INTERVAL_SECONDS = 30
 
 abort "❌ key not found: #{KEY_PATH}" unless File.exist?(KEY_PATH)
 pk = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
@@ -33,7 +35,20 @@ TOKEN = JWT.encode({ iss: ISSUER_ID, iat: now, exp: now + 1100, aud: 'appstoreco
                    pk, 'ES256', { kid: KEY_ID, typ: 'JWT' })
 BASE = 'https://api.appstoreconnect.apple.com'
 
+# Explicit ASC resource type -> reviewSubmissionItems relationship key mapping.
+# Avoid fragile singularization heuristics.
+RELATIONSHIP_KEY_BY_TYPE = {
+  'appStoreVersions' => :appStoreVersion,
+  'appEvents' => :appEvent,
+  'appCustomProductPageVersions' => :appCustomProductPageVersion,
+  'appStoreVersionExperiments' => :appStoreVersionExperiment,
+  'inAppPurchases' => :inAppPurchase,
+  'subscriptions' => :subscription
+}.freeze
+
 def req(method, path, body = nil)
+  res = nil
+  parsed = {}
   uri = URI("#{BASE}#{path}")
   klass = { get: Net::HTTP::Get, post: Net::HTTP::Post, patch: Net::HTTP::Patch }[method]
   raise ArgumentError, "Unsupported HTTP method: #{method.inspect}. Supported: :get, :post, :patch" unless klass
@@ -44,10 +59,13 @@ def req(method, path, body = nil)
   res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(r) }
   parsed = JSON.parse(res.body)
 rescue JSON::ParserError => e
-  warn "⚠️ Failed to parse JSON response for #{method.to_s.upcase} #{path} (status=#{res.code}): #{e.message}; body=#{res.body.to_s[0, 500].inspect}"
+  status = res&.code || 'unknown'
+  content_type = res&.[]('Content-Type').to_s
+  body_bytes = res&.body.to_s.bytesize
+  warn "⚠️ Failed to parse JSON response for #{method.to_s.upcase} #{path} (status=#{status}, content_type=#{content_type}, body_bytes=#{body_bytes}, error_class=#{e.class})"
   parsed = {}
 ensure
-  return [res.code.to_i, parsed]
+  return [res&.code.to_i, parsed]
 end
 def get(p) = req(:get, p)
 
@@ -71,13 +89,13 @@ def newest_valid_or_target(want)
 end
 
 build = nil
-tries = WANT_BUILD ? 40 : 1   # ~20 min wait when targeting a specific build
+tries = WANT_BUILD ? MAX_BUILD_WAIT_ATTEMPTS : 1   # ~20 min wait when targeting a specific build
 tries.times do |i|
   build, err = newest_valid_or_target(WANT_BUILD)
   break if build
   abort "❌ #{err}" if i == tries - 1
   puts "… waiting for build #{WANT_BUILD} to finish processing (#{err}) [#{i + 1}/#{tries}]"
-  sleep 30
+  sleep BUILD_POLL_INTERVAL_SECONDS
 end
 abort "❌ no usable build#{WANT_BUILD ? " #{WANT_BUILD}" : ''}" unless build
 puts "Build to ship: #{build['attributes']['version']} (#{build['id']}) uploaded #{build['attributes']['uploadedDate']}"
@@ -142,9 +160,9 @@ puts "✔ build #{build['attributes']['version']} attached to version"
 
 # 3b) "What's New" is REQUIRED before a version can be submitted — an empty new
 #     version returns 409 "this resource cannot be reviewed". Set it on every
-#     iOS localization. Override text via env WHATS_NEW.
-whats_new = ENV['WHATS_NEW'] ||
-  "Performance improvements and fixes. All tools now open on every plan, and full results are viewable on-device."
+#     iOS localization. Require explicit WHATS_NEW in live mode to avoid stale defaults.
+whats_new = ENV['WHATS_NEW'].to_s.strip
+abort "❌ Missing required env var WHATS_NEW for live submission" if whats_new.empty?
 _, locs = get("/v1/appStoreVersions/#{ver['id']}/appStoreVersionLocalizations?limit=50")
 (locs['data'] || []).each do |loc|
   lc = loc['attributes']['locale']
@@ -179,11 +197,18 @@ puts "✔ review submission #{rs_id} created"
 #    the 2.1(b) auto-reject that hit all 14 prior submissions).
 failures = []
 items.each do |it|
+  rel_key = RELATIONSHIP_KEY_BY_TYPE[it[:type]]
+  unless rel_key
+    warn "  ✗ unknown item type #{it[:type]} #{it[:id]} — no relationship mapping configured"
+    failures << it
+    next
+  end
+
   code, r = req(:post, '/v1/reviewSubmissionItems',
     { data: { type: 'reviewSubmissionItems',
               relationships: {
                 reviewSubmission: { data: { type: 'reviewSubmissions', id: rs_id } },
-                it[:type].sub(/s$/, '').to_sym => { data: { type: it[:type], id: it[:id] } }
+                rel_key => { data: { type: it[:type], id: it[:id] } }
               } } })
   ok = [200, 201].include?(code)
   detail = (r['errors'] || []).map { |e| e['detail'] }.join(' | ')

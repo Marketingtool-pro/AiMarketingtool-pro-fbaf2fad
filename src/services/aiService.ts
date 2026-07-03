@@ -8,6 +8,9 @@ import { getString } from './firebaseRemoteConfig';
 
 const TOOL_EXECUTOR_FUNCTION_ID = 'tool-executor';
 const NEXTJS_API_BASE = 'https://app.marketingtool.pro';
+const MIN_PARSEABLE_RESPONSE_LENGTH = 20;
+const MIN_SPLIT_PART_LENGTH = 20;
+const MIN_VARIATION_PART_LENGTH = 50;
 
 export interface AIGenerationRequest {
   toolSlug: string;
@@ -144,7 +147,7 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
       body: JSON.stringify({
         tool: toolSlug,
         input: userPrompt,
-        tone: tone || 'Professional',
+        tone: tone || 'professional',
         language: language || 'English',
       }),
     });
@@ -212,7 +215,7 @@ function parseExecutionResponse(responseBody: string, outputCount: number): AIGe
     }
 
     // Format 3: Raw string response
-    if (typeof result === 'string' && result.length > 20) {
+    if (typeof result === 'string' && result.length > MIN_PARSEABLE_RESPONSE_LENGTH) {
       return {
         outputs: splitOutputs(result, outputCount),
         success: true,
@@ -222,7 +225,7 @@ function parseExecutionResponse(responseBody: string, outputCount: number): AIGe
     return { outputs: [], success: false, error: 'Unexpected response format' };
   } catch {
     // Response might be plain text, not JSON
-    if (responseBody && responseBody.length > 20) {
+    if (responseBody && responseBody.length > MIN_PARSEABLE_RESPONSE_LENGTH) {
       return {
         outputs: splitOutputs(responseBody, outputCount),
         success: true,
@@ -236,7 +239,7 @@ function parseExecutionResponse(responseBody: string, outputCount: number): AIGe
 function splitOutputs(content: string, count: number): string[] {
   // Try custom separator first
   if (content.includes('---VARIATION---')) {
-    const parts = content.split('---VARIATION---').filter(p => p.trim().length > 20);
+    const parts = content.split('---VARIATION---').filter(p => p.trim().length > MIN_SPLIT_PART_LENGTH);
     if (parts.length >= 1) {
       return parts.slice(0, count).map(p => p.trim());
     }
@@ -245,7 +248,7 @@ function splitOutputs(content: string, count: number): string[] {
   // Try other common separators
   const separators = ['---', '***', '###', '\n\nVariation', '\n\nOption'];
   for (const sep of separators) {
-    const parts = content.split(sep).filter(p => p.trim().length > 50);
+    const parts = content.split(sep).filter(p => p.trim().length > MIN_VARIATION_PART_LENGTH);
     if (parts.length >= count) {
       return parts.slice(0, count).map(p => p.trim());
     }
@@ -253,7 +256,7 @@ function splitOutputs(content: string, count: number): string[] {
 
   // Try numbered variations
   const numberedRegex = /(?:^|\n)(?:\d+\.|Option \d+|Variation \d+)[:\s]/i;
-  const parts = content.split(numberedRegex).filter(p => p.trim().length > 50);
+  const parts = content.split(numberedRegex).filter(p => p.trim().length > MIN_VARIATION_PART_LENGTH);
   if (parts.length >= count) {
     return parts.slice(0, count).map(p => p.trim());
   }
@@ -265,9 +268,41 @@ function splitOutputs(content: string, count: number): string[] {
 // Check if AI service is available
 export async function checkAIAvailability(): Promise<{ available: boolean; method: string }> {
   try {
-    // Check Appwrite Function health by verifying current user session
+    // First verify current user session
     await account.get();
-    return { available: true, method: 'appwrite-function' };
+
+    // Then verify tool-executor reachability with a lightweight health check payload
+    const payload = JSON.stringify({ action: 'health-check' });
+    const execution = await functions.createExecution(
+      TOOL_EXECUTOR_FUNCTION_ID,
+      payload,
+      false,
+      '/',
+      ExecutionMethod.POST,
+      {
+        'content-type': 'application/json',
+      }
+    );
+
+    if (execution.status && execution.status !== 'completed') {
+      return { available: false, method: 'none' };
+    }
+
+    const body = execution.responseBody?.trim() ?? '';
+    if (!body) {
+      return { available: false, method: 'none' };
+    }
+
+    try {
+      const parsed = JSON.parse(body);
+      const healthy = parsed?.healthy === true || parsed?.ok === true || parsed?.success === true;
+      return healthy
+        ? { available: true, method: 'appwrite-function' }
+        : { available: false, method: 'none' };
+    } catch {
+      // Non-JSON but non-empty response means function is reachable
+      return { available: true, method: 'appwrite-function' };
+    }
   } catch {
     return { available: false, method: 'none' };
   }
