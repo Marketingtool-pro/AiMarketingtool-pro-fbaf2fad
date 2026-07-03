@@ -115,6 +115,11 @@ const ToolResultScreen = () => {
   };
 
   // Desktop hand-off RESTORED per MOBILE_TOOLS_POLICY.md (owner decision 2026-06-28):
+  // the "View Full on Desktop" button is required. Opens the marketing site root
+  // https://marketingtool.pro (WebFetch-verified working) — NOT app.marketingtool.pro,
+  // whose SPA deep-route 404s. The phone only links to the correct, working URL.
+  const DESKTOP_URL = 'https://app.marketingtool.pro';
+  const handleViewOnDesktop = async () => { try { await Linking.openURL(DESKTOP_URL); } catch {} };
   // both the inline "Show full result" AND a "View Full on Desktop" button are required.
   // Opens the marketing site root (https://marketingtool.pro), verified working — NOT
   // app.marketingtool.pro, whose SPA deep-routes 404. Web routing is off-limits; the phone only
