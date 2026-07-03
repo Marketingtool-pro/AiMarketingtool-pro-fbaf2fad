@@ -120,6 +120,16 @@ const ToolResultScreen = () => {
   // whose SPA deep-route 404s. The phone only links to the correct, working URL.
   const DESKTOP_URL = 'https://app.marketingtool.pro';
   const handleViewOnDesktop = async () => { try { await Linking.openURL(DESKTOP_URL); } catch {} };
+  // both the inline "Show full result" AND a "View Full on Desktop" button are required.
+  // Opens the marketing site root (https://marketingtool.pro), verified working — NOT
+  // app.marketingtool.pro, whose SPA deep-routes 404. Web routing is off-limits; the phone only
+  // links to the correct, working URL.
+  // Owner directive: link to the marketing site root (verified working, has the
+  // "Get Started" entry). NOT app.marketingtool.pro, whose SPA deep-routes 404.
+  const DESKTOP_URL = 'https://marketingtool.pro';
+  const handleViewOnDesktop = async () => {
+    try { await Linking.openURL(DESKTOP_URL); } catch {}
+  };
 
   const handleEmailResult = async () => {
     const allContent = outputs.map(o => o.content).join('\n\n---\n\n');
@@ -281,10 +291,10 @@ const ToolResultScreen = () => {
               </TouchableOpacity>
             )}
 
-            {/* Long results render FULL inline via "Show full result" above. The
-                desktop hand-off was REMOVED — app.marketingtool.pro 404s and the web
-                app is off-limits, so everything stays on the phone. Email + Copy give
-                the complete output; nothing is truncated and nothing leaves the app. */}
+            {/* Long results render FULL inline via "Show full result" above, AND
+                (per MOBILE_TOOLS_POLICY.md owner decision) a "View Full on Desktop"
+                button opens the working web app root. Email + Copy also give the
+                complete output; nothing is truncated. */}
             {isLargeOutput && (
               <View style={styles.desktopBanner}>
                 <View style={styles.desktopBannerHeader}>
