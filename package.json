@@ -203,6 +203,7 @@
     "access": "restricted"
   },
   "overrides": {
+    "@xmldom/xmldom": "0.8.13",
     "esbuild": "$esbuild",
     "expo-file-system": "$expo-file-system",
     "@tootallnate/once": "^3.0.1",
@@ -251,6 +252,7 @@
     }
   },
   "resolutions": {
+    "@xmldom/xmldom": "0.8.13",
     "expo-file-system": "~55.0.10",
     "protobufjs": "^7.5.5",
     "postcss": "^8.5.10",
