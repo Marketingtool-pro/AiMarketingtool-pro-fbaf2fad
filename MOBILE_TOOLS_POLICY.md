@@ -60,14 +60,16 @@ When a tool output is marked as large:
   output inline, on-device (and a "Collapse" toggle to re-hide it)
 - Keep Copy / Share / Save available for the full result
 
-NOTE (2026-06-28, owner decision): BOTH are provided. The full result is shown
-inline on the phone (preview + "Show full result"), AND a "View Full on Desktop"
-button opens the web app at its root `https://app.marketingtool.pro` (the working
-entry; the old `/tools/<slug>` deep route 404s). The web app's own 404 (expired
-Firebase key) is a web-side fix on the web-app-router repo, off-limits here — the
-phone only links to the correct URL. This satisfies the mandatory trust rules
-(full result accessible inline, nothing silently truncated) while keeping the
-policy-mandated desktop hand-off the owner wants.
+NOTE (2026-06-28, owner decision; URL corrected 2026-07-04): BOTH are provided.
+The full result is shown inline on the phone (preview + "Show full result"), AND
+a "View Full on Desktop" button opens the web app at
+`https://app.marketingtool.pro/login` — the entry the marketingtool.pro
+"Get Started" funnel uses. The SPA's root "/" and the old `/tools/<slug>` deep
+routes both client-render 404 (device-verified 2026-07-04), and fixing web
+routing is off-limits here (web-app-router repo / VPS 2) — the phone only links
+to the working URL. This satisfies the mandatory trust rules (full result
+accessible inline, nothing silently truncated) while keeping the policy-mandated
+desktop hand-off the owner wants.
 
 ---
 
