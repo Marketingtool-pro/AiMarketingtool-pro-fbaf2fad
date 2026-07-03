@@ -25,7 +25,6 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { hasProAccess, generationsLimitForTier } from '../../services/billingService';
-import { generationsLimitForTier } from '../../services/billingService';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
@@ -165,10 +164,9 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
 
 const DashboardScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { user, profile, localSubscriptionOverride } = useAuthStore();
   // A user is free only if BOTH the server profile and the local purchase
-  const { user, profile, localSubscriptionOverride, generations } = useAuthStore();
   // and must win even when the server write failed (e.g. Apple's sandbox).
+  const { user, profile, localSubscriptionOverride, generations } = useAuthStore();
   const isFreeUser =
     (!profile?.subscription || profile.subscription === 'free') &&
     localSubscriptionOverride === 'free';
