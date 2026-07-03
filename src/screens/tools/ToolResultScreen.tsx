@@ -114,9 +114,12 @@ const ToolResultScreen = () => {
     );
   };
 
-  // Desktop hand-off REMOVED (2026-06-29): app.marketingtool.pro 404s and the web
-  // app is off-limits. The full result is shown inline on mobile; users email or
-  // copy it instead. No external open.
+  // Desktop hand-off RESTORED per MOBILE_TOOLS_POLICY.md (owner decision 2026-06-28):
+  // the "View Full on Desktop" button is required. Opens the marketing site root
+  // https://marketingtool.pro (WebFetch-verified working) — NOT app.marketingtool.pro,
+  // whose SPA deep-route 404s. The phone only links to the correct, working URL.
+  const DESKTOP_URL = 'https://app.marketingtool.pro';
+  const handleViewOnDesktop = async () => { try { await Linking.openURL(DESKTOP_URL); } catch {} };
 
   const handleEmailResult = async () => {
     const allContent = outputs.map(o => o.content).join('\n\n---\n\n');
@@ -292,6 +295,10 @@ const ToolResultScreen = () => {
                   Tap “Show full result” above to read the entire output on your phone. You can also email the full result to yourself or copy it.
                 </Text>
                 <View style={styles.desktopActions}>
+                  <TouchableOpacity style={styles.desktopActionBtn} onPress={handleViewOnDesktop}>
+                    <Feather name="external-link" size={16} color={Colors.white} />
+                    <Text style={styles.desktopActionText}>View Full on Desktop</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={handleEmailResult}>
                     <Feather name="mail" size={16} color={Colors.secondary} />
                     <Text style={styles.desktopActionOutlineText}>Email Full Result</Text>
