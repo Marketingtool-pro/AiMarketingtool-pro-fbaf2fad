@@ -248,6 +248,13 @@ const ALL_TOOLS: Tool[] = (allToolsRaw as RawTool[]).map((t, i) => ({
   tags: [t.badge].filter(Boolean),
 })) as Tool[];
 
+// Icons come from the curated static SLUG_TO_ICON map (one distinct paid icon
+// per tool). The old assignUniqueIcons() override is DISABLED: it passed an icon
+// KEY into getToolIcon() (which expects a SLUG), so every lookup missed and every
+// tool was overridden to the DEFAULT blue-brain icon — the "all tools same icon"
+// bug. With the override gone, getToolIcon(slug) resolves each tool's real icon.
+void assignUniqueIcons;
+// assignUniqueIcons(ALL_TOOLS.map(t => t.slug));
 // Icon assignment DISABLED — restores build 538's correct per-tool icons.
 // getToolIcon(slug) (imported by the screens from '../constants/toolIcons')
 // resolves each tool via the curated static SLUG_TO_ICON map: 314 tools ->
