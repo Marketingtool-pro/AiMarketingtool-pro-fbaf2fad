@@ -60,7 +60,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
+        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund --package-lock=false
 
       - name: Build production (android)
         id: build
@@ -91,7 +91,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
+        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund --package-lock=false
 
       - name: Submit to Play Store
         run: |
@@ -127,7 +127,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
+        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund --package-lock=false
 
       # Fail fast (seconds, not 13 min into EAS) on the failure classes that keep
       # breaking the Bundle JavaScript phase: 0-byte/corrupt image assets and

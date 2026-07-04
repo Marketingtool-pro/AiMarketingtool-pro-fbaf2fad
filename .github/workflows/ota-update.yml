@@ -45,7 +45,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
+        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund --package-lock=false
 
       # Message passed via env (never interpolated into the shell).
       - name: Publish EAS Update (production channel)
