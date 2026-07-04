@@ -5,7 +5,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SystemBars } from 'react-native-edge-to-edge';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
@@ -164,7 +163,6 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <KeyboardProvider>
       <SafeAreaProvider>
         <View style={styles.container} onLayout={onLayoutRootView}>
           {/* SystemBars (from react-native-edge-to-edge) replaces both
@@ -176,7 +174,6 @@ export default function App() {
           <AppNavigator />
         </View>
       </SafeAreaProvider>
-      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }
