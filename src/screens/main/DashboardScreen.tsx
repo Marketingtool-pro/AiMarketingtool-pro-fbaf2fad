@@ -183,7 +183,7 @@ const DashboardScreen = () => {
   const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
   const [refreshing, setRefreshing] = React.useState(false);
   // and must win even when the server write failed (e.g. Apple's sandbox).
-  const { user, profile, localSubscriptionOverride, generations } = useAuthStore();
+  const { user, profile, localSubscriptionOverride } = useAuthStore();
   const isFreeUser =
     (!profile?.subscription || profile.subscription === 'free') &&
     localSubscriptionOverride === 'free';
