@@ -20,6 +20,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
       "buildNumber": "554",
+      "buildNumber": "553",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -58,6 +59,7 @@
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
       "versionCode": 554,
+      "versionCode": 553,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
