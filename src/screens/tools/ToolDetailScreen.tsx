@@ -51,6 +51,18 @@ const ToolDetailScreen = () => {
   const tones = ['Professional', 'Casual', 'Friendly', 'Persuasive', 'Formal', 'Creative'];
   const languages = ['English', 'Spanish', 'French', 'German', 'Hindi', 'Chinese', 'Japanese'];
 
+  // Some tools already define their own tone field in their input schema
+  // (e.g. Academic Writer's "Tone of Voice"). Rendering the generic Tone
+  // selector on top of it showed TWO tone pickers on one screen. Detect a
+  // schema tone field and (a) hide the generic selector, (b) send the schema's
+  // value as the payload tone instead of the generic one.
+  const schemaToneField = tool?.inputs?.find(
+    (i) => /tone/i.test(i.name || '') || /tone/i.test(i.label || '')
+  );
+  const effectiveTone = schemaToneField
+    ? (inputValues[schemaToneField.name] || selectedTone)
+    : selectedTone;
+
   useEffect(() => {
     const foundTool = tools.find(t => t.slug === toolSlug);
     if (foundTool) {
@@ -135,7 +147,7 @@ const ToolDetailScreen = () => {
 
       const result = await generateContent(tool.$id, {
         ...inputValues,
-        tone: selectedTone,
+        tone: effectiveTone,
         language: selectedLanguage,
         outputCount,
       });
@@ -350,7 +362,9 @@ const ToolDetailScreen = () => {
             </View>
           )}
 
-          {/* Tone Selection */}
+          {/* Tone Selection — hidden when the tool's own schema already has a
+              tone field (prevents the duplicate double-tone picker) */}
+          {!schemaToneField && (
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Tone</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -377,6 +391,7 @@ const ToolDetailScreen = () => {
               </View>
             </ScrollView>
           </View>
+          )}
 
           {/* Language Selection */}
           <View style={styles.inputGroup}>
