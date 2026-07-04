@@ -15,11 +15,17 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Clipboard from 'expo-clipboard';
+// In-app browser so the desktop hand-off never backgrounds the app (backgrounding
+// closed the app for users on both platforms).
+import * as WebBrowser from 'expo-web-browser';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
+// Rich rendering of AI output (headings/bold/lists/tables) instead of raw
+// markdown text — owner requirement: results must look like the web app.
+import MarkdownText from '../../components/MarkdownText';
 
 
 // Character threshold — outputs longer than this start collapsed for readability,
@@ -114,6 +120,12 @@ const ToolResultScreen = () => {
     );
   };
 
+  // Desktop hand-off per MOBILE_TOOLS_POLICY.md (owner decision 2026-06-28):
+  // the button opens the owner's web app (app.marketingtool.pro — owner confirmed
+  // 2026-07-05 the web app is fixed and serving again). Opened IN-APP via
+  // SFSafariViewController/Custom Tabs so the app never backgrounds (backgrounding
+  // read as "app closed" to users on both platforms).
+  const DESKTOP_URL = 'https://app.marketingtool.pro/login';
   // Desktop hand-off per MOBILE_TOOLS_POLICY.md (owner decision 2026-06-28).
   // The SPA at app.marketingtool.pro currently client-renders a 404 on EVERY route
   // (device-verified 2026-07-04: the web app crashes on load; fix is PR #30 on the
@@ -123,7 +135,11 @@ const ToolResultScreen = () => {
   // the 404. Swap back to the app deep-link once the web app is fixed.
   const DESKTOP_URL = 'https://marketingtool.pro';
   const handleViewOnDesktop = async () => {
-    try { await Linking.openURL(DESKTOP_URL); } catch {}
+    try {
+      await WebBrowser.openBrowserAsync(DESKTOP_URL);
+    } catch {
+      try { await Linking.openURL(DESKTOP_URL); } catch {}
+    }
   };
 
   const handleEmailResult = async () => {
@@ -257,12 +273,11 @@ const ToolResultScreen = () => {
               selectedOutput !== output.id && styles.outputCardHidden,
             ]}
           >
-            {/* Long results start collapsed; tap "Show full result" for the full output inline */}
+            {/* Long results start collapsed; tap "Show full result" for the full output inline.
+                Rendered as formatted rich text (MarkdownText), not raw markdown source. */}
             {isLargeOutput && !showFullContent ? (
               <>
-                <Text style={styles.outputText} numberOfLines={12}>
-                  {output.content}
-                </Text>
+                <MarkdownText content={output.content} maxChars={1200} />
                 <TouchableOpacity
                   style={styles.showMoreBtn}
                   onPress={() => setShowFullContent(true)}
@@ -272,7 +287,7 @@ const ToolResultScreen = () => {
                 </TouchableOpacity>
               </>
             ) : (
-              <Text style={styles.outputText}>{output.content}</Text>
+              <MarkdownText content={output.content} />
             )}
 
             {/* Collapse toggle for already-expanded long results */}

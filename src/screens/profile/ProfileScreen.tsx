@@ -15,6 +15,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+// In-app browser for website links (Help/Contact/Tutorials). Linking.openURL
+// backgrounds the app to open Safari/Chrome, and users experienced "tap link →
+// app closes"; SFSafariViewController/Custom Tabs keeps the app foregrounded.
+import * as WebBrowser from 'expo-web-browser';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { generationsLimitForTier } from '../../services/billingService';
@@ -278,7 +282,11 @@ const ProfileScreen = () => {
                     onPress={() => {
                       if (item.action) item.action();
                       else if (item.screen) navigation.navigate(item.screen as any);
-                      else if (item.url) Linking.openURL(item.url);
+                      else if (item.url && item.url.startsWith('http')) {
+                        WebBrowser.openBrowserAsync(item.url).catch(() => Linking.openURL(item.url!));
+                      } else if (item.url) {
+                        Linking.openURL(item.url);
+                      }
                     }}
                   >
                     <View style={styles.menuItemLeft}>
