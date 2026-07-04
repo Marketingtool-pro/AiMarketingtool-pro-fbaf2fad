@@ -1,3 +1,7 @@
+// fatalGuard must be the FIRST import: it replaces RN's global JS exception
+// handler before any other module can throw, so an unhandled error is recorded
+// to Crashlytics instead of killing the app (the 550-554 logout/teardown crash).
+import './src/utils/fatalGuard';
 import React, { useEffect, useState, useCallback } from 'react';
 // expo-status-bar removed: it routes through deprecated APIs on Android 15
 // (StatusBarModule -> Window.setStatusBarColor). react-native-edge-to-edge's
