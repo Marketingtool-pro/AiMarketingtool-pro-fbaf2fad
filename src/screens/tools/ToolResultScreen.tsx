@@ -114,13 +114,14 @@ const ToolResultScreen = () => {
     );
   };
 
-  // Desktop hand-off REQUIRED per MOBILE_TOOLS_POLICY.md (owner decision 2026-06-28):
-  // the "View Full on Desktop" button must open the owner's web app. The SPA at
-  // app.marketingtool.pro client-renders 404 at "/" (device-verified 2026-07-04) and
-  // at /tools/<slug> deep routes; /login is the entry the marketingtool.pro
-  // "Get Started" funnel uses, so it is the route known to work. Web routing itself
-  // is off-limits (VPS 2) — the phone only links to the working URL.
-  const DESKTOP_URL = 'https://app.marketingtool.pro/login';
+  // Desktop hand-off per MOBILE_TOOLS_POLICY.md (owner decision 2026-06-28).
+  // The SPA at app.marketingtool.pro currently client-renders a 404 on EVERY route
+  // (device-verified 2026-07-04: the web app crashes on load; fix is PR #30 on the
+  // web-app repo / VPS 2, which the phone cannot touch). Until that ships, point the
+  // button at the marketing site marketingtool.pro — it is fully working and carries
+  // the "Get Started" funnel + App Store / Google Play buttons — so users never hit
+  // the 404. Swap back to the app deep-link once the web app is fixed.
+  const DESKTOP_URL = 'https://marketingtool.pro';
   const handleViewOnDesktop = async () => {
     try { await Linking.openURL(DESKTOP_URL); } catch {}
   };

@@ -15,14 +15,10 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 // Skia removed - using cross-platform LinearGradient instead for iOS compatibility
-import AnimatedRN, { 
-  useAnimatedStyle, 
-  useSharedValue, 
-  withRepeat, 
-  withTiming, 
-  withSequence,
-  Easing as EasingRN
-} from 'react-native-reanimated';
+// react-native-reanimated removed: v4 is New-Architecture-only and threw a fatal JS
+// exception at startup on this brownfield (old-arch / Paper) build. The one decorative
+// stat-card animation below now uses RN's built-in Animated (imported above), which
+// works on both architectures and drives the same float + press-scale natively.
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -131,35 +127,45 @@ const GlassBentoCard = ({ children, color }: { children: React.ReactNode, color:
 );
 
 const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; onPress: () => void }) => {
-  const scale = useSharedValue(1);
-  const floating = useSharedValue(0);
+  const scale = useRef(new Animated.Value(1)).current;
+  const floating = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    floating.value = withRepeat(
-      withTiming(1, { duration: 2000 + index * 200, easing: EasingRN.bezier(0.4, 0, 0.2, 1) }),
-      -1,
-      true
+    // Gentle continuous float (yoyo up/down), matching the previous reanimated behavior.
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floating, {
+          toValue: 1,
+          duration: 2000 + index * 200,
+          easing: Easing.bezier(0.4, 0, 0.2, 1),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floating, {
+          toValue: 0,
+          duration: 2000 + index * 200,
+          easing: Easing.bezier(0.4, 0, 0.2, 1),
+          useNativeDriver: true,
+        }),
+      ])
     );
+    loop.start();
+    return () => loop.stop();
   }, []);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: scale.value },
-      { translateY: floating.value * -5 }
-    ] as any
-  }));
+  const translateY = floating.interpolate({ inputRange: [0, 1], outputRange: [0, -5] });
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Reanimated shared values are mutated by design; react-hooks/immutability doesn't model them.
-    // eslint-disable-next-line react-hooks/immutability
-    scale.value = withSequence(withTiming(0.9, { duration: 100 }), withTiming(1, { duration: 100 }));
+    Animated.sequence([
+      Animated.timing(scale, { toValue: 0.9, duration: 100, useNativeDriver: true }),
+      Animated.timing(scale, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start();
     onPress();
   };
 
   return (
     <TouchableOpacity onPress={handlePress} activeOpacity={0.9}>
-      <AnimatedRN.View style={[styles.statCardWrapper, animatedStyle]}>
+      <Animated.View style={[styles.statCardWrapper, { transform: [{ scale }, { translateY }] }]}>
         <GlassBentoCard color={stat.color}>
           <View style={[styles.statIcon, { backgroundColor: stat.color + '20' }]}>
             {stat.img ? (
@@ -171,7 +177,7 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
           <Text style={styles.statValue}>{stat.value}</Text>
           <Text style={styles.statLabel} numberOfLines={1}>{stat.label}</Text>
         </GlassBentoCard>
-      </AnimatedRN.View>
+      </Animated.View>
     </TouchableOpacity>
   );
 };
