@@ -206,6 +206,7 @@
     "@xmldom/xmldom": "0.8.13",
     "esbuild": "$esbuild",
     "expo-file-system": "$expo-file-system",
+    "@expo/fingerprint": "~0.20.2",
     "@tootallnate/once": "^3.0.1",
     "protobufjs": "^7.5.5",
     "postcss": "^8.5.10",
@@ -254,7 +255,13 @@
         "expo-media-library",
         "expo-observe",
         "expo-splash-screen",
-        "expo-updates"
+        "expo-updates",
+        "@shopify/flash-list",
+        "react-native-gesture-handler",
+        "react-native-webview",
+        "react",
+        "react-dom",
+        "react-native-view-shot"
       ]
     }
   },
