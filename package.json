@@ -260,7 +260,7 @@
   },
   "resolutions": {
     "@xmldom/xmldom": "0.8.13",
-    "expo-file-system": "~55.0.10",
+    "expo-file-system": "~56.0.8",
     "protobufjs": "^7.5.5",
     "postcss": "^8.5.10",
     "uuid": "^14.0.0",
@@ -271,7 +271,7 @@
     "ws": "^8.21.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",
-    "@expo/fingerprint": "0.19.5",
+    "@expo/fingerprint": "~0.20.2",
     "expo-asset": "56.0.18",
     "expo-build-properties": "56.0.20",
     "expo-constants": "56.0.19",
