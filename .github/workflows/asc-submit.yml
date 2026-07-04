@@ -14,7 +14,11 @@ on:
       build_number:
         description: "Build number already uploaded to App Store Connect"
         required: true
-        default: "541"
+        default: "554"
+      whats_new:
+        description: "What's New / release notes text (required for live submission)"
+        required: true
+        default: "Fixes app launch stability on iOS and improves the tool result-to-desktop handoff. Thank you for using MarketingTool!"
 
 permissions:
   contents: read
@@ -43,6 +47,7 @@ jobs:
           ASC_KEY_PATH: ./AuthKey_69JDXUCPU3.p8
           VERSION_STRING: ${{ inputs.version_string }}
           BUILD_NUMBER: ${{ inputs.build_number }}
+          WHATS_NEW: ${{ inputs.whats_new }}
           DRY_RUN: 'false'
         run: |
           sudo gem install jwt --no-document
