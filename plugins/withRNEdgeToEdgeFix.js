@@ -34,7 +34,7 @@
 const { withDangerousMod, withProjectBuildGradle } = require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const https = require('https');
 
 const PATCHED_VERSION = '0.85.3-e2e.2';
 const PATCHED_AAR_URL =
@@ -81,6 +81,46 @@ allprojects {
     }
 }`;
 
+function downloadToFile(url, destination) {
+  return new Promise((resolve, reject) => {
+    const request = https.get(url, (response) => {
+      if (
+        response.statusCode &&
+        response.statusCode >= 300 &&
+        response.statusCode < 400 &&
+        response.headers.location
+      ) {
+        response.resume();
+        return resolve(downloadToFile(response.headers.location, destination));
+      }
+
+      if (response.statusCode !== 200) {
+        response.resume();
+        return reject(
+          new Error(
+            `Failed to download ${url}: HTTP ${response.statusCode}`
+          )
+        );
+      }
+
+      const fileStream = fs.createWriteStream(destination);
+      response.pipe(fileStream);
+
+      fileStream.on('finish', () => {
+        fileStream.close(resolve);
+      });
+
+      fileStream.on('error', (err) => {
+        fs.unlink(destination, () => reject(err));
+      });
+    });
+
+    request.on('error', (err) => {
+      fs.unlink(destination, () => reject(err));
+    });
+  });
+}
+
 module.exports = function withRNEdgeToEdgeFix(config) {
   // 1. Download patched AAR + POM into android/local-aar/ during prebuild.
   config = withDangerousMod(config, [
@@ -95,7 +135,7 @@ module.exports = function withRNEdgeToEdgeFix(config) {
 
       if (!fs.existsSync(aarFile)) {
         console.log('[withRNEdgeToEdgeFix] Downloading patched react-android AAR (~140 MB)...');
-        execSync(`curl -L --fail -o "${aarFile}" "${PATCHED_AAR_URL}"`, { stdio: 'inherit' });
+        await downloadToFile(PATCHED_AAR_URL, aarFile);
         console.log(`[withRNEdgeToEdgeFix] AAR saved to ${aarFile}`);
       } else {
         console.log('[withRNEdgeToEdgeFix] Patched AAR already present, skipping download.');
@@ -103,7 +143,7 @@ module.exports = function withRNEdgeToEdgeFix(config) {
 
       if (!fs.existsSync(pomFile)) {
         console.log('[withRNEdgeToEdgeFix] Downloading patched react-android POM...');
-        execSync(`curl -L --fail -o "${pomFile}" "${PATCHED_POM_URL}"`, { stdio: 'inherit' });
+        await downloadToFile(PATCHED_POM_URL, pomFile);
         console.log('[withRNEdgeToEdgeFix] POM saved.');
       } else {
         console.log('[withRNEdgeToEdgeFix] Patched POM already present, skipping download.');
