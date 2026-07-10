@@ -20,7 +20,6 @@ terraform = "latest"
 
 [env]
 _file = ".env"  # Automatically hooks and injects your local .env file variables
-TEST_ENV_VAR = 'python = "{ venv = { path = .venv, create = true }"'
 
 [tasks]
 start = "npx expo start"
@@ -36,7 +35,7 @@ bundler = { auto = true }
 [settings]
 # REMOVED disable_tools to let mise manage Node and Rust automatically
 activate_aggressive = true
-all_compile = true
+all_compile = false
 always_keep_install = true
 silent = true
 terminal_progress = true
