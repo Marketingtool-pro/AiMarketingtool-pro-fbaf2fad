@@ -1,3 +1,7 @@
+// fatalGuard must be the FIRST import: it replaces RN's global JS exception
+// handler before any other module can throw, so an unhandled error is recorded
+// to Crashlytics instead of killing the app (the 550-554 logout/teardown crash).
+import './src/utils/fatalGuard';
 import React, { useEffect, useState, useCallback } from 'react';
 // expo-status-bar removed: it routes through deprecated APIs on Android 15
 // (StatusBarModule -> Window.setStatusBarColor). react-native-edge-to-edge's
@@ -5,7 +9,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SystemBars } from 'react-native-edge-to-edge';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
@@ -39,19 +42,22 @@ export default function App() {
     initNotificationHistory();
     async function prepare() {
       try {
-        // Request ATT permission on iOS
-        if (Platform.OS === 'ios') {
-          await TrackingTransparency.requestTrackingPermissionsAsync();
-        }
-
         // Run fonts and auth in parallel, each with its own timeout.
-        // Cap at 1.5s to prevent slow auth/network from gating the splash.
+        // Cap prevents slow auth/network/permission from gating the splash.
         const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T | undefined> => {
           const timeoutPromise: Promise<undefined> = new Promise(resolve =>
             setTimeout(() => resolve(undefined), ms)
           );
           return Promise.race([p, timeoutPromise]);
         };
+
+        // Request ATT permission on iOS — TIMEOUT-GUARDED. This await was the
+        // only one in the splash-critical path without a timeout; if it never
+        // resolved, appIsReady stayed false and the app sat on the splash screen
+        // forever (the "opens to splash and hangs" symptom on real iPhones).
+        if (Platform.OS === 'ios') {
+          await withTimeout(TrackingTransparency.requestTrackingPermissionsAsync(), 2500);
+        }
 
         // App Check must be ready BEFORE the user reaches the login screen.
         // Firebase Phone Auth on iOS uses the App Check token to verify the
@@ -161,7 +167,6 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <KeyboardProvider>
       <SafeAreaProvider>
         <View style={styles.container} onLayout={onLayoutRootView}>
           {/* SystemBars (from react-native-edge-to-edge) replaces both
@@ -173,7 +178,6 @@ export default function App() {
           <AppNavigator />
         </View>
       </SafeAreaProvider>
-      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

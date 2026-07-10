@@ -19,19 +19,18 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
-import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { functions, account } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 import { getToolIcon } from '../../constants/toolIcons';
-import { useToolsStore, Tool } from '../../store/toolsStore';
+import { useToolsStore } from '../../store/toolsStore';
 import { generationsLimitForTier } from '../../services/billingService';
 
 const { width } = Dimensions.get('window');
 
 // Chat bot image
 const ChatBotImage = require('../../../assets/images/screens/chat-bot.jpg');
-const AiAssistantImage = require('../../../assets/images/screens/ai-assistant.jpg');
 const LogoImage = require('../../../assets/images/logo.jpeg');
 
 interface Message {
@@ -267,7 +266,7 @@ const ChatScreen = () => {
   };
 
   // Track consecutive errors for smart recovery
-  const [consecutiveErrors, setConsecutiveErrors] = useState(0);
+  const [, setConsecutiveErrors] = useState(0);
   const lastFailedMessage = useRef<string | null>(null);
 
   const handleSend = async (text?: string) => {
@@ -321,6 +320,22 @@ const ChatScreen = () => {
     // Remove the error message before retrying
     setMessages(prev => prev.filter(m => !(m.isError && m.retryMessage === retryText)));
     handleSend(retryText);
+  };
+
+  // White-label safety net. The chat-ai → Windmill backend owns the real system
+  // prompt and sometimes ignores the client white-label instruction, so the model
+  // leaks "I'm Claude, made by Anthropic". This catches an identity-reveal in the
+  // reply BEFORE it is shown and swaps in the brand answer. Scoped to self-identity
+  // (vendor name + an identity cue) so it doesn't mangle legitimate marketing copy
+  // that merely mentions these brands.
+  const sanitizeBotIdentity = (text: string): string => {
+    if (!text) return text;
+    const vendor = /(anthropic|claude|openai|chatgpt|gpt-?[0-9]|gemini|google['’]?s|bard|llama|meta\b|mistral|cohere)/i;
+    const identityCue = /(i['’]?m|i am|i was|made by|built (?:on|by)|powered by|based on|trained by|created by|developed by|my (?:model|underlying|architecture)|language model|large language model|\bllm\b|which (?:model|ai|llm))/i;
+    if (vendor.test(text) && identityCue.test(text)) {
+      return "I'm MarketBot, MarketingTool.pro's own AI marketing assistant. The engine under the hood is our own — what matters is getting you results. What marketing goal can I help with right now?";
+    }
+    return text;
   };
 
   // AI Chat via Appwrite Functions (server-side proxy to Windmill)
@@ -378,14 +393,14 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
 
       const result = parseAppwriteResponse(execution.responseBody);
       if (result.error) throw new Error(result.error);
-      return (
+      const reply =
         result.response ||
         result.content ||
         result.message ||
         result.result ||
         result.text ||
-        'I could not generate a response.'
-      );
+        'I could not generate a response.';
+      return sanitizeBotIdentity(reply);
     } catch (error) {
       // Retry once with reduced history (handles payload size / timeout issues)
       if (retryCount < 1) {

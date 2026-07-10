@@ -17,7 +17,13 @@ export function parseAppwriteResponse(rb: any): any {
   if (typeof rb === 'object') return rb;
   if (typeof rb === 'string') {
     try { return JSON.parse(rb); }
-    catch (error: any) { return { success: false, message: rb }; }
+    catch (error: any) {
+      console.warn('[authStore] Failed to parse Appwrite responseBody as JSON', {
+        error: error?.message ?? String(error),
+        responseBody: rb,
+      });
+      return { success: false, message: rb };
+    }
   }
   return {};
 }
@@ -633,7 +639,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       email: user.email,
       subscription: 'free',
       generationsUsed: 0,
-      generationsLimit: 10,
+      generationsLimit: 3,
       createdAt: new Date().toISOString(),
     };
 
@@ -665,7 +671,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             email: user.email,
             subscription: 'free',
             generationsUsed: 0,
-            generationsLimit: 10,
+            generationsLimit: 3,
             createdAt: new Date().toISOString(),
           }
         ),

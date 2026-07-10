@@ -19,28 +19,53 @@
 # =============================================================================
 require 'jwt'; require 'openssl'; require 'net/http'; require 'json'; require 'uri'
 
-KEY_ID    = ENV.fetch('ASC_KEY_ID') { abort '❌ Missing required env var ASC_KEY_ID' }
-ISSUER_ID = ENV.fetch('ASC_ISSUER_ID') { abort '❌ Missing required env var ASC_ISSUER_ID' }
-APP_ID    = ENV.fetch('ASC_APP_ID') { abort '❌ Missing required env var ASC_APP_ID' }
+KEY_ID    = ENV.fetch('ASC_KEY_ID') { abort '❌ Missing required env var: ASC_KEY_ID' }
+ISSUER_ID = ENV.fetch('ASC_ISSUER_ID') { abort '❌ Missing required env var: ASC_ISSUER_ID' }
+APP_ID    = ENV.fetch('ASC_APP_ID') { abort '❌ Missing required env var: ASC_APP_ID' }
 KEY_PATH  = ENV.fetch('ASC_KEY_PATH', File.expand_path("../AuthKey_#{KEY_ID}.p8", __dir__))
 DRY_RUN   = ENV.fetch('DRY_RUN', 'true') != 'false'
 WANT_BUILD = ENV['BUILD_NUMBER']
+MAX_BUILD_WAIT_ATTEMPTS = 40
+BUILD_POLL_INTERVAL_SECONDS = 30
 
 abort "❌ key not found: #{KEY_PATH}" unless File.exist?(KEY_PATH)
-pk = OpenSSL::PKey::EC.new(File.read(KEY_PATH)); now = Time.now.to_i
+pk = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+now = Time.now.to_i
 TOKEN = JWT.encode({ iss: ISSUER_ID, iat: now, exp: now + 1100, aud: 'appstoreconnect-v1' },
                    pk, 'ES256', { kid: KEY_ID, typ: 'JWT' })
 BASE = 'https://api.appstoreconnect.apple.com'
 
+# Explicit ASC resource type -> reviewSubmissionItems relationship key mapping.
+# Avoid fragile singularization heuristics.
+RELATIONSHIP_KEY_BY_TYPE = {
+  'appStoreVersions' => :appStoreVersion,
+  'appEvents' => :appEvent,
+  'appCustomProductPageVersions' => :appCustomProductPageVersion,
+  'appStoreVersionExperiments' => :appStoreVersionExperiment,
+  'inAppPurchases' => :inAppPurchase,
+  'subscriptions' => :subscription
+}.freeze
+
 def req(method, path, body = nil)
+  res = nil
+  parsed = {}
   uri = URI("#{BASE}#{path}")
   klass = { get: Net::HTTP::Get, post: Net::HTTP::Post, patch: Net::HTTP::Patch }[method]
+  raise ArgumentError, "Unsupported HTTP method: #{method.inspect}. Supported: :get, :post, :patch" unless klass
   r = klass.new(uri)
   r['Authorization'] = "Bearer #{TOKEN}"
   r['Content-Type'] = 'application/json'
   r.body = JSON.generate(body) if body
   res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(r) }
-  [res.code.to_i, (JSON.parse(res.body) rescue {})]
+  parsed = JSON.parse(res.body)
+rescue JSON::ParserError => e
+  status = res&.code || 'unknown'
+  content_type = res&.[]('Content-Type').to_s
+  body_bytes = res&.body.to_s.bytesize
+  warn "⚠️ Failed to parse JSON response for #{method.to_s.upcase} #{path} (status=#{status}, content_type=#{content_type}, body_bytes=#{body_bytes}, error_class=#{e.class})"
+  parsed = {}
+ensure
+  return [res&.code.to_i, parsed]
 end
 def get(p) = req(:get, p)
 
@@ -64,25 +89,41 @@ def newest_valid_or_target(want)
 end
 
 build = nil
-tries = WANT_BUILD ? 40 : 1   # ~20 min wait when targeting a specific build
+tries = WANT_BUILD ? MAX_BUILD_WAIT_ATTEMPTS : 1   # ~20 min wait when targeting a specific build
 tries.times do |i|
   build, err = newest_valid_or_target(WANT_BUILD)
   break if build
   abort "❌ #{err}" if i == tries - 1
   puts "… waiting for build #{WANT_BUILD} to finish processing (#{err}) [#{i + 1}/#{tries}]"
-  sleep 30
+  sleep BUILD_POLL_INTERVAL_SECONDS
 end
 abort "❌ no usable build#{WANT_BUILD ? " #{WANT_BUILD}" : ''}" unless build
 puts "Build to ship: #{build['attributes']['version']} (#{build['id']}) uploaded #{build['attributes']['uploadedDate']}"
 
-# 2) editable iOS app store version
+# 2) editable iOS app store version. If the only version is live (READY_FOR_SALE),
+#    CREATE a fresh editable version (VERSION_STRING, e.g. 1.5.6) — you cannot
+#    attach a build to a live version (that was the 409 "attach build failed").
+EDITABLE = %w[PREPARE_FOR_SUBMISSION REJECTED DEVELOPER_REJECTED METADATA_REJECTED
+              WAITING_FOR_REVIEW INVALID_BINARY DEVELOPER_REMOVED_FROM_SALE].freeze
 code, vers = get("/v1/apps/#{APP_ID}/appStoreVersions?filter[platform]=IOS&limit=5")
-ver = (vers['data'] || []).find { |v| %w[PREPARE_FOR_SUBMISSION REJECTED DEVELOPER_REJECTED METADATA_REJECTED].include?(v['attributes']['appStoreState']) } || vers['data']&.first
-abort "❌ no app store version found" unless ver
+ver = (vers['data'] || []).find { |v| EDITABLE.include?(v['attributes']['appStoreState']) }
+if ver.nil?
+  want = ENV['VERSION_STRING'] || abort("❌ no editable version and VERSION_STRING not set")
+  puts "No editable version (only live). Creating version #{want}…"
+  unless DRY_RUN
+    code, created = req(:post, '/v1/appStoreVersions',
+      { data: { type: 'appStoreVersions',
+                attributes: { platform: 'IOS', versionString: want },
+                relationships: { app: { data: { type: 'apps', id: APP_ID } } } } })
+    abort "❌ create version #{want} failed #{code}: #{created}" unless [200, 201].include?(code)
+    ver = created['data']
+  end
+end
+abort "❌ no app store version found/created" unless ver
 puts "Version: #{ver['attributes']['versionString']} state=#{ver['attributes']['appStoreState']} (#{ver['id']})"
 
 # 3) the IAP items to bundle
-code, groups = get("/v1/apps/#{APP_ID}/subscriptionGroups?include=subscriptions&limit=50")
+_, groups = get("/v1/apps/#{APP_ID}/subscriptionGroups?include=subscriptions&limit=50")
 subs = ((groups['included'] || []).select { |i| i['type'] == 'subscriptions' })
 code, iaps = get("/v1/apps/#{APP_ID}/inAppPurchasesV2?limit=50")
 consumables = (iaps['data'] || [])
@@ -90,11 +131,19 @@ puts "\nIAPs to include in the submission:"
 subs.each { |s| puts "  [sub] #{s['attributes']['productId']}  state=#{s['attributes']['state']}  (#{s['id']})" }
 consumables.each { |c| puts "  [iap] #{c['attributes']['productId']}  state=#{c['attributes']['state']}  (#{c['id']})" }
 
+# If every IAP is already APPROVED, they do NOT need to be bundled with the
+# build (the 2.1(b) "first-time IAP" rule only applies to un-reviewed IAPs).
+# In that case submit the build/version alone — the approved IAPs stay live.
+all_iaps = subs + consumables
+iaps_approved = !all_iaps.empty? && all_iaps.all? { |x| x['attributes']['state'] == 'APPROVED' }
+
 items = []
 items << { type: 'appStoreVersions', id: ver['id'] }
-subs.each        { |s| items << { type: 'subscriptions', id: s['id'] } }
-consumables.each { |c| items << { type: 'inAppPurchases', id: c['id'] } }
-puts "\nSubmission will contain #{items.size} items (1 build version + #{subs.size} subs + #{consumables.size} consumable)."
+unless iaps_approved
+  subs.each        { |s| items << { type: 'subscriptions', id: s['id'] } }
+  consumables.each { |c| items << { type: 'inAppPurchases', id: c['id'] } }
+end
+puts "\nIAPs approved: #{iaps_approved} → submission has #{items.size} item(s)#{iaps_approved ? ' (build/version only; IAPs already approved)' : " (build + #{subs.size} subs + #{consumables.size} consumable)"}."
 
 if DRY_RUN
   puts "\n✅ DRY RUN complete — nothing was changed. Re-run with DRY_RUN=false to attach + submit."
@@ -108,6 +157,27 @@ code, _ = req(:patch, "/v1/appStoreVersions/#{ver['id']}",
             relationships: { build: { data: { type: 'builds', id: build['id'] } } } } })
 abort "❌ attach build failed #{code}" unless [200, 204].include?(code)
 puts "✔ build #{build['attributes']['version']} attached to version"
+
+# 3b) "What's New" is REQUIRED before a version can be submitted — an empty new
+#     version returns 409 "this resource cannot be reviewed". Set it on every
+#     iOS localization. Require explicit WHATS_NEW in live mode to avoid stale defaults.
+whats_new = ENV['WHATS_NEW'].to_s.strip
+abort "❌ Missing required env var WHATS_NEW for live submission" if whats_new.empty?
+_, locs = get("/v1/appStoreVersions/#{ver['id']}/appStoreVersionLocalizations?limit=50")
+(locs['data'] || []).each do |loc|
+  lc = loc['attributes']['locale']
+  c2, _ = req(:patch, "/v1/appStoreVersionLocalizations/#{loc['id']}",
+    { data: { type: 'appStoreVersionLocalizations', id: loc['id'],
+              attributes: { whatsNew: whats_new } } })
+  puts "  #{[200, 204].include?(c2) ? '✔' : "✗ #{c2}"} What's New set for #{lc}"
+end
+
+# 3c) export compliance — a build with no encryption answer can block submission.
+#     Standard HTTPS-only apps are exempt → usesNonExemptEncryption=false.
+#     Non-fatal: it may already be set via Info.plist (ITSAppUsesNonExemptEncryption).
+cc, _ = req(:patch, "/v1/builds/#{build['id']}",
+  { data: { type: 'builds', id: build['id'], attributes: { usesNonExemptEncryption: false } } })
+puts "  #{[200, 204].include?(cc) ? '✔' : "· (#{cc})"} export compliance set (usesNonExemptEncryption=false)"
 
 # 4) create review submission
 code, rs = req(:post, '/v1/reviewSubmissions',
@@ -127,11 +197,18 @@ puts "✔ review submission #{rs_id} created"
 #    the 2.1(b) auto-reject that hit all 14 prior submissions).
 failures = []
 items.each do |it|
+  rel_key = RELATIONSHIP_KEY_BY_TYPE[it[:type]]
+  unless rel_key
+    warn "  ✗ unknown item type #{it[:type]} #{it[:id]} — no relationship mapping configured"
+    failures << it
+    next
+  end
+
   code, r = req(:post, '/v1/reviewSubmissionItems',
     { data: { type: 'reviewSubmissionItems',
               relationships: {
                 reviewSubmission: { data: { type: 'reviewSubmissions', id: rs_id } },
-                it[:type].sub(/s$/, '').to_sym => { data: { type: it[:type], id: it[:id] } }
+                rel_key => { data: { type: it[:type], id: it[:id] } }
               } } })
   ok = [200, 201].include?(code)
   detail = (r['errors'] || []).map { |e| e['detail'] }.join(' | ')

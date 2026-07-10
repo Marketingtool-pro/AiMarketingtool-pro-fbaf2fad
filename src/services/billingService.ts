@@ -100,7 +100,7 @@ export const hasProAccess = (profileTier?: string | null, override?: string | nu
 // profile.generationsLimit (which defaults to 10) — otherwise a Growth member
 // wrongly sees "0/10". Enterprise/Agency = effectively unlimited.
 export const TIER_GENERATIONS: Record<Tier, number> = {
-  free: 10,
+  free: 3,
   starter: 200,
   pro: 500,
   growth: 1500,
@@ -283,12 +283,6 @@ export const billingService = {
    * Returns { pending: true } when the store sheet launched.
    */
   async requestPurchase(sku: string, userId: string): Promise<{ success: boolean; pending?: boolean; error?: string }> {
-    const getProductId = (product: unknown): string | undefined => {
-      if (!product || typeof product !== 'object') return undefined;
-      const p = product as { id?: string; productId?: string };
-      return p.id || p.productId;
-    };
-
     if (!iapAvailable()) {
       return { success: false, error: IAP_UNAVAILABLE_ERROR };
     }

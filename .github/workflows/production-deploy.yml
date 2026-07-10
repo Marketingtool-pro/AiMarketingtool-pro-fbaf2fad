@@ -9,14 +9,28 @@ name: Production Deploy
 # Requires repo secret ASC_API_KEY_BASE64 (base64 of AuthKey_69JDXUCPU3.p8).
 
 on:
-  # Tag push triggers the iOS build+submit job (build-submit-ios has
-  # `if: startsWith(github.ref, 'refs/tags/v')`). A tag push has
-  # event_name=push, so the android jobs (gated on workflow_dispatch) are
-  # skipped — i.e. a `v*.*.*` tag builds iOS ONLY.
+  # A `v*.*.*` tag push auto-builds + submits BOTH platforms.
+  # A manual run (workflow_dispatch) builds + submits whatever the `platforms`
+  # input selects — default `both`, so one click ships iOS AND Android.
+  # Per-job `if:` conditions below enforce this.
   push:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: "Platforms to build + submit (manual runs)"
+        type: choice
+        required: true
+        default: both
+        options:
+          - both
+          - ios
+          - android
+      whats_new:
+        description: "What's New / release notes (required by asc_autosubmit for live submission)"
+        required: false
+        default: "Fixes app launch stability and improves the tool result-to-desktop handoff. Thank you for using MarketingTool!"
 
 permissions:
   contents: read
@@ -28,9 +42,9 @@ concurrency:
 jobs:
   build-android:
     name: Build (android)
-    # Builds on a version tag (v*.*.*) AND on manual dispatch, so ONE tag push
-    # ships BOTH iOS and Android together (owner request 2026-06-26).
-    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
+    # Runs on a version tag (ships both platforms) OR a manual run selecting
+    # both/android (owner request 2026-06-26).
+    if: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && (inputs.platforms == 'both' || inputs.platforms == 'android')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -38,17 +52,19 @@ jobs:
     outputs:
       build-id: ${{ steps.build.outputs.build-id }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
-      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: '24'
 
-      - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
+      - uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385  # v9
         with:
           eas-version: 18.13.1
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
+        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund --package-lock=false
 
       - name: Build production (android)
         id: build
@@ -60,24 +76,26 @@ jobs:
 
   submit-android:
     name: Submit (android)
-    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
+    if: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && (inputs.platforms == 'both' || inputs.platforms == 'android')) }}
     runs-on: ubuntu-latest
     needs: build-android
     timeout-minutes: 30
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
-      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: '24'
 
-      - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
+      - uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385  # v9
         with:
           eas-version: 18.13.1
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
+        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund --package-lock=false
 
       - name: Submit to Play Store
         run: |
@@ -92,28 +110,28 @@ jobs:
 
   build-submit-ios:
     name: Build + Submit (iOS, with IAPs)
-    # iOS builds ONLY on a version tag push (v*.*.*). A manual run
-    # (workflow_dispatch) is Android-only — so "build Android" never also burns an
-    # iOS build. To ship iOS, push a tag.
-    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    # Runs on a version tag (ships both platforms) OR a manual run selecting
+    # both/ios. Default manual run = both, so the runner auto-submits iOS too.
+    # Pick `android` on a manual run to avoid burning an iOS build while iterating.
+    if: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && (inputs.platforms == 'both' || inputs.platforms == 'ios')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '24'
 
-      - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e  # v8
+      - uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385  # v9
         with:
           eas-version: 18.13.1
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
-        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund
+        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund --package-lock=false
 
       # Fail fast (seconds, not 13 min into EAS) on the failure classes that keep
       # breaking the Bundle JavaScript phase: 0-byte/corrupt image assets and
@@ -150,10 +168,22 @@ jobs:
           # Auto-submit for App Store review enabled for build 539 (owner approved
           # 2026-06-26). asc_autosubmit.rb bundles the build + all 6 subs + consumable
           # into ONE review submission (the step missing in the old 2.1b reject loop).
+          # WHATS_NEW is REQUIRED by asc_autosubmit.rb for a live submission; without
+          # it the step failed every run with "Missing required env var WHATS_NEW"
+          # (build still uploaded to TestFlight, but review submission never fired).
+          # Manual runs can override via the whats_new input; tag pushes use the default.
+          WHATS_NEW: ${{ github.event.inputs.whats_new || 'Fixes app launch stability and improves the tool result-to-desktop handoff. Thank you for using MarketingTool!' }}
           DRY_RUN: 'false'
         run: |
           sudo gem install jwt --no-document
           export ASC_KEY_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyId")"
           export ASC_ISSUER_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyIssuerId")"
           export ASC_APP_ID="$(node -pe "require('./eas.json').submit.production.ios.ascAppId")"
+          # Tell asc_autosubmit.rb which version/build to ship. Without VERSION_STRING
+          # it grabbed the LIVE version (1.5.4 READY_FOR_SALE) and got "attach build
+          # failed 409". Pass the app.json version so it CREATES a fresh editable
+          # version and attaches THIS build.
+          export VERSION_STRING="$(node -pe "require('./app.json').expo.version")"
+          export BUILD_NUMBER="$(node -pe "require('./app.json').expo.ios.buildNumber")"
+          echo "Submitting version $VERSION_STRING build $BUILD_NUMBER"
           ruby scripts/asc_autosubmit.rb

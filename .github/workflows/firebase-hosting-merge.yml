@@ -2,19 +2,22 @@
 # https://github.com/firebase/firebase-tools
 
 name: Deploy to Firebase Hosting on merge
+# Manual-only: this deploys a web build (expo export --platform web) to Firebase
+# Hosting "live" from the PHONE repo. Per project rule the web app is not deployed
+# from here (it lives in the web-app-router repo / VPS2), and this job failed on
+# every push. Removed the push trigger so it stops auto-deploying + failing CI.
+# Re-add `push: branches: [Master]` only if the phone repo should publish web.
 on:
-  push:
-    branches:
-      - Master
+  workflow_dispatch:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       # This repo uses bun (bun.lock) and has no package-lock.json, so `npm ci`
       # failed in ~10s on every push and the web app never deployed. Use a plain
       # install (matches production-deploy.yml) so the build + hosting deploy run.
-      - run: npm install --legacy-peer-deps --no-audit --no-fund && npm run build
+      - run: npm install --legacy-peer-deps --no-audit --no-fund --package-lock=false && npm run build
       - uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a # v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

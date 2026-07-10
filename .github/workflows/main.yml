@@ -2,9 +2,9 @@ name: "CodeQL Analysis"
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "Master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "Master" ]
 
 jobs:
   analyze:
@@ -17,13 +17,13 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       # This correctly calls the action you pasted above
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3
+        uses: github/codeql-action/init@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a # v3
         with:
           languages: 'javascript-typescript' # Change to python, go, java, cpp etc.
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3
+        uses: github/codeql-action/analyze@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a # v3

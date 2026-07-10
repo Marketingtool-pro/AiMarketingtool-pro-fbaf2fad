@@ -1,5 +1,0 @@
-.env
-*.pem
-.git
-vendor/bundle
-README.md

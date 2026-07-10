@@ -15,14 +15,10 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 // Skia removed - using cross-platform LinearGradient instead for iOS compatibility
-import AnimatedRN, { 
-  useAnimatedStyle, 
-  useSharedValue, 
-  withRepeat, 
-  withTiming, 
-  withSequence,
-  Easing as EasingRN
-} from 'react-native-reanimated';
+// react-native-reanimated removed: v4 is New-Architecture-only and threw a fatal JS
+// exception at startup on this brownfield (old-arch / Paper) build. The one decorative
+// stat-card animation below now uses RN's built-in Animated (imported above), which
+// works on both architectures and drives the same float + press-scale natively.
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -37,6 +33,14 @@ import Glass3DLogo from '../../components/common/Glass3DLogo';
 import NativeAdCard from '../../components/NativeAdCard';
 
 const { width } = Dimensions.get('window');
+
+type PopularToolItem = {
+  name: string;
+  slug: string;
+  category: string;
+  color: string;
+  img?: any;
+};
 
 const isVisionOS = (Platform.OS as any) === 'visionos';
 
@@ -123,35 +127,45 @@ const GlassBentoCard = ({ children, color }: { children: React.ReactNode, color:
 );
 
 const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; onPress: () => void }) => {
-  const scale = useSharedValue(1);
-  const floating = useSharedValue(0);
+  const scale = useRef(new Animated.Value(1)).current;
+  const floating = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    floating.value = withRepeat(
-      withTiming(1, { duration: 2000 + index * 200, easing: EasingRN.bezier(0.4, 0, 0.2, 1) }),
-      -1,
-      true
+    // Gentle continuous float (yoyo up/down), matching the previous reanimated behavior.
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floating, {
+          toValue: 1,
+          duration: 2000 + index * 200,
+          easing: Easing.bezier(0.4, 0, 0.2, 1),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floating, {
+          toValue: 0,
+          duration: 2000 + index * 200,
+          easing: Easing.bezier(0.4, 0, 0.2, 1),
+          useNativeDriver: true,
+        }),
+      ])
     );
+    loop.start();
+    return () => loop.stop();
   }, []);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: scale.value },
-      { translateY: floating.value * -5 }
-    ] as any
-  }));
+  const translateY = floating.interpolate({ inputRange: [0, 1], outputRange: [0, -5] });
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Reanimated shared values are mutated by design; react-hooks/immutability doesn't model them.
-    // eslint-disable-next-line react-hooks/immutability
-    scale.value = withSequence(withTiming(0.9, { duration: 100 }), withTiming(1, { duration: 100 }));
+    Animated.sequence([
+      Animated.timing(scale, { toValue: 0.9, duration: 100, useNativeDriver: true }),
+      Animated.timing(scale, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start();
     onPress();
   };
 
   return (
     <TouchableOpacity onPress={handlePress} activeOpacity={0.9}>
-      <AnimatedRN.View style={[styles.statCardWrapper, animatedStyle]}>
+      <Animated.View style={[styles.statCardWrapper, { transform: [{ scale }, { translateY }] }]}>
         <GlassBentoCard color={stat.color}>
           <View style={[styles.statIcon, { backgroundColor: stat.color + '20' }]}>
             {stat.img ? (
@@ -163,24 +177,24 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
           <Text style={styles.statValue}>{stat.value}</Text>
           <Text style={styles.statLabel} numberOfLines={1}>{stat.label}</Text>
         </GlassBentoCard>
-      </AnimatedRN.View>
+      </Animated.View>
     </TouchableOpacity>
   );
 };
 
 const DashboardScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { user, profile, localSubscriptionOverride } = useAuthStore();
   // A user is free only if BOTH the server profile and the local purchase
   // override say so — the override is set by a finished StoreKit transaction
+  const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
+  const [refreshing, setRefreshing] = React.useState(false);
   // and must win even when the server write failed (e.g. Apple's sandbox).
+  const { user, profile, localSubscriptionOverride } = useAuthStore();
   const isFreeUser =
     (!profile?.subscription || profile.subscription === 'free') &&
     localSubscriptionOverride === 'free';
   // PRO-badged tools need the Pro tier or higher, not just any paid plan.
   const canUsePro = hasProAccess(profile?.subscription, localSubscriptionOverride);
-  const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
-  const [refreshing, setRefreshing] = React.useState(false);
 
   // Update counts when generations change
   const userGenerations = (user?.$id && generations.length > 0) ? generations.filter(g => g.userId === user.$id) : [];
@@ -207,9 +221,17 @@ const DashboardScreen = () => {
 
   // Credits left this cycle, shown on the home screen so customers always see
   // their remaining generations (9999+ = unlimited plan -> shown as ∞).
+  // Only show a real, plan-based balance once the user's profile/plan has loaded.
+  // Before that, profile?.subscription is undefined and the tier helper falls back
+  // to free's 10 — a fabricated "demo" credit we must not show. Render '—' until real.
+  const hasLoadedPlan = !!(profile?.subscription || localSubscriptionOverride);
   const genLimit = generationsLimitForTier(profile?.subscription, localSubscriptionOverride);
   const genUsed = profile?.generationsUsed ?? 0;
-  const creditsLeft = genLimit >= 999999 ? '∞' : String(Math.max(0, genLimit + (profile?.credits ?? 0) - genUsed));
+  const creditsLeft = !hasLoadedPlan
+    ? '—'
+    : genLimit >= 999999
+      ? '∞'
+      : String(Math.max(0, genLimit + (profile?.credits ?? 0) - genUsed));
 
   const stats = [
     { label: 'Credits Left', value: creditsLeft, icon: 'zap', img: require('../../../assets/images/tool-icons-v2/ai-3d.png'), color: Colors.secondary, badge: 'Upgrade', screen: 'Subscription' },
@@ -223,7 +245,7 @@ const DashboardScreen = () => {
     { id: 1, image: BannerImages.banner1, title: 'AI Marketing Pro', subtitle: 'Create stunning ads in seconds', color: '#6C5CE7' },
     { id: 2, image: BannerImages.banner2, title: 'Smart Content', subtitle: 'AI-powered writing assistant', color: '#00B894' },
     { id: 3, image: BannerImages.banner3, title: 'ROI Boost', subtitle: 'Data-driven strategies', color: '#E17055' },
-    { id: 5, image: BannerImages.banner5, title: 'Marketing Suite', subtitle: 'All tools in one place', color: '#A29BFE' },
+    { id: 4, image: BannerImages.banner5, title: 'Marketing Suite', subtitle: 'All tools in one place', color: '#A29BFE' },
   ];
 
   const quickActions = [
@@ -433,7 +455,15 @@ const DashboardScreen = () => {
                   if (action.screen === 'MemeGenerator') {
                     navigation.navigate('MemeGenerator');
                   } else if (action.screen === 'Chat' || action.screen === 'Tools' || action.screen === 'History') {
-                    navigation.navigate('Main', { screen: action.screen === 'Chat' ? 'Chat' : action.screen === 'Tools' ? 'Tools' : 'History' } as any);
+                    const mainScreenMap: Record<'Chat' | 'Tools' | 'History', 'Chat' | 'Tools' | 'History'> = {
+                      Chat: 'Chat',
+                      Tools: 'Tools',
+                      History: 'History',
+                    };
+                    const targetScreen = mainScreenMap[action.screen as 'Chat' | 'Tools' | 'History'];
+                    if (targetScreen) {
+                      navigation.navigate('Main', { screen: targetScreen } as any);
+                    }
                   }
                 }}
               >
@@ -533,7 +563,7 @@ const DashboardScreen = () => {
           </View>
 
           <View style={styles.popularList}>
-            {popularTools.map((tool: typeof popularTools[number], index: number) => (
+            {popularTools.map((tool: PopularToolItem, index: number) => (
               <TouchableOpacity
                 key={index}
                 style={[
@@ -551,7 +581,7 @@ const DashboardScreen = () => {
                 <View style={styles.popularInfo}>
                   <View style={[styles.popularIcon, { backgroundColor: tool.color + '20' }]}>
                     <Image
-                      source={(tool as any).img || getToolIcon(tool.slug, tool.category)}
+                      source={tool.img || getToolIcon(tool.slug, tool.category)}
                       style={{ width: 32, height: 32 }}
                       resizeMode="contain"
                     />

@@ -2,7 +2,10 @@
 # https://github.com/firebase/firebase-tools
 
 name: Deploy to Firebase Hosting on PR
-on: pull_request
+# Manual-only: builds + previews a web deploy (expo export --platform web) from the
+# PHONE repo. The web app isn't published from here, and this failed on every PR
+# (and fires on each of the many bot branches). Removed the pull_request trigger.
+on: workflow_dispatch
 permissions:
   checks: write
   contents: read
@@ -12,9 +15,9 @@ jobs:
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       # bun repo (no package-lock.json) — `npm ci` failed instantly. Use plain install.
-      - run: npm install --legacy-peer-deps --no-audit --no-fund && npm run build
+      - run: npm install --legacy-peer-deps --no-audit --no-fund --package-lock=false && npm run build
       - uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a # v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
