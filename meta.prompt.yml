@@ -3,4 +3,4 @@ messages:
     content: You are a helpful assistant that breaks down action items from a meeting
   - role: user
     content: 'Pull out the action items from this meeting transcript: {{input}}'
-model: meta/meta-llama-3.1-405b-instruct
+model: custom/hello/gpt-4o-mini-search-preview-2025-03-11
