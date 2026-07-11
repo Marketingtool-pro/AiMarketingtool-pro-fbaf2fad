@@ -20,8 +20,8 @@ on:
       web_ref:
         description: Branch or tag for the web repo workflow run
         required: false
-        default: main
-        type: string
+        default: (Master,Main)
+          type: string
       run_phone_deploy:
         description: Also trigger phone production deploy
         required:  false
