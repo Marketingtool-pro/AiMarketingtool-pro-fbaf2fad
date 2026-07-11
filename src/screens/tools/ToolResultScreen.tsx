@@ -120,12 +120,6 @@ const ToolResultScreen = () => {
     );
   };
 
-  // Desktop hand-off per MOBILE_TOOLS_POLICY.md (owner decision 2026-06-28):
-  // the button opens the owner's web app (app.marketingtool.pro — owner confirmed
-  // 2026-07-05 the web app is fixed and serving again). Opened IN-APP via
-  // SFSafariViewController/Custom Tabs so the app never backgrounds (backgrounding
-  // read as "app closed" to users on both platforms).
-  const DESKTOP_URL = 'https://app.marketingtool.pro/login';
   // Desktop hand-off per MOBILE_TOOLS_POLICY.md (owner decision 2026-06-28).
   // The SPA at app.marketingtool.pro currently client-renders a 404 on EVERY route
   // (device-verified 2026-07-04: the web app crashes on load; fix is PR #30 on the
