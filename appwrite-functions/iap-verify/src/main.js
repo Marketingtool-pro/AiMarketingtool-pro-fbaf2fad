@@ -33,15 +33,15 @@ const PRODUCT_TO_ENTITLEMENT = {
   "pro.marketingtool.starter.yearly":  { tier: "starter", generationsLimit: 200 },
   "pro.marketingtool.pro.monthly":     { tier: "pro",     generationsLimit: 500 },
   "pro.marketingtool.pro.yearly":      { tier: "pro",     generationsLimit: 500 },
-  "pro.marketingtool.growth.monthly":  { tier: "enterprise", generationsLimit: 9999 },
-  "pro.marketingtool.growth.yearly":   { tier: "enterprise", generationsLimit: 9999 },
+  "pro.marketingtool.growth.monthly":  { tier: "growth", generationsLimit: 9999 },
+  "pro.marketingtool.growth.yearly":   { tier: "growth", generationsLimit: 9999 },
   // Consumable – adds credits, no tier change
   "pro.marketingtool.tokens": null,
   "tokens":                   null,
   // Android Play subscription product ids
-  "starter":      { tier: "starter",    generationsLimit: 200 },
-  "professional": { tier: "pro",        generationsLimit: 500 },
-  "growth":       { tier: "enterprise", generationsLimit: 9999 },
+  "starter":      { tier: "starter", generationsLimit: 200 },
+  "professional": { tier: "pro",     generationsLimit: 500 },
+  "growth":       { tier: "growth",  generationsLimit: 9999 },
 };
 
 const CONSUMABLE_IDS = new Set(["pro.marketingtool.tokens", "tokens"]);
@@ -164,7 +164,9 @@ const { userId, productId, platform, appleReceipt } = body || {};
       log(`Consumable: adding ${TOKEN_CREDITS} credits to userId=${userId} (was ${currentCredits})`);
     } else if (entitlement) {
       // Subscription: upgrade tier if new tier is higher
-      const tierRank = { free: 0, starter: 1, pro: 2, enterprise: 3 };
+      // Mirror billingService.ts TIER_RANK so a Play `growth` purchase is not
+      // dropped as an "invalid tier mapping" (growth was previously absent here).
+      const tierRank = { free: 0, starter: 1, pro: 2, growth: 3, enterprise: 4 };
       const hasCurrentTier = Object.prototype.hasOwnProperty.call(tierRank, doc.subscription);
       const hasNewTier = Object.prototype.hasOwnProperty.call(tierRank, entitlement.tier);
 
