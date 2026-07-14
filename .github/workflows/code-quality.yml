@@ -2,9 +2,9 @@ name: Code Quality
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, Master, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [main, Master, develop]
 
 permissions: read-all
 
