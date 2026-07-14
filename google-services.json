@@ -39,20 +39,20 @@
           }
         },
         {
-          "client_id": "911925145433-ftceal4kug43ehg2nu30ccs6v1md9snt.apps.googleusercontent.com",
+          "client_id": "911925145433-v726frn94fr7acj9dbe866cs5ou15f18.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDOBuix6QO3t9URwEJR7Ya2xm-rt0MvZmA"
+          "current_key": "AIzaSyAveM0GL5FmZtxhEUbqHUCEpHB9sDCOnQA"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "100801518418929477429",
+              "client_id": "100816265387540467700",
               "client_type": 3
             },
             {
