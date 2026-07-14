@@ -55,6 +55,17 @@ export const initializeAppCheck = async () => {
     if (__DEV__) console.log('[AppCheck] Initialized successfully (Env:', isTestEnvironment ? 'Test/Debug' : 'Prod', ')');
   } catch (error: any) {
     if (__DEV__) console.error('[AppCheck] Initialization failed:', error.message);
+    // Record to Crashlytics so real-device App Check / Play Integrity failures are
+    // observable in production. These correlate with Android phone-auth being blocked
+    // (auth/app-not-authorized, auth/missing-client-identifier). Best-effort: App Check
+    // must never block auth, so swallow if Crashlytics isn't available.
+    try {
+      const crashlytics = require('@react-native-firebase/crashlytics').default;
+      crashlytics().log(`[AppCheck] init failed on ${Platform.OS}: ${error?.code ?? ''} ${error?.message ?? ''}`);
+      if (error instanceof Error) crashlytics().recordError(error);
+    } catch {
+      /* Crashlytics unavailable — non-fatal */
+    }
   }
 };
 

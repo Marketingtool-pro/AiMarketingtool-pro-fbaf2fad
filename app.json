@@ -64,28 +64,6 @@
         "USE_BIOMETRIC",
         "VIBRATE",
         "com.google.android.gms.permission.AD_ID"
-      ],
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "https",
-              "host": "marketingtool.pro",
-              "pathPrefix": "/"
-            },
-            {
-              "scheme": "https",
-              "host": "app.marketingtool.pro",
-              "pathPrefix": "/"
-            }
-          ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
-        }
       ]
     },
     "web": {
