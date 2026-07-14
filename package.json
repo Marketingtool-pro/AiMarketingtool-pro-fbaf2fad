@@ -261,7 +261,12 @@
         "react-native-webview",
         "react",
         "react-dom",
-        "react-native-view-shot"
+        "react-native-view-shot",
+        "react-native-screens",
+        "expo-asset",
+        "expo-background-fetch",
+        "expo-image-manipulator",
+        "expo-task-manager"
       ]
     }
   },
