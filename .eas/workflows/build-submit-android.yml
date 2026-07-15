@@ -1,0 +1,23 @@
+# EAS Workflow — runs on Expo's cloud (NOT GitHub Actions).
+# Auto-builds the Android app and submits it to Google Play whenever Master
+# is updated. Trigger from the Expo dashboard (Workflows tab) or on push.
+name: Android build + submit
+on:
+  push:
+    branches:
+      - Master
+jobs:
+  build_android:
+    name: Build Android (production)
+    type: build
+    params:
+      platform: android
+      profile: production
+  submit_android:
+    name: Submit to Google Play
+    needs: [build_android]
+    type: submit
+    params:
+      platform: android
+      profile: production
+      build_id: ${{ needs.build_android.outputs.build_id }}
