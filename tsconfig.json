@@ -17,6 +17,8 @@
     "node_modules",
     "functions",
     "appwrite-functions",
-    "index.ts"
+    "index.ts",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx"
   ]
 }
