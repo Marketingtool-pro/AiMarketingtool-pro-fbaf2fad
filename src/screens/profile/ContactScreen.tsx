@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
+import { LINKS, SUPPORT_EMAIL, supportMailto } from '../../constants/links';
 
 const ContactScreen = () => {
   const navigation = useNavigation();
@@ -23,13 +24,35 @@ const ContactScreen = () => {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
 
+  // Opens a URL, falling back when the device can't handle the scheme. A
+  // device with no mail client configured cannot open mailto:, and the tap
+  // used to do nothing at all with no feedback.
+  const openWithFallback = async (url: string, fallbackUrl: string, fallbackNote: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+        return;
+      }
+    } catch {
+      // fall through to the fallback below
+    }
+    Alert.alert('No mail app found', fallbackNote, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Open web form', onPress: () => Linking.openURL(fallbackUrl).catch(() => {}) },
+    ]);
+  };
+
   const handleSubmit = () => {
     if (!name || !email || !message) {
       Alert.alert('Missing Fields', 'Please fill in name, email and message.');
       return;
     }
-    const mailUrl = `mailto:help@marketingtool.pro?subject=${encodeURIComponent(subject || 'Contact from App')}&body=${encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`)}`;
-    Linking.openURL(mailUrl);
+    const mailUrl = supportMailto(
+      subject || 'Contact from App',
+      `Name: ${name}\nEmail: ${email}\n\n${message}`,
+    );
+    openWithFallback(mailUrl, LINKS.CONTACT, `We couldn't open your mail app. You can reach us at ${SUPPORT_EMAIL} or use the web contact form.`);
   };
 
   return (
@@ -67,18 +90,18 @@ const ContactScreen = () => {
           <View style={styles.methodsRow}>
             <TouchableOpacity
               style={styles.methodCard}
-              onPress={() => Linking.openURL('mailto:help@marketingtool.pro')}
+              onPress={() => openWithFallback(`mailto:${SUPPORT_EMAIL}`, LINKS.CONTACT, `We couldn't open your mail app. You can reach us at ${SUPPORT_EMAIL} or use the web contact form.`)}
             >
               <View style={[styles.methodIcon, { backgroundColor: Colors.secondary + '20' }]}>
                 <Feather name="mail" size={20} color={Colors.secondary} />
               </View>
               <Text style={styles.methodLabel}>Email</Text>
-              <Text style={styles.methodValue}>help@marketingtool.pro</Text>
+              <Text style={styles.methodValue}>{SUPPORT_EMAIL}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.methodCard}
-              onPress={() => Linking.openURL('https://marketingtool.pro/help/')}
+              onPress={() => Linking.openURL(LINKS.HELP)}
             >
               <View style={[styles.methodIcon, { backgroundColor: Colors.success + '20' }]}>
                 <Feather name="help-circle" size={20} color={Colors.success} />
@@ -154,7 +177,7 @@ const ContactScreen = () => {
           {/* Website link */}
           <TouchableOpacity
             style={styles.webLink}
-            onPress={() => Linking.openURL('https://marketingtool.pro/contact/')}
+            onPress={() => Linking.openURL(LINKS.CONTACT)}
           >
             <Feather name="external-link" size={16} color={Colors.secondary} />
             <Text style={styles.webLinkText}>Visit our website contact page</Text>

@@ -20,6 +20,7 @@ import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme'
 import * as Haptics from 'expo-haptics';
 import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, entitlementForProduct, CREDITS_PER_TOKEN_PACK, type Entitlement } from '../../services/billingService';
 import { functions } from '../../services/appwrite';
+import { LINKS, supportMailto } from '../../constants/links';
 import { ExecutionMethod } from 'react-native-appwrite';
 
 const { width } = Dimensions.get('window');
@@ -221,7 +222,7 @@ const SubscriptionScreen = () => {
     }
 
     if (selectedPlan === 'agency') {
-      Linking.openURL('mailto:help@marketingtool.pro?subject=Agency%20Plan%20Inquiry');
+      Linking.openURL(supportMailto('Agency Plan Inquiry'));
       return;
     }
 
@@ -274,7 +275,7 @@ const SubscriptionScreen = () => {
     } else if (Platform.OS === 'android') {
       Linking.openURL('https://play.google.com/store/account/subscriptions');
     } else {
-      Linking.openURL('https://marketingtool.pro/account/billing');
+      Linking.openURL(LINKS.BILLING);
     }
   };
 
@@ -520,12 +521,32 @@ const SubscriptionScreen = () => {
           </LinearGradient>
         </TouchableOpacity>
         <Text style={styles.secureText}>Cancel anytime. Secure payment via Store.</Text>
+        {/* Billing problems surface here, but there was no route to support from
+            this screen — users had to back out to Profile to find it.
+            Android only: the iOS purchase flow is already approved and shipping,
+            and Apple 3.1.1 scrutinises outbound links on a purchase screen, so
+            we don't add them there. */}
+        {Platform.OS === 'android' && (
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 12 }}>
+            <TouchableOpacity onPress={() => Linking.openURL(LINKS.HELP)}>
+              <Text style={styles.footerLink}>Help</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => Linking.openURL(LINKS.CONTACT)}>
+              <Text style={styles.footerLink}>Contact</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => Linking.openURL(LINKS.TUTORIALS)}>
+              <Text style={styles.footerLink}>Tutorials</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {/* These were '/terms' and '/privacy', both of which 404. The live pages
+            are '/terms-policy/' and '/privacy-policy/'. */}
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 8 }}>
-          <TouchableOpacity onPress={() => Linking.openURL('https://marketingtool.pro/terms')}>
-            <Text style={{ fontSize: 11, color: '#71717A', textDecorationLine: 'underline' }}>Terms of Use</Text>
+          <TouchableOpacity onPress={() => Linking.openURL(LINKS.TERMS)}>
+            <Text style={styles.footerLink}>Terms of Use</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => Linking.openURL('https://marketingtool.pro/privacy')}>
-            <Text style={{ fontSize: 11, color: '#71717A', textDecorationLine: 'underline' }}>Privacy Policy</Text>
+          <TouchableOpacity onPress={() => Linking.openURL(LINKS.PRIVACY)}>
+            <Text style={styles.footerLink}>Privacy Policy</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -534,6 +555,7 @@ const SubscriptionScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  footerLink: { fontSize: 11, color: '#71717A', textDecorationLine: 'underline' },
   container: { flex: 1, backgroundColor: '#0D0F1C' },
   closeBtn: { position: 'absolute', top: 56, right: 20, zIndex: 10 },
   backBtnLeft: { position: 'absolute', top: 56, left: 20, zIndex: 10 },

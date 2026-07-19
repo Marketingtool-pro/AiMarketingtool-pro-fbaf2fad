@@ -2,6 +2,7 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
+import { isE164 } from '../utils/phone';
 
 let auth: any = null;
 let apnsRegistered = false;
@@ -69,10 +70,15 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
       return { success: false, error: 'Firebase Auth not available on this platform' };
     }
 
-    const cleaned = phoneNumber.replace(/\D/g, '');
-    const normalizedPhone = phoneNumber.startsWith('+')
-      ? `+${cleaned}`
-      : `+91${cleaned}`;
+    // Callers must pass E.164 (see src/utils/phone.ts normalizePhone). This
+    // layer deliberately does NOT re-derive the number: it used to default
+    // anything without a '+' to +91, which silently mislabelled every other
+    // country and mangled Indian numbers written with a trunk 0.
+    const normalizedPhone = phoneNumber;
+    if (!isE164(normalizedPhone)) {
+      if (__DEV__) console.warn('[FirebaseAuth] Number is not E.164:', normalizedPhone);
+      return { success: false, error: 'Invalid phone number format' };
+    }
 
     // Check app-side rate limit before hitting Firebase
     const rateLimitError = checkRateLimit(normalizedPhone);

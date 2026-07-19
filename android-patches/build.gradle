@@ -3,8 +3,8 @@ import groovy.xml.XmlParser
 buildscript {
     repositories { google(); mavenCentral() }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.8.0'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20'
+        classpath 'com.android.tools.build:gradle:8.9.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0'
     }
 }
 
@@ -14,7 +14,8 @@ apply plugin: 'maven-publish'
 
 android {
     namespace 'com.facebook.react.patch'
-    compileSdk 35
+    // Must match expo-build-properties compileSdkVersion in app.json.
+    compileSdk 36
     defaultConfig { minSdk 24 }
     kotlinOptions { jvmTarget = '17' }
     compileOptions {
@@ -39,17 +40,20 @@ repositories {
     mavenCentral()
 }
 
-def reactVersion = '0.85.3'
+// MUST match the react-native version in package.json. This was pinned at
+// 0.85.3 while the app moved to 0.86.0, so the published AAR no longer matched
+// the app it was meant to patch.
+def reactVersion = '0.86.0'
 // Pinned revision — MUST stay in sync with PATCHED_VERSION in plugins/withRNEdgeToEdgeFix.js
 // and the release tag react-android-<version> published by .github/workflows/patch-react-android.yml.
 // Override with -PpatchRevision=N when cutting a new patch revision.
-def patchedVersion = "${reactVersion}-e2e.${findProperty('patchRevision') ?: '2'}"
+def patchedVersion = "${reactVersion}-e2e.${findProperty('patchRevision') ?: '1'}"
 
 dependencies {
     // All imports needed by our 2 patched files
     compileOnly "com.facebook.react:react-android:${reactVersion}"
-    compileOnly "androidx.core:core:1.15.0"
-    compileOnly "androidx.core:core-ktx:1.15.0"
+    compileOnly "androidx.core:core:1.16.0"
+    compileOnly "androidx.core:core-ktx:1.16.0"
 }
 
 // ── AAR Surgery ──────────────────────────────────────────────────────────────

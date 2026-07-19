@@ -19,6 +19,7 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { generationsLimitForTier } from '../../services/billingService';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { LINKS } from '../../constants/links';
 
 const { width } = Dimensions.get('window');
 
@@ -109,7 +110,7 @@ const ProfileScreen = () => {
           url: Platform.select({
             ios: 'itms-apps://apps.apple.com/account/subscriptions',
             android: 'https://play.google.com/store/account/subscriptions',
-            default: 'https://marketingtool.pro/account/billing'
+            default: LINKS.BILLING
           }),
         },
       ],
@@ -117,9 +118,9 @@ const ProfileScreen = () => {
     {
       title: 'Support',
       items: [
-        { iconName: 'help-circle', label: 'Help Center', url: 'https://marketingtool.pro/help/' },
-        { iconName: 'message-circle', label: 'Contact Support', url: 'https://marketingtool.pro/contact/' },
-        { iconName: 'book', label: 'Tutorials', url: 'https://marketingtool.pro/blog/' },
+        { iconName: 'help-circle', label: 'Help Center', url: LINKS.HELP },
+        { iconName: 'message-circle', label: 'Contact Support', url: LINKS.CONTACT },
+        { iconName: 'book', label: 'Tutorials', url: LINKS.TUTORIALS },
       ],
     },
     {

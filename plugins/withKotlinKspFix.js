@@ -2,19 +2,35 @@ const { withProjectBuildGradle, withAppBuildGradle, withDangerousMod } = require
 const fs = require('fs');
 const path = require('path');
 
+// Only genuinely-additive settings get defaults. Toolchain VERSION PINS
+// deliberately have none — see the note below.
 const DEFAULTS = {
-  kotlinVersion: '2.1.20',
-  kspVersion: '2.1.20-1.0.32',
-  agpVersion: '8.7.2',
-  googlePlayServicesVersion: '18.0.0',
-  gradleVersion: '8.13',
   crashlyticsVersion: '3.0.3',
   googleServicesVersion: '4.4.2'
 };
 
 /**
- * Android build.gradle + Gradle wrapper fixes for Expo SDK 55 / RN 0.83.
- * Includes Crashlytics build ID fix and 16 KB page size alignment.
+ * Android build.gradle + Gradle wrapper fixes.
+ * Adds the Crashlytics/google-services classpaths, 16 KB page-size alignment,
+ * and the Kotlin metadata-version escape hatch for AdMob.
+ *
+ * TOOLCHAIN VERSIONS ARE NOT PINNED HERE ANY MORE.
+ *
+ * This plugin is registered in app.json as a bare string, so it received no
+ * options and silently applied its own defaults — which contradicted
+ * expo-build-properties, the authoritative source in the same app.json:
+ *
+ *     this plugin's old defaults   expo-build-properties (app.json)
+ *     kotlin        2.1.20         2.3.0   <- commit 15a7c34f9c bumped it
+ *     AGP           8.7.2          needs >= 8.9 to accept compileSdk 36
+ *     compileSdk    35 (injected)  36
+ *     targetSdk     35 (injected)  36
+ *     androidx.core 1.15.0 (pin)   compileSdk 36 needs >= 1.16
+ *
+ * Whichever ran last won, so the Kotlin bump never actually took effect and
+ * AGP 8.7.2 was handed a compileSdk it cannot compile. Version pins are now
+ * OPT-IN: pass them explicitly if you ever need them, otherwise
+ * expo-build-properties governs the toolchain on its own.
  */
 const withKotlinKspFix = (config, options) => {
   const opts = { ...DEFAULTS, ...(options || {}) };
@@ -32,16 +48,14 @@ const withKotlinKspFix = (config, options) => {
     // 🚨 CRITICAL FIX: Remove supportLibVersion from line 1
     buildGradle = buildGradle.replace(/^supportLibVersion\s*=\s*["'].*["']\s*/m, '');
 
+    // Never inject compileSdk/targetSdk/buildTools here — expo-build-properties
+    // already sets them from app.json, and hardcoding 35 downgraded the 36 build.
     const varsToEnsure = [
-      { name: 'kotlinVersion', value: `'${kotlinVersion}'` },
-      { name: 'kspVersion', value: `'${kspVersion}'` },
-      { name: 'googlePlayServicesVersion', value: `"${googlePlayServicesVersion}"` },
-      { name: 'compileSdkVersion', value: '35' },
-      { name: 'targetSdkVersion', value: '35' },
-      { name: 'buildToolsVersion', value: '"35.0.0"' },
-      { name: 'minSdkVersion', value: '24' },
-    ];
-    
+      kotlinVersion && { name: 'kotlinVersion', value: `'${kotlinVersion}'` },
+      kspVersion && { name: 'kspVersion', value: `'${kspVersion}'` },
+      googlePlayServicesVersion && { name: 'googlePlayServicesVersion', value: `"${googlePlayServicesVersion}"` },
+    ].filter(Boolean);
+
     const missing = varsToEnsure.filter(v => !new RegExp(`\\b${v.name}\\s*=`).test(buildGradle));
 
     if (missing.length > 0) {
@@ -53,8 +67,8 @@ const withKotlinKspFix = (config, options) => {
       }
     }
 
-    // 🚨 AGP FIX
-    if (!buildGradle.includes(`com.android.tools.build:gradle:${agpVersion}`)) {
+    // AGP override — opt-in only. Forcing 8.7.2 here made compileSdk 36 unbuildable.
+    if (agpVersion && !buildGradle.includes(`com.android.tools.build:gradle:${agpVersion}`)) {
         buildGradle = buildGradle.replace(
             /classpath\s*(?:\(\s*)?['"]com\.android\.tools\.build:gradle(?::[^'"]*)?['"]\s*\)?/g,
             `classpath("com.android.tools.build:gradle:${agpVersion}")`
@@ -62,7 +76,7 @@ const withKotlinKspFix = (config, options) => {
     }
 
     // Rewrite Kotlin gradle-plugin classpath
-    if (!buildGradle.includes(`org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}`)) {
+    if (kotlinVersion && !buildGradle.includes(`org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}`)) {
       buildGradle = buildGradle.replace(
         /classpath\s*(?:\(\s*)?['"]org\.jetbrains\.kotlin:kotlin-gradle-plugin(?::[^'"]*)?['"]\s*\)?/g,
         `classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")`
@@ -85,33 +99,32 @@ const withKotlinKspFix = (config, options) => {
         );
     }
 
-    const resolutionStrategyBlock = `
+    // androidx.core 1.15.0 / activity 1.10.1 / browser 1.8.0 were pinned for
+    // compileSdk 35. They are NOT compatible with compileSdk 36, so the pins are
+    // gone. Kotlin/KSP alignment only runs when versions are explicitly passed.
+    const alignments = [];
+    if (kotlinVersion) {
+      alignments.push(`            if (requested.group == 'org.jetbrains.kotlin' && requested.name.startsWith('kotlin-')) {
+                details.useVersion '${kotlinVersion}'
+            }`);
+    }
+    if (kspVersion) {
+      alignments.push(`            if (requested.group == 'com.google.devtools.ksp') {
+                details.useVersion '${kspVersion}'
+            }`);
+    }
+    const resolutionStrategyBlock = alignments.length ? `
 allprojects {
     configurations.all {
         resolutionStrategy.eachDependency { DependencyResolveDetails details ->
             def requested = details.requested
-            if (requested.group == 'org.jetbrains.kotlin' && requested.name.startsWith('kotlin-')) {
-                details.useVersion kotlinVersion
-            }
-            if (requested.group == 'com.google.devtools.ksp') {
-                details.useVersion kspVersion
-            }
-            // 🚨 Pin to SDK 35 compatible versions
-            if (requested.group == 'androidx.core' && (requested.name == 'core-ktx' || requested.name == 'core')) {
-                details.useVersion '1.15.0'
-            }
-            if (requested.group == 'androidx.activity') {
-                details.useVersion '1.10.1'
-            }
-            if (requested.group == 'androidx.browser' && requested.name == 'browser') {
-                details.useVersion '1.8.0'
-            }
+${alignments.join('\n')}
         }
     }
 }
-`;
+` : '';
 
-    if (!buildGradle.includes('resolutionStrategy.eachDependency')) {
+    if (resolutionStrategyBlock && !buildGradle.includes('resolutionStrategy.eachDependency')) {
       buildGradle += resolutionStrategyBlock;
     }
 
@@ -172,7 +185,8 @@ allprojects {
     async (config) => {
       const projectRoot = config.modRequest.platformProjectRoot;
       const wrapperPath = path.join(projectRoot, 'gradle', 'wrapper', 'gradle-wrapper.properties');
-      if (fs.existsSync(wrapperPath)) {
+      // Opt-in: pinning Gradle 8.13 conflicts with the wrapper Expo/RN ships.
+      if (gradleVersion && fs.existsSync(wrapperPath)) {
         let content = fs.readFileSync(wrapperPath, 'utf8');
         const lines = content.split('\n');
         const updatedLines = lines.map(line => {

@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Models, ExecutionMethod } from 'react-native-appwrite';
 import { authService, dbService, account, functions, COLLECTIONS, Query } from '../services/appwrite';
 import { biometricService } from '../services/biometric';
+import { isE164 } from '../utils/phone';
 import {
   sendPhoneOTP as firebaseSendOTP,
   verifyPhoneOTP as firebaseVerifyOTP,
@@ -315,8 +316,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Android automatically. firebaseAuth service is in services/firebaseAuth.ts.
     set({ error: null });
     try {
-      const cleaned = phoneNumber.replace(/\D/g, '');
-      const formatted = phoneNumber.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
+      // Already E.164 — the caller normalizes via src/utils/phone.ts
+      // normalizePhone(). This used to re-derive the number here and default
+      // anything without a '+' to +91, duplicating (and disagreeing with) the
+      // same logic in services/firebaseAuth.ts.
+      const formatted = phoneNumber;
+      if (!isE164(formatted)) {
+        throw new Error('Invalid phone number format');
+      }
 
       // Reviewer bypass — App Store/Play review team uses a fixed test number.
       // Prefer EXPO_PUBLIC_REVIEWER_PHONE from .env / EAS secrets, but this code
@@ -356,8 +363,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error('Verification session expired. Please request a new code.');
       }
 
-      const cleaned = rawPhone.replace(/\D/g, '');
-      const phone = rawPhone.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
+      // tempPhone was stored as E.164 by sendPhoneOTP above; no re-derivation.
+      const phone = rawPhone;
 
       let firebaseUid: string;
 

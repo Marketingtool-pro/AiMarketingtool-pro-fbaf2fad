@@ -1,24 +1,37 @@
 /**
  * withRNEdgeToEdgeFix.js
  *
+ * ⚠️ NOT CURRENTLY REGISTERED — this plugin is intentionally inactive.
+ *
+ * It appears in neither app.json's `plugins` array nor app.config.js, so none
+ * of the AAR substitution below runs. That is deliberate: the registered
+ * ./plugins/withAndroid15EdgeToEdge.js already solves the same Android 15
+ * deprecation the cheap way (enableEdgeToEdge() in MainActivity + stripping the
+ * deprecated attrs from styles.xml), without downloading a ~140 MB AAR on every
+ * build. Keep this file as the fallback if the upstream fix ever regresses.
+ *
+ * If you DO re-register it, `PATCHED_VERSION` below must match a release that
+ * actually exists — and android-patches/ must have been published for the
+ * current react-native version first, or the build will fail resolving it.
+ *
  * Expo config plugin that wires the generated Android project to use a patched
  * react-android AAR that removes deprecated Android 15 edge-to-edge API calls
  * (Window.setStatusBarColor, Window.setNavigationBarColor, etc.).
  *
  * Strategy:
- *  - Downloads the patched AAR + patched POM from GitHub Releases (version 0.83.6-e2e.1)
- *    into android/local-aar/ under the e2e.1 version directory.
+ *  - Downloads the patched AAR + patched POM from GitHub Releases (PATCHED_VERSION)
+ *    into android/local-aar/ under that version's directory.
  *  - Adds local-aar as a plain Maven repo (first in the list).
  *  - Uses resolutionStrategy.dependencySubstitution to redirect ALL react-android
- *    requests to 0.83.6-e2e.1, which lives exclusively in local-aar.
+ *    requests to PATCHED_VERSION, which lives exclusively in local-aar.
  *
  * Why dependencySubstitution instead of force/exclusiveContent:
- *  - RNGP (React Native Gradle Plugin) calls force("com.facebook.react:react-android:0.83.6")
+ *  - RNGP (React Native Gradle Plugin) calls force("com.facebook.react:react-android:<ver>")
  *    on every project configuration. In Gradle 7.4+, dependencySubstitution takes
  *    precedence over force(), so our substitution wins and react-android resolves
- *    to 0.83.6-e2e.1 from local-aar across ALL subprojects.
+ *    to PATCHED_VERSION from local-aar across ALL subprojects.
  *  - exclusiveContent in allprojects{} has known issues in Gradle 8.x (silent failures).
- *  - 0.83.6-e2e.1 is never in Maven Central → no Gradle cache collision risk.
+ *  - The -e2e.N version is never in Maven Central → no Gradle cache collision risk.
  *
  * No EAS secrets required — the GitHub Release is publicly downloadable.
  */
@@ -28,7 +41,9 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const PATCHED_VERSION = '0.85.3-e2e.2';
+// MUST stay in lockstep with `patchedVersion` in android-patches/build.gradle
+// and the GitHub release tag published by .github/workflows/patch-react-android.yml.
+const PATCHED_VERSION = '0.86.0-e2e.1';
 const PATCHED_AAR_URL =
   'https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/releases/download/' +
   `react-android-${PATCHED_VERSION}/react-android-${PATCHED_VERSION}.aar`;

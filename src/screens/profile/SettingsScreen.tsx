@@ -18,6 +18,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import { authService, functions } from '../../services/appwrite';
+import { SUPPORT_EMAIL, supportMailto } from '../../constants/links';
 import { ExecutionMethod } from 'react-native-appwrite';
 import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { biometricService } from '../../services/biometric';
@@ -253,7 +254,7 @@ const SettingsScreen = () => {
             } catch (error: any) {
               Alert.alert(
                 'Deletion Failed',
-                error?.message || 'We could not delete your account. Please contact support@marketingtool.pro.',
+                error?.message || `We could not delete your account. Please contact ${SUPPORT_EMAIL}.`,
               );
             }
           },
@@ -413,10 +414,10 @@ const SettingsScreen = () => {
           action: () => {
             Alert.alert(
               'Export Data',
-              'To request a copy of your data, email help@marketingtool.pro. We will respond within 30 days as required by law.',
+              `To request a copy of your data, email ${SUPPORT_EMAIL}. We will respond within 30 days as required by law.`,
               [
                 { text: 'OK' },
-                { text: 'Email Now', onPress: () => Linking.openURL('mailto:help@marketingtool.pro?subject=Data Export Request') },
+                { text: 'Email Now', onPress: () => Linking.openURL(supportMailto('Data Export Request')) },
               ]
             );
           },
