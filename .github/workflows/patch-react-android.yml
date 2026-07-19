@@ -13,8 +13,8 @@ env:
   # Single source of truth for the patch revision. MUST stay in sync with
   # PATCHED_VERSION in plugins/withRNEdgeToEdgeFix.js (consumed at prebuild)
   # and the default patchRevision in android-patches/build.gradle.
-  PATCH_REVISION: '2'
-  REACT_VERSION: '0.85.3'
+  PATCH_REVISION: '1'
+  REACT_VERSION: '0.86.0'
 
 jobs:
   build-patched-aar:
