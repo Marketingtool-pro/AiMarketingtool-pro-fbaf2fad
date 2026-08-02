@@ -17,10 +17,10 @@ If you discover a security vulnerability, please do **not** open a public GitHub
 
 Instead, report it privately via one of the following channels:
 
-- Email: **security@example.com**
+- Email: **help@marketingtool.pro**
 - GitHub Security Advisories: use the repository's **Security** tab and click **Report a vulnerability**
 
-(Project maintainers: replace `security@example.com` with the real monitored security contact address.)
+(Project maintainers: replace `help@marketingtool.pro` with the real monitored security contact address.)
 
 When reporting, please include:
 
