@@ -272,8 +272,8 @@ export const DEFAULT_COUNTRY: Country =
  * Resolve a persisted selection back to a Country.
  *
  * Prefers ISO because dialling codes are not unique -- looking up '+1' by code
- * alone returns American Samoa (first alphabetically), which would silently
- * change a US or Canadian user's country on session restore.
+ * alone returns Canada (the first matching exact '+1' entry), which could
+ * silently change a US user's country on session restore.
  */
 export function findCountry(iso?: string, code?: string): Country | undefined {
   if (iso) {
