@@ -5,7 +5,9 @@ const path = require('path');
 const DEFAULTS = {
   kotlinVersion: '2.1.20',
   kspVersion: '2.1.20-1.0.32',
-  agpVersion: '8.7.2',
+  // AGP 8.7.x caps compileSdk at 35 and rejects compileSdk 36. Android 16 needs
+  // AGP >= 8.9; 8.12.0 is what RN 0.85's gradle-plugin targets, so stay aligned.
+  agpVersion: '8.12.0',
   googlePlayServicesVersion: '18.0.0',
   gradleVersion: '8.13',
   crashlyticsVersion: '3.0.3',
@@ -36,9 +38,13 @@ const withKotlinKspFix = (config, options) => {
       { name: 'kotlinVersion', value: `'${kotlinVersion}'` },
       { name: 'kspVersion', value: `'${kspVersion}'` },
       { name: 'googlePlayServicesVersion', value: `"${googlePlayServicesVersion}"` },
-      { name: 'compileSdkVersion', value: '35' },
-      { name: 'targetSdkVersion', value: '35' },
-      { name: 'buildToolsVersion', value: '"35.0.0"' },
+      // Fallback only — app.json's expo-build-properties is authoritative and
+      // writes android.{compile,target}SdkVersion into android/gradle.properties.
+      // Keep these in sync with it: Google Play requires targetSdk >= 36
+      // (Android 16) for updates from Aug 31, 2026.
+      { name: 'compileSdkVersion', value: '36' },
+      { name: 'targetSdkVersion', value: '36' },
+      { name: 'buildToolsVersion', value: '"36.0.0"' },
       { name: 'minSdkVersion', value: '24' },
     ];
     
@@ -96,7 +102,10 @@ allprojects {
             if (requested.group == 'com.google.devtools.ksp') {
                 details.useVersion kspVersion
             }
-            // 🚨 Pin to SDK 35 compatible versions
+            // 🚨 androidx pins held back from the SDK 35 era. Safe to compile under
+            // compileSdk 36, but they predate Android 16 behaviour changes (notably
+            // enforced edge-to-edge in androidx.activity). If an Android 16 build
+            // regresses on edge-to-edge or window insets, raise these first.
             if (requested.group == 'androidx.core' && (requested.name == 'core-ktx' || requested.name == 'core')) {
                 details.useVersion '1.15.0'
             }
