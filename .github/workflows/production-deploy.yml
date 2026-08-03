@@ -16,6 +16,13 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  # Publishing a GitHub Release creates its tag as part of the publish, which
+  # does not emit the tag `push` event above. v1.6.11 was drafted on 2026-07-11
+  # and published on 2026-07-13 that way, so this workflow never fired for it --
+  # it has never run once. Listening for `published` covers releases made in the
+  # UI (including pre-releases, which `released` would skip).
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       platforms:
