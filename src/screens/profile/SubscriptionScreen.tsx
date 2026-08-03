@@ -274,20 +274,10 @@ const SubscriptionScreen = () => {
     } else if (Platform.OS === 'android') {
       Linking.openURL('https://play.google.com/store/account/subscriptions');
     } else {
-      // Web has no store subscription to manage, and the previous target
-      // (https://marketingtool.pro/account/billing) returns 404. Explain and
-      // offer support rather than opening a dead page.
-      Alert.alert(
-        'Manage Subscription',
-        'Subscriptions are managed through the App Store or Google Play on the device you purchased on. For billing help, contact support.',
-        [
-          { text: 'Close', style: 'cancel' },
-          {
-            text: 'Contact Support',
-            onPress: () => Linking.openURL('https://marketingtool.pro/contact/'),
-          },
-        ]
-      );
+      // Web / desktop: the previous target
+      // (https://marketingtool.pro/account/billing) returned 404.
+      // /pricing/ is the live page.
+      Linking.openURL('https://marketingtool.pro/pricing/');
     }
   };
 
