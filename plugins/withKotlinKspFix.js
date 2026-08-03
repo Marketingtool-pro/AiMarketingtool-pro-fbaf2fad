@@ -102,12 +102,9 @@ allprojects {
             if (requested.group == 'com.google.devtools.ksp') {
                 details.useVersion kspVersion
             }
-            // 🚨 androidx pins held back from the SDK 35 era. Safe to compile under
-            // compileSdk 36, but they predate Android 16 behaviour changes (notably
-            // enforced edge-to-edge in androidx.activity). If an Android 16 build
-            // regresses on edge-to-edge or window insets, raise these first.
+            // expo-dev-launcher 56 calls WindowCompat.enableEdgeToEdge(), introduced in androidx.core 1.16.
             if (requested.group == 'androidx.core' && (requested.name == 'core-ktx' || requested.name == 'core')) {
-                details.useVersion '1.15.0'
+                details.useVersion '1.17.0'
             }
             if (requested.group == 'androidx.activity') {
                 details.useVersion '1.10.1'
