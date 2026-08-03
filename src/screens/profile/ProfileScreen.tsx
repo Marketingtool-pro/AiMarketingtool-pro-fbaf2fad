@@ -110,10 +110,16 @@ const ProfileScreen = () => {
         {
           iconName: 'credit-card',
           label: 'Payment & Billing',
+          // Web has no store subscription to manage, and the old web fallback
+          // (https://marketingtool.pro/account/billing) returns 404. The
+          // renderer checks `screen` before `url`, so send web to the in-app
+          // plan screen instead of a dead external link. iOS/Android keep the
+          // platform-native pages the comment above requires.
+          screen: Platform.OS === 'web' ? 'Subscription' : undefined,
           url: Platform.select({
             ios: 'itms-apps://apps.apple.com/account/subscriptions',
             android: 'https://play.google.com/store/account/subscriptions',
-            default: 'https://marketingtool.pro/account/billing'
+            default: undefined,
           }),
         },
       ],
