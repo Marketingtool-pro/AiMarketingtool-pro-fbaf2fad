@@ -27,24 +27,15 @@ import { Colors, Spacing } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 import { biometricService, BiometricType } from '../../services/biometric';
 import { clearVerification as clearFirebaseVerification } from '../../services/firebaseAuth';
+import { COUNTRIES, DEFAULT_COUNTRY, findCountry, type Country } from '../../data/countries';
 
 import * as AppleAuthentication from 'expo-apple-authentication';
 
 
 
-// Country data for phone login
-interface Country {
-  name: string;
-  code: string;
-  flag: string;
-}
-
-const COUNTRIES: Country[] = [
-  { name: 'United States', code: '+1', flag: '🇺🇸' },
-  { name: 'India', code: '+91', flag: '🇮🇳' },
-  { name: 'Canada', code: '+1', flag: '🇨🇦' },
-  { name: 'United Kingdom', code: '+44', flag: '🇬🇧' },
-];
+// Country data for phone login. Previously a hardcoded four-entry list, which
+// left users outside the US/India/Canada/UK unable to pick their dialling code
+// -- and therefore unable to receive an OTP at all. See src/data/countries.ts.
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
@@ -60,7 +51,7 @@ const LoginScreen = () => {
   const [password, setPassword] = useState('');
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[1]);
+  const [selectedCountry, setSelectedCountry] = useState<Country>(DEFAULT_COUNTRY);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [totpCode, setTotpCode] = useState('');
@@ -158,11 +149,13 @@ const LoginScreen = () => {
     SecureStore.getItemAsync('pendingOTP').then(pending => {
       if (pending) {
         try {
-          const { phone, countryCode } = JSON.parse(pending);
+          const { phone, countryCode, countryIso } = JSON.parse(pending);
           setPhoneNumber(phone);
           setOtpSent(true);
           setShowOtpModal(true);
-          const country = COUNTRIES.find(c => c.code === countryCode);
+          // Resolve by ISO first: dialling codes aren't unique, so looking up
+          // '+1' by code alone would restore the wrong country.
+          const country = findCountry(countryIso, countryCode);
           if (country) setSelectedCountry(country);
         } catch {}
       }
@@ -175,11 +168,11 @@ const LoginScreen = () => {
         SecureStore.getItemAsync('pendingOTP').then(pending => {
           if (pending) {
             try {
-              const { phone, countryCode } = JSON.parse(pending);
+              const { phone, countryCode, countryIso } = JSON.parse(pending);
               setPhoneNumber(phone);
               setOtpSent(true);
               setShowOtpModal(true);
-              const country = COUNTRIES.find(c => c.code === countryCode);
+              const country = findCountry(countryIso, countryCode);
               if (country) setSelectedCountry(country);
             } catch {}
           }
@@ -224,6 +217,7 @@ const LoginScreen = () => {
     await SecureStore.setItemAsync('pendingOTP', JSON.stringify({
       phone: phoneNumber,
       countryCode: selectedCountry.code,
+      countryIso: selectedCountry.iso,
     }));
 
     try {
