@@ -20,7 +20,6 @@ Instead, report it privately via one of the following channels:
 - Email: **help@marketingtool.pro**
 - GitHub Security Advisories: use the repository's **Security** tab and click **Report a vulnerability**
 
-(Project maintainers: replace `help@marketingtool.pro` with the real monitored security contact address.)
 
 When reporting, please include:
 
