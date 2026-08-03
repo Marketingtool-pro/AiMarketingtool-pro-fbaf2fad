@@ -106,6 +106,11 @@ allprojects {
             if (requested.group == 'androidx.core' && (requested.name == 'core-ktx' || requested.name == 'core')) {
                 details.useVersion '1.17.0'
             }
+            // These two are still held at SDK 35-era versions while core is now
+            // 1.17.0 above, so the set is deliberately mismatched. They compile
+            // under compileSdk 36, but activity 1.10.x predates Android 16's
+            // enforced edge-to-edge. If an API 36 build regresses on edge-to-edge
+            // or window insets, raise these before looking anywhere else.
             if (requested.group == 'androidx.activity') {
                 details.useVersion '1.10.1'
             }
