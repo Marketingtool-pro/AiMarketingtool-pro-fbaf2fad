@@ -265,6 +265,11 @@ const LoginScreen = () => {
     await SecureStore.deleteItemAsync('pendingOTP');
   };
 
+  // NOTE: Ensure this handler is passed to the OTP Modal close hooks:
+  // - onRequestClose={handleCloseOtpModal}
+  // - onDismiss={handleCloseOtpModal} (where applicable)
+  // and any OTP close button onPress.
+
   const filteredCountries = countrySearch
     ? COUNTRIES.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()))
     : COUNTRIES;
