@@ -1,31 +1,42 @@
-# Xamarin.Android
-- task: UniversalPackages@1
-  inputs:
-    command: 'download'
-    directory: '$(System.DefaultWorkingDirectory)'
-# Build a Xamarin.Android project.
-# Add steps that test, sign, and distribute an app, save build artifacts, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/xamarin
+jobs:
+- job: linux
+  pool: {vmImage: 'ubuntu-latest'}
+  steps:
+    - task: UsePythonVersion@0
+    - bash: |
+        set -o errexit
+        python3 -m pip install --upgrade pip
+        pip3 install cibuildwheel==4.2.0
+      displayName: Install dependencies
+    - bash: cibuildwheel --output-dir wheelhouse .
+      displayName: Build wheels
+    - task: PublishBuildArtifacts@1
+      inputs: {pathtoPublish: 'wheelhouse'}
 
-trigger:
-- Master
+- job: macos
+  pool: {vmImage: 'macOS-latest'}
+  steps:
+    - task: UsePythonVersion@0
+    - bash: |
+        set -o errexit
+        python3 -m pip install --upgrade pip
+        python3 -m pip install cibuildwheel==4.2.0
+      displayName: Install dependencies
+    - bash: cibuildwheel --output-dir wheelhouse .
+      displayName: Build wheels
+    - task: PublishBuildArtifacts@1
+      inputs: {pathtoPublish: wheelhouse}
 
-pool:
-  vmImage: 'macos-latest'
-
-variables:
-  buildConfiguration: 'Release'
-  outputDirectory: '$(build.binariesDirectory)/$(buildConfiguration)'
-
-steps:
-- task: NuGetToolInstaller@1
-
-- task: NuGetCommand@2
-  inputs:
-    restoreSolution: '**/*.sln'
-
-- task: XamarinAndroid@1
-  inputs:
-    projectFile: '**/*droid*.csproj'
-    outputDirectory: '$(outputDirectory)'
-    configuration: '$(buildConfiguration)'
+- job: windows
+  pool: {vmImage: 'windows-latest'}
+  steps:
+    - task: UsePythonVersion@0
+    - bash: |
+        set -o errexit
+        python -m pip install --upgrade pip
+        pip install cibuildwheel==4.2.0
+      displayName: Install dependencies
+    - bash: cibuildwheel --output-dir wheelhouse .
+      displayName: Build wheels
+    - task: PublishBuildArtifacts@1
+      inputs: {pathtoPublish: 'wheelhouse'}
