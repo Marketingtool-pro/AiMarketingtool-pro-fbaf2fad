@@ -110,10 +110,14 @@ const ProfileScreen = () => {
         {
           iconName: 'credit-card',
           label: 'Payment & Billing',
+          // iOS/Android manage subscriptions through the store, as the comment
+          // above requires. Everywhere else (web, and the desktop build) the old
+          // fallback https://marketingtool.pro/account/billing returned 404;
+          // /pricing/ is the live page.
           url: Platform.select({
             ios: 'itms-apps://apps.apple.com/account/subscriptions',
             android: 'https://play.google.com/store/account/subscriptions',
-            default: 'https://marketingtool.pro/account/billing'
+            default: 'https://marketingtool.pro/pricing/',
           }),
         },
       ],

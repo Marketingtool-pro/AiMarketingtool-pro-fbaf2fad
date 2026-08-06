@@ -5,7 +5,9 @@ const path = require('path');
 const DEFAULTS = {
   kotlinVersion: '2.1.20',
   kspVersion: '2.1.20-1.0.32',
-  agpVersion: '8.7.2',
+  // AGP 8.7.x caps compileSdk at 35 and rejects compileSdk 36. Android 16 needs
+  // AGP >= 8.9; 8.12.0 is what RN 0.85's gradle-plugin targets, so stay aligned.
+  agpVersion: '8.12.0',
   googlePlayServicesVersion: '18.0.0',
   gradleVersion: '8.13',
   crashlyticsVersion: '3.0.3',
@@ -36,9 +38,13 @@ const withKotlinKspFix = (config, options) => {
       { name: 'kotlinVersion', value: `'${kotlinVersion}'` },
       { name: 'kspVersion', value: `'${kspVersion}'` },
       { name: 'googlePlayServicesVersion', value: `"${googlePlayServicesVersion}"` },
-      { name: 'compileSdkVersion', value: '35' },
-      { name: 'targetSdkVersion', value: '35' },
-      { name: 'buildToolsVersion', value: '"35.0.0"' },
+      // Fallback only — app.json's expo-build-properties is authoritative and
+      // writes android.{compile,target}SdkVersion into android/gradle.properties.
+      // Keep these in sync with it: Google Play requires targetSdk >= 36
+      // (Android 16) for updates from Aug 31, 2026.
+      { name: 'compileSdkVersion', value: '36' },
+      { name: 'targetSdkVersion', value: '36' },
+      { name: 'buildToolsVersion', value: '"36.0.0"' },
       { name: 'minSdkVersion', value: '24' },
     ];
     
@@ -96,10 +102,15 @@ allprojects {
             if (requested.group == 'com.google.devtools.ksp') {
                 details.useVersion kspVersion
             }
-            // 🚨 Pin to SDK 35 compatible versions
+            // expo-dev-launcher 56 calls WindowCompat.enableEdgeToEdge(), introduced in androidx.core 1.16.
             if (requested.group == 'androidx.core' && (requested.name == 'core-ktx' || requested.name == 'core')) {
-                details.useVersion '1.15.0'
+                details.useVersion '1.17.0'
             }
+            // These two are still held at SDK 35-era versions while core is now
+            // 1.17.0 above, so the set is deliberately mismatched. They compile
+            // under compileSdk 36, but activity 1.10.x predates Android 16's
+            // enforced edge-to-edge. If an API 36 build regresses on edge-to-edge
+            // or window insets, raise these before looking anywhere else.
             if (requested.group == 'androidx.activity') {
                 details.useVersion '1.10.1'
             }

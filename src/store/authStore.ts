@@ -90,6 +90,30 @@ interface AuthState {
   fetchOrCreateProfile: (user: Models.User<Models.Preferences>) => Promise<UserProfile>;
 }
 
+/**
+ * Store-review OTP bypass check.
+ *
+ * Deliberately strict, because this branch skips SMS verification entirely:
+ *
+ *  - Matches the FULL E.164 number. The previous implementation compared only
+ *    the last 10 digits, which meant any number ending in the reviewer's last
+ *    10 digits -- in any of the ~200 supported dialling codes -- could skip OTP.
+ *  - Requires BOTH EXPO_PUBLIC_REVIEWER_PHONE and EXPO_PUBLIC_REVIEWER_OTP to
+ *    be set. There are no hardcoded fallbacks, so the bypass is inert in any
+ *    build that does not explicitly configure it.
+ *
+ * Note this is still a client-side check, and EXPO_PUBLIC_* values are inlined
+ * into the JS bundle at build time. Configure it only for the build handed to
+ * store review; the durable fix is to move the reviewer session server-side
+ * (the Appwrite phone-session function) so no bypass ships to users at all.
+ */
+function isReviewerPhone(e164: string): boolean {
+  const phone = process.env.EXPO_PUBLIC_REVIEWER_PHONE?.trim();
+  const code = process.env.EXPO_PUBLIC_REVIEWER_OTP?.trim();
+  if (!phone || !code) return false;
+  return e164 === `+${phone.replace(/\D/g, '')}`;
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   profile: null,
@@ -321,18 +345,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Android automatically. firebaseAuth service is in services/firebaseAuth.ts.
     set({ error: null });
     try {
-      const cleaned = phoneNumber.replace(/\D/g, '');
-      const formatted = phoneNumber.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
+      // The login UI always prepends the selected dialling code, so a number
+      // without '+' means the country was lost upstream. Guessing (this used to
+      // default to '+91') silently routes a non-Indian user's OTP to a wrong
+      // number, so refuse rather than mis-deliver.
+      if (!phoneNumber.trim().startsWith('+')) {
+        throw new Error('Please select your country code and re-enter your number.');
+      }
+      const formatted = `+${phoneNumber.replace(/\D/g, '')}`;
 
-      // Reviewer bypass — App Store/Play review team uses a fixed test number.
-      // Prefer EXPO_PUBLIC_REVIEWER_PHONE from .env / EAS secrets, but this code
-      // also falls back to a hardcoded default review number if the env var is unset.
-      const reviewerPhone = process.env.EXPO_PUBLIC_REVIEWER_PHONE || '+919999999999';
-      const cleanFormatted = formatted.replace(/\D/g, '');
-      const cleanReviewer = reviewerPhone.replace(/\D/g, '');
-      
-      // Match if the last 10 digits are the same (handles +1 vs +91 vs no prefix)
-      const isReviewer = cleanFormatted.endsWith(cleanReviewer.slice(-10)) || formatted === reviewerPhone;
+      // Reviewer bypass for store review (App Store Guideline 2.1(b)).
+      // Inert unless BOTH env vars are explicitly set, and matched on the FULL
+      // number. The previous check compared only the last 10 digits, so any
+      // number ending in those digits -- in any supported country -- skipped
+      // OTP entirely. The hardcoded '+919999999999' fallback also meant the
+      // bypass stayed live even with no configuration at all.
+      const isReviewer = isReviewerPhone(formatted);
 
       if (isReviewer) {
         if (__DEV__) console.log('[Auth] Reviewer bypass active for', formatted);
@@ -362,20 +390,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error('Verification session expired. Please request a new code.');
       }
 
-      const cleaned = rawPhone.replace(/\D/g, '');
-      const phone = rawPhone.startsWith('+') ? `+${cleaned}` : `+91${cleaned}`;
+      // rawPhone comes from tempPhone, which sendPhoneOTP already normalised to
+      // E.164, so only ensure the '+' -- never inject a country code here.
+      const cleanPhone = rawPhone.replace(/\D/g, '');
+      const phone = `+${cleanPhone}`;
 
       let firebaseUid: string;
 
-      // Reviewer bypass — accept fixed OTP for the configured reviewer phone.
-      const reviewerPhone = process.env.EXPO_PUBLIC_REVIEWER_PHONE || '+919999999999';
-      const reviewerCode = process.env.EXPO_PUBLIC_REVIEWER_OTP ?? '123456';
-      
-      const cleanPhone = phone.replace(/\D/g, '');
-      const cleanReviewer = reviewerPhone.replace(/\D/g, '');
-      const isReviewer = cleanPhone.endsWith(cleanReviewer.slice(-10)) || phone === reviewerPhone;
+      // Reviewer bypass — full-number match, and only when explicitly
+      // configured. See sendPhoneOTP for why the previous last-10-digits
+      // comparison was unsafe across ~200 dialling codes.
+      const reviewerCode = process.env.EXPO_PUBLIC_REVIEWER_OTP?.trim();
+      const isReviewer = isReviewerPhone(phone);
 
-      if (isReviewer && code === reviewerCode) {
+      if (isReviewer && !!reviewerCode && code === reviewerCode) {
         firebaseUid = 'reviewer_bypass_' + cleanPhone.slice(-10);
       } else {
         if (__DEV__) console.log('[Auth] Verifying OTP via Firebase for', phone);

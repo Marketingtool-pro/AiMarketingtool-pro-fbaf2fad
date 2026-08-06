@@ -1,0 +1,117 @@
+# Android build/submit with ZERO third-party actions.
+#
+# Why this exists: the org Actions policy only permits actions from a
+# repository owned by Marketingtool-pro. Every other workflow in this repo
+# therefore dies at `startup_failure` before a single step runs, because they
+# all reference actions/checkout, actions/setup-node, expo/expo-github-action
+# and so on.
+#
+# This workflow contains no `uses:` lines at all, so there is nothing for that
+# policy to reject. It reaches the same result with plain shell:
+#
+#   actions/checkout          -> git fetch --depth=1 with the run's own token
+#   actions/setup-node        -> Node and npm are preinstalled on ubuntu-latest
+#   expo/expo-github-action   -> npm i -g eas-cli@<pinned version>
+#
+# It does not replace production-deploy.yml. Keep this until the org policy is
+# widened, then either workflow can be used.
+name: Android Deploy (self-contained)
+
+on:
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: "Also submit the build to Google Play"
+        type: boolean
+        default: false
+  # A v*.*.* tag or a published release ships Android, matching
+  # production-deploy.yml so behaviour does not diverge.
+  push:
+    tags:
+      - 'v*.*.*'
+  release:
+    types: [published]
+
+concurrency:
+  group: android-deploy-selfcontained-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Build (Android, production)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_CLI_VERSION: 18.13.1
+    steps:
+      # Shallow checkout of exactly this run's commit, using the token GitHub
+      # already injects. No action required.
+      - name: Checkout ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git -c protocol.version=2 fetch -q --depth=1 origin "${{ github.sha }}"
+          git checkout -q --detach FETCH_HEAD
+          echo "checked out $(git rev-parse --short HEAD)"
+
+      - name: Toolchain versions
+        run: |
+          set -euo pipefail
+          echo "node $(node --version)"
+          echo "npm  $(npm --version)"
+          echo "java $(java -version 2>&1 | head -1)"
+
+      - name: Fail early if EXPO_TOKEN is missing
+        run: |
+          set -euo pipefail
+          if [ -z "${EXPO_TOKEN:-}" ]; then
+            echo "::error::EXPO_TOKEN secret is not set on this repository." >&2
+            exit 1
+          fi
+          echo "EXPO_TOKEN is present"
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          npm install --include=dev --legacy-peer-deps --no-audit --no-fund --package-lock=false
+
+      - name: Install EAS CLI
+        run: |
+          set -euo pipefail
+          npm i -g "eas-cli@${EAS_CLI_VERSION}"
+          eas --version
+
+      - name: Sanity-check the Android config
+        run: |
+          set -euo pipefail
+          node -e '
+            const c = require("./app.json").expo;
+            const bp = c.plugins.find(p => Array.isArray(p) && p[0] === "expo-build-properties")[1].android;
+            console.log("versionCode      =", c.android.versionCode);
+            console.log("targetSdkVersion =", bp.targetSdkVersion);
+            console.log("ndkVersion       =", bp.ndkVersion);
+            if (bp.targetSdkVersion < 36) {
+              console.error("::error::targetSdkVersion must be >= 36 for Google Play");
+              process.exit(1);
+            }
+          '
+
+      - name: Build production AAB
+        run: |
+          set -euo pipefail
+          eas build --platform android --profile production --non-interactive
+
+      - name: Submit to Google Play
+        if: >-
+          github.event_name == 'push' ||
+          github.event_name == 'release' ||
+          inputs.submit
+        run: |
+          set -euo pipefail
+          eas submit --platform android --latest --non-interactive
