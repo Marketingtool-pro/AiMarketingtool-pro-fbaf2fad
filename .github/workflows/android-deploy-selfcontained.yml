@@ -107,6 +107,34 @@ jobs:
           set -euo pipefail
           eas build --platform android --profile production --non-interactive
 
+      # eas.json's serviceAccountKeyPath expects this file at the repo root. It is
+      # gitignored (*service-account*.json), so it only exists as a secret. The
+      # Expo-hosted copy of this key lives on the old, disabled account and was
+      # NOT carried over to aimarketintool-2-2-2-2, so without this step
+      # `eas submit --platform android` fails with no Play credentials.
+      - name: Restore Google Play service account key
+        if: >-
+          github.event_name == 'push' ||
+          github.event_name == 'release' ||
+          inputs.submit
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > google-play-service-account.json
+          # The secret may be stored raw or base64-encoded; accept either.
+          if ! node -e 'JSON.parse(require("fs").readFileSync("google-play-service-account.json","utf8"))' 2>/dev/null; then
+            base64 -d < google-play-service-account.json > tmp.json 2>/dev/null && mv tmp.json google-play-service-account.json
+          fi
+          node -e '
+            const k = JSON.parse(require("fs").readFileSync("google-play-service-account.json","utf8"));
+            if (k.type !== "service_account" || !k.client_email) {
+              console.error("::error::GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is not a valid service account key");
+              process.exit(1);
+            }
+            console.log("Play service account restored:", k.client_email);
+          '
+
       - name: Submit to Google Play
         if: >-
           github.event_name == 'push' ||
@@ -114,4 +142,4 @@ jobs:
           inputs.submit
         run: |
           set -euo pipefail
-          eas submit --platform android --latest --non-interactive
+          eas submit --platform android --profile production --latest --non-interactive
