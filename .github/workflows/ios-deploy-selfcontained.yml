@@ -1,0 +1,183 @@
+# iOS build + auto-submit with ZERO third-party actions.
+#
+# Why this exists: the org Actions policy is `allowed_actions: local_only`, so
+# only actions from a Marketingtool-pro-owned repository may run. Every
+# workflow that references actions/checkout, actions/setup-node or
+# expo/expo-github-action dies at `startup_failure` before a single step runs
+# — that is why production-deploy.yml has never shipped an iOS build.
+#
+# android-deploy-selfcontained.yml already solved this for Android. This is the
+# missing iOS half. It contains no `uses:` lines, so the policy has nothing to
+# reject, and reaches the same result with plain shell:
+#
+#   actions/checkout          -> git fetch --depth=1 with the run's own token
+#   actions/setup-node        -> Node and npm are preinstalled on ubuntu-latest
+#   expo/expo-github-action   -> npm i -g eas-cli@<pinned version>
+#
+# The heavy iOS compile happens on EAS's macOS builders, so ubuntu-latest is
+# only the orchestrator here — no macOS runner minutes are consumed.
+#
+# It does not replace production-deploy.yml. Keep this until the org policy is
+# widened, then either workflow can be used.
+name: iOS Deploy (self-contained)
+
+on:
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: "Upload the finished build to App Store Connect / TestFlight"
+        type: boolean
+        default: false
+      submit_for_review:
+        description: "Also create the App Store review submission (build + all IAPs)"
+        type: boolean
+        default: false
+      whats_new:
+        description: "What's New / release notes — required for a review submission"
+        required: false
+        default: "Fixes app launch stability and improves the tool result-to-desktop handoff. Thank you for using MarketingTool!"
+  # A v*.*.* tag or a published release ships iOS, matching
+  # production-deploy.yml so behaviour does not diverge.
+  push:
+    tags:
+      - 'v*.*.*'
+  release:
+    types: [published]
+
+concurrency:
+  group: ios-deploy-selfcontained-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    name: Build + Submit (iOS, production)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_CLI_VERSION: 18.13.1
+      # A tag push or a published release ships automatically; a manual run only
+      # does what its checkboxes asked for. Resolved once here so every later
+      # step reads the same value.
+      DO_SUBMIT: ${{ github.event_name == 'push' || github.event_name == 'release' || inputs.submit }}
+      DO_REVIEW: ${{ github.event_name == 'push' || github.event_name == 'release' || inputs.submit_for_review }}
+    steps:
+      # Shallow checkout of exactly this run's commit, using the token GitHub
+      # already injects. No action required.
+      - name: Checkout ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git -c protocol.version=2 fetch -q --depth=1 origin "${{ github.sha }}"
+          git checkout -q --detach FETCH_HEAD
+          echo "checked out $(git rev-parse --short HEAD)"
+
+      - name: Toolchain versions
+        run: |
+          set -euo pipefail
+          echo "node  $(node --version)"
+          echo "npm   $(npm --version)"
+          echo "ruby  $(ruby --version)"
+
+      # Both secrets are checked up front: discovering a missing ASC key after a
+      # 20-minute EAS build has already burned the build is the failure mode
+      # this avoids.
+      - name: Fail early if required secrets are missing
+        run: |
+          set -euo pipefail
+          if [ -z "${EXPO_TOKEN:-}" ]; then
+            echo "::error::EXPO_TOKEN secret is not set on this repository." >&2
+            exit 1
+          fi
+          echo "EXPO_TOKEN is present"
+          if [ "${DO_SUBMIT}" = "true" ] && [ -z "${ASC_API_KEY_BASE64:-}" ]; then
+            echo "::error::ASC_API_KEY_BASE64 secret is not set, but this run needs to submit." >&2
+            exit 1
+          fi
+        env:
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          npm install --include=dev --legacy-peer-deps --no-audit --no-fund --package-lock=false
+
+      - name: Install EAS CLI
+        run: |
+          set -euo pipefail
+          npm i -g "eas-cli@${EAS_CLI_VERSION}"
+          eas --version
+
+      # Fail fast (seconds, not 13 min into EAS) on the failure class that keeps
+      # breaking the Bundle JavaScript phase: 0-byte/corrupt image assets.
+      - name: Validate assets before build
+        run: |
+          set -euo pipefail
+          EMPTY=$(find assets src/assets -type f \
+            \( -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.webp' -o -name '*.ttf' \) \
+            -size 0 2>/dev/null || true)
+          if [ -n "$EMPTY" ]; then
+            echo "::error::Empty (0-byte) asset files will crash Metro 'Bundle JavaScript'. Restore them:" >&2
+            echo "$EMPTY" >&2
+            exit 1
+          fi
+          echo "Asset check OK — no empty image/font files."
+
+      # eas.json's ascApiKeyPath expects the .p8 at the repo root; it only
+      # exists as the ASC_API_KEY_BASE64 secret (never committed). Written
+      # before the build so the submit steps can authenticate.
+      - name: Restore App Store Connect API key
+        if: ${{ env.DO_SUBMIT == 'true' }}
+        env:
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$ASC_API_KEY_BASE64" | base64 -d > AuthKey_69JDXUCPU3.p8
+          if [ ! -s AuthKey_69JDXUCPU3.p8 ]; then
+            echo "::error::Decoded ASC key is empty — check the ASC_API_KEY_BASE64 secret." >&2
+            exit 1
+          fi
+          echo "ASC key restored"
+
+      - name: Build production (iOS)
+        run: |
+          set -euo pipefail
+          eas build --platform ios --profile production --non-interactive --wait
+
+      - name: Upload binary to App Store Connect (TestFlight)
+        if: ${{ env.DO_SUBMIT == 'true' }}
+        run: |
+          set -euo pipefail
+          eas submit --platform ios --profile production --non-interactive --latest
+
+      # A plain `eas submit` creates a binary-only ("1 Item") submission that
+      # cannot carry the in-app purchases, which is what caused the repeated
+      # 2.1(b) auto-rejections. asc_autosubmit.rb instead bundles the BUILD plus
+      # all 6 subscriptions and the consumable into ONE review submission.
+      - name: Submit for review WITH in-app purchases
+        if: ${{ env.DO_REVIEW == 'true' }}
+        env:
+          ASC_KEY_PATH: ./AuthKey_69JDXUCPU3.p8
+          # WHATS_NEW is REQUIRED by asc_autosubmit.rb for a live submission;
+          # without it the step fails with "Missing required env var WHATS_NEW".
+          # Manual runs override via the input; tag pushes use the default.
+          WHATS_NEW: ${{ inputs.whats_new || 'Fixes app launch stability and improves the tool result-to-desktop handoff. Thank you for using MarketingTool!' }}
+          DRY_RUN: 'false'
+        run: |
+          set -euo pipefail
+          sudo gem install jwt --no-document
+          export ASC_KEY_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyId")"
+          export ASC_ISSUER_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyIssuerId")"
+          export ASC_APP_ID="$(node -pe "require('./eas.json').submit.production.ios.ascAppId")"
+          # Without VERSION_STRING the script grabs the LIVE version and fails
+          # with "attach build failed 409". Pass app.json's version so it creates
+          # a fresh editable version and attaches THIS build.
+          export VERSION_STRING="$(node -pe "require('./app.json').expo.version")"
+          export BUILD_NUMBER="$(node -pe "require('./app.json').expo.ios.buildNumber")"
+          echo "Submitting version $VERSION_STRING build $BUILD_NUMBER"
+          ruby scripts/asc_autosubmit.rb
