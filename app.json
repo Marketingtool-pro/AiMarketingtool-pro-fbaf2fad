@@ -142,7 +142,6 @@
         }
       ],
       "expo-notifications",
-      "react-native-iap",
       "expo-secure-store",
       "expo-font",
       "expo-sharing",
