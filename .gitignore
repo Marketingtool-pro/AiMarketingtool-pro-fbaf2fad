@@ -73,3 +73,18 @@ PrivateFrameworks/
 *.swp
 actions-runner/
 vendor/
+
+# --- AI & Agent Tools ---
+.agents/
+.claude/
+
+# --- Environment & Infrastructure ---
+.terraform/
+.tmp/
+*.dump
+*.sig
+
+# --- Node & Build Artifacts ---
+node_quickstart/
+src/UNKNOWN.egg-info/
+json-schema-org-JSON-Schema-Test-Suite-*/
