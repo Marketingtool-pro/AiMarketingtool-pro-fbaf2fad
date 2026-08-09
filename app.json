@@ -2,7 +2,7 @@
   "expo": {
     "name": "MarketingTool",
     "slug": "marketingtool",
-    "owner": "aimarketintool-2-2-2",
+    "owner": "aimarketintool-2-2-2-2",
     "version": "1.5.11",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -142,7 +142,6 @@
         }
       ],
       "expo-notifications",
-      "react-native-iap",
       "expo-secure-store",
       "expo-font",
       "expo-sharing",
@@ -170,7 +169,7 @@
         "reCaptchaIos": "6LegEWIsAAAAAOgbGP08ISyfgJWExxSRV9iLuanX"
       },
       "eas": {
-        "projectId": "93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
+        "projectId": "e7abf1ac-3cab-4cfb-9cb2-f55c1783dd7e"
       }
     },
     "runtimeVersion": {
@@ -178,7 +177,7 @@
     },
     "updates": {
       "enabled": false,
-      "url": "https://u.expo.dev/93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
+      "url": "https://u.expo.dev/e7abf1ac-3cab-4cfb-9cb2-f55c1783dd7e"
     }
   }
 }
