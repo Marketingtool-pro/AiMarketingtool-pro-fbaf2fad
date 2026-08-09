@@ -125,9 +125,13 @@ const ProfileScreen = () => {
     {
       title: 'Support',
       items: [
-        { iconName: 'help-circle', label: 'Help Center', url: 'https://marketingtool.pro/help/' },
-        { iconName: 'message-circle', label: 'Contact Support', url: 'https://marketingtool.pro/contact/' },
-        { iconName: 'book', label: 'Tutorials', url: 'https://marketingtool.pro/blog/' },
+        // Apple's dark-mode system colours, so the three Support rows read the
+        // same on iOS and Android. The row renderer already tints both the glyph
+        // and its 15%-alpha backing square from `color`; these items just never
+        // set one, so all three came out the same purple as every other row.
+        { iconName: 'help-circle', label: 'Help Center', color: '#0A84FF', url: 'https://marketingtool.pro/help/' },
+        { iconName: 'message-circle', label: 'Contact Support', color: '#30D158', url: 'https://marketingtool.pro/contact/' },
+        { iconName: 'book', label: 'Tutorials', color: '#FF9F0A', url: 'https://marketingtool.pro/blog/' },
       ],
     },
     {
