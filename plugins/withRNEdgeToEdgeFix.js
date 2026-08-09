@@ -35,6 +35,7 @@ const { withDangerousMod, withProjectBuildGradle } = require('expo/config-plugin
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const crypto = require('crypto');
 
 const PATCHED_VERSION = '0.85.3-e2e.2';
 const PATCHED_AAR_URL =
@@ -43,6 +44,11 @@ const PATCHED_AAR_URL =
 const PATCHED_POM_URL =
   'https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/releases/download/' +
   `react-android-${PATCHED_VERSION}/react-android-${PATCHED_VERSION}.pom`;
+const GRADLE_SENTINEL = '// withRNEdgeToEdgeFix:allprojects-block';
+
+// Replace these with the official SHA-256 digests published for this release.
+const PATCHED_AAR_SHA256 = 'REPLACE_WITH_PATCHED_AAR_SHA256';
+const PATCHED_POM_SHA256 = 'REPLACE_WITH_PATCHED_POM_SHA256';
 
 const LOCAL_AAR_SUBDIR = path.join(
   'local-aar', 'com', 'facebook', 'react', 'react-android', PATCHED_VERSION
@@ -63,7 +69,8 @@ function normalizePom(pomFile) {
   }
 }
 
-// dependencySubstitution takes precedence over force() in Gradle 7.4+ (Gradle 8.13).
+// dependencySubstitution takes precedence over force() in Gradle 7.4+.
+// This also applies to newer Gradle versions (for example, 8.13).
 // This overrides RNGP's force("com.facebook.react:react-android:<npm version>") and
 // redirects all react-android requests to our patched version in local-aar.
 const ALL_PROJECTS_BLOCK = `
@@ -90,8 +97,16 @@ function downloadToFile(url, destination) {
         response.statusCode < 400 &&
         response.headers.location
       ) {
+        const redirectUrl = response.headers.location;
         response.resume();
-        return resolve(downloadToFile(response.headers.location, destination));
+        if (!redirectUrl.startsWith('https://')) {
+          return reject(
+            new Error(
+              `Refusing insecure redirect for ${url}: ${redirectUrl}`
+            )
+          );
+        }
+        return resolve(downloadToFile(redirectUrl, destination));
       }
 
       if (response.statusCode !== 200) {
@@ -121,6 +136,21 @@ function downloadToFile(url, destination) {
   });
 }
 
+function sha256File(filePath) {
+  const hash = crypto.createHash('sha256');
+  hash.update(fs.readFileSync(filePath));
+  return hash.digest('hex');
+}
+
+function isFileValid(filePath, expectedSha256) {
+  if (!fs.existsSync(filePath)) return false;
+  try {
+    return sha256File(filePath) === expectedSha256;
+  } catch {
+    return false;
+  }
+}
+
 module.exports = function withRNEdgeToEdgeFix(config) {
   // 1. Download patched AAR + POM into android/local-aar/ during prebuild.
   config = withDangerousMod(config, [
@@ -133,20 +163,26 @@ module.exports = function withRNEdgeToEdgeFix(config) {
 
       fs.mkdirSync(localAarDir, { recursive: true });
 
-      if (!fs.existsSync(aarFile)) {
+      if (!isFileValid(aarFile, PATCHED_AAR_SHA256)) {
         console.log('[withRNEdgeToEdgeFix] Downloading patched react-android AAR (~140 MB)...');
         await downloadToFile(PATCHED_AAR_URL, aarFile);
+        if (!isFileValid(aarFile, PATCHED_AAR_SHA256)) {
+          throw new Error('[withRNEdgeToEdgeFix] Downloaded AAR checksum mismatch.');
+        }
         console.log(`[withRNEdgeToEdgeFix] AAR saved to ${aarFile}`);
       } else {
-        console.log('[withRNEdgeToEdgeFix] Patched AAR already present, skipping download.');
+        console.log('[withRNEdgeToEdgeFix] Patched AAR already present and valid, skipping download.');
       }
 
-      if (!fs.existsSync(pomFile)) {
+      if (!isFileValid(pomFile, PATCHED_POM_SHA256)) {
         console.log('[withRNEdgeToEdgeFix] Downloading patched react-android POM...');
         await downloadToFile(PATCHED_POM_URL, pomFile);
+        if (!isFileValid(pomFile, PATCHED_POM_SHA256)) {
+          throw new Error('[withRNEdgeToEdgeFix] Downloaded POM checksum mismatch.');
+        }
         console.log('[withRNEdgeToEdgeFix] POM saved.');
       } else {
-        console.log('[withRNEdgeToEdgeFix] Patched POM already present, skipping download.');
+        console.log('[withRNEdgeToEdgeFix] Patched POM already present and valid, skipping download.');
       }
 
       normalizePom(pomFile);
@@ -158,9 +194,9 @@ module.exports = function withRNEdgeToEdgeFix(config) {
   // 2. Append dependencySubstitution allprojects{} block to root build.gradle.
   config = withProjectBuildGradle(config, (config) => {
     const contents = config.modResults.contents;
-    if (contents.includes('react-android-e2e-patch')) return config;
+    if (contents.includes(GRADLE_SENTINEL)) return config;
     config.modResults.contents =
-      `${contents.trimEnd()}\n// react-android-e2e-patch\n${ALL_PROJECTS_BLOCK}\n`;
+      `${contents.trimEnd()}\n${GRADLE_SENTINEL}\n${ALL_PROJECTS_BLOCK}\n`;
     return config;
   });
 
