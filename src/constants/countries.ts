@@ -16,6 +16,12 @@ export interface Country {
   /** National-significant-number length bounds, where the rule is stable. */
   minLen?: number;
   maxLen?: number;
+  /**
+   * Set to true for countries where the national significant number may
+   * legitimately start with 0 (e.g. Italy: +39 06…). Defaults to false.
+   * When false, a leading 0 after trunk-prefix stripping is rejected.
+   */
+  allowLeadingZero?: boolean;
 }
 
 export const COUNTRIES: Country[] = [
@@ -125,7 +131,7 @@ export const COUNTRIES: Country[] = [
   { iso2: 'IE', name: "Ireland", dialCode: '+353', flag: '🇮🇪', minLen: 7, maxLen: 9 },
   { iso2: 'IM', name: "Isle of Man", dialCode: '+44', flag: '🇮🇲' },
   { iso2: 'IL', name: "Israel", dialCode: '+972', flag: '🇮🇱' },
-  { iso2: 'IT', name: "Italy", dialCode: '+39', flag: '🇮🇹', minLen: 9, maxLen: 10 },
+  { iso2: 'IT', name: "Italy", dialCode: '+39', flag: '🇮🇹', minLen: 9, maxLen: 10, allowLeadingZero: true },
   { iso2: 'JM', name: "Jamaica", dialCode: '+1', flag: '🇯🇲' },
   { iso2: 'JP', name: "Japan", dialCode: '+81', flag: '🇯🇵', minLen: 10, maxLen: 10 },
   { iso2: 'JE', name: "Jersey", dialCode: '+44', flag: '🇯🇪' },

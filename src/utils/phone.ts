@@ -47,8 +47,9 @@ function nationalBounds(country: Country): { min: number; max: number } {
 function isValidNational(national: string, country: Country): boolean {
   const { min, max } = nationalBounds(country);
   if (national.length < min || national.length > max) return false;
-  // A national number never starts with 0 once the trunk prefix is removed.
-  if (national.startsWith('0')) return false;
+  // A national number never starts with 0 once the trunk prefix is removed,
+  // unless the country explicitly allows it (e.g. Italy fixed-line: +39 06…).
+  if (!country.allowLeadingZero && national.startsWith('0')) return false;
   return true;
 }
 
@@ -69,14 +70,15 @@ export function normalizePhone(country: Country, rawNational: string): Normalize
 
   if (!digits) return { valid: false, error: 'Please enter a phone number' };
 
-  // A leading '+' means the user pasted a full international number. If it
-  // isn't this country's code, honour what they pasted rather than prefixing
-  // the selected country's code onto another country's number.
-  if (raw.startsWith('+') && !digits.startsWith(dial)) {
-    if (digits.length > E164_MAX_DIGITS || digits.length < MIN_NATIONAL_DIGITS) {
+  // A leading '+' means the user pasted or typed a full international number.
+  // Treat it unconditionally as E.164 — strip non-digits, reconstruct, and
+  // validate via isE164() so the same rules apply here as in the auth layer.
+  if (raw.startsWith('+')) {
+    const e164 = `+${digits}`;
+    if (!isE164(e164)) {
       return { valid: false, error: 'That phone number does not look valid' };
     }
-    return { valid: true, e164: `+${digits}` };
+    return { valid: true, e164 };
   }
 
   // Candidate interpretations, most-literal first. We accept the first that

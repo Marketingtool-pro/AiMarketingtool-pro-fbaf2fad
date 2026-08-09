@@ -150,8 +150,15 @@ describe('isE164', () => {
     expect(isE164('+14155552671')).toBe(true);
   });
 
+  test('accepts shape-valid E.164 (syntax only, not semantic correctness)', () => {
+    // isE164 validates syntactic shape, not whether the number is dialable.
+    // +9109876543210 is syntactically valid E.164 even though it represents
+    // the old malformed output (trunk zero appended to CC); normalizePhone
+    // is responsible for preventing that from being produced.
+    expect(isE164('+9109876543210')).toBe(true);
+  });
+
   test('rejects the malformed shapes the old code produced', () => {
-    expect(isE164('+9109876543210')).toBe(true); // shape-valid but wrong number
     expect(isE164('+91+919876543210')).toBe(false);
     expect(isE164('+9198765 43210')).toBe(false);
     expect(isE164('9876543210')).toBe(false);

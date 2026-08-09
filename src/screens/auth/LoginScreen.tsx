@@ -273,15 +273,15 @@ const LoginScreen = () => {
   };
 
   const filteredCountries = countrySearch
-    ? COUNTRIES.filter(c => {
+    ? (() => {
         const q = countrySearch.trim().toLowerCase();
         const digits = q.replace(/\D/g, '');
-        return (
+        return COUNTRIES.filter(c =>
           c.name.toLowerCase().includes(q) ||
           c.iso2.toLowerCase() === q ||
           (!!digits && c.dialCode.replace(/\D/g, '').startsWith(digits))
         );
-      })
+      })()
     : COUNTRIES;
 
   return (
