@@ -71,6 +71,11 @@ PrivateFrameworks/
 .idea/
 .vscode/
 *.swp
+# Three *.tsx.bak copies had been committed under src/screens/profile/, shadowing
+# the real screens with stale duplicates. Keep editor backups out of the tree.
+*.bak
+*.orig
+*.rej
 actions-runner/
 vendor/
 
