@@ -269,17 +269,38 @@ export const DEFAULT_COUNTRY: Country =
   COUNTRIES.find((c) => c.iso === 'IN') ?? COUNTRIES[0];
 
 /**
+ * The only three dialling codes in TABLE shared by more than one country, mapped
+ * to the country a bare code should resolve to. Without this, the code-only
+ * fallback below returned whichever entry sorted first -- Canada for '+1',
+ * Guernsey for '+44', Kazakhstan for '+7' -- so a US, UK or Russian user whose
+ * stored session predates `countryIso` had their country silently switched on
+ * restore. Verified exhaustively: no other code in TABLE maps to 2+ countries.
+ */
+const PRIMARY_BY_CODE: Record<string, string> = {
+  '+1': 'US',
+  '+44': 'GB',
+  '+7': 'RU',
+};
+
+/**
  * Resolve a persisted selection back to a Country.
  *
- * Prefers ISO because dialling codes are not unique -- looking up '+1' by code
- * alone returns Canada (the first matching exact '+1' entry), which could
- * silently change a US user's country on session restore.
+ * Prefers ISO because dialling codes are not unique. When only a code is
+ * available, shared codes resolve via PRIMARY_BY_CODE rather than by table
+ * order.
  */
 export function findCountry(iso?: string, code?: string): Country | undefined {
   if (iso) {
     const byIso = COUNTRIES.find((c) => c.iso === iso);
     if (byIso) return byIso;
   }
-  if (code) return COUNTRIES.find((c) => c.code === code);
+  if (code) {
+    const primaryIso = PRIMARY_BY_CODE[code];
+    if (primaryIso) {
+      const primary = COUNTRIES.find((c) => c.iso === primaryIso);
+      if (primary) return primary;
+    }
+    return COUNTRIES.find((c) => c.code === code);
+  }
   return undefined;
 }
