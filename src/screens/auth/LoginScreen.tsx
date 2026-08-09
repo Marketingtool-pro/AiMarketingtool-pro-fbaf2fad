@@ -674,7 +674,7 @@ const LoginScreen = () => {
             </View>
             <FlatList
               data={filteredCountries}
-              keyExtractor={(item) => item.name}
+              keyExtractor={(item) => item.iso}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.countryItem}
