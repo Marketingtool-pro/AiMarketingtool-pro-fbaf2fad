@@ -7,7 +7,6 @@ import { ExecutionMethod } from 'react-native-appwrite';
 import { getString } from './firebaseRemoteConfig';
 
 const TOOL_EXECUTOR_FUNCTION_ID = 'tool-executor';
-const NEXTJS_API_BASE = 'https://app.marketingtool.pro';
 const MIN_PARSEABLE_RESPONSE_LENGTH = 20;
 const MIN_SPLIT_PART_LENGTH = 20;
 const MIN_VARIATION_PART_LENGTH = 50;
@@ -35,7 +34,9 @@ export interface AIGenerationResponse {
   model?: string;
 }
 
-// Main AI Generation — calls Appwrite Function, falls back to Next.js API
+// Main AI Generation — Appwrite Function only. The phone app must never call the
+// web app's host (CLAUDE.md: "Phone App NEVER touches web app's Windmill, AI
+// Router, GCloud agents, Supabase, or nginx VPS 2"), so there is no HTTP fallback.
 export async function generateAIContent(request: AIGenerationRequest): Promise<AIGenerationResponse> {
   const { toolSlug, toolName, inputs, tone, language, outputCount = 3, userId, tier, simulation } = request;
 
@@ -90,82 +91,9 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
       }
     }
 
-    if (__DEV__) console.log(`[AI] Function failed with status ${execution.status}, trying fallback`);
+    if (__DEV__) console.log(`[AI] Function failed with status ${execution.status}`);
   } catch (error: any) {
-    if (__DEV__) console.log(`[AI] Function error: ${error.message}, trying fallback`);
-  }
-
-  // Fallback: Call Next.js API directly (middleware supports Bearer auth)
-  try {
-    if (__DEV__) console.log(`[AI] Fallback: calling Next.js API for ${toolSlug}`);
-
-    // createJWT requires an Appwrite session — phone-OTP (Firebase) users have
-    // none. Send the request without a bearer in that case instead of dying.
-    let bearer = '';
-    try {
-      const jwt = await account.createJWT();
-      bearer = `Bearer ${jwt.jwt}`;
-    } catch {
-      if (__DEV__) console.log('[AI] No Appwrite session for JWT — calling API without bearer');
-    }
-
-    const response = await fetch(`${NEXTJS_API_BASE}/api/tools/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(bearer ? { Authorization: bearer } : {}),
-      },
-      body: JSON.stringify({
-        tool: toolSlug,
-        input: userPrompt,
-        options: { tone: tone || 'professional', language: language || 'English' },
-        model: getString('gemini_model'),
-      }),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.success && data.output) {
-        if (__DEV__) console.log(`[AI] API fallback success`);
-        return {
-          outputs: splitOutputs(data.output, outputCount),
-          success: true,
-          // White-label: never surface the underlying provider/model name to the
-          // client. Tag results with our own brand engine, not "claude".
-          model: 'marketingtool',
-        };
-      }
-    }
-
-    // Try the simpler /api/generate endpoint
-    const response2 = await fetch(`${NEXTJS_API_BASE}/api/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(bearer ? { Authorization: bearer } : {}),
-      },
-      body: JSON.stringify({
-        tool: toolSlug,
-        input: userPrompt,
-        tone: tone || 'professional',
-        language: language || 'English',
-      }),
-    });
-
-    if (response2.ok) {
-      const data2 = await response2.json();
-      if (data2.result) {
-        return {
-          outputs: splitOutputs(data2.result, outputCount),
-          success: true,
-          // White-label: ignore any provider/model name the backend returns
-          // (could be "claude"/"gemini") and report our own brand engine.
-          model: 'marketingtool',
-        };
-      }
-    }
-  } catch (fallbackError: any) {
-    if (__DEV__) console.error('[AI] Fallback also failed:', fallbackError.message);
+    if (__DEV__) console.log(`[AI] Function error: ${error.message}`);
   }
 
   return {
