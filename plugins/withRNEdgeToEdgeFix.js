@@ -46,9 +46,10 @@ const PATCHED_POM_URL =
   `react-android-${PATCHED_VERSION}/react-android-${PATCHED_VERSION}.pom`;
 const GRADLE_SENTINEL = '// withRNEdgeToEdgeFix:allprojects-block';
 
-// Replace these with the official SHA-256 digests published for this release.
-const PATCHED_AAR_SHA256 = 'REPLACE_WITH_PATCHED_AAR_SHA256';
-const PATCHED_POM_SHA256 = 'REPLACE_WITH_PATCHED_POM_SHA256';
+// SHA-256 digests of the assets attached to release tag
+// react-android-0.85.3-e2e.2, computed from the published files.
+const PATCHED_AAR_SHA256 = '9a424bde2b367839a9cabe53d38d970aee90239af6652e3b598a4018111ccb85';
+const PATCHED_POM_SHA256 = '4fe8e2db689a64f357131528666f2fb7f2612b4b30e529320796d5db1698e577';
 
 const LOCAL_AAR_SUBDIR = path.join(
   'local-aar', 'com', 'facebook', 'react', 'react-android', PATCHED_VERSION
