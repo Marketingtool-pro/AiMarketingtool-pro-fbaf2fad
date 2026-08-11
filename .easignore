@@ -1,144 +1,38 @@
-# Dependencies
-node_modules/
-.yarn/
-.expo/
+# Files excluded from the EAS build upload.
+# Works like .gitignore but only for EAS; the repo keeps these files.
 
-# Native folders
-ios/
-android/
+# Local GitHub Packages auth. It contains ${GITHUB_TOKEN}, which does not
+# exist in the EAS build container, so yarn aborts before installing anything:
+#   error Failed to replace env in config: ${GITHUB_TOKEN}
+# No @marketingtool-pro package is an actual dependency, so the build has no
+# need for a private registry at all.
+.npmrc
+**/.npmrc
 
-# Build artifacts (FORCE EXCLUDE)
-dist/
-build/
-web-build/
-out/
-.next/
+# Other package managers' lockfiles — EAS must resolve with yarn only.
+bun.lock
+bun.lockb
+package-lock.json
+pnpm-lock.yaml
 
-# Python virtualenvs accidentally landed in the React Native repo
-# (combined ~660MB — caused EAS upload to fail with EPIPE on 472MB tarball)
-.venv/
-venv/
-__pycache__/
-*.pyc
-
-# Other unrelated subprojects sitting in repo root
-mcdc/
-idv-quickstart/
-
-# Tooling/IDE state — never needed for an EAS build
-.firebase/
-.idea/
-dataconnect/
-dataconnect-debug.log
-extensions/
-.tamagui/
-
-# Stray test/debug files
-test_appwrite.js
-google-cloud-sdk/
-
-# Huge Root Backups & Compressed Archives
-LotsOfFiles.tgz
-*.tgz
-*.zip
-*.tar.gz
-*.blend
-*.mp4
-*.jks
-
-# SECURE: BLOCK ALL CREDENTIALS & WORK TRACKS
-credentials/
+# Vendored projects that are not part of the app. These add gigabytes to the
+# upload and pull unrelated manifests into dependency scanning.
+m3/
+jsonschex/
+bundletool-1.18.3/
+terraform-provider-exampletime/
+circleci-runner/
+travis-build/
+gh-cli/
+zsh-build/
 conductor/
-path/
-gemini-cli/
-*.p8
-*.p12
-*.key
-*.mobileprovision
-*.pem
-*.json
-!app.json
-!eas.json
-!package.json
-!package-lock.json
-!google-services.json
-!GoogleService-Info.plist
-!src/**/*.json
+externals/
+MyMacro/
+my-env-plugin/
+erl_crash.dump
 
-# Tool version managers & build artifacts (from .gitignore)
-rbenv-plugin/
-testing-chruby/
-mise-oci/
-vcpkg/
-bats/
-gradle/
-www.ruby-lang.org/
-android-patches/
-platform-tools/
-gems/
-AiMarketingtool-pro-fbaf2fad/
-copilot-demo/
-auto/
-code./
-plugin/
-
-
-
-# Heavy local-only artifacts (EAS archive size limit is 2 GB)
-backup.bundle
-.cargo-features-manager-*
-ios/Pods
-ios/build
-ios/DerivedData
-externals
-codelab-android-compose
-agent-skills
-maven
-mise-oci
-vendor
-iwyu
-swiftly.pkg
-simtool
-mybundle
-my_gem
-my-module
-bazel-*
-.build
-github-ci-server
-Pods
-*.xcarchive
-*.ipa
-
-# =====================================================================
-# CRITICAL: the ~20 GB of unrelated dirs that made every EAS upload fail
-# (archive limit is 2 GB → "Compressing project files" hung/failed → 0 builds).
-# Verified by `du -sh */`. These are NOT part of the RN app — and the list is
-# SURGICAL: it excludes ONLY unrelated subprojects, NOT anything the build needs
-# (patches/, plugins/, assets/, src/, *.config.js are intentionally kept).
-# =====================================================================
-all function action/
-AiMarketingtool-pro-fbaf2fa/
-Xcode_27_beta/
-macports-ports/
-my-app/
-my-project/
-cargo/
-foodie/
-nuxt-nightly/
-marketingtool/
-marketing-tool/
-# Leading slash = repo-ROOT only. Without it, `tools/` also matched
-# src/screens/tools/ and stripped the app's tool screens from the build.
-/tools/
-/starter-workflows/
-/mac-cli/
-/learn-terraform-init/
-/learn-terraform-modules-use/
-/my_gem/
-
-# Security: secrets must never reach the EAS build archive.
-# If a future build needs an EXPO_PUBLIC_* value from .env, mirror it in
-# EAS environment variables (eas env) instead of shipping the file.
-.env
-.env.*
-*.keychain
+# Build/debug leftovers
+*.log
+build-logs.md
+profile-out/
+dist/
