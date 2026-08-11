@@ -20,10 +20,14 @@ name: Android Deploy (self-contained)
 on:
   workflow_dispatch:
     inputs:
+      # Defaults to true: a manual run of a *deploy* workflow is meant to ship.
+      # With default:false an unticked dispatch built an AAB and then skipped
+      # the submit step, so builds were paid for but never reached Play.
+      # Untick this to build only (e.g. to smoke-test a change).
       submit:
         description: "Also submit the build to Google Play"
         type: boolean
-        default: false
+        default: true
   # A v*.*.* tag or a published release ships Android, matching
   # production-deploy.yml so behaviour does not diverge.
   push:
