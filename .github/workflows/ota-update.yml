@@ -1,14 +1,30 @@
-name: OTA Update (production)
-
+# OTA Update with ZERO third-party actions.
+#
 # THE MISSING HOOK. Code committed to Master never reached the live app because
 # nothing ran `eas update` — fixes just sat in the repo (that's why "fixes always
 # revert / nothing works on the live app"). This workflow publishes an EAS Update
-# (JS + assets OTA) to the production channel via the org self-hosted runner:
-# reaches every live 1.5.x device in ~1-2 min, no Apple/Play review, no rebuild.
+# (JS + assets OTA) to the production channel: it reaches every live 1.5.x device
+# in ~1-2 min, no Apple/Play review, no rebuild.
+#
+# Why it was rewritten: it previously asked for `runs-on: self-hosted`, but the
+# only self-hosted runner (`Loken`, macOS/ARM64) is registered to the
+# Marketingtool-pro/ai-marketingtool-llc repository — not this one — and is
+# offline. This repo has zero runners, so every run queued forever. It also used
+# actions/checkout, actions/setup-node and expo/expo-github-action, which the org
+# Actions policy rejects before a step can run.
+#
+# So it now runs on ubuntu-latest with no `uses:` lines, the same shape as
+# android-deploy-selfcontained.yml and ios-deploy-selfcontained.yml:
+#
+#   actions/checkout          -> git fetch --depth=1 with the run's own token
+#   actions/setup-node        -> Node and npm are preinstalled on ubuntu-latest
+#   expo/expo-github-action   -> npm i -g eas-cli@<pinned version>
 #
 # MANUAL ONLY (workflow_dispatch): you click "Run workflow" when you want to ship.
-# Deliberately NOT auto-on-push — the Copilot agent churns Master, and auto-
-# deploying every commit to production would be dangerous. You stay in control.
+# Deliberately NOT auto-on-push — this reaches production devices immediately, and
+# auto-deploying every commit to live users would be dangerous. You stay in control.
+name: OTA Update (production)
+
 on:
   workflow_dispatch:
     inputs:
@@ -16,6 +32,10 @@ on:
         description: "Update message shown in EAS"
         required: false
         default: "Manual OTA update"
+      branch:
+        description: "EAS branch to publish to"
+        required: false
+        default: "production"
 
 permissions:
   contents: read
@@ -27,28 +47,71 @@ concurrency:
 jobs:
   publish:
     name: Publish OTA (production)
-    # Org self-hosted runner (free) — same label build-and-test.yml uses.
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_CLI_VERSION: 18.13.1
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      # Shallow checkout of exactly this run's commit, using the token GitHub
+      # already injects. No action required.
+      - name: Checkout ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin "https://github.com/${{ github.repository }}.git"
+          AUTH_HEADER="$(printf 'x-access-token:%s' "${{ github.token }}" | base64 -w0)"
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic ${AUTH_HEADER}" \
+            -c protocol.version=2 fetch -q --depth=1 origin "${{ github.sha }}"
+          git checkout -q --detach FETCH_HEAD
+          echo "checked out $(git rev-parse --short HEAD)"
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        with:
-          node-version: '24'
+      - name: Toolchain versions
+        run: |
+          set -euo pipefail
+          echo "node $(node --version)"
+          echo "npm  $(npm --version)"
 
-      - uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385  # v9
-        with:
-          eas-version: 18.13.1
-          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Fail early if EXPO_TOKEN is missing
+        run: |
+          set -euo pipefail
+          if [ -z "${EXPO_TOKEN:-}" ]; then
+            echo "::error::EXPO_TOKEN secret is not set on this repository." >&2
+            exit 1
+          fi
+          echo "EXPO_TOKEN is present"
 
       - name: Install dependencies
-        run: npm install --include=dev --legacy-peer-deps --no-audit --no-fund --package-lock=false
+        run: |
+          set -euo pipefail
+          npm install --include=dev --legacy-peer-deps --no-audit --no-fund --package-lock=false
 
-      # Message passed via env (never interpolated into the shell).
-      - name: Publish EAS Update (production channel)
+      - name: Install EAS CLI
+        run: |
+          set -euo pipefail
+          npm i -g "eas-cli@${EAS_CLI_VERSION}"
+          eas --version
+
+      # An OTA only reaches devices whose runtime matches. Printing the account,
+      # project and runtime up front makes a silent no-op obvious in the log
+      # instead of looking like a successful publish that nobody receives.
+      - name: Show what this update targets
+        run: |
+          set -euo pipefail
+          node -e '
+            const e = require("./app.json").expo;
+            console.log("owner        =", e.owner);
+            console.log("slug         =", e.slug);
+            console.log("projectId    =", e.extra.eas.projectId);
+            console.log("runtimeVersion/appVersion =", e.runtimeVersion ?? e.version);
+            console.log("updates.url  =", e.updates?.url);
+          '
+
+      # Message and branch passed via env (never interpolated into the shell).
+      - name: Publish EAS Update
         env:
           UPDATE_MSG: ${{ inputs.message }}
-        run: eas update --branch production --message "$UPDATE_MSG" --non-interactive
+          UPDATE_BRANCH: ${{ inputs.branch }}
+        run: |
+          set -euo pipefail
+          eas update --branch "${UPDATE_BRANCH:-production}" --message "$UPDATE_MSG" --non-interactive
