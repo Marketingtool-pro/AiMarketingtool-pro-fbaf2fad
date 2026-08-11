@@ -88,3 +88,7 @@ vendor/
 node_quickstart/
 src/UNKNOWN.egg-info/
 json-schema-org-JSON-Schema-Test-Suite-*/
+
+# ~/.gitignore_global has "*.lock", which silently prevents committing yarn.lock.
+# EAS runs `yarn install --frozen-lockfile` and REQUIRES it. Repo rules win over global.
+!yarn.lock
