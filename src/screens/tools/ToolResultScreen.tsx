@@ -120,8 +120,11 @@ const ToolResultScreen = () => {
     );
   };
 
-  // the 404. Swap back to the app deep-link once the web app is fixed.
-  const DESKTOP_URL = 'https://marketingtool.pro';
+  // MOBILE_TOOLS_POLICY.md (owner decision, URL corrected 2026-07-04) mandates
+  // this button opens the web app login — the same entry the marketingtool.pro
+  // "Get Started" funnel uses. The SPA root "/" and the old /tools/<slug> deep
+  // routes both client-render 404, so link only to the working URL.
+  const DESKTOP_URL = 'https://app.marketingtool.pro/login';
   const handleViewOnDesktop = async () => {
     try {
       await WebBrowser.openBrowserAsync(DESKTOP_URL);
