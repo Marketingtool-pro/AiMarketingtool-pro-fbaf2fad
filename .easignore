@@ -60,7 +60,10 @@ src/api/
 .github/
 docs/
 fastlane/
-scripts/
+# NOT scripts/ — package.json runs `node scripts/fix-gradle.js` as both
+# eas-build-pre-install and eas-build-post-install. Excluding it made EAS
+# upload an archive without the file, so the Pre-install hook phase failed
+# with "Unknown error" before dependencies were even installed.
 test/
 Tests/
 Sources/
