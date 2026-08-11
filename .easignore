@@ -9,6 +9,8 @@ node_modules/
 .git/
 .expo/
 .eas/
+# …but keep the EAS Workflow definitions themselves.
+!.eas/workflows/
 android/
 ios/
 dist/
