@@ -1,24 +1,42 @@
 # Files excluded from the EAS build upload.
-# Works like .gitignore but only for EAS; the repo keeps these files.
+#
+# IMPORTANT: when this file exists, EAS uses it INSTEAD of .gitignore — it does
+# not merge the two. Everything that must stay out of the upload has to be
+# listed here explicitly, including node_modules.
 
-# Local GitHub Packages auth. It contains ${GITHUB_TOKEN}, which does not
-# exist in the EAS build container, so yarn aborts before installing anything:
+# --- Standard excludes (normally covered by .gitignore) ---
+node_modules/
+.git/
+.expo/
+.eas/
+android/
+ios/
+dist/
+build/
+coverage/
+.DS_Store
+*.log
+
+# --- Local GitHub Packages auth ---
+# Contains ${GITHUB_TOKEN}, which does not exist in the EAS build container, so
+# yarn aborts before installing anything:
 #   error Failed to replace env in config: ${GITHUB_TOKEN}
-# No @marketingtool-pro package is an actual dependency, so the build has no
-# need for a private registry at all.
+# No @marketingtool-pro package is an actual dependency.
 .npmrc
 **/.npmrc
 
-# Other package managers' lockfiles — EAS must resolve with yarn only.
+# --- Competing lockfiles: EAS must resolve with yarn only ---
 bun.lock
 bun.lockb
 package-lock.json
 pnpm-lock.yaml
 
-# Vendored projects that are not part of the app. These add gigabytes to the
-# upload and pull unrelated manifests into dependency scanning.
+# --- Vendored projects that are not part of the app ---
+# These add gigabytes to the upload and drag unrelated Ruby/Maven/Go/Elixir
+# manifests into dependency scanning.
 m3/
 jsonschex/
+externals/
 bundletool-1.18.3/
 terraform-provider-exampletime/
 circleci-runner/
@@ -26,13 +44,27 @@ travis-build/
 gh-cli/
 zsh-build/
 conductor/
-externals/
 MyMacro/
 my-env-plugin/
+marketingtool/
+AiMarketingtool-pro-fbaf2fa/
 erl_crash.dump
 
-# Build/debug leftovers
-*.log
-build-logs.md
+# --- Backend packages: deployed separately, not bundled into the app ---
+functions/
+appwrite-functions/
+infra/
+src/api/
+
+# --- Repo tooling and docs ---
+.github/
+docs/
+fastlane/
+scripts/
+test/
+Tests/
+Sources/
+plugin-rn-mcp/
 profile-out/
-dist/
+build-logs.md
+*.png.bak
