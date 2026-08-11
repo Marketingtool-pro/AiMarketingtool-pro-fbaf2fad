@@ -290,7 +290,12 @@
     "expo-build-properties": "56.0.20",
     "expo-constants": "56.0.19",
     "@expo/dom-webview": "56.0.6",
-    "@expo/log-box": "56.0.14"
+    "@expo/log-box": "56.0.14",
+    "esbuild": "^0.28.1",
+    "undici": "^6.23.0",
+    "@opentelemetry/core": "^2.10.0",
+    "@opentelemetry/propagator-jaeger": "^2.10.0",
+    "@tootallnate/once": "^3.0.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
