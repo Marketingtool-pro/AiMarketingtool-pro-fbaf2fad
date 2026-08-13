@@ -203,6 +203,9 @@
     "access": "restricted"
   },
   "overrides": {
+    "undici": "^6.23.0",
+    "@opentelemetry/core": "^2.10.0",
+    "@opentelemetry/propagator-jaeger": "^2.10.0",
     "@xmldom/xmldom": "0.8.13",
     "esbuild": "$esbuild",
     "expo-file-system": "$expo-file-system",
