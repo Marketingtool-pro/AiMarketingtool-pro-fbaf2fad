@@ -48,34 +48,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger and watch phone CI
-        env:
-          GH_TOKEN: ${{ secrets.ORG_WORKFLOW_TOKEN }}
-          REPO: Marketingtool-pro/AiMarketingtool-pro-fbaf2fad
-          WORKFLOW: build-and-test.yml
-          REF: ${{ inputs.phone_ref }}
-        run: |
-          set -euo pipefail
-          if [ -z "${GH_TOKEN:-}" ]; then
-            echo "::error::Set ORG_WORKFLOW_TOKEN as an environment secret."
-            exit 1
-          fi
-          if ! gh auth status >/dev/null 2>&1; then
-            echo "::error::ORG_WORKFLOW_TOKEN is invalid for GitHub CLI authentication."
-            exit 1
-          fi
-          DISPATCHED_AT="$(date -u +%s)"
-          gh workflow run "$WORKFLOW" --repo "$REPO" --ref "$REF"
-          RUN_ID=""
-          for _ in $(seq 1 18); do
-            RUN_ID="$(gh api "repos/$REPO/actions/workflows/$WORKFLOW/runs?per_page=20" --jq ".workflow_runs[] | select(.event==\"workflow_dispatch\" and (.created_at | fromdateiso8601) >= $DISPATCHED_AT) | .id" | head -n 1)"
-            if [ -n "${RUN_ID:-}" ]; then break; fi
-            sleep 5
-          done
-          if [ -z "${RUN_ID:-}" ]; then
-            echo "::error::Could not find the dispatched phone CI run."
-            exit 1
-          fi
-          gh run watch "$RUN_ID" --repo "$REPO" --exit-status
+        uses: balthazar/action-workflow-dispatch@v1
+        with:
+          workflow: build-and-test.yml
+          repo: Marketingtool-pro/AiMarketingtool-pro-fbaf2fad
+          ref: ${{ inputs.phone_ref }}
+          token: ${{ secrets.ORG_WORKFLOW_TOKEN }}
+          wait-for-completion: true
 
   web-ci:
     if: ${{ inputs.target == 'full' || inputs.target == 'web' }}
@@ -83,30 +62,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger and watch web CI
-        env:
-          GH_TOKEN: ${{ secrets.ORG_WORKFLOW_TOKEN }}
-          REPO: Marketingtool-pro/web-app-router-
-          WORKFLOW: node.js.yml
-          REF: ${{ inputs.web_ref }}
-        run: |
-          set -euo pipefail
-          if [ -z "${GH_TOKEN:-}" ]; then
-            echo "::error::Set ORG_WORKFLOW_TOKEN as an environment secret."
-            exit 1
-          fi
-          DISPATCHED_AT="$(date -u +%s)"
-          gh workflow run "$WORKFLOW" --repo "$REPO" --ref "$REF"
-          RUN_ID=""
-          for _ in $(seq 1 18); do
-            RUN_ID="$(gh api "repos/$REPO/actions/workflows/$WORKFLOW/runs?per_page=20" --jq ".workflow_runs[] | select(.event==\"workflow_dispatch\" and (.created_at | fromdateiso8601) >= $DISPATCHED_AT) | .id" | head -n 1)"
-            if [ -n "${RUN_ID:-}" ]; then break; fi
-            sleep 5
-          done
-          if [ -z "${RUN_ID:-}" ]; then
-            echo "::error::Could not find the dispatched web CI run."
-            exit 1
-          fi
-          gh run watch "$RUN_ID" --repo "$REPO" --exit-status
+        uses: balthazar/action-workflow-dispatch@v1
+        with:
+          workflow: node.js.yml
+          repo: Marketingtool-pro/web-app-router-
+          ref: ${{ inputs.web_ref }}
+          token: ${{ secrets.ORG_WORKFLOW_TOKEN }}
+          wait-for-completion: true
 
   phone-deploy:
     if: ${{ (inputs.target == 'full' || inputs.target == 'phone') && inputs.run_phone_deploy }}
@@ -115,22 +77,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger and watch phone production deploy
-        env:
-          GH_TOKEN: ${{ secrets.ORG_WORKFLOW_TOKEN }}
-          REPO: Marketingtool-pro/AiMarketingtool-pro-fbaf2fad
-          WORKFLOW: production-deploy.yml
-          REF: ${{ inputs.phone_ref }}
-        run: |
-          set -euo pipefail
-          DISPATCHED_AT="$(date -u +%s)"
-          gh workflow run "$WORKFLOW" --repo "$REPO" --ref "$REF"
-          RUN_ID=""
-          for _ in $(seq 1 18); do
-            RUN_ID="$(gh api "repos/$REPO/actions/workflows/$WORKFLOW/runs?per_page=20" --jq ".workflow_runs[] | select(.event==\"workflow_dispatch\" and (.created_at | fromdateiso8601) >= $DISPATCHED_AT) | .id" | head -n 1)"
-            if [ -n "${RUN_ID:-}" ]; then break; fi
-            sleep 5
-          done
-          gh run watch "$RUN_ID" --repo "$REPO" --exit-status
+        uses: balthazar/action-workflow-dispatch@v1
+        with:
+          workflow: production-deploy.yml
+          repo: Marketingtool-pro/AiMarketingtool-pro-fbaf2fad
+          ref: ${{ inputs.phone_ref }}
+          token: ${{ secrets.ORG_WORKFLOW_TOKEN }}
+          wait-for-completion: true
 
   web-deploy:
     if: ${{ (inputs.target == 'full' || inputs.target == 'web') && inputs.run_web_deploy }}
@@ -139,19 +92,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger and watch web deploy
-        env:
-          GH_TOKEN: ${{ secrets.ORG_WORKFLOW_TOKEN }}
-          REPO: Marketingtool-pro/web-app-router-
-          WORKFLOW: google-cloudrun-docker.yml
-          REF: ${{ inputs.web_ref }}
-        run: |
-          set -euo pipefail
-          DISPATCHED_AT="$(date -u +%s)"
-          gh workflow run "$WORKFLOW" --repo "$REPO" --ref "$REF"
-          RUN_ID=""
-          for _ in $(seq 1 18); do
-            RUN_ID="$(gh api "repos/$REPO/actions/workflows/$WORKFLOW/runs?per_page=20" --jq ".workflow_runs[] | select(.event==\"workflow_dispatch\" and (.created_at | fromdateiso8601) >= $DISPATCHED_AT) | .id" | head -n 1)"
-            if [ -n "${RUN_ID:-}" ]; then break; fi
-            sleep 5
-          done
-          gh run watch "$RUN_ID" --repo "$REPO" --exit-status
+        uses: balthazar/action-workflow-dispatch@v1
+        with:
+          workflow: google-cloudrun-docker.yml
+          repo: Marketingtool-pro/web-app-router-
+          ref: ${{ inputs.web_ref }}
+          token: ${{ secrets.ORG_WORKFLOW_TOKEN }}
+          wait-for-completion: true
