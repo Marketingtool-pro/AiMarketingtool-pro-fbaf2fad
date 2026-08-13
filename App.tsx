@@ -1,7 +1,7 @@
 // fatalGuard must be the FIRST import: it replaces RN's global JS exception
 // handler before any other module can throw, so an unhandled error is recorded
 // to Crashlytics instead of killing the app (the 550-554 logout/teardown crash).
-import './src/utils/fatalGuard';
+import { markAppMounted } from './src/utils/fatalGuard';
 import React, { useEffect, useState, useCallback } from 'react';
 // expo-status-bar removed: it routes through deprecated APIs on Android 15
 // (StatusBarModule -> Window.setStatusBarColor). react-native-edge-to-edge's
@@ -156,6 +156,11 @@ export default function App() {
 
   const onLayoutRootView = useCallback(async () => {
     if (appIsReady) {
+      // The UI has laid out, so from here on a JS fatal costs a broken screen
+      // rather than a dead app — fatalGuard switches to suppressing. Before
+      // this point it forwards fatals through, so a startup failure is a
+      // reported crash instead of a silent forever-splash.
+      markAppMounted();
       // This tells the splash screen to hide immediately
       await SplashScreen.hideAsync();
     }
