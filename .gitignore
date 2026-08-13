@@ -94,6 +94,10 @@ node_quickstart/
 src/UNKNOWN.egg-info/
 json-schema-org-JSON-Schema-Test-Suite-*/
 
-# ~/.gitignore_global has "*.lock", which silently prevents committing yarn.lock.
-# EAS runs `yarn install --frozen-lockfile` and REQUIRES it. Repo rules win over global.
-!yarn.lock
+# The root lockfile is package-lock.json — yarn is not used here (dropped from
+# mise.toml in ede9e6974; CI and CLAUDE.md both use npm/bun). EAS picks its
+# package manager from whichever lockfile is present, so keeping a stray
+# yarn.lock made EAS build with yarn while everything else used npm.
+#
+# package-lock.json is not caught by ~/.gitignore_global's "*.lock" rule, so it
+# needs no negation. The old "!yarn.lock" line existed only to defeat that rule.
