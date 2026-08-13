@@ -49,6 +49,11 @@
         "ascApiKeyId": "69JDXUCPU3",
         "ascApiKeyIssuerId": "313ffa8d-5aed-4aad-a012-b1057717634c",
         "ascAppId": "6758618412"
+      },
+      "android": {
+        "track": "internal",
+        "releaseStatus": "completed",
+        "changesNotSentForReview": false
       }
     }
   }

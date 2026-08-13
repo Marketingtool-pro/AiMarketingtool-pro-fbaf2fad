@@ -1,0 +1,44 @@
+# EAS Workflow — production Android build + Play submission.
+#
+# Why this exists alongside .github/workflows/android-deploy-selfcontained.yml:
+# this runs on Expo's own infrastructure, so the org GitHub Actions policy
+# (which only permits actions owned by Marketingtool-pro) cannot block it, and
+# it needs no EXPO_TOKEN secret — EAS is already authenticated.
+#
+# Deliberately NOT triggered on every push to Master: builds are billed and the
+# account is at 100% of its included monthly credits. Ship by tagging a release,
+# or run it by hand:
+#
+#     npx eas-cli@latest workflow:run create-production-builds.yml
+#
+# submit_android consumes build_android's build_id, so it always submits the
+# artifact this run produced — never an unrelated "latest" build.
+#
+# Play credentials come from EAS-hosted credentials, not from a key file in the
+# repo (.gitignore blocks *service-account*.json, so a serviceAccountKeyPath in
+# eas.json would resolve to a missing file on Expo's builders). One-time setup:
+#
+#     npx eas-cli@latest credentials --platform android
+#     -> Google Service Account -> Manage your Google Service Account Key
+name: Create production builds
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build_android:
+    name: Build Android (production)
+    type: build
+    params:
+      platform: android
+      profile: production
+
+  submit_android:
+    name: Submit to Google Play
+    needs: [build_android]
+    type: submit
+    params:
+      build_id: ${{ needs.build_android.outputs.build_id }}
+      profile: production
