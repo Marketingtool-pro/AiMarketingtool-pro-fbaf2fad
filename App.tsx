@@ -76,6 +76,16 @@ export default function App() {
             'Poppins-Medium': require('./assets/fonts/Poppins-Medium.ttf'),
             'Poppins-SemiBold': require('./assets/fonts/Poppins-SemiBold.ttf'),
             'Poppins-Bold': require('./assets/fonts/Poppins-Bold.ttf'),
+            // Meme caption faces. Previously MemeGeneratorScreen picked SYSTEM
+            // fonts per platform (Impact/Arial/Comic Sans/Times on iOS vs
+            // sans-serif-condensed/sans-serif/casual/serif on Android), so the
+            // same meme rendered in different typefaces with different metrics
+            // depending on the device. Bundling them means one rendering
+            // everywhere. All SIL OFL 1.1.
+            'Anton-Regular': require('./assets/fonts/Anton-Regular.ttf'),
+            'Arimo-Bold': require('./assets/fonts/Arimo-Bold.ttf'),
+            'ComicNeue-Bold': require('./assets/fonts/ComicNeue-Bold.ttf'),
+            'Tinos-Bold': require('./assets/fonts/Tinos-Bold.ttf'),
           }), 3000),
           withTimeout(checkAuth(), 1500),
           withTimeout(initializeAppCheck(), 2000),
