@@ -144,7 +144,13 @@
           "backgroundColor": "#060b28"
         }
       ],
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#7C3AED"
+        }
+      ],
       "expo-secure-store",
       "expo-font",
       "expo-sharing",
