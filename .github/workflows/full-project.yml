@@ -5,7 +5,7 @@ on:
     inputs:
       target:
         description: Which project scope to run
-        required: false
+        required: true
         default: full
         type: choice
         options:
@@ -14,27 +14,27 @@ on:
           - web
       phone_ref:
         description: Branch or tag for the phone repo workflow run
-        required: false
+        required: true
         default: Master
         type: string
       web_ref:
         description: Branch or tag for the web repo workflow run
-        required: false
+        required: true
         default: main
         type: string
       run_phone_deploy:
         description: Also trigger phone production deploy
-        required: false
+        required: true
         default: true
         type: boolean
       run_web_deploy:
         description: Also trigger web deploy workflow
-        required: false
+        required: true
         default: true
         type: boolean
       publish_control_package:
         description: Also publish this repo package workflow
-        required: false
+        required: true
         default: true
         type: boolean
 
