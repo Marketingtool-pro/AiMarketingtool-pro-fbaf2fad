@@ -91,6 +91,14 @@ jobs:
           npm i -g "eas-cli@${EAS_CLI_VERSION}"
           eas --version
 
+      # Gate: a build that doesn't even typecheck has no business being built,
+      # let alone submitted to Play. This must fail (and stop the job) before
+      # Build/Submit run — do not add continue-on-error or `|| true` here.
+      - name: Typecheck (must pass before build/submit)
+        run: |
+          set -euo pipefail
+          npm run ts:check
+
       - name: Sanity-check the Android config
         run: |
           set -euo pipefail
