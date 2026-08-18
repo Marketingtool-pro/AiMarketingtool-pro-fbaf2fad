@@ -95,7 +95,8 @@ export default function App() {
       } finally {
         setAppIsReady(true);
         // Non-critical inits run AFTER UI is ready — prevents ANR on cold start
-        deferredInit();
+        // Set timeout ensures React completes the layout and SplashScreen.hideAsync() runs first
+        setTimeout(() => deferredInit(), 500);
       }
     }
 
