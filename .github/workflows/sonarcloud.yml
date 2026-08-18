@@ -1,6 +1,7 @@
-run-name: on:main Workflow
-  
-  # Trigger analysis when pushing to your main branches, and when creating a pull request.
+name: Main Workflow
+run-name: Running SonarQube Scan
+
+on:
   push:
     branches:
       - main
@@ -8,47 +9,36 @@ run-name: on:main Workflow
       - develop
       - 'releases/**'
   pull_request:
-      types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened]
 
-name: Main Workflow
 jobs:
-  sonarqube:
+  sonarqube-standard:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
-      with:
-        # Disabling shallow clones is recommended for improving the relevancy of reporting
-        fetch-depth: 0
-    - name: SonarQube Scan
-      uses: SonarSource/sonarqube-scan-action@<action version or sha1> # Ex: v4.1.0 or sha1, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-
-        sonarqube:
+  sonarqube-c-family:
     runs-on: ubuntu-latest
     env:
-      BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory # Directory where build-wrapper output will be placed
+      BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory
     steps:
-    - uses: actions/checkout@v6
-      with:
-        # Disabling shallow clone is recommended for improving relevancy of reporting
-        fetch-depth: 0
-    - name: Install Build Wrapper
-      uses: SonarSource/sonarqube-scan-action/install-build-wrapper@<action version>
-    - name: Run Build Wrapper
-      run: |
-        # Here goes your compilation wrapped with Build Wrapper
-        # For more information, see https://docs.sonarsource.com/sonarqube-cloud/advanced-setup/languages/c-family/prerequisites/#using-build-wrapper
-        # build-preparation steps
-        # build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} build-command
-    - name: SonarQube Scan
-      uses: SonarSource/sonarqube-scan-action@<action version or sha1>
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        SONAR_ROOT_CERT: ${{ secrets.SONAR_ROOT_CERT }}
-
-
-
-
-        
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install Build Wrapper
+        uses: SonarSource/sonarqube-scan-action/install-build-wrapper@v4
+      - name: Run Build Wrapper
+        run: |
+          # Replace the line below with your actual build command (like make, cmake, gcc, etc.)
+          echo "Add your compilation steps here"
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_ROOT_CERT: ${{ secrets.SONAR_ROOT_CERT }}
