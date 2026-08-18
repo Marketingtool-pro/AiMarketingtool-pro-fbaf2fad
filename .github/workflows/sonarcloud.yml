@@ -1,4 +1,4 @@
-run-name: on:
+run-name: on:main Workflow
   
   # Trigger analysis when pushing to your main branches, and when creating a pull request.
   push:
