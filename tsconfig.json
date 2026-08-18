@@ -2,6 +2,7 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "skipLibCheck": true,
     "paths": {
       "@/*": [
         "./src/*"
@@ -17,6 +18,8 @@
     "node_modules",
     "functions",
     "appwrite-functions",
-    "index.ts"
+    "index.ts",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts"
   ]
 }
