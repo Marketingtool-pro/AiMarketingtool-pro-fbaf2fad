@@ -1,6 +1,9 @@
 name: Actions Cleanup
 
 on:
+  push:
+    paths:
+      - .github/workflows/actions-cleanup.yml
   workflow_dispatch:
     inputs:
       force_cancel_stuck:
@@ -41,11 +44,14 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
       SELF: ${{ github.run_id }}
+      STUCK_MINUTES: ${{ inputs.stuck_minutes || 30 }}
+      DELETE_DAYS: ${{ inputs.delete_days || 30 }}
+      MAX_DELETE: ${{ inputs.max_delete || 200 }}
     steps:
       - name: Force-cancel stuck runs
-        if: ${{ inputs.force_cancel_stuck }}
+        if: ${{ github.event_name == 'push' || inputs.force_cancel_stuck }}
         run: |
-          cutoff=$(date -u -d "-${{ inputs.stuck_minutes }} minutes" +%Y-%m-%dT%H:%M:%SZ)
+          cutoff=$(date -u -d "-$STUCK_MINUTES minutes" +%Y-%m-%dT%H:%M:%SZ)
           echo "Cutoff: $cutoff"
           : > ids.txt
           for st in queued in_progress requested waiting pending action_required; do
@@ -71,13 +77,13 @@ jobs:
           echo "Force-cancel: cleared $ok, refused $fail" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Delete old completed runs
-        if: ${{ inputs.delete_old }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.delete_old }}
         run: |
-          cutoff=$(date -u -d "-${{ inputs.delete_days }} days" +%Y-%m-%dT%H:%M:%SZ)
+          cutoff=$(date -u -d "-$DELETE_DAYS days" +%Y-%m-%dT%H:%M:%SZ)
           echo "Deleting completed runs created before $cutoff"
           gh api --paginate "repos/$REPO/actions/runs?status=completed&per_page=100" \
             --jq ".workflow_runs[] | select(.created_at < \"$cutoff\") | .id" \
-            | head -n "${{ inputs.max_delete }}" > del.txt || true
+            | head -n "$MAX_DELETE" > del.txt || true
           n=0
           while read -r id; do
             if [ -n "$id" ] && [ "$id" != "$SELF" ]; then
