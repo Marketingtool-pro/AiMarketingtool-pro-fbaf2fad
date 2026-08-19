@@ -9,8 +9,8 @@ on:
     inputs:
       version_string:
         description: "App Store version to create/submit (e.g. 1.5.6)"
-        required: true
-        default: "1.5.6"
+        required: false
+        default: ""
       build_number:
         description: "Build number already uploaded to App Store Connect"
         required: true
@@ -51,6 +51,7 @@ jobs:
           DRY_RUN: 'false'
         run: |
           sudo gem install jwt --no-document
+          export VERSION_STRING="${VERSION_STRING:-$(node -pe "require('./app.json').expo.version")}"
           export ASC_KEY_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyId")"
           export ASC_ISSUER_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyIssuerId")"
           export ASC_APP_ID="$(node -pe "require('./eas.json').submit.production.ios.ascAppId")"
