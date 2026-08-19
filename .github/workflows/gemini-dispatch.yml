@@ -20,7 +20,7 @@ on:
 
 defaults:
   run:
-    shell: 'bash'
+    shell: 'zsh'
 
 jobs:
   debugger:
