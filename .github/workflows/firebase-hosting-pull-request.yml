@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       # bun repo (no package-lock.json) — `npm ci` failed instantly. Use plain install.
-      - run: npm install --legacy-peer-deps --no-audit --no-fund --package-lock=false && npm run build
+      - run: npm ci --legacy-peer-deps --no-audit --no-fund && npm run build
       - uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a # v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

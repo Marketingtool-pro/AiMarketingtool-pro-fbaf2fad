@@ -84,7 +84,7 @@ jobs:
       - name: Install dependencies
         run: |
           set -euo pipefail
-          npm install --include=dev --legacy-peer-deps --no-audit --no-fund --package-lock=false
+          npm ci --include=dev --legacy-peer-deps --no-audit --no-fund
 
       - name: Install EAS CLI
         run: |
