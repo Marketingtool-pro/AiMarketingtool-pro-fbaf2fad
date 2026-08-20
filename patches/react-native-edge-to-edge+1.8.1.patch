@@ -1,31 +1,57 @@
 diff --git a/node_modules/react-native-edge-to-edge/android/src/main/java/com/zoontek/rnedgetoedge/EdgeToEdgeModuleImpl.kt b/node_modules/react-native-edge-to-edge/android/src/main/java/com/zoontek/rnedgetoedge/EdgeToEdgeModuleImpl.kt
 --- a/node_modules/react-native-edge-to-edge/android/src/main/java/com/zoontek/rnedgetoedge/EdgeToEdgeModuleImpl.kt
 +++ b/node_modules/react-native-edge-to-edge/android/src/main/java/com/zoontek/rnedgetoedge/EdgeToEdgeModuleImpl.kt
-@@ -71,7 +71,14 @@
+@@ -71,7 +71,17 @@
  
        WindowCompat.setDecorFitsSystemWindows(window, false)
  
 -      window.statusBarColor = Color.TRANSPARENT
-+      // Android 15 (API 35) deprecated Window.setStatusBarColor. Kotlin's
-+      // `window.statusBarColor = x` compiles to that setter, which is what
-+      // Play Console flags as applyEdgeToEdge$lambda$4. On API 35+ the
-+      // setDecorFitsSystemWindows(false) call above already yields a
-+      // transparent status bar, so the assignment is redundant there.
-+      if (VERSION.SDK_INT < 35) {
-+        window.statusBarColor = Color.TRANSPARENT
-+      }
++      // REMOVED: window.statusBarColor = Color.TRANSPARENT
++      //
++      // Window.setStatusBarColor is deprecated in Android 15. Play Console's
++      // deprecated-API report is a STATIC scan of the compiled DEX, so wrapping
++      // the call in `if (SDK_INT < 35)` does not help — the method reference is
++      // still emitted and still flagged. The call has to be gone entirely.
++      //
++      // Nothing is lost: setDecorFitsSystemWindows(false) above, plus the
++      // enableEdgeToEdge() call injected into MainActivity by
++      // plugins/withAndroid15EdgeToEdge.js, already produce a transparent
++      // status bar on every supported API level.
  
        // Fix https://github.com/zoontek/react-native-edge-to-edge/issues/105
        if (VERSION.SDK_INT <= VERSION_CODES.O_MR1) {
-@@ -79,7 +86,10 @@
+@@ -79,7 +89,10 @@
        }
  
        if (VERSION.SDK_INT >= VERSION_CODES.O_MR1 && isNavigationBarTransparent(activity)) {
 -        window.navigationBarColor = Color.TRANSPARENT
-+        // Same rationale as above: skip the deprecated setter on API 35+.
-+        if (VERSION.SDK_INT < 35) {
-+          window.navigationBarColor = Color.TRANSPARENT
-+        }
++        // REMOVED: window.navigationBarColor = Color.TRANSPARENT
++        // Same reason as the status bar above — a static scan still sees a
++        // guarded call, so the call itself is gone. enableEdgeToEdge() handles
++        // the transparent navigation bar.
  
          if (VERSION.SDK_INT >= VERSION_CODES.Q) {
            window.isStatusBarContrastEnforced = false
+@@ -88,11 +101,17 @@
+       } else {
+         val light = isDefaultLightSystemBars(activity)
+ 
+-        window.navigationBarColor = when {
+-          VERSION.SDK_INT >= VERSION_CODES.Q -> Color.TRANSPARENT
+-          VERSION.SDK_INT >= VERSION_CODES.O_MR1 && light -> LightNavigationBarColor
+-          else -> DarkNavigationBarColor
+-        }
++        // REMOVED: window.navigationBarColor = when { ... }
++        //
++        // This third call site was never guarded by the previous patch at all,
++        // which is why Play kept reporting applyEdgeToEdge$lambda$4 even after
++        // the other two were wrapped. Removed outright.
++        //
++        // The bar's light/dark icon appearance is still set below through
++        // WindowInsetsControllerCompat (isAppearanceLightNavigationBars), which
++        // is the modern, non-deprecated API and is what actually matters for
++        // legibility. Only the opaque background tint on pre-Android-15
++        // devices with a non-transparent navigation bar is given up.
+ 
+         insetsController.run {
+           isAppearanceLightNavigationBars = when {
