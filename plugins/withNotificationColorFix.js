@@ -27,13 +27,22 @@ module.exports = function withNotificationColorFix(config) {
     const application = getMainApplicationOrThrow(config.modResults);
     const metaData = application['meta-data'] || [];
 
-    const entry = metaData.find(
+    let entry = metaData.find(
       (item) => item.$ && item.$['android:name'] === META_NAME
     );
 
-    if (entry) {
-      entry.$['tools:replace'] = 'android:resource';
+    if (!entry) {
+      entry = {
+        $: {
+          'android:name': META_NAME,
+          'android:resource': '@color/notification_icon_color',
+        },
+      };
+      metaData.push(entry);
+      application['meta-data'] = metaData;
     }
+
+    entry.$['tools:replace'] = 'android:resource';
 
     return config;
   });
