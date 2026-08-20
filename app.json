@@ -167,7 +167,6 @@
           "delayAppMeasurementInit": true
         }
       ],
-      "expo-dev-launcher",
       "expo-updates"
     ],
     "extra": {
