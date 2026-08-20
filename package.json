@@ -140,7 +140,7 @@
     "expo-web-browser": "~56.0.6",
     "firebase-admin": "^14.0.0",
     "genkit": "^0.9.12",
-    "lottie-react-native": "~7.4.0",
+    "lottie-react-native": "~7.3.4",
     "material-symbols": "^0.46.0",
     "mvdan-sh": "^0.10.1",
     "react": "19.2.3",
@@ -225,7 +225,8 @@
     "ws": "^8.21.0",
     "react": "19.2.3",
     "react-dom": "19.2.8",
-    "react-native": "0.85.3"
+    "react-native": "0.85.3",
+    "expo-constants": "56.0.19"
   },
   "expo": {
     "doctor": {
