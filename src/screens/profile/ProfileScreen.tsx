@@ -11,6 +11,7 @@ import {
   Linking,
   Platform,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -186,7 +187,7 @@ const ProfileScreen = () => {
               <View style={styles.avatarWrapper}>
                 <View style={styles.avatarContainer}>
                   {profile?.avatar ? (
-                    <Image source={{ uri: profile.avatar }} style={styles.avatarImg} />
+                    <ExpoImage source={{ uri: profile.avatar }} style={styles.avatarImg} contentFit="cover" cachePolicy="memory-disk" />
                   ) : (
                     <Text style={styles.avatarText}>
                       {displayName !== 'User' ? displayName.charAt(0).toUpperCase() : 'U'}

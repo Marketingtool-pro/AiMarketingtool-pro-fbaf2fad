@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Platform, View, Text, Image, StyleSheet } from 'react-native';
+import { Platform, View, Text, StyleSheet } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { adUnit, adRequestOptions } from '../services/adsService';
 
 /**
@@ -54,7 +55,7 @@ function AndroidNativeAdCard() {
       <View style={styles.headerRow}>
         {ad.icon?.url ? (
           <NativeAsset assetType={NativeAssetType.ICON}>
-            <Image source={{ uri: ad.icon.url }} style={styles.icon} />
+            <ExpoImage source={{ uri: ad.icon.url }} style={styles.icon} contentFit="contain" cachePolicy="memory-disk" />
           </NativeAsset>
         ) : null}
         <View style={styles.headlineCol}>

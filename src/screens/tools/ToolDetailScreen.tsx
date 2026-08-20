@@ -12,6 +12,7 @@ import {
   Alert,
   Image,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -327,10 +328,12 @@ const ToolDetailScreen = () => {
               backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14,
               padding: 12, marginTop: 16,
             }}>
-              <Image
+              <ExpoImage
                 source={{ uri: generatedImage.image }}
                 style={{ width: '100%', aspectRatio: 1, borderRadius: 10 }}
-                resizeMode="cover"
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={150}
               />
               <Text style={{ color: Colors.textSecondary, fontSize: 13, marginTop: 10 }}>
                 {generatedImage.caption}

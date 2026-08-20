@@ -13,6 +13,7 @@ import {
   FlatList,
   Modal,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -313,7 +314,13 @@ const MemeGeneratorScreen = () => {
       style={styles.templateItem}
       onPress={() => selectTemplate(item)}
     >
-      <Image source={{ uri: item.url }} style={styles.templateImage} />
+      <ExpoImage
+        source={{ uri: item.url }}
+        style={styles.templateImage}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={150}
+      />
       <Text style={styles.templateName} numberOfLines={1}>{item.name}</Text>
     </TouchableOpacity>
   );
