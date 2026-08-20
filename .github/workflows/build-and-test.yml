@@ -21,7 +21,7 @@ jobs:
           node-version: '24'
       
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund --package-lock=false
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
       
       - name: Lint
         # Non-blocking: lint is quality, not a ship gate, and the eslint stack
@@ -46,7 +46,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
       
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund --package-lock=false
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
       
       # iOS held — Android only in CI (iOS is built/submitted manually).
       - name: Build preview for Android & Ios
