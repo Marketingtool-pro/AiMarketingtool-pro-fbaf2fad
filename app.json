@@ -136,6 +136,7 @@
       "./plugins/withAndroid15EdgeToEdge.js",
       "./plugins/withRNEdgeToEdgeFix.js",
       "./plugins/withFirebaseDeferredInit.js",
+      "./plugins/withNotificationColorFix.js",
       [
         "expo-splash-screen",
         {
