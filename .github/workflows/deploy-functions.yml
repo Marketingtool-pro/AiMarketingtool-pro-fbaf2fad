@@ -44,6 +44,7 @@ jobs:
         with:
           workload_identity_provider: 'projects/911925145433/locations/global/workloadIdentityPools/external-idps/providers/github'
           service_account: 'github-action-1140184974@marketing-tool-484720.iam.gserviceaccount.com'
+          token_format: 'access_token' # Forces OAuth token creation to bypass strict URL issuer checks
 
       - name: Install firebase-tools
         run: npm install -g firebase-tools@latest --no-audit --no-fund
