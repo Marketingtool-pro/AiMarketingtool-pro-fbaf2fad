@@ -1,11 +1,8 @@
 name: ZZ Diag B (no if)
 
 on:
-  workflow_dispatch:
-  issue_comment:
-    types: [created]
-  issues:
-    types: [opened, assigned]
+  push:
+    branches: [ci-diag-claude]
 
 jobs:
   diag:
