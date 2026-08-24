@@ -1,4 +1,4 @@
-package Master
+package main
 
 import (
 	"os"
