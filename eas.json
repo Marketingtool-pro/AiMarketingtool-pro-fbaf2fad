@@ -37,7 +37,7 @@
       }
     },
     "production": {
-      "autoIncrement": false,
+      "autoIncrement": true,
       "channel": "production",
       "node": "24.18.0",
       "android": {
