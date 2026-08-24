@@ -34,7 +34,7 @@ jobs:
 
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@ad67978e5eb3fc76e3c86855adc19db5673fa818  # v1.0.118
+        uses: anthropics/claude-code-action@dcb57747bfceeaa1fa72638cae52295d1d853d4a  # v1.0.199
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Without an explicit token the action tries to mint a Claude GitHub
