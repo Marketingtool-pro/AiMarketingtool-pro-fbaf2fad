@@ -68,6 +68,24 @@ updates:
         update-types:
           - "version-update:semver-minor"
           - "version-update:semver-patch"
+      # @shopify/react-native-skia is pinned to the Expo SDK 57 version
+      # (2.6.2). This is the one that got missed the first time: PR #462
+      # bumped it straight to 2.11.0 one hour after the pin landed, because it
+      # had no ignore rule here, and 2.11.0's compiled JSI helpers reference
+      # facebook::jsi::* symbols absent from react-native 0.86.2's libjsi:
+      #
+      #   ld.lld: error: undefined symbol: facebook::jsi::JSError::JSError(...)
+      #   NativeArrayBuffer.cpp:60:36: error: no member named
+      #     'tryGetMutableBuffer' in 'facebook::jsi::ArrayBuffer'
+      #
+      # skia's declared peers are too loose to catch this itself
+      # (react-native: ">=0.78"), so this ignore rule is the only thing
+      # standing between a routine Dependabot bump and every Android build
+      # breaking again.
+      - dependency-name: "@shopify/react-native-skia"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
 
   - package-ecosystem: "npm"
     directory: "/functions"
