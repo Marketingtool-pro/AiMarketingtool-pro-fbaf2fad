@@ -152,7 +152,53 @@ function isFileValid(filePath, expectedSha256) {
   }
 }
 
+// The patched AAR is built from one specific react-native release, and the
+// dependencySubstitution below redirects EVERY com.facebook.react:react-android
+// request to it. If the installed react-native is a different release, that
+// silently pairs a mismatched native library with the JS runtime: the C++ of
+// every other native module then compiles and links against the wrong JSI.
+//
+// That is not theoretical. PATCHED_VERSION stayed at 0.85.3-e2e.2 after
+// react-native moved to 0.86.2, and every Android build failed:
+//
+//   expo-modules-core/.../NativeArrayBuffer.cpp:60:36: error: no member named
+//     'tryGetMutableBuffer' in 'facebook::jsi::ArrayBuffer'
+//   ld.lld: error: undefined symbol: facebook::jsi::JSError::JSError(...)
+//     (~16 more undefined facebook::jsi::* symbols, from react-native-skia)
+//
+// So refuse to substitute unless the patch actually matches the installed
+// react-native. Skipping only brings back the deprecated Android 15 edge-to-edge
+// calls as Play Console vitals warnings; substituting anyway breaks the build
+// outright. To re-enable, publish an AAR for the current react-native and bump
+// PATCHED_VERSION (see .github/workflows/patch-react-android.yml, whose
+// REACT_VERSION also needs bumping).
+function installedReactNativeVersion() {
+  try {
+    return require('react-native/package.json').version;
+  } catch {
+    return null;
+  }
+}
+
+function patchMatchesInstalledReactNative() {
+  const installed = installedReactNativeVersion();
+  if (!installed) return false;
+  // PATCHED_VERSION looks like "0.85.3-e2e.2"; compare the react-native part.
+  return PATCHED_VERSION.split('-')[0] === installed;
+}
+
 module.exports = function withRNEdgeToEdgeFix(config) {
+  if (!patchMatchesInstalledReactNative()) {
+    console.warn(
+      `[withRNEdgeToEdgeFix] SKIPPED: patched AAR is for react-native ` +
+        `${PATCHED_VERSION.split('-')[0]} but react-native ` +
+        `${installedReactNativeVersion() ?? 'unknown'} is installed. ` +
+        `Substituting would build against the wrong JSI and fail the Android ` +
+        `link. Publish a matching AAR and bump PATCHED_VERSION to re-enable.`
+    );
+    return config;
+  }
+
   // 1. Download patched AAR + POM into android/local-aar/ during prebuild.
   config = withDangerousMod(config, [
     'android',

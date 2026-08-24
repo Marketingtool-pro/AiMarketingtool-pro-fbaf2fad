@@ -13,12 +13,21 @@ env:
   # Single source of truth for the patch revision. MUST stay in sync with
   # PATCHED_VERSION in plugins/withRNEdgeToEdgeFix.js (consumed at prebuild)
   # and the default patchRevision in android-patches/build.gradle.
-  PATCH_REVISION: '2'
-  REACT_VERSION: '0.85.3'
+  PATCH_REVISION: '1'
+  # Must track the react-native version in package.json. It sat at 0.85.3 after
+  # react-native moved to 0.86.2, so the AAR this workflow publishes no longer
+  # matched the installed runtime — and withRNEdgeToEdgeFix substitutes it for
+  # EVERY com.facebook.react:react-android request, which broke every Android
+  # build on a JSI mismatch. The plugin now refuses to substitute a mismatched
+  # AAR, so publishing 0.86.2-e2e.1 from here is what re-enables the fix.
+  REACT_VERSION: '0.86.2'
 
 jobs:
   build-patched-aar:
-    runs-on: self-hosted
+    # Was `self-hosted`, but this org has no self-hosted runners registered
+    # (org and repo runner lists are both empty), so the job could never be
+    # picked up — it queued forever. Use a GitHub-hosted runner.
+    runs-on: ubuntu-latest
     permissions:
       contents: write   # create/update the react-android-* release
       packages: write
