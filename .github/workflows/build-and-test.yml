@@ -23,6 +23,12 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps --no-audit --no-fund
       
+      # Blocking: nothing else in CI compiles native code, so a bad native
+      # version pair (see the script header) otherwise stays green here and
+      # only shows up ~20 minutes into an EAS build.
+      - name: Check native dependency compatibility
+        run: node .github/scripts/check-native-peers.mjs
+
       - name: Lint
         # Non-blocking: lint is quality, not a ship gate, and the eslint stack
         # has been churned repeatedly. Report issues without failing the build.

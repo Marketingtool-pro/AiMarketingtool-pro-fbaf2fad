@@ -153,7 +153,7 @@
     "react-native-iap": "^15.3.2",
     "react-native-keyboard-controller": "^1.22.4",
     "react-native-nitro-modules": "^0.36.1",
-    "react-native-reanimated": "^4.4.1",
+    "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "^5.9.1",
     "react-native-screens": "4.27.0",
     "react-native-svg": "15.15.5",
@@ -161,7 +161,7 @@
     "react-native-view-shot": "5.1.1",
     "react-native-web": "^0.21.2",
     "react-native-webview": "13.17.0",
-    "react-native-worklets": "0.12.1",
+    "react-native-worklets": "0.10.1",
     "tamagui": "2.7.7",
     "test": "^3.3.0",
     "tsx": "^4.22.4",
@@ -192,6 +192,7 @@
     "lint-staged": "17.3.0",
     "prettier": "^3.8.4",
     "react-refresh": "^0.18.0",
+    "semver": "^7.7.4",
     "source-map-explorer": "^2.5.3",
     "typescript": "~6.0.3"
   },
@@ -242,13 +243,11 @@
         "@shopify/flash-list",
         "@shopify/react-native-skia",
         "react-native-keyboard-controller",
-        "react-native-reanimated",
         "react-native-safe-area-context",
         "react-native-screens",
         "react-native-svg",
         "react-native-view-shot",
-        "react-native-webview",
-        "react-native-worklets"
+        "react-native-webview"
       ]
     }
   },

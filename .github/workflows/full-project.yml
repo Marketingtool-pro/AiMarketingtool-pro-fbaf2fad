@@ -27,11 +27,6 @@ on:
         required: true
         default: true
         type: boolean
-      run_web_deploy:
-        description: Also trigger web deploy workflow
-        required: true
-        default: true
-        type: boolean
       publish_control_package:
         description: Also publish this repo package workflow
         required: true
@@ -47,28 +42,28 @@ jobs:
     environment: ORG_WORKFLOW_TOKEN
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
       - name: Trigger and watch phone CI
-        uses: balthazar/action-workflow-dispatch@v1
-        with:
-          workflow: build-and-test.yml
-          repo: Marketingtool-pro/AiMarketingtool-pro-fbaf2fad
-          ref: ${{ inputs.phone_ref }}
-          token: ${{ secrets.ORG_WORKFLOW_TOKEN }}
-          wait-for-completion: true
+        env:
+          GH_TOKEN: ${{ secrets.ORG_WORKFLOW_TOKEN }}
+          WORKFLOW: build-and-test.yml
+          REPO: Marketingtool-pro/AiMarketingtool-pro-fbaf2fad
+          REF: ${{ inputs.phone_ref }}
+        run: bash .github/scripts/dispatch-and-watch.sh
 
   web-ci:
     if: ${{ inputs.target == 'full' || inputs.target == 'web' }}
     environment: ORG_WORKFLOW_TOKEN
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
       - name: Trigger and watch web CI
-        uses: balthazar/action-workflow-dispatch@v1
-        with:
-          workflow: node.js.yml
-          repo: Marketingtool-pro/web-app-router-
-          ref: ${{ inputs.web_ref }}
-          token: ${{ secrets.ORG_WORKFLOW_TOKEN }}
-          wait-for-completion: true
+        env:
+          GH_TOKEN: ${{ secrets.ORG_WORKFLOW_TOKEN }}
+          WORKFLOW: node.js.yml
+          REPO: Marketingtool-pro/web-app-router-
+          REF: ${{ inputs.web_ref }}
+        run: bash .github/scripts/dispatch-and-watch.sh
 
   phone-deploy:
     if: ${{ (inputs.target == 'full' || inputs.target == 'phone') && inputs.run_phone_deploy }}
@@ -76,26 +71,18 @@ jobs:
     environment: ORG_WORKFLOW_TOKEN
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
       - name: Trigger and watch phone production deploy
-        uses: balthazar/action-workflow-dispatch@v1
-        with:
-          workflow: production-deploy.yml
-          repo: Marketingtool-pro/AiMarketingtool-pro-fbaf2fad
-          ref: ${{ inputs.phone_ref }}
-          token: ${{ secrets.ORG_WORKFLOW_TOKEN }}
-          wait-for-completion: true
+        env:
+          GH_TOKEN: ${{ secrets.ORG_WORKFLOW_TOKEN }}
+          WORKFLOW: production-deploy.yml
+          REPO: Marketingtool-pro/AiMarketingtool-pro-fbaf2fad
+          REF: ${{ inputs.phone_ref }}
+        run: bash .github/scripts/dispatch-and-watch.sh
 
-  web-deploy:
-    if: ${{ (inputs.target == 'full' || inputs.target == 'web') && inputs.run_web_deploy }}
-    needs: web-ci
-    environment: ORG_WORKFLOW_TOKEN
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger and watch web deploy
-        uses: balthazar/action-workflow-dispatch@v1
-        with:
-          workflow: google-cloudrun-docker.yml
-          repo: Marketingtool-pro/web-app-router-
-          ref: ${{ inputs.web_ref }}
-          token: ${{ secrets.ORG_WORKFLOW_TOKEN }}
-          wait-for-completion: true
+  # NOTE: there is no `web-deploy` job. The web app (Cloud Run service
+  # aimarketingtool-pro-fbaf2fad-git) deploys from a Google Cloud Build trigger
+  # on push to Marketingtool-pro/web-app-router-, not from a GitHub Actions
+  # workflow. The job that used to live here dispatched
+  # `google-cloudrun-docker.yml`, which does not exist in that repo, so it could
+  # only ever fail. Re-add it here if that workflow is created later.
