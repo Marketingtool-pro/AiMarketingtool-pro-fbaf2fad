@@ -62,6 +62,10 @@ const LoginScreen = () => {
   const [otpError, setOtpError] = useState('');
   const [totpError, setTotpError] = useState('');
   const [otpSending, setOtpSending] = useState(false);
+  // Local verify-in-flight flag. authStore.verifyPhoneOTP never sets isLoading,
+  // so the verify button had no spinner and stayed enabled for the whole
+  // multi-round-trip verify — which is why a login looked frozen.
+  const [otpVerifying, setOtpVerifying] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Guards against handleVerifyOTP being invoked twice (auto-verify on 6th
@@ -236,22 +240,35 @@ const LoginScreen = () => {
     }
   };
 
-  const handleVerifyOTP = async () => {
+  // `code` is passed explicitly by the auto-verify path. Reading `otpCode` from
+  // the closure there was the "tap twice to log in" bug: onChangeText scheduled
+  // setTimeout(() => handleVerifyOTP(), 100) from the render BEFORE
+  // setOtpCode(digits) committed, so this function saw the previous 5-digit
+  // value (or '' on SMS autofill/paste), hit the length guard, and returned
+  // silently with no UI feedback. Auto-verify therefore never fired and the
+  // user always had to press the button by hand.
+  const handleVerifyOTP = async (code?: string) => {
+    const submitted = (code ?? otpCode).replace(/\D/g, '');
     if (verifyingRef.current) return;
     // Refuse to verify while a send/resend is in flight — the new
     // verificationId hasn't landed yet and using the old one would fail.
     if (sendingRef.current) return;
-    if (otpCode.length < 6) return;
+    if (submitted.length < 6) return;
     verifyingRef.current = true;
+    // Drives the button spinner + disabled state. Without this the screen gave
+    // no sign anything was happening during the verify round-trips, so users
+    // tapped a second time (which this same ref then swallowed).
+    setOtpVerifying(true);
     setOtpError('');
     try {
-      await verifyPhoneOTP(otpUserId, otpCode);
+      await verifyPhoneOTP(otpUserId, submitted);
       await SecureStore.deleteItemAsync('pendingOTP');
       setShowOtpModal(false);
     } catch (err: any) {
       setOtpError(err.message || 'Invalid OTP. Please check and try again.');
     } finally {
       verifyingRef.current = false;
+      setOtpVerifying(false);
     }
   };
 
@@ -387,9 +404,12 @@ const LoginScreen = () => {
                       const digits = text.replace(/\D/g, '').slice(0, 6);
                       setOtpCode(digits);
                       setOtpError('');
-                      // Uber-style auto-verify when 6 digits filled (e.g. via iOS SMS autofill)
+                      // Uber-style auto-verify when 6 digits filled (e.g. via iOS SMS autofill).
+                      // Pass `digits` explicitly — handleVerifyOTP's closure still holds the
+                      // pre-update otpCode at this point, which is what silently killed
+                      // auto-verify and forced a manual second tap.
                       if (digits.length === 6) {
-                        setTimeout(() => handleVerifyOTP(), 100);
+                        handleVerifyOTP(digits);
                       }
                     }}
                     keyboardType="number-pad"
@@ -399,15 +419,15 @@ const LoginScreen = () => {
                     autoComplete="sms-otp"
                   />
                   <TouchableOpacity
-                    style={[styles.verifyBtn, otpCode.length < 6 && { opacity: 0.5 }]}
-                    onPress={handleVerifyOTP}
-                    disabled={isLoading || otpCode.length < 6}
+                    style={[styles.verifyBtn, (otpCode.length < 6 || otpVerifying) && { opacity: 0.5 }]}
+                    onPress={() => handleVerifyOTP()}
+                    disabled={isLoading || otpVerifying || otpCode.length < 6}
                   >
                     <LinearGradient
                       colors={['#9D4EDD', '#7B2CBF']}
                       style={styles.verifyBtnGrad}
                     >
-                      {isLoading ? (
+                      {isLoading || otpVerifying ? (
                         <ActivityIndicator color="#FFFFFF" size="small" />
                       ) : (
                         <Feather name="check" size={20} color="#FFFFFF" />
