@@ -1,0 +1,20 @@
+name: ZZ Diag B (no if)
+
+on:
+  workflow_dispatch:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+      actions: read # Required for Claude to read CI results on PRs
+    steps:
+      - run: echo "diag B ran"
