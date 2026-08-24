@@ -32,13 +32,19 @@ updates:
       # worklets alone (0.11.4 -> 0.12.1, PR from 2026-08-22) left it outside
       # reanimated's `react-native-worklets` peer range and broke every native
       # build with "no member named 'executeSync' in 'worklets::WorkletRuntime'".
-      # Let the Expo SDK upgrade move these, not a weekly minor bump.
+      # Let the Expo SDK upgrade move these, not a weekly bump. Patch is ignored
+      # too: Dependabot walked them to 4.5.3 / 0.10.4 within two days of the pin,
+      # which `expo-doctor` then reports as out of date against the SDK's 4.5.1 /
+      # 0.10.1. The peer range still held, but the drift is noise that hides the
+      # next real break.
       - dependency-name: "react-native-worklets"
         update-types:
           - "version-update:semver-minor"
+          - "version-update:semver-patch"
       - dependency-name: "react-native-reanimated"
         update-types:
           - "version-update:semver-minor"
+          - "version-update:semver-patch"
       # Same coupling between react-native-iap and its nitro-modules native
       # bridge. Bumping nitro-modules to 0.37.0 on its own (PR #454) put it
       # outside the "^0.36.1" peer range iap declares, which the native peer
