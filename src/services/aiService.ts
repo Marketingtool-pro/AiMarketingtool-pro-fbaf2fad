@@ -14,6 +14,14 @@ const MIN_VARIATION_PART_LENGTH = 50;
 export interface AIGenerationRequest {
   toolSlug: string;
   toolName: string;
+  // Tool identity beyond the name. 301 of the 314 tools share the same single
+  // `mainInput` field and 152 share the label "Describe what you need", so the
+  // NAME was previously the only thing that differed between two tools' prompts
+  // — which is why every tool returned near-identical copy. These carry the
+  // tool's actual job into the request.
+  toolDescription?: string;
+  toolCategory?: string;
+  deliverable?: string;
   inputs: Record<string, any>;
   tone?: string;
   language?: string;
@@ -37,8 +45,37 @@ export interface AIGenerationResponse {
 // Main AI Generation — Appwrite tool-executor ONLY.
 // Phone app and web app are not mixed: the phone reaches Windmill through the
 // Appwrite function, the web app calls Windmill directly. No HTTP fallback.
+// Turns a tool's own metadata into an explicit job description for the model.
+// Without this the prompt was `${toolName}\n\n${inputsText}\n\nTone: …`, so two
+// different tools fed the same text differed by exactly one line and produced
+// the same generic marketing copy.
+function buildToolInstruction(req: AIGenerationRequest): string {
+  const { toolName, toolSlug, toolDescription, toolCategory, deliverable } = req;
+  const lines: string[] = [];
+
+  lines.push(`You are the "${toolName}" tool on MarketingTool.`);
+  if (toolCategory) lines.push(`Category: ${toolCategory}.`);
+  if (toolDescription && toolDescription.trim() && toolDescription.trim() !== toolName) {
+    lines.push(`What this tool does: ${toolDescription.trim()}`);
+  }
+  if (deliverable) lines.push(`Expected deliverable: ${deliverable}`);
+
+  // The slug is the most reliable per-tool signal (314 unique values) and is the
+  // key the backend routes on, so state it explicitly rather than relying on the
+  // display name, which repeats across variants.
+  lines.push(`Tool id: ${toolSlug}.`);
+  lines.push(
+    `Produce ONLY the specific output this tool exists to create. Do not answer as a general marketing assistant, do not restate the request, and do not explain what you are about to do.`
+  );
+
+  return lines.join('\n');
+}
+
 export async function generateAIContent(request: AIGenerationRequest): Promise<AIGenerationResponse> {
-  const { toolSlug, toolName, inputs, tone, language, outputCount = 3, userId, tier, simulation } = request;
+  const {
+    toolSlug, toolName, toolDescription, toolCategory, deliverable,
+    inputs, tone, language, outputCount = 3, userId, tier, simulation,
+  } = request;
 
   // Build user prompt from inputs
   const inputsText = Object.entries(inputs)
@@ -50,7 +87,18 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
   // mid-prompt was being ignored, so tools sometimes answered in French. State it
   // as an imperative at the end so the model writes the whole response in that language.
   const outputLanguage = language || 'English';
-  const userPrompt = `${toolName}\n\n${inputsText}\n\nTone: ${tone || 'professional'}\n\nIMPORTANT: Write the ENTIRE response in ${outputLanguage}. Do not use any other language under any circumstances.`;
+  const toolInstruction = buildToolInstruction(request);
+  const userPrompt = [
+    toolInstruction,
+    '',
+    '--- USER INPUT ---',
+    inputsText,
+    '',
+    `Tone: ${tone || 'professional'}`,
+    `Variations required: ${outputCount}. Separate each with a line containing exactly ---VARIATION---`,
+    '',
+    `IMPORTANT: Write the ENTIRE response in ${outputLanguage}. Do not use any other language under any circumstances.`,
+  ].join('\n');
 
   // Primary: Appwrite Function (tool-executor → Windmill → Claude)
   try {
@@ -68,6 +116,12 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
       JSON.stringify({
         tool_slug: toolSlug,
         tool_name: toolName,
+        // Sent alongside the prompt so the backend can route or template on the
+        // tool's real job instead of only its slug.
+        tool_description: toolDescription || '',
+        tool_category: toolCategory || '',
+        deliverable: deliverable || '',
+        instruction: toolInstruction,
         input: userPrompt,
         inputs: { ...inputs, tone: tone || 'professional', language: language || 'English' },
         output_count: outputCount,

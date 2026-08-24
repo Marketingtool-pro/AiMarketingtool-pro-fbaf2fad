@@ -387,6 +387,12 @@ export const useToolsStore = create<ToolsState>((set, get) => ({
       const result = await generateAIContent({
         toolSlug: tool.slug,
         toolName: tool.name,
+        // Carry the tool's actual job into the prompt. Without these the request
+        // differed between tools by the name line alone, which is why every tool
+        // came back with the same generic copy.
+        toolDescription: tool.description,
+        toolCategory: tool.category,
+        deliverable: tool.deliverable,
         inputs,
         tone: inputs.tone,
         language: inputs.language,
