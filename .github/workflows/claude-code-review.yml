@@ -12,11 +12,12 @@ on:
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+    # Dependabot pull requests run with the Dependabot secret store, not the
+    # repository one, so CLAUDE_CODE_OAUTH_TOKEN arrives empty and the action
+    # fails with an auth error (seen on the actions/checkout 6.0.2 -> 7.0.1 and
+    # claude-code-action 1.0.118 -> 1.0.199 bumps). These are the bot's own
+    # version bumps, so skip them rather than review them without credentials.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
 
     runs-on: ubuntu-latest
     permissions:
