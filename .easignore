@@ -27,10 +27,20 @@ coverage/
 .npmrc
 **/.npmrc
 
-# --- Competing lockfiles: EAS must resolve with yarn only ---
+# --- Competing lockfiles ---
+# package-lock.json is deliberately NOT listed here. It is THE lockfile for this
+# repo (npm; there is no yarn.lock and yarn was dropped — see .gitignore). This
+# block used to exclude it, under a stale "EAS must resolve with yarn only"
+# assumption, which meant every EAS build uploaded with no lockfile at all. EAS
+# then re-resolved from the semver ranges in package.json, so pinned versions
+# were not honoured on the builder: `@shopify/react-native-skia: "^2.6.5"`
+# resolved to 2.11.0 there and broke the Android link with undefined
+# facebook::jsi::* symbols. `expo-doctor` on the build also reported
+# "No lock file detected". Keep the genuinely competing lockfiles out so npm is
+# the one that resolves, and let package-lock.json through so builds are
+# reproducible.
 bun.lock
 bun.lockb
-package-lock.json
 pnpm-lock.yaml
 
 # --- Vendored projects that are not part of the app ---

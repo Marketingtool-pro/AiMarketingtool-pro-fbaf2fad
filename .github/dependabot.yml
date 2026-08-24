@@ -55,6 +55,19 @@ updates:
       - dependency-name: "react-native-iap"
         update-types:
           - "version-update:semver-minor"
+      # lottie-react-native and react-dom are pinned to the versions Expo SDK 57
+      # expects. PR #460 bumped both straight back off those pins the same day
+      # they were set (7.3.8 -> 7.4.0, 19.2.3 -> 19.2.8), reintroducing the
+      # expo-doctor failure. react-dom must also stay in lockstep with react,
+      # which is pinned at 19.2.3. Let the SDK upgrade move them.
+      - dependency-name: "lottie-react-native"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      - dependency-name: "react-dom"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
 
   - package-ecosystem: "npm"
     directory: "/functions"
