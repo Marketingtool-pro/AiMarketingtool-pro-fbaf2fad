@@ -98,6 +98,35 @@
 </header>
 
 <section class="wrap">
+  <h2>Current release — 1.5.13</h2>
+  <div class="stack">
+    <div class="row"><span class="v">
+      <p style="margin:0 0 14px">Google Play flagged three things against 1.5.12, and all three have been worked
+      through. The <b>deprecated edge-to-edge APIs</b> — <code>setStatusBarColor</code>,
+      <code>getStatusBarColor</code> and <code>setNavigationBarColor</code> — were being called from two
+      different libraries, React Native's own <code>StatusBarModule</code> and <code>WindowUtilKt</code>, and
+      <code>react-native-edge-to-edge</code>. Play scans for the <i>static bytecode reference</i>, so wrapping the
+      calls in a version check never cleared the warning; every call site now reaches them through reflection
+      instead, which keeps the behaviour identical on Android 14 and below and removes the reference entirely.
+      React Native ships as a prebuilt binary, so that half required re-publishing a patched
+      <code>react-android</code> artifact and verifying with <code>javap</code> that no reference survived and
+      that every method the original exposed is still present.</p>
+
+      <p style="margin:0">On <b>R8</b>, the real cause turned out not to be the setting first suspected: code
+      shrinking was already enabled, but the build was pulling in the non-optimized default ProGuard file, which
+      carries <code>-dontoptimize</code> and switches R8's optimization passes off wholesale. That file is now the
+      optimized variant, and optimized resource shrinking is enabled alongside it. The remaining sub-item —
+      Android Gradle Plugin 9.0 — is set by the Expo SDK and cannot be changed independently. The <b>bitmap</b>
+      recommendation led to a genuine bug: picked and captured photos were being handed to the preview at full
+      resolution, so a 12-megapixel photo became a ~48 MB bitmap and a 50-megapixel one roughly 200 MB. Images
+      are now capped before they are decoded, which costs nothing in output quality because the saved image is a
+      capture of the on-screen view. The app targets <b>API 36</b>. Play re-evaluates against an analysed
+      release, so these results are confirmed by the store only once 1.5.13 has been through review.</p>
+    </span></div>
+  </div>
+</section>
+
+<section class="wrap">
   <h2>Design</h2>
   <div class="grid">
     <a class="card" href="app-screens.html">
