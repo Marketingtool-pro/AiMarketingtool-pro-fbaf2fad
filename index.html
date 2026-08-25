@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarketingTool — Phone App</title>
+<meta name="description" content="Expo / React Native app for AI-powered marketing workflows on mobile.">
+<style>
+  :root{
+    --bg:#0b0a14; --panel:#141227; --panel-2:#1a1830; --line:#2a2745;
+    --text:#f2f1f7; --muted:#a09dba; --accent:#7c5cff; --accent-2:#a78bfa;
+    --ok:#01b574;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent-2); text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:960px; margin:0 auto; padding:0 24px}
+
+  header{
+    padding:72px 0 56px;
+    background:
+      radial-gradient(900px 380px at 12% -10%, rgba(124,92,255,.28), transparent 60%),
+      radial-gradient(700px 320px at 92% 0%, rgba(167,139,250,.16), transparent 60%);
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    display:inline-block; font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--accent-2); border:1px solid var(--line); background:rgba(124,92,255,.08);
+    padding:5px 11px; border-radius:999px; margin-bottom:20px;
+  }
+  h1{font-size:clamp(30px,5.2vw,46px); line-height:1.12; margin:0 0 14px; letter-spacing:-.02em}
+  .lede{font-size:18px; color:var(--muted); max-width:60ch; margin:0}
+
+  .stats{display:flex; flex-wrap:wrap; gap:10px; margin-top:28px}
+  .stat{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:9px 14px; font-size:13px; color:var(--muted);
+  }
+  .stat b{color:var(--text); font-weight:600}
+
+  section{padding:52px 0}
+  h2{font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:0 0 20px; font-weight:600}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px}
+  .card{
+    display:block; background:var(--panel); border:1px solid var(--line);
+    border-radius:14px; padding:22px; color:inherit; transition:border-color .15s, transform .15s, background .15s;
+  }
+  .card:hover{border-color:var(--accent); background:var(--panel-2); transform:translateY(-2px); text-decoration:none}
+  .card h3{margin:0 0 8px; font-size:17px; letter-spacing:-.01em}
+  .card p{margin:0; color:var(--muted); font-size:14px; line-height:1.55}
+  .card .go{display:inline-block; margin-top:14px; font-size:13px; color:var(--accent-2)}
+
+  .stack{background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden}
+  .row{display:flex; gap:16px; padding:15px 20px; border-bottom:1px solid var(--line); align-items:baseline}
+  .row:last-child{border-bottom:0}
+  .row .k{flex:0 0 132px; color:var(--accent-2); font-size:13px; font-weight:600}
+  .row .v{color:var(--muted); font-size:14px}
+  .row .v b{color:var(--text); font-weight:600}
+
+  code{
+    font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    background:rgba(124,92,255,.12); border:1px solid var(--line);
+    padding:1px 6px; border-radius:5px; color:var(--accent-2);
+  }
+
+  footer{border-top:1px solid var(--line); padding:34px 0 60px; color:var(--muted); font-size:14px}
+  footer a{color:var(--muted)}
+  .links{display:flex; flex-wrap:wrap; gap:18px; margin-bottom:14px}
+
+  @media (max-width:560px){
+    header{padding:52px 0 40px}
+    .row{flex-direction:column; gap:4px}
+    .row .k{flex:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <span class="eyebrow">Marketingtool-pro</span>
+    <h1>MarketingTool — Phone App</h1>
+    <p class="lede">Expo / React Native client for AI-powered marketing workflows on mobile. Appwrite for auth, Windmill for tool execution.</p>
+    <div class="stats">
+      <span class="stat"><b>314</b> tools</span>
+      <span class="stat"><b>Expo SDK 57</b></span>
+      <span class="stat"><b>API 36</b> target</span>
+      <span class="stat">iOS &amp; Android</span>
+    </div>
+  </div>
+</header>
+
+<section class="wrap">
+  <h2>Design</h2>
+  <div class="grid">
+    <a class="card" href="app-screens.html">
+      <h3>App Screens</h3>
+      <p>Every screen of the phone app, as designed.</p>
+      <span class="go">Open →</span>
+    </a>
+    <a class="card" href="project-page.html">
+      <h3>Project Page</h3>
+      <p>Product overview and positioning.</p>
+      <span class="go">Open →</span>
+    </a>
+    <a class="card" href="tool-ui-blueprint.html">
+      <h3>Tool UI Blueprint</h3>
+      <p>Five category templates replacing one generic execution page, with a single runtime contract.</p>
+      <span class="go">Open →</span>
+    </a>
+  </div>
+</section>
+
+<section class="wrap">
+  <h2>Documentation</h2>
+  <div class="grid">
+    <a class="card" href="ARCHITECTURE.html">
+      <h3>Architecture</h3>
+      <p>How the system actually fits together — the request path for a tool run on each platform, how Windmill authenticates, what runs on each VPS, and the traps worth knowing before debugging.</p>
+      <span class="go">Read →</span>
+    </a>
+    <a class="card" href="MOBILE_TOOLS_POLICY.html">
+      <h3>Mobile Tools Policy</h3>
+      <p>Same backend, models and execution logic as web. Display may be shortened — nothing else.</p>
+      <span class="go">Read →</span>
+    </a>
+  </div>
+</section>
+
+<section class="wrap">
+  <h2>Stack</h2>
+  <div class="stack">
+    <div class="row"><span class="k">Mobile</span><span class="v">Expo / React Native, Zustand, React Navigation</span></div>
+    <div class="row"><span class="k">Auth</span><span class="v"><b>Appwrite</b> on both platforms · Firebase Auth for phone OTP, bridged into an Appwrite session via the <code>phone-session</code> function</span></div>
+    <div class="row"><span class="k">Tools</span><span class="v"><b>Windmill</b> — the web app calls it directly; the phone goes through the Appwrite <code>tool-executor</code> function</span></div>
+    <div class="row"><span class="k">Data</span><span class="v">Appwrite databases · Supabase for web app data</span></div>
+    <div class="row"><span class="k">Delivery</span><span class="v">EAS Build with GitHub Actions — build and store submission on one dispatch</span></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="links">
+      <a href="https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad">Repository</a>
+      <a href="https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/wiki">Wiki</a>
+      <a href="https://marketingtool.pro">marketingtool.pro</a>
+      <a href="https://app.marketingtool.pro">Web app</a>
+    </div>
+    <div>MIT licensed · Maintained by Marketingtool-pro</div>
+  </div>
+</footer>
+
+</body>
+</html>
