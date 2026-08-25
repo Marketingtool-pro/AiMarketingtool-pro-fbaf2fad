@@ -1,3 +1,9 @@
+---
+layout: default
+title: "MarketingTool — how the system actually fits together"
+description: "The request path for a tool run on each platform, how Windmill authenticates, what runs on each VPS, and the traps worth knowing."
+---
+
 # MarketingTool — how the system actually fits together
 
 Everything below was read from the live systems on 2026-08-25, not from memory
@@ -183,3 +189,73 @@ functions still have no home.
 same backend, models and execution logic as web, and may only shorten the
 *display*. As of today the app-side rules are met; the backend ones are not,
 because of the two-entry-point problem above.
+
+---
+
+# How the web app is SUPPOSED to work — owner spec
+
+Stated by the owner on 2026-08-25 and marked final. This is the target design.
+It is **not** what is deployed today; the gap is described after it.
+
+## The unit is a PAGE, not a tool
+
+Every page owns its own set:
+
+```
+PAGE
+ ├── JS input / output      the page's own contract
+ ├── WORKER                 fetches REAL data from the real API
+ ├── ENGINE                 the page's own engine
+ ├── ROUTER                 the page's own router
+ ├── CRON JOB               keeps the page's data fresh
+ └── JWT                    auth on every call
+```
+
+Roughly **10 tools share 1 engine and 1 router**, with a script per tool. So ~10
+tools → ~10 scripts → 1 engine + 1 router.
+
+## The flow
+
+```
+page  ──►  WORKER  ──►  real API (Meta, Google Ads, …)  ──►  REAL DATA
+                                                              │
+                                              handover        ▼
+                                          ──►  AI ROUTER  ──►  analyses + polishes
+                                                              │
+                                                              ▼
+                                                   RICH RESULT  (desktop 1920px)
+                                                   + download on every page
+```
+
+**The worker returns data, not results.** Its job is to call the real API and
+bring back real numbers. It then **hands over to the AI Router**, which analyses
+that data and produces the rich result — text, image, video, whatever the page
+needs. Every page works this way.
+
+## Rules
+
+- **Workers do not produce results.** Meta and every other tool API is a worker.
+  It fetches; it does not answer.
+- **AI Router does the analysis and the polish.** It is the only place a result
+  is composed, and it handles every media type.
+- **10 models always active.** Customer-facing, always on.
+- **Rich results are a desktop concern** — 1920px, full fidelity, with a
+  download option on every page. The phone does not need them.
+- **gcloud agent workers behave like Windmill workers.** They are workers. They
+  are **not** mixed with the AI Router.
+- Every page follows the same pattern. No exceptions.
+
+## Where today's system differs
+
+| spec | today |
+|---|---|
+| worker fetches real API data, then hands to AI Router | no worker in the tool path at all — the tool sends a text prompt straight to an LLM |
+| AI Router analyses real data into a rich result | AI Router is referenced by exactly one script, `engine-creative`, at `localhost:9000` |
+| one engine + one router per ~10 tools | 3 engines total, and a 36-entry table sending ~290 tools to one of them |
+| 10 models always active | `f/mobile/ai_generate` picks Haiku 4.5 for all but 9 slugs |
+| rich results, downloads, per page | text only |
+
+This gap explains the symptom the owner reported: **Meta Budget Optimizer asked
+the user for their daily budget.** Under the spec, a Meta worker would have
+fetched the real budget from the Meta API and handed it to the AI Router. With
+no worker in the path, the model had no data and could only ask for it.

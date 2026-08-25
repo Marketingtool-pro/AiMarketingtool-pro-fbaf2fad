@@ -1,3 +1,9 @@
+---
+layout: default
+title: "Mobile Tools Execution & Result Display"
+description: "Same backend, models and execution logic as web. Display may be shortened — nothing else."
+---
+
 # Mobile Tools Execution & Result Display (Final)
 
 ## Mobile Tools Functionality
