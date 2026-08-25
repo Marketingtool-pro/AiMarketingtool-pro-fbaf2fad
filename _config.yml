@@ -1,0 +1,53 @@
+# GitHub Pages configuration for the published project site.
+#
+# Without this file the site had no theme of its own, so GitHub Pages fell back
+# to its default: ARCHITECTURE.html and MOBILE_TOOLS_POLICY.html rendered as
+# black-on-white pages with a blue repo-name heading, while every other page on
+# the site (index, app-screens, project-page, tool-ui-blueprint) is dark and
+# on-brand. Those two markdown pages were the odd ones out.
+#
+# `defaults` applies _layouts/default.html to the markdown pages without
+# needing front matter added to each .md file -- important because these files
+# are read in the repository too, and GitHub renders a front-matter block as a
+# table at the top of the file.
+#
+# Plain .html files (index.html and the three design exports) carry no front
+# matter, so Jekyll copies them through untouched and they keep their own
+# self-contained styling.
+
+title: MarketingTool
+description: Expo / React Native client for AI-powered marketing workflows on mobile.
+
+# No remote theme: the layout is local and self-contained, so the published
+# site cannot change appearance because an upstream theme was updated.
+theme:
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+
+# Keep repository files that are not part of the published site out of it.
+exclude:
+  - node_modules
+  - android-patches
+  - patches
+  - plugins
+  - src
+  - scripts
+  - functions
+  - windmill
+  - .github
+  - Gemfile
+  - Gemfile.lock
+  - package.json
+  - package-lock.json
+  - tsconfig.json
+  - app.json
+  - eas.json
+  - CLAUDE.md
+  - agent.md
+  - gemini.md
+  - build-logs.md
+  - chunk-cl.md
