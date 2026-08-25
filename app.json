@@ -3,7 +3,7 @@
     "name": "MarketingTool",
     "slug": "marketingtool",
     "owner": "aimarketintool-2-2-2-2",
-    "version": "1.5.12",
+    "version": "1.5.13",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -19,7 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "1007",
+      "buildNumber": "1010",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
