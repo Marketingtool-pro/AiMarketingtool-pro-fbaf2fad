@@ -1,25 +1,64 @@
+<div align="center">
+
 # Category-specific Windmill tool UIs
 
-**Technical blueprint & verification checklist**
+**Technical blueprint &amp; verification checklist**
 
-Replacing one generic execution page with five category templates that still run real Windmill jobs — and a complete post-output workflow behind a single runtime contract.
+Replacing one generic execution page with five category templates that still run
+real Windmill jobs — and a complete post-output workflow behind a single runtime contract.
 
-| 206 tools | 5 templates | 11 categories | 8-week plan |
-|---|---|---|---|
+![tools](https://img.shields.io/badge/206-tools-7c5cff?style=for-the-badge&labelColor=141227)
+![templates](https://img.shields.io/badge/5-templates-a78bfa?style=for-the-badge&labelColor=141227)
+![categories](https://img.shields.io/badge/11-categories-7c5cff?style=for-the-badge&labelColor=141227)
+![plan](https://img.shields.io/badge/8--week-plan-a78bfa?style=for-the-badge&labelColor=141227)
+
+[**▶ Open the rendered version**](https://marketingtool-pro.github.io/AiMarketingtool-pro-fbaf2fad/tool-ui-blueprint.html) · [App screens](https://marketingtool-pro.github.io/AiMarketingtool-pro-fbaf2fad/app-screens.html) · [Architecture](https://marketingtool-pro.github.io/AiMarketingtool-pro-fbaf2fad/ARCHITECTURE.html)
+
+</div>
+
+---
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+**⚙️ WINDMILL**
+
+Synchronous `jobs/run_wait_result` webhooks work, but long-running jobs need
+`TIMEOUT_WAIT_RESULT` and `QUEUE_LIMIT_WAIT_RESULT` configured for reliability.
+
+</td>
+<td width="33%" valign="top">
+
+**🔑 APPWRITE**
+
+JWTs default to 900s (max 3600s) and die on logout — mint just-in-time, cache
+in memory only, retry once on unauthorised.
+
+</td>
+<td width="33%" valign="top">
+
+**🚫 HARD CONSTRAINT**
+
+No new colours, no new Tailwind colour tokens. Tailwind changes limited to
+keyframes and animation utilities.
+
+</td>
+</tr>
+</table>
 
 ---
 
 ## Executive summary
 
-Five category-specific templates replace the single generic tool execution page, while every tool keeps executing real Windmill AI jobs — no mocks — with a full post-output workflow: copy, PDF, TXT, save, regenerate, share, rate, launch.
+Five category-specific templates replace the single generic tool execution page,
+while every tool keeps executing **real Windmill AI jobs** — no mocks — with a full
+post-output workflow: copy, PDF, TXT, save, regenerate, share, rate, launch.
 
-The only way this scales across 206 tools is to centralise execution and persistence into one runtime contract — JWT mint/refresh, a `run_wait_result` wrapper, normalised errors, Appwrite persistence — and keep templates focused on layout, inputs and preview.
-
-**Windmill** — Synchronous `jobs/run_wait_result` webhooks work, but long-running jobs need `TIMEOUT_WAIT_RESULT` and `QUEUE_LIMIT_WAIT_RESULT` configured for reliability.
-
-**Appwrite** — JWTs default to 900s (max 3600s) and die on logout — mint just-in-time, cache in memory only, retry once on unauthorised.
-
-**Hard constraint** — No new colours, no new Tailwind colour tokens. Tailwind changes limited to keyframes and animation utilities.
+The only way this scales across 206 tools is to centralise execution and persistence
+into one **runtime contract** — JWT mint/refresh, a `run_wait_result` wrapper,
+normalised errors, Appwrite persistence — and keep templates focused on layout,
+inputs and preview.
 
 ---
 
@@ -67,7 +106,9 @@ Windmill's lifecycle is `queued → running → completed`. Even in sync mode th
 
 ---
 
-## Appwrite DB schemas and permissions
+<details>
+<summary><b>Appwrite DB schemas and permissions</b> — click to expand</summary>
+
 
 Permissions are granted, never default — table level and row level, with row-level rules applying only when Row Security is on. Users can only grant permissions they hold themselves.
 
@@ -78,7 +119,10 @@ Permissions are granted, never default — table level and row level, with row-l
 | `ratings` | generationId, toolSlug, userId, stars?, thumb?, comment?, createdAt | Row security on; deterministic doc id `${generationId}_${userId}` prevents duplicates |
 | `campaigns` | userId, platform, draftPayload, status, launchRef?, createdAt | Row security on; launch is a job with visible status and failure reasons |
 
+</details>
+
 ---
+
 
 ## UI architecture
 
@@ -153,7 +197,9 @@ Large outputs auto-collapse with download offered instead of full expansion; sto
 
 ---
 
-## Verification and QA
+<details>
+<summary><b>Verification and QA</b> — click to expand</summary>
+
 
 ### Test matrix
 
@@ -174,17 +220,25 @@ Large outputs auto-collapse with download offered instead of full expansion; sto
 
 Pre-release smoke runs in staging against real Windmill AI: one tool per category, then copy, TXT, PDF, save with owner-only permissions, regenerate linked to its parent, a share link that resolves, and a persisted rating.
 
+</details>
+
 ---
 
-## Deployment and ops
+<details>
+<summary><b>Deployment and ops</b> — click to expand</summary>
+
 
 **Appwrite Sites** — deploy via `appwrite init sites` then `appwrite push sites`, configured through `appwrite.config.json`. Deployments move through `waiting → processing → building → ready → active`, and any ready deployment can be activated — which is also the instant, zero-downtime rollback path. Always keep one known-good ready deployment before activating a new one.
 
 **Windmill resilience** — variables are encrypted with a workspace key; secrets can't be read outside scripts and every decrypt is audit-logged. Manage load with `TIMEOUT_WAIT_RESULT` and `QUEUE_LIMIT_WAIT_RESULT`, protect downstream APIs with concurrency limits, and optionally debounce repeated generate clicks by key and delay window.
 
+</details>
+
 ---
 
-## Risks and acceptance criteria
+<details>
+<summary><b>Risks and acceptance criteria</b> — click to expand</summary>
+
 
 | Risk | Impact | Mitigation |
 |---|---|---|
@@ -204,7 +258,10 @@ Pre-release smoke runs in staging against real Windmill AI: one tool per categor
 - **Phase 3** — `AdCampaignLayout` covers Google and Meta fields with live preview, and launch creates a campaign record with status.
 - **Phase 4** — catalogue split to a 15–20KB index plus on-demand loads; large outputs never lock the UI.
 
+</details>
+
 ---
+
 
 ## Prioritised plan
 
@@ -257,3 +314,13 @@ As specified, the instance gives up at 20s while the UI waits 60s — users star
 - [App Screens](https://marketingtool-pro.github.io/AiMarketingtool-pro-fbaf2fad/app-screens.html) · [Project Page](https://marketingtool-pro.github.io/AiMarketingtool-pro-fbaf2fad/project-page.html) · [Tool UI Blueprint (rendered)](https://marketingtool-pro.github.io/AiMarketingtool-pro-fbaf2fad/tool-ui-blueprint.html)
 
 <sub>Reference docs: Windmill (webhooks, jobs, environment variables, concurrency limits, variables and secrets) · Appwrite (account, database permissions, pagination, Sites) · Tailwind animation · Storybook testing · Vite build · MDN print events · html2canvas.</sub>
+
+---
+
+<div align="center">
+
+**[▶ View this as the fully rendered page](https://marketingtool-pro.github.io/AiMarketingtool-pro-fbaf2fad/tool-ui-blueprint.html)**
+
+<sub>The wiki shows the content; the Pages site shows the design. GitHub wikis cannot execute JavaScript, so the interactive version lives there.</sub>
+
+</div>
