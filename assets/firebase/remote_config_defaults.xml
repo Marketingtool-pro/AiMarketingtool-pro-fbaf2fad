@@ -3,4 +3,8 @@
     <key>gemini_model</key>
     <value>gemini-3.1-flash-lite-preview</value>
   </entry>
+  <entry>
+    <key>windmill_token</key>
+    <value></value>
+  </entry>
 </defaults>
