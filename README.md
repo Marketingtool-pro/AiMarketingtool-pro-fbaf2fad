@@ -162,6 +162,29 @@ This project uses third-party open-source software, including:
 
 Full license details available at marketingtool.pro.
 
+## App screens
+
+[**View the app screens →**](app-screens.html)
+
+Every screen of the phone app, as designed.
+
+## Project page
+
+[**View the project page →**](project-page.html)
+
+Both are served from this same GitHub Pages site, so they stay with the code
+rather than living in a download folder on one machine.
+
+## Further reading
+
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — how the system actually fits together:
+  the request path for a tool run on each platform, how Windmill authenticates,
+  what runs on each VPS, and the environment traps worth knowing before you
+  debug anything.
+- [`MOBILE_TOOLS_POLICY.md`](MOBILE_TOOLS_POLICY.md) — the rules the phone app
+  must follow: same backend, models and execution logic as web; display may be
+  shortened, nothing else.
+
 ---
 
 Maintained by Marketingtool-pro
