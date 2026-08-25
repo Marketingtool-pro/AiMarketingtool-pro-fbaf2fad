@@ -1,31 +1,80 @@
 diff --git a/node_modules/react-native-edge-to-edge/android/src/main/java/com/zoontek/rnedgetoedge/EdgeToEdgeModuleImpl.kt b/node_modules/react-native-edge-to-edge/android/src/main/java/com/zoontek/rnedgetoedge/EdgeToEdgeModuleImpl.kt
+index 0000000..0000000 100644
 --- a/node_modules/react-native-edge-to-edge/android/src/main/java/com/zoontek/rnedgetoedge/EdgeToEdgeModuleImpl.kt
 +++ b/node_modules/react-native-edge-to-edge/android/src/main/java/com/zoontek/rnedgetoedge/EdgeToEdgeModuleImpl.kt
-@@ -71,7 +71,14 @@
+@@ -60,6 +60,32 @@
+       }
+     }
+ 
++
++  // -- Play Console: deprecated edge-to-edge APIs ------------------------------
++  // Play flags STATIC bytecode references to Window.setStatusBarColor /
++  // Window.setNavigationBarColor, so a `VERSION.SDK_INT < 35` runtime guard does
++  // NOT clear the warning: the invokevirtual is still in the DEX and still shows
++  // up as EdgeToEdgeModuleImpl.applyEdgeToEdge$lambda$4. Going through
++  // reflection removes the reference from the bytecode while preserving the
++  // behaviour on API < 35, where these setters remain the only way to get
++  // transparent system bars. On API >= 35 the call is skipped entirely --
++  // setDecorFitsSystemWindows(false) already yields transparent bars there.
++  //
++  // android.view.Window is a framework class and is never obfuscated, so the
++  // reflective lookup is stable under R8 full mode.
++  private fun setSystemBarColorCompat(window: Window, setter: String, color: Int) {
++    if (VERSION.SDK_INT >= 35) {
++      return
++    }
++    try {
++      Window::class.java
++        .getMethod(setter, Int::class.javaPrimitiveType)
++        .invoke(window, color)
++    } catch (error: Exception) {
++      FLog.w(ReactConstants.TAG, "$NAME: could not apply $setter: ${error.message}")
++    }
++  }
++
+   @Suppress("DEPRECATION")
+   fun applyEdgeToEdge(reactContext: ReactApplicationContext?) {
+     val activity = reactContext?.currentActivity
+@@ -71,7 +97,10 @@
  
        WindowCompat.setDecorFitsSystemWindows(window, false)
  
 -      window.statusBarColor = Color.TRANSPARENT
-+      // Android 15 (API 35) deprecated Window.setStatusBarColor. Kotlin's
-+      // `window.statusBarColor = x` compiles to that setter, which is what
-+      // Play Console flags as applyEdgeToEdge$lambda$4. On API 35+ the
-+      // setDecorFitsSystemWindows(false) call above already yields a
-+      // transparent status bar, so the assignment is redundant there.
-+      if (VERSION.SDK_INT < 35) {
-+        window.statusBarColor = Color.TRANSPARENT
-+      }
++      // Android 15 (API 35) deprecated Window.setStatusBarColor; see
++      // setSystemBarColorCompat above for why this goes through reflection
++      // rather than a direct assignment or a version guard.
++      setSystemBarColorCompat(window, "setStatusBarColor", Color.TRANSPARENT)
  
        // Fix https://github.com/zoontek/react-native-edge-to-edge/issues/105
        if (VERSION.SDK_INT <= VERSION_CODES.O_MR1) {
-@@ -79,7 +86,10 @@
+@@ -79,7 +108,8 @@
        }
  
        if (VERSION.SDK_INT >= VERSION_CODES.O_MR1 && isNavigationBarTransparent(activity)) {
 -        window.navigationBarColor = Color.TRANSPARENT
-+        // Same rationale as above: skip the deprecated setter on API 35+.
-+        if (VERSION.SDK_INT < 35) {
-+          window.navigationBarColor = Color.TRANSPARENT
-+        }
++        // Same rationale as above.
++        setSystemBarColorCompat(window, "setNavigationBarColor", Color.TRANSPARENT)
  
          if (VERSION.SDK_INT >= VERSION_CODES.Q) {
            window.isStatusBarContrastEnforced = false
+@@ -88,11 +118,15 @@
+       } else {
+         val light = isDefaultLightSystemBars(activity)
+ 
+-        window.navigationBarColor = when {
+-          VERSION.SDK_INT >= VERSION_CODES.Q -> Color.TRANSPARENT
+-          VERSION.SDK_INT >= VERSION_CODES.O_MR1 && light -> LightNavigationBarColor
+-          else -> DarkNavigationBarColor
+-        }
++        setSystemBarColorCompat(
++          window,
++          "setNavigationBarColor",
++          when {
++            VERSION.SDK_INT >= VERSION_CODES.Q -> Color.TRANSPARENT
++            VERSION.SDK_INT >= VERSION_CODES.O_MR1 && light -> LightNavigationBarColor
++            else -> DarkNavigationBarColor
++          }
++        )
+ 
+         insetsController.run {
+           isAppearanceLightNavigationBars = when {

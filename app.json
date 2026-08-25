@@ -167,7 +167,8 @@
           "delayAppMeasurementInit": true
         }
       ],
-      "expo-updates"
+      "expo-updates",
+      "./plugins/withR8Optimization.js"
     ],
     "extra": {
       "appwriteEndpoint": "https://api.marketingtool.pro/v1",
