@@ -429,14 +429,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error(sessionResult.error || 'Failed to create session');
       }
 
-      try { await account.deleteSession('current'); } catch {}
-      await account.createSession(sessionResult.userId, sessionResult.secret);
+      // Appwrite refuses createSession while a session is already active, which
+      // is why this used to deleteSession('current') unconditionally first. But
+      // on a fresh OTP login there IS no session, so that call could only ever
+      // fail — a guaranteed-404/401 round-trip paid on EVERY login, with its
+      // result thrown away. Create first; only clear and retry in the genuine
+      // re-login case, so the common path costs one round-trip instead of two.
+      try {
+        await account.createSession(sessionResult.userId, sessionResult.secret);
+      } catch {
+        try { await account.deleteSession('current'); } catch {}
+        await account.createSession(sessionResult.userId, sessionResult.secret);
+      }
 
       const user = await authService.getCurrentUser();
       if (!user) throw new Error('Session created but could not fetch user');
 
-      const profile = await get().fetchOrCreateProfile(user);
-      set({ user, profile, isAuthenticated: true, tempPhone: null, tempVerificationId: null });
+      // Authenticate as soon as the session is real.
+      //
+      // fetchOrCreateProfile is one more Appwrite round-trip (two for a new user:
+      // listDocuments then createDocument) sitting behind a 30s timeout, and it
+      // already returns a defaultProfile when it fails. So it was never a gate on
+      // login — only a delay in front of the home screen, and on a slow network a
+      // very long one. Land the user now and fill the profile in behind them.
+      set({ user, isAuthenticated: true, tempPhone: null, tempVerificationId: null });
+
+      get()
+        .fetchOrCreateProfile(user)
+        .then((profile) => set({ profile }))
+        .catch(() => { /* defaultProfile already applied inside; never block login */ });
       return;
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Verify OTP error:', error.message);

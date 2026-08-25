@@ -1,6 +1,7 @@
 ---
 name: warn-piecemeal-work
-enabled: true
+# Folded into block-unverified-fix-claims so only ONE hook fires per turn.
+enabled: false
 event: stop
 pattern: .*
 action: warn
