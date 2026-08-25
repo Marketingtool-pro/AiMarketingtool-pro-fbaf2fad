@@ -63,7 +63,7 @@ jobs:
 
       - name: Build Patched AAR
         working-directory: android-patches
-        run: ./gradlew assemblePatchedAAR -PpatchRevision=${{ env.PATCH_REVISION }} --no-daemon --stacktrace
+        run: ./gradlew assemblePatchedAAR -PpatchRevision=${{ env.PATCH_REVISION }} -PreactVersion=${{ env.REACT_VERSION }} --no-daemon --stacktrace
 
       - name: Publish to GitHub Packages (maven)
         if: steps.published.outputs.exists != 'true'
@@ -71,19 +71,74 @@ jobs:
         env:
           GITHUB_ACTOR: ${{ secrets.MAVEN_USERNAME || github.actor }}
           GITHUB_TOKEN: ${{ secrets.MAVEN_PASSWORD || secrets.GITHUB_TOKEN }}
-        run: ./gradlew publish -PpatchRevision=${{ env.PATCH_REVISION }} --no-daemon --stacktrace
+        run: ./gradlew publish -PpatchRevision=${{ env.PATCH_REVISION }} -PreactVersion=${{ env.REACT_VERSION }} --no-daemon --stacktrace
 
-      - name: Verify patched classes (no deprecated APIs)
+      - name: Verify patched AAR
         working-directory: android-patches
         run: |
+          set -euo pipefail
           V="${REACT_VERSION}-e2e.${PATCH_REVISION}"
-          cd build/patched
-          unzip -o -q "react-android-${V}.aar" classes.jar
-          unzip -o -q classes.jar 'com/facebook/react/views/view/WindowUtil*' 'com/facebook/react/modules/statusbar/StatusBarModule*'
-          if grep -lr setStatusBarColor com/facebook/react/views/view/ com/facebook/react/modules/statusbar/; then
-            echo "::error::Patched classes still reference setStatusBarColor"; exit 1
-          fi
-          echo "OK: patched classes contain no deprecated edge-to-edge API references"
+          GLOBS=(
+            'com/facebook/react/views/view/WindowUtil*'
+            'com/facebook/react/modules/statusbar/StatusBarModule*'
+          )
+
+          # Extract the classes we replaced, from both the patched AAR and the
+          # pristine upstream one downloaded by the build.
+          mkdir -p verify/new verify/orig
+          ( cd verify/new  && unzip -o -q "../../build/patched/react-android-${V}.aar" classes.jar \
+              && unzip -o -q classes.jar "${GLOBS[@]}" )
+          ( cd verify/orig && unzip -o -q "../../build/orig/react-android-${REACT_VERSION}-release.aar" classes.jar \
+              && unzip -o -q classes.jar "${GLOBS[@]}" )
+
+          # (A) No deprecated API may be REFERENCED. The patch reaches these
+          #     setters through reflection, so their names appear in the
+          #     constant pool as plain strings -- a text grep would match those
+          #     and fail a correct build. Only javap distinguishes a real
+          #     method reference from a string literal.
+          fail=0
+          while IFS= read -r f; do
+            if javap -p -c "$f" | grep -qE 'Window\.(set|get)StatusBarColor|Window\.setNavigationBarColor'; then
+              echo "::error::$f still references a deprecated edge-to-edge API"
+              javap -p -c "$f" | grep -E 'Window\.(set|get)StatusBarColor|Window\.setNavigationBarColor' | sort -u
+              fail=1
+            fi
+          done < <(find verify/new -name '*.class')
+          [ "$fail" = 0 ] && echo "OK: no deprecated edge-to-edge API references"
+
+          # (B) Signature parity. These class files REPLACE the upstream ones
+          #     inside the AAR, so any member that upstream exposed and the
+          #     patch drops becomes a NoSuchMethodError at runtime, everywhere
+          #     in react-android that calls it.
+          members() {
+            javap -p "$1" | grep -vE '^Compiled from|class |^\}|^\{' | sed 's/^  //' | sort
+          }
+          while IFS= read -r orig; do
+            rel="${orig#verify/orig/}"
+            new="verify/new/$rel"
+            if [ ! -f "$new" ]; then
+              echo "::error::$rel present upstream but missing from the patched AAR"
+              fail=1
+              continue
+            fi
+            missing=$(comm -23 <(members "$orig") <(members "$new"))
+            if [ -n "$missing" ]; then
+              echo "::error::$rel drops members that upstream exposes:"
+              echo "$missing"
+              fail=1
+            fi
+          done < <(find verify/orig -name '*.class')
+          [ "$fail" = 0 ] && echo "OK: every upstream member retained"
+
+          exit "$fail"
+
+      - name: Publish asset checksums (paste into withRNEdgeToEdgeFix.js)
+        working-directory: android-patches/build/patched
+        run: |
+          V="${REACT_VERSION}-e2e.${PATCH_REVISION}"
+          echo "PATCHED_VERSION   = '${V}'"
+          echo "PATCHED_AAR_SHA256 = '$(sha256sum "react-android-${V}.aar" | cut -d' ' -f1)'"
+          echo "PATCHED_POM_SHA256 = '$(sha256sum "react-android-${V}.pom" | cut -d' ' -f1)'"
 
       - name: Publish GitHub Release (consumed by withRNEdgeToEdgeFix.js)
         if: steps.published.outputs.exists != 'true'
