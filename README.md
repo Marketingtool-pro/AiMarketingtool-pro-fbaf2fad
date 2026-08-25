@@ -172,8 +172,17 @@ Every screen of the phone app, as designed.
 
 [**View the project page →**](project-page.html)
 
-Both are served from this same GitHub Pages site, so they stay with the code
-rather than living in a download folder on one machine.
+## Tool UI blueprint
+
+[**View the tool UI blueprint →**](tool-ui-blueprint.html)
+
+All three are served from this same GitHub Pages site, so they stay with the
+code rather than living in a download folder on one machine.
+
+They are self-contained HTML exports. That format renders correctly here but
+NOT in the GitHub wiki, which only renders markup files (`.md`, `.textile`) —
+a bundled artifact posted there shows as escaped text or downloads instead of
+displaying. That is why these live on the site and the wiki links to them.
 
 ## Further reading
 
