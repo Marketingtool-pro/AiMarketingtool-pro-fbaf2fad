@@ -181,9 +181,29 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
     // polling needs the executions.read scope, which phone-OTP (Firebase) users
     // don't have, so polling failed and tools looked broken. fetch() is async at
     // the JS layer, so a sync execution does NOT block the UI thread (no ANR).
+    // Appwrite JWT, so the backend can verify WHO is running the tool.
+    //
+    // MOBILE_TOOLS_POLICY.md requires the same execution logic as web, and the
+    // web path is verified: its Windmill engines start with
+    //   user, err = _validate_jwt(appwriteJwt, userId)
+    // which calls Appwrite /account with X-Appwrite-JWT and refuses the run
+    // without it ("Authentication required"). The phone sent only a plain
+    // user_id string, which is a claim, not proof.
+    //
+    // Additive and safe: a backend that ignores the field behaves exactly as
+    // before, and a failure to mint one must not block a tool run.
+    let appwriteJwt = '';
+    try {
+      const { jwt } = await account.createJWT();
+      appwriteJwt = jwt || '';
+    } catch (e: any) {
+      if (__DEV__) console.log('[AI] No Appwrite JWT available: ' + e?.message);
+    }
+
     const execution = await functions.createExecution(
       TOOL_EXECUTOR_FUNCTION_ID,
       JSON.stringify({
+        appwriteJwt,
         tool_slug: toolSlug,
         tool_name: toolName,
         // Sent alongside the prompt so the backend can route or template on the
