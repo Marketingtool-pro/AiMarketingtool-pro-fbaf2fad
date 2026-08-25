@@ -166,8 +166,14 @@ Full license details available at marketingtool.pro.
 
 [**View the app screens →**](app-screens.html)
 
-Every screen of the phone app, as designed. Served from this same GitHub Pages
-site, so it stays with the code rather than living in a download folder.
+Every screen of the phone app, as designed.
+
+## Project page
+
+[**View the project page →**](project-page.html)
+
+Both are served from this same GitHub Pages site, so they stay with the code
+rather than living in a download folder on one machine.
 
 ## Further reading
 
