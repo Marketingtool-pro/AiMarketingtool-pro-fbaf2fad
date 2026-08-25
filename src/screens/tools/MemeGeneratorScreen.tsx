@@ -18,6 +18,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -121,6 +122,45 @@ const MemeGeneratorScreen = () => {
     return true;
   };
 
+
+  // Cap the long edge of a picked/captured photo before it is ever decoded for
+  // display. A full-resolution phone photo is 12MP-108MP; as an ARGB_8888
+  // bitmap a 4000x3000 image is ~48 MB, and a 50MP one ~200 MB, which is what
+  // Play Console flags as "excessive memory usage" and what OOM-kills the
+  // screen on cheaper devices.
+  //
+  // No output quality is lost: the meme that gets saved or shared is a
+  // react-native-view-shot capture of the on-screen view (~device resolution),
+  // so anything above ~2048px was only ever costing memory.
+  //
+  // If manipulation fails for any reason, fall back to the original URI --
+  // a large image is still better than a broken flow.
+  const MAX_IMAGE_EDGE = 2048;
+
+  const downscaleImage = async (uri: string, width?: number, height?: number) => {
+    try {
+      const longEdge = Math.max(width ?? 0, height ?? 0);
+      // Already small enough: skip the extra decode/encode round trip.
+      if (longEdge > 0 && longEdge <= MAX_IMAGE_EDGE) {
+        return uri;
+      }
+
+      const isLandscape = (width ?? 0) >= (height ?? 0);
+      const context = ImageManipulator.manipulate(uri).resize(
+        isLandscape ? { width: MAX_IMAGE_EDGE } : { height: MAX_IMAGE_EDGE }
+      );
+      const image = await context.renderAsync();
+      const result = await image.saveAsync({
+        format: SaveFormat.JPEG,
+        compress: 0.85,
+      });
+      return result.uri;
+    } catch (error) {
+      console.warn('Image downscale failed, using original:', error);
+      return uri;
+    }
+  };
+
   // Pick Image from Gallery
   const pickImage = async () => {
     const hasPermission = await requestPermissions();
@@ -130,12 +170,13 @@ const MemeGeneratorScreen = () => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
-        aspect: [1, 1],
-        quality: 1,
+        // `aspect` only applies when allowsEditing is true, so it was inert here.
+        quality: 0.85,
       });
 
       if (!result.canceled && result.assets[0]) {
-        setSelectedImage(result.assets[0].uri);
+        const asset = result.assets[0];
+        setSelectedImage(await downscaleImage(asset.uri, asset.width, asset.height));
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to pick image');
@@ -150,12 +191,13 @@ const MemeGeneratorScreen = () => {
     try {
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: false,
-        aspect: [1, 1],
-        quality: 1,
+        // `aspect` only applies when allowsEditing is true, so it was inert here.
+        quality: 0.85,
       });
 
       if (!result.canceled && result.assets[0]) {
-        setSelectedImage(result.assets[0].uri);
+        const asset = result.assets[0];
+        setSelectedImage(await downscaleImage(asset.uri, asset.width, asset.height));
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to take photo');
