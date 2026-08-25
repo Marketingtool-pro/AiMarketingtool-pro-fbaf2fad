@@ -5,18 +5,33 @@
  * optimization" recommendation, which lists three separate findings:
  *
  *   1. "Optimization isn't enabled"
- *        `minifyEnabled` (already on via expo-build-properties'
- *        enableProguardInReleaseBuilds) only turns on R8's *shrinking* +
- *        obfuscation in COMPATIBILITY mode, where R8 deliberately emulates
- *        ProGuard and skips its own optimizations. Play reads the R8 marker
- *        embedded in the DEX and reports compat mode as "not optimized".
- *        R8 full mode — `android.enableR8.fullMode=true` — is what actually
- *        enables inlining, class merging, and devirtualization.
+ *        The cause is the DEFAULT PROGUARD FILE, not any gradle flag. The Expo
+ *        SDK 57 prebuild template (expo-template-bare-minimum@57.0.18,
+ *        android/app/build.gradle) ships:
+ *
+ *          proguardFiles getDefaultProguardFile("proguard-android.txt"), …
+ *
+ *        That is the NON-optimized variant, and it carries `-dontoptimize`,
+ *        which switches R8's optimization passes off wholesale — regardless of
+ *        full mode. Google's R8 configuration guidance is explicit: the app
+ *        module "MUST use the optimized default file
+ *        (proguard-android-optimize.txt)". This plugin rewrites that line.
+ *
+ *        Note what is NOT the cause: `minifyEnabled` and `shrinkResources`
+ *        were both already on (added 2026-08-11, nine days before 1.5.12 was
+ *        cut), and R8 full mode has been the DEFAULT since AGP 8.0 with
+ *        nothing in this repo or the template disabling it. An earlier version
+ *        of this plugin blamed full mode; that was wrong, and setting
+ *        `android.enableR8.fullMode=true` is a no-op here. The property is
+ *        still written because Google's guidance is to ensure `=false` is not
+ *        present, and stating `true` guards against a future template or
+ *        library setting it — but it is not what fixes this finding.
  *
  *   2. "Optimized resource shrinking isn't enabled"
  *        `shrinkResources` (already on) uses the legacy resource shrinker,
  *        which only blanks unused resources' contents and leaves their table
- *        entries. `android.r8.optimizedResourceShrinking=true` (AGP 8.7+)
+ *        entries. `android.r8.optimizedResourceShrinking=true` (needed for AGP
+ *        above 8.6 and below 9.0, where it is not yet the default)
  *        removes the entries outright and shrinks the resource table itself.
  *
  *   3. "Upgrade your Android Gradle plugin to version 9.0 or higher"
@@ -37,7 +52,8 @@
  * rules that only matter once full mode is on.
  */
 
-const { withGradleProperties, withDangerousMod } = require('expo/config-plugins');
+const { withGradleProperties, withDangerousMod, withAppBuildGradle } =
+  require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -46,15 +62,17 @@ const PROPERTIES = [
     key: 'android.enableR8.fullMode',
     value: 'true',
     comment:
-      'Play Console "Optimization isn\'t enabled": minifyEnabled alone runs R8 in ' +
-      'ProGuard-compatibility mode, which skips R8\'s own optimization passes.',
+      'Default since AGP 8.0; written explicitly so a future template or library ' +
+      'cannot silently set it to false. NOT the fix for "Optimization isn\'t ' +
+      'enabled" -- that is the proguard-android-optimize.txt swap below.',
   },
   {
     key: 'android.r8.optimizedResourceShrinking',
     value: 'true',
     comment:
       'Play Console "Optimized resource shrinking isn\'t enabled": removes unused ' +
-      'entries from the resource table instead of only blanking their contents.',
+      'entries from the resource table instead of only blanking their contents. ' +
+      'Required explicitly for AGP above 8.6 and below 9.0.',
   },
 ];
 
@@ -90,13 +108,54 @@ const FULL_MODE_KEEPS = `
 -keep class com.bumptech.glide.** { *; }
 -dontwarn com.bumptech.glide.**
 
-# Full mode's class merging can break AndroidX' reflective Fragment/Activity
-# instantiation when a class is only ever referenced from a manifest string.
--keep class * extends android.app.Activity
--keep class * extends android.app.Service
--keep class * extends android.content.BroadcastReceiver
--keep class * extends android.content.ContentProvider
+# NOTE: no  -keep class * extends android.app.Activity  (or Service /
+# BroadcastReceiver / ContentProvider) here on purpose. AAPT2 and R8 already
+# keep every component declared in AndroidManifest.xml or referenced from XML
+# layouts, and Google's R8 guidance lists those manual rules as a mistake to
+# delete: they match components in every dependency too, pinning classes R8
+# would otherwise shrink or merge -- working against the very finding this
+# plugin exists to fix.
 `;
+
+// Swap the non-optimized default ProGuard file for the optimized one.
+//
+// getDefaultProguardFile("proguard-android.txt") pulls in `-dontoptimize`,
+// which disables R8's optimization passes entirely. The "-optimize" variant is
+// the same file without that directive. This is the change that actually
+// answers Play Console's "Optimization isn't enabled".
+//
+// The template line is regenerated by every prebuild, so this has to be a mod
+// rather than a one-time edit.
+const NON_OPTIMIZED = 'getDefaultProguardFile("proguard-android.txt")';
+const OPTIMIZED = 'getDefaultProguardFile("proguard-android-optimize.txt")';
+
+function withOptimizedProguardFile(config) {
+  return withAppBuildGradle(config, (config) => {
+    const contents = config.modResults.contents;
+
+    if (contents.includes(OPTIMIZED)) {
+      return config;
+    }
+    if (!contents.includes(NON_OPTIMIZED)) {
+      // Fail loudly rather than silently shipping an unoptimized build: if the
+      // template changes this line, the swap needs revisiting, and a quiet
+      // no-op here would look exactly like success.
+      console.warn(
+        '[withR8Optimization] Could not find ' +
+          NON_OPTIMIZED +
+          ' in app/build.gradle. R8 optimization may still be disabled by ' +
+          '-dontoptimize; check the proguardFiles line in the prebuild template.'
+      );
+      return config;
+    }
+
+    config.modResults.contents = contents.replace(NON_OPTIMIZED, OPTIMIZED);
+    console.log(
+      '[withR8Optimization] proguard-android.txt -> proguard-android-optimize.txt'
+    );
+    return config;
+  });
+}
 
 function withR8GradleProperties(config) {
   return withGradleProperties(config, (config) => {
@@ -143,6 +202,7 @@ function withR8FullModeKeeps(config) {
 }
 
 module.exports = function withR8Optimization(config) {
+  config = withOptimizedProguardFile(config);
   config = withR8GradleProperties(config);
   config = withR8FullModeKeeps(config);
   return config;
