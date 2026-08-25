@@ -322,6 +322,19 @@ const ToolResultScreen = () => {
               </View>
             )}
 
+            {/* The web app is the main product; the phone is a companion, so
+                EVERY tool result must offer the full workspace — not just the
+                long ones. Results over LARGE_OUTPUT_THRESHOLD keep the richer
+                policy-mandated "View Full on Desktop" banner above; this is the
+                compact equivalent for everything shorter, which previously
+                surfaced no web-app entry at all. */}
+            {!isLargeOutput && (
+              <TouchableOpacity style={styles.desktopActionBtn} onPress={handleViewOnDesktop}>
+                <Feather name="external-link" size={16} color={Colors.white} />
+                <Text style={styles.desktopActionText}>Open in Web App</Text>
+              </TouchableOpacity>
+            )}
+
             {/* Action Buttons */}
             <View style={styles.outputActions}>
               <TouchableOpacity
