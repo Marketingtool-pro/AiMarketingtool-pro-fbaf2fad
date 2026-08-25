@@ -17,7 +17,22 @@ jobs:
       # `write` so Claude can reply on the issue / pull request that tagged it.
       pull-requests: write
       issues: write
-      id-token: write
+      # NO id-token: write.
+      #
+      # Every run of this workflow has ended in startup_failure ("This run likely
+      # failed because of a workflow file issue") -- 30 for 30, all triggered by
+      # issue_comment from snyk-io[bot]. claude-code-review.yml has the same
+      # permissions block and the same two actions and passes, because it runs on
+      # pull_request rather than on a GitHub App's comment.
+      #
+      # When a GitHub App installation triggers a workflow, GITHUB_TOKEN's
+      # permissions are intersected with that App's own grants, and OIDC token
+      # minting is not available -- so requesting id-token: write makes the run
+      # unsatisfiable and GitHub rejects it before any job starts.
+      #
+      # Nothing here needs it: the step below passes github_token explicitly
+      # precisely so the action SKIPS the OIDC app-token exchange (see the
+      # comment there). The permission was requested and never used.
       actions: read # Required for Claude to read CI results on PRs
     steps:
       - name: Checkout repository
