@@ -83,7 +83,7 @@
     "@shopify/react-native-skia": "2.6.2",
     "@tamagui/native": "^2.7.7",
     "axios": "^1.18.0",
-    "convex": "^1.44.0",
+    "convex": "^1.45.0",
     "expo": "^57.0.15",
     "expo-apple-authentication": "~57.0.1",
     "expo-application": "~57.0.2",
