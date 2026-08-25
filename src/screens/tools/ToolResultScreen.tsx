@@ -268,6 +268,18 @@ const ToolResultScreen = () => {
                 Rendered as formatted rich text (MarkdownText), not raw markdown source. */}
             {isLargeOutput && !showFullContent ? (
               <>
+                {/* MOBILE_TOOLS_POLICY.md: "Clearly state when a preview is
+                    shown." The collapsed view renders maxChars={1200} of a
+                    longer result, so say so in the UI. Without this line the
+                    only signal was the "Show full result" button, which does
+                    not tell the user the tool finished or that what they are
+                    reading is partial. */}
+                <View style={styles.previewNotice}>
+                  <Feather name="check-circle" size={14} color={Colors.success} />
+                  <Text style={styles.previewNoticeText}>
+                    Tool completed. Showing a preview for readability — tap below for the full result.
+                  </Text>
+                </View>
                 <MarkdownText content={output.content} maxChars={1200} />
                 <TouchableOpacity
                   style={styles.showMoreBtn}
@@ -560,6 +572,18 @@ const styles = StyleSheet.create({
     color: Colors.white,
     lineHeight: 26,
     marginBottom: Spacing.lg,
+  },
+  previewNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginBottom: Spacing.sm,
+  },
+  previewNoticeText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+    color: Colors.textSecondary,
   },
   showMoreBtn: {
     flexDirection: 'row',
