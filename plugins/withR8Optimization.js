@@ -186,15 +186,35 @@ function withR8FullModeKeeps(config) {
         'app',
         'proguard-rules.pro'
       );
-      if (!fs.existsSync(proguardFile)) {
-        console.warn(
-          '[withR8Optimization] app/proguard-rules.pro not found; skipping full-mode keeps.'
-        );
-        return config;
+      // Read first and react to the error, rather than existsSync() then
+      // readFileSync(). Those are two syscalls with a gap between them in which
+      // the file can vanish or be swapped -- the file-system race CodeQL flags.
+      // The read is authoritative because it IS the operation being guarded.
+      let contents;
+      try {
+        contents = fs.readFileSync(proguardFile, 'utf8');
+      } catch (error) {
+        if (error.code === 'ENOENT') {
+          console.warn(
+            '[withR8Optimization] app/proguard-rules.pro not found; skipping full-mode keeps.'
+          );
+          return config;
+        }
+        throw error;
       }
-      const contents = fs.readFileSync(proguardFile, 'utf8');
+
+      // Idempotence: the mod can run again on a prebuild that kept the file.
       if (contents.includes('withR8Optimization.js')) return config;
-      fs.writeFileSync(proguardFile, `${contents.trimEnd()}\n${FULL_MODE_KEEPS}`);
+
+      try {
+        fs.writeFileSync(proguardFile, `${contents.trimEnd()}\n${FULL_MODE_KEEPS}`);
+      } catch (error) {
+        // Failing loudly beats shipping a release build whose reflective
+        // consumers were silently left without keep rules under R8 full mode.
+        throw new Error(
+          `[withR8Optimization] could not write ${proguardFile}: ${error.message}`
+        );
+      }
       console.log('[withR8Optimization] Appended R8 full-mode keep rules.');
       return config;
     },

@@ -1,0 +1,94 @@
+# Publish docs/wiki/** to the repository wiki.
+#
+# Why this exists: the wiki cannot be updated from a developer machine here.
+# The org requires SSH certificate authentication, which refuses a push over
+# SSH *and* over HTTPS-with-a-PAT (403), and GitHub has no REST API for wiki
+# content — the wiki is only writable over git. That leaves exactly one place
+# with credentials that might be accepted: a GitHub Actions runner, using the
+# workflow's own GITHUB_TOKEN.
+#
+# It runs on PUSH rather than workflow_dispatch on purpose: a dispatch-only
+# workflow has to exist on the default branch before it can be triggered at
+# all, whereas a push trigger fires from whatever branch it lands on. That
+# makes this usable immediately, without merging first.
+#
+# Contains no `uses:` lines. The org Actions policy only permits actions from
+# a Marketingtool-pro-owned repository, so every other workflow that
+# references actions/checkout dies at startup_failure. This does the checkout
+# with plain git, the same approach as android-deploy-selfcontained.yml.
+name: Publish wiki
+
+on:
+  push:
+    paths:
+      - 'docs/wiki/**'
+      - '.github/workflows/wiki-publish.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: wiki-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # the wiki lives under the repository's contents scope
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch this commit
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch -q --depth=1 origin "${GITHUB_SHA}"
+          git checkout -q FETCH_HEAD
+          echo "source pages:"
+          ls -la docs/wiki/
+
+      - name: Push docs/wiki/** to the wiki
+        run: |
+          set -euo pipefail
+          WIKI="https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.wiki.git"
+
+          # The wiki repo exists only after the first page has been created in
+          # the UI. It has been, so a clone is expected to succeed; fail loudly
+          # rather than silently doing nothing if that ever stops being true.
+          git clone -q "$WIKI" wiki
+
+          cp docs/wiki/*.md wiki/
+          cd wiki
+
+          if git diff --quiet; then
+            echo "Wiki already matches docs/wiki — nothing to publish."
+            exit 0
+          fi
+
+          echo "changes to publish:"
+          git --no-pager diff --stat
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -q -m "Publish wiki from docs/wiki (${GITHUB_SHA:0:7})"
+          git push -q origin HEAD:master
+
+          echo "Published. Wiki now contains:"
+          git ls-tree --name-only HEAD
+
+      - name: Verify the wiki renders as markdown
+        run: |
+          set -euo pipefail
+          cd wiki
+          # The recurring failure mode is an HTML export pasted into a .md page:
+          # GitHub strips the markup and leaves the stylesheet as visible text.
+          # Catch that here rather than discovering it in a browser again.
+          if grep -qiE '<!DOCTYPE|<style|p\.p1 \{' Home.md; then
+            echo "::error::Home.md contains raw HTML/CSS — it will not render as markdown"
+            exit 1
+          fi
+          echo "OK: Home.md is markdown"
+          echo "  headings   : $(grep -c '^#' Home.md)"
+          echo "  table rows : $(grep -c '^|' Home.md)"
+          echo "  bytes      : $(wc -c < Home.md)"
