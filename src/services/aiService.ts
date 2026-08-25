@@ -4,7 +4,7 @@
 
 import { functions, account } from './appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
-import { getString } from './firebaseRemoteConfig';
+import { isWindmillConfigured, runTool, readToolResult } from './windmillService';
 
 const TOOL_EXECUTOR_FUNCTION_ID = 'tool-executor';
 const MIN_PARSEABLE_RESPONSE_LENGTH = 20;
@@ -100,12 +100,82 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
     `IMPORTANT: Write the ENTIRE response in ${outputLanguage}. Do not use any other language under any circumstances.`,
   ].join('\n');
 
-  // Primary: Appwrite Function (tool-executor → Windmill → Claude)
+  // PRIMARY: the same Windmill script the web app calls, with the same payload.
+  //
+  // One product, one backend. app.marketingtool.pro's tool-detail page runs a tool
+  // as runTool({ toolSlug, toolName, mainInput, additionalInputs, userId }) against
+  // f/tools/ai-generate, and the per-tool instructions live in THAT script keyed by
+  // toolSlug. Going through the Appwrite tool-executor instead meant the phone
+  // (a) paid an extra serverless cold start on every run, and (b) shipped its own
+  // device-built prompt, overriding the real server template — which is why a phone
+  // result read as generic copy while the web result was on-task.
+  //
+  // Falls through to the Appwrite path below when Windmill is not configured or the
+  // call fails, so this can never leave the phone with no way to run a tool.
+  if (isWindmillConfigured()) {
+    try {
+      if (__DEV__) console.log(`[AI] Windmill (web parity) for: ${toolSlug}`);
+
+      // Web sends the raw mainInput and everything else as additionalInputs.
+      const { mainInput, ...additionalInputs } = inputs;
+
+      const raw = await runTool({
+        toolSlug,
+        toolName,
+        toolDescription,
+        toolBadge: toolCategory,
+        mainInput: String(mainInput ?? ''),
+        additionalInputs: {
+          ...additionalInputs,
+          tone: tone || 'professional',
+          language: language || 'English',
+        },
+        userId: userId || 'anonymous',
+      });
+
+      const text = readToolResult(raw);
+      if (text && text.trim().length >= MIN_PARSEABLE_RESPONSE_LENGTH) {
+        // Web renders ONE result, so this returns one.
+        //
+        // Deliberately NOT routed through splitOutputs(): its separator list
+        // includes '---' and '###', which are markdown syntax, not variation
+        // markers. A single well-formed markdown answer (headings, horizontal
+        // rules) gets sliced at those boundaries into N fake "variations" — so
+        // one answer is presented as "3 outputs generated" across three Option
+        // tabs, each holding a fragment of the same reply.
+        //
+        // Only an explicit ---VARIATION--- marker means real variations here.
+        const parts = text
+          .split('---VARIATION---')
+          .map((p) => p.trim())
+          .filter((p) => p.length >= MIN_SPLIT_PART_LENGTH);
+        return {
+          success: true,
+          outputs: parts.length > 1 ? parts.slice(0, outputCount) : [text.trim()],
+        };
+      }
+      if (__DEV__) console.log('[AI] Windmill returned nothing usable; falling back');
+    } catch (error: any) {
+      if (__DEV__) console.log(`[AI] Windmill error, falling back: ${error.message}`);
+    }
+  }
+
+  // FALLBACK: Appwrite Function (tool-executor → Windmill)
   try {
     if (__DEV__) console.log(`[AI] Executing tool-executor for: ${toolSlug}`);
 
-    // Read model from Remote Config (falls back to 'gemini-2.5-flash-lite' if not fetched)
-    const geminiModel = getString('gemini_model');
+    // Model is deliberately NOT sent any more.
+    //
+    // The web app's Windmill client (assets/windmill-*.js on app.marketingtool.pro)
+    // posts { toolSlug, toolName, toolDescription, toolBadge, input, additionalInputs,
+    // userId } and NO `model` field — Windmill picks the model server-side. The phone
+    // was overriding that with Remote Config `gemini_model`
+    // (default 'gemini-3.1-flash-lite-preview'), i.e. asking for the weakest tier while
+    // the web got whatever the engine chose. Same tool, same input, thinner answer.
+    //
+    // MOBILE_TOOLS_POLICY.md is explicit that "AI models used" is NOT changed on
+    // mobile, so sending it at all violated the policy. Let the backend decide, exactly
+    // as it does for web.
 
     // Sync execution (false) — same reasoning as ChatScreen: async + getExecution
     // polling needs the executions.read scope, which phone-OTP (Firebase) users
@@ -129,7 +199,6 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         tier: tier || 'free',
         simulation: simulation ?? false, // mobile policy: REAL execution for all tiers (quota-limited, never demo/sample)
         options: { tone: tone || 'professional', language: language || 'English' },
-        model: geminiModel,
       }),
       false,  // sync — result arrives in this response, no polling/scope needed
       '/',    // path
