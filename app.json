@@ -3,7 +3,7 @@
     "name": "MarketingTool",
     "slug": "marketingtool",
     "owner": "aimarketintool-2-2-2-2",
-    "version": "1.5.13",
+    "version": "1.5.14",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
