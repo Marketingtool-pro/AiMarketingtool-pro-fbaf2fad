@@ -1,1 +1,0 @@
-sed -i.bak 's/statusBarColor = Color.TRANSPARENT/if (Build.VERSION.SDK_INT < 35) { statusBarColor = Color.TRANSPARENT/g' node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt
