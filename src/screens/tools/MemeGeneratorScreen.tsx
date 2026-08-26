@@ -226,7 +226,7 @@ const MemeGeneratorScreen = () => {
       const uri = await viewShotRef.current?.capture?.();
       if (uri) {
         // Save to camera roll
-        const asset = await MediaLibrary.saveToLibraryAsync(uri);
+        await MediaLibrary.saveToLibraryAsync(uri);
         Alert.alert('Success! 🎉', 'Meme saved to your gallery', [{ text: 'OK' }]);
       }
     } catch (error) {
