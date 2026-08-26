@@ -356,7 +356,11 @@ def main(
     appwriteJwt: str = ""
 ):
     """Router — routes toolSlug to correct engine script."""
-    engine_type = TOOL_ROUTING.get(toolSlug, "creative")
+    if toolSlug in TOOL_ROUTING:
+        engine_type = TOOL_ROUTING[toolSlug]
+    else:
+        print(f"[ai-generate] Unrecognised toolSlug '{toolSlug}', falling back to 'creative'.")
+        engine_type = "creative"
     script = ENGINE_SCRIPTS.get(engine_type, "f/tools/engine-creative")
 
     return wmill.run_script(script, args={
