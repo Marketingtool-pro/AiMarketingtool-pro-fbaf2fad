@@ -180,7 +180,7 @@ function withR8GradleProperties(config) {
 function withR8FullModeKeeps(config) {
   return withDangerousMod(config, [
     'android',
-    async (config) => {
+    (config) => {
       const proguardFile = path.join(
         config.modRequest.platformProjectRoot,
         'app',
