@@ -12,40 +12,34 @@ on:
 
 jobs:
   claude-review:
-    # Dependabot pull requests run with the Dependabot secret store, not the
-    # repository one, so CLAUDE_CODE_OAUTH_TOKEN arrives empty and the action
-    # fails with an auth error (seen on the actions/checkout 6.0.2 -> 7.0.1 and
-    # claude-code-action 1.0.118 -> 1.0.199 bumps). These are the bot's own
-    # version bumps, so skip them rather than review them without credentials.
-    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    # Optional: Filter by PR author
+    # if: |
+    #   github.event.pull_request.user.login == 'external-contributor' ||
+    #   github.event.pull_request.user.login == 'new-developer' ||
+    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
 
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # `write` so the action can post the review back onto the pull request.
-      pull-requests: write
-      issues: write
+      pull-requests: read
+      issues: read
       id-token: write
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@24dcd50c0568f0fc9e9211213a4fd2d9eb15c4e0  # v1.0.200
+        uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # Without an explicit token the action tries to mint a Claude GitHub
-          # App token by exchanging this workflow's OIDC token, which fails here
-          # with "App token exchange failed: 401 Unauthorized - Invalid OIDC
-          # token". Passing GITHUB_TOKEN skips that exchange entirely.
-          github_token: ${{ secrets.GITHUB_TOKEN }}
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
-          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
+          prompt: '/code-review:code-review --comment ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
+          claude_args: '--allowedTools "mcp__github_inline_comment__create_inline_comment"'
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
 
