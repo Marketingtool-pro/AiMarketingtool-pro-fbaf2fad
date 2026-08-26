@@ -3,53 +3,38 @@ name: Claude Code
 on:
   issue_comment:
     types: [created]
+  pull_request_review_comment:
+    types: [created]
   issues:
     types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
 
 jobs:
   claude:
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # `write` so Claude can reply on the issue / pull request that tagged it.
-      pull-requests: write
-      issues: write
-      # NO id-token: write.
-      #
-      # Every run of this workflow has ended in startup_failure ("This run likely
-      # failed because of a workflow file issue") -- 30 for 30, all triggered by
-      # issue_comment from snyk-io[bot]. claude-code-review.yml has the same
-      # permissions block and the same two actions and passes, because it runs on
-      # pull_request rather than on a GitHub App's comment.
-      #
-      # When a GitHub App installation triggers a workflow, GITHUB_TOKEN's
-      # permissions are intersected with that App's own grants, and OIDC token
-      # minting is not available -- so requesting id-token: write makes the run
-      # unsatisfiable and GitHub rejects it before any job starts.
-      #
-      # Nothing here needs it: the step below passes github_token explicitly
-      # precisely so the action SKIPS the OIDC app-token exchange (see the
-      # comment there). The permission was requested and never used.
+      pull-requests: read
+      issues: read
+      id-token: write
       actions: read # Required for Claude to read CI results on PRs
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Run Claude Code
         id: claude
-        uses: anthropics/claude-code-action@24dcd50c0568f0fc9e9211213a4fd2d9eb15c4e0  # v1.0.200
+        uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # Without an explicit token the action tries to mint a Claude GitHub
-          # App token by exchanging this workflow's OIDC token, which fails here
-          # with "App token exchange failed: 401 Unauthorized - Invalid OIDC
-          # token". Passing GITHUB_TOKEN skips that exchange entirely.
-          github_token: ${{ secrets.GITHUB_TOKEN }}
 
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
