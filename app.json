@@ -64,6 +64,25 @@
         "USE_BIOMETRIC",
         "VIBRATE",
         "com.google.android.gms.permission.AD_ID"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "marketingtool.pro", "pathPrefix": "/" },
+            { "scheme": "https", "host": "www.marketingtool.pro", "pathPrefix": "/" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "app.marketingtool.pro", "pathPrefix": "/" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "web": {
@@ -137,6 +156,7 @@
       "./plugins/withRNEdgeToEdgeFix.js",
       "./plugins/withFirebaseDeferredInit.js",
       "./plugins/withNotificationColorFix.js",
+      "./plugins/withoutExpoDevScheme.js",
       [
         "expo-splash-screen",
         {
