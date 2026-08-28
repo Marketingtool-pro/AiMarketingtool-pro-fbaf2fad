@@ -134,19 +134,24 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
       return { success: false, error: 'Verification service temporarily blocked this request. Please try again shortly.' };
     }
 
-    // App Check is ENFORCED on identitytoolkit.googleapis.com for this project
-    // (verified against the App Check services API). When Play Integrity cannot
-    // vouch for the install — a sideloaded/EAS APK, a build signed with a key
-    // Play doesn't know, or a device that fails MEETS_DEVICE_INTEGRITY —
-    // Identity Toolkit answers 401 "Firebase App Check token is invalid", and
-    // the Android SDK reports it as `auth/unknown` wrapping the text
-    // "API key expired. Please renew the API key."
+    // App Check on identitytoolkit.googleapis.com is UNENFORCED. Read live from
+    // the App Check services API on 2026-08-28:
     //
-    // That text is wrong and has cost real debugging time: the key
-    // (AIza…DCOnQA, uid 8b5359b0-…) has no expireTime, no deleteTime, allows
-    // identitytoolkit, and has no Android package restriction. Nothing about it
-    // needs renewing. Say what actually happened instead of forwarding Google's
-    // misleading string to the user.
+    //   name:            projects/911925145433/services/identitytoolkit.googleapis.com
+    //   enforcementMode: UNENFORCED
+    //   updateTime:      2026-08-25T03:40:56.296719Z
+    //
+    // This block previously asserted the opposite ("App Check is ENFORCED") and
+    // told every user hitting auth/unknown to reinstall from Google Play. Since
+    // 2026-08-25 that advice has been wrong: App Check is not rejecting anything,
+    // so reinstalling changes nothing and sends people down a dead end.
+    //
+    // The "API key expired. Please renew the API key." text the SDK wraps is
+    // still not about the key — that key has no expireTime, no deleteTime,
+    // allows identitytoolkit, and carries no Android package restriction. With
+    // App Check off, an auth/unknown here is Android app verification failing
+    // (Play Integrity attestation, or the reCAPTCHA fallback), not App Check and
+    // not the key. Say that, and do not send the user to reinstall.
     const raw = `${error.code ?? ''} ${error.message ?? ''}`;
     if (
       error.code === 'auth/unknown' ||
@@ -156,7 +161,7 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
       return {
         success: false,
         error:
-          'This install could not be verified for phone sign-in. Install the app from Google Play (App Check/Play Integrity rejects sideloaded builds), then try again.',
+          'This device could not be verified for phone sign-in. Make sure Google Play services is up to date and you have a working connection, then try again.',
       };
     }
 
@@ -199,9 +204,10 @@ export async function verifyPhoneOTP(code: string): Promise<{
       return { success: false, error: 'OTP expired. Please request a new one.' };
     }
 
-    // Same App Check masquerade as in sendPhoneOTP — see the note there. The
-    // enforced App Check on identitytoolkit can reject the credential exchange
-    // too, and it also arrives as auth/unknown "API key expired".
+    // Same masquerade as in sendPhoneOTP — see the note there. App Check on
+    // identitytoolkit is UNENFORCED (read live 2026-08-28, unchanged since
+    // 2026-08-25T03:40:56Z), so this arrives from device verification failing
+    // during the credential exchange, not from App Check and not from the key.
     const rawVerify = `${error.code ?? ''} ${error.message ?? ''}`;
     if (
       error.code === 'auth/unknown' ||
@@ -211,7 +217,7 @@ export async function verifyPhoneOTP(code: string): Promise<{
       return {
         success: false,
         error:
-          'This install could not be verified for phone sign-in. Install the app from Google Play (App Check/Play Integrity rejects sideloaded builds), then try again.',
+          'This device could not be verified for phone sign-in. Make sure Google Play services is up to date and you have a working connection, then try again.',
       };
     }
 
