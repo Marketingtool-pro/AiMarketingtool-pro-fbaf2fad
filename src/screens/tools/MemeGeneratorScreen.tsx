@@ -211,9 +211,30 @@ const MemeGeneratorScreen = () => {
   };
 
   // Select Template
-  const selectTemplate = (template: typeof MEME_TEMPLATES[0]) => {
-    setSelectedImage(template.url);
+  // Templates are remote URLs. Handing one straight to the <Image> inside
+  // ViewShot made React Native's Fresco pipeline fetch and decode it, which is
+  // what Play Console reports under "bitmap image optimization":
+  //
+  //   Downloaded in com.facebook.imagepipeline.producers
+  //                 .HttpUrlConnectionNetworkFetcher.fetchSync
+  //
+  // Routing through downscaleImage() instead means expo-image-manipulator does
+  // the fetch natively and hands back a LOCAL file, capped at MAX_IMAGE_EDGE.
+  // The canvas then renders a local file, so nothing is downloaded by <Image>
+  // and the bitmap is bounded. The canvas keeps RN's <Image> because
+  // expo-image's custom view does not snapshot reliably under ViewShot.
+  const selectTemplate = async (template: typeof MEME_TEMPLATES[0]) => {
     setShowTemplates(false);
+    setIsLoading(true);
+    try {
+      setSelectedImage(await downscaleImage(template.url));
+    } catch {
+      // downscaleImage already falls back to the original URI on failure;
+      // if even that throws, use the URL so the flow is never dead-ended.
+      setSelectedImage(template.url);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Save Meme
