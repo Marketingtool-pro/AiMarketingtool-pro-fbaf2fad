@@ -20,7 +20,7 @@ env:
   # EVERY com.facebook.react:react-android request, which broke every Android
   # build on a JSI mismatch. The plugin now refuses to substitute a mismatched
   # AAR, so publishing 0.86.2-e2e.1 from here is what re-enables the fix.
-  REACT_VERSION: '0.86.2'
+  REACT_VERSION: '0.86.3'
 
 jobs:
   build-patched-aar:
