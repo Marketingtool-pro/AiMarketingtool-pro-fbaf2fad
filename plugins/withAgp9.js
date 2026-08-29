@@ -33,7 +33,7 @@ const path = require('path');
 
 // Latest stable AGP 9 and a Gradle 9 that satisfies it.
 const AGP_VERSION = '9.0.0';
-const GRADLE_VERSION = '9.0.0';
+const GRADLE_VERSION = '9.1.0';
 
 const AGP_CLASSPATH_RE = /com\.android\.tools\.build:gradle:[0-9]+\.[0-9]+\.[0-9]+/g;
 const DISTRIBUTION_RE = /gradle-[0-9]+(\.[0-9]+)*(-[a-z0-9]+)?-(bin|all)\.zip/;
