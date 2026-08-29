@@ -44,7 +44,7 @@ const path = require('path');
 const https = require('https');
 const crypto = require('crypto');
 
-const PATCHED_VERSION = '0.86.2-e2e.1';
+const PATCHED_VERSION = '0.86.3-e2e.1';
 const PATCHED_AAR_URL =
   'https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/releases/download/' +
   `react-android-${PATCHED_VERSION}/react-android-${PATCHED_VERSION}.aar`;
@@ -63,8 +63,8 @@ const GRADLE_SENTINEL = '// withRNEdgeToEdgeFix:allprojects-block';
 // This drifted once: the 0.86.2-e2e.1 AAR was published 2026-08-25 but this
 // file still pinned 0.85.3-e2e.2, so every build after the RN 0.86.2 upgrade
 // (2026-08-20) shipped 0.85.3 native under 0.86.2 JS.
-const PATCHED_AAR_SHA256 = 'a924d541d73da1d18a987a82e37cafe0d10deb5ffe944aefc166fe992c106c47';
-const PATCHED_POM_SHA256 = '4b6d3d38ff91440b43a7c4041202a57a8f5b209f68cca825adcd0ee20ff28dc5';
+const PATCHED_AAR_SHA256 = 'b8d0248a29ae02f5624d83e35401447735e43a31505798970930294eaa7fbe9d';
+const PATCHED_POM_SHA256 = 'c641f585146d580157fa965cea117f626eea21f376acf9525a5d08d8bc73bd75';
 
 const LOCAL_AAR_SUBDIR = path.join(
   'local-aar', 'com', 'facebook', 'react', 'react-android', PATCHED_VERSION
