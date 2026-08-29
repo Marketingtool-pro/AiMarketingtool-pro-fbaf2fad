@@ -17,6 +17,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+// Template thumbnails are remote URLs — expo-image (Glide-backed on Android)
+// downsamples + caches them, which is what Play Console's "bitmap image
+// optimization" advice asks for. NOTE: the meme canvas below deliberately
+// keeps RN's <Image>; it lives inside ViewShot, and expo-image's custom view
+// does not reliably snapshot on Android.
+import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as MediaLibrary from 'expo-media-library';
@@ -355,7 +361,7 @@ const MemeGeneratorScreen = () => {
       style={styles.templateItem}
       onPress={() => selectTemplate(item)}
     >
-      <Image source={{ uri: item.url }} style={styles.templateImage} />
+      <ExpoImage source={{ uri: item.url }} style={styles.templateImage} />
       <Text style={styles.templateName} numberOfLines={1}>{item.name}</Text>
     </TouchableOpacity>
   );

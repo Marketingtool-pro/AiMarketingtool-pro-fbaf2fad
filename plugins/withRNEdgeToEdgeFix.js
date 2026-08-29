@@ -57,6 +57,12 @@ const GRADLE_SENTINEL = '// withRNEdgeToEdgeFix:allprojects-block';
 // react-android-0.86.2-e2e.1, computed from the published files.
 // Regenerate by re-running .github/workflows/patch-react-android.yml --
 // its "Publish asset checksums" step prints these three lines verbatim.
+//
+// MUST track package.json's react-native version. Substituting a react-android
+// whose version differs from the JS runtime pairs mismatched native/JS halves.
+// This drifted once: the 0.86.2-e2e.1 AAR was published 2026-08-25 but this
+// file still pinned 0.85.3-e2e.2, so every build after the RN 0.86.2 upgrade
+// (2026-08-20) shipped 0.85.3 native under 0.86.2 JS.
 const PATCHED_AAR_SHA256 = 'a924d541d73da1d18a987a82e37cafe0d10deb5ffe944aefc166fe992c106c47';
 const PATCHED_POM_SHA256 = '4b6d3d38ff91440b43a7c4041202a57a8f5b209f68cca825adcd0ee20ff28dc5';
 

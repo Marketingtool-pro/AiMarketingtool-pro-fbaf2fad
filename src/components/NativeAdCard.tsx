@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Platform, View, Text, Image, StyleSheet } from 'react-native';
+import { Platform, View, Text, StyleSheet } from 'react-native';
+// expo-image (Glide-backed on Android) downsamples and caches remote images.
+// Play Console flags plain RN <Image> network loads under "bitmap image
+// optimization" — excessive memory from manual download + full-size decode.
+import { Image } from 'expo-image';
 import { adUnit, adRequestOptions } from '../services/adsService';
 
 /**
