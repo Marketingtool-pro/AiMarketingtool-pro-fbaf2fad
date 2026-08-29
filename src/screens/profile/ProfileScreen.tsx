@@ -11,6 +11,12 @@ import {
   Linking,
   Platform,
 } from 'react-native';
+// Used ONLY for the remote avatar: expo-image (Glide-backed on Android)
+// downsamples + caches network images, which is what Play Console asks for
+// under "bitmap image optimization". The local hero asset below stays on RN's
+// <Image> — it is bundled (nothing to download) and uses resizeMode, which
+// expo-image ignores in favour of contentFit.
+import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -186,7 +192,7 @@ const ProfileScreen = () => {
               <View style={styles.avatarWrapper}>
                 <View style={styles.avatarContainer}>
                   {profile?.avatar ? (
-                    <Image source={{ uri: profile.avatar }} style={styles.avatarImg} />
+                    <ExpoImage source={{ uri: profile.avatar }} style={styles.avatarImg} />
                   ) : (
                     <Text style={styles.avatarText}>
                       {displayName !== 'User' ? displayName.charAt(0).toUpperCase() : 'U'}
