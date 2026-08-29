@@ -20,6 +20,10 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore, Tool, ToolInput } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { effectiveTier, generationsLimitForTier } from '../../services/billingService';
+// Generated images are remote URLs. expo-image (Glide-backed on Android)
+// downsamples + caches them; plain RN <Image> network loads are what Play
+// Console flags under "bitmap image optimization".
+import { Image as ExpoImage } from 'expo-image';
 import { imageService, GeneratedImage } from '../../services/imageService';
 import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
@@ -327,10 +331,10 @@ const ToolDetailScreen = () => {
               backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14,
               padding: 12, marginTop: 16,
             }}>
-              <Image
+              <ExpoImage
                 source={{ uri: generatedImage.image }}
                 style={{ width: '100%', aspectRatio: 1, borderRadius: 10 }}
-                resizeMode="cover"
+                contentFit="cover"
               />
               <Text style={{ color: Colors.textSecondary, fontSize: 13, marginTop: 10 }}>
                 {generatedImage.caption}

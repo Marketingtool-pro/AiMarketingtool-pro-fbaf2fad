@@ -12,12 +12,17 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
-  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+// Template thumbnails are remote URLs — expo-image (Glide-backed on Android)
+// downsamples + caches them, which is what Play Console's "bitmap image
+// optimization" advice asks for. NOTE: the meme canvas below deliberately
+// keeps RN's <Image>; it lives inside ViewShot, and expo-image's custom view
+// does not reliably snapshot on Android.
+import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
@@ -46,12 +51,26 @@ const MEME_TEMPLATES = [
   { id: '12', name: 'One Does Not Simply', url: 'https://i.imgflip.com/1bij.jpg', topText: '', bottomText: '' },
 ];
 
-// Font Styles - Harmonized for parity
+// Font Styles — bundled, so a meme renders identically on both platforms.
+//
+// These used to be Platform.select() over SYSTEM fonts: Impact/Arial-BoldMT/
+// Comic Sans MS/Times-Bold on iOS versus sans-serif-condensed/sans-serif/
+// casual/serif on Android. Those are different typefaces with different
+// metrics, so the same meme came out looking different depending on the
+// device, and text positioned to fit on one platform could overflow on the
+// other. The old "Harmonized for parity" comment was aspirational, not true.
+//
+// Now every option maps to a font file shipped in assets/fonts and loaded in
+// App.tsx, so there is exactly one rendering. All four are SIL OFL 1.1, which
+// permits redistribution inside the app.
+//
+//   Impact -> Anton        Arial -> Arimo (metric-compatible with Arial)
+//   Comic  -> Comic Neue   Times -> Tinos (metric-compatible with Times)
 const FONT_STYLES = [
-  { id: 'impact', name: 'Impact', fontFamily: Platform.select({ ios: 'Impact', android: 'sans-serif-condensed' }) || 'sans-serif' },
-  { id: 'arial', name: 'Arial', fontFamily: Platform.select({ ios: 'Arial-BoldMT', android: 'sans-serif' }) || 'sans-serif' },
-  { id: 'comic', name: 'Comic', fontFamily: Platform.select({ ios: 'Comic Sans MS', android: 'casual' }) || 'sans-serif' },
-  { id: 'times', name: 'Times', fontFamily: Platform.select({ ios: 'Times-Bold', android: 'serif' }) || 'serif' },
+  { id: 'impact', name: 'Impact', fontFamily: 'Anton-Regular' },
+  { id: 'arial', name: 'Arial', fontFamily: 'Arimo-Bold' },
+  { id: 'comic', name: 'Comic', fontFamily: 'ComicNeue-Bold' },
+  { id: 'times', name: 'Times', fontFamily: 'Tinos-Bold' },
 ];
 
 // Text Colors
@@ -300,7 +319,7 @@ const MemeGeneratorScreen = () => {
       style={styles.templateItem}
       onPress={() => selectTemplate(item)}
     >
-      <Image source={{ uri: item.url }} style={styles.templateImage} />
+      <ExpoImage source={{ uri: item.url }} style={styles.templateImage} />
       <Text style={styles.templateName} numberOfLines={1}>{item.name}</Text>
     </TouchableOpacity>
   );
