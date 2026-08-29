@@ -114,10 +114,24 @@ jobs:
             }
           '
 
+      # Capture THIS run's build id. The submit step used `--latest`, which
+      # submits whatever Android build is newest on the EAS account — not
+      # necessarily the one this run just produced. With more than one build in
+      # flight (parallel dispatches, a tag firing while a branch build runs)
+      # that silently ships an older binary. Pin the id instead.
       - name: Build production AAB
         run: |
           set -euo pipefail
-          eas build --platform android --profile production --non-interactive
+          eas build --platform android --profile production --non-interactive --json \
+            | tee eas-build.json
+          BUILD_ID="$(node -e '
+            const r = JSON.parse(require("fs").readFileSync("eas-build.json","utf8"));
+            const b = Array.isArray(r) ? r[0] : r;
+            if (!b || !b.id) { console.error("could not read build id from eas output"); process.exit(1); }
+            console.log(b.id);
+          ')"
+          echo "EAS_BUILD_ID=$BUILD_ID" >> "$GITHUB_ENV"
+          echo "built $BUILD_ID"
 
       # eas.json's serviceAccountKeyPath expects this file at the repo root. It is
       # gitignored (*service-account*.json), so it only exists as a secret. The
@@ -154,4 +168,11 @@ jobs:
           inputs.submit
         run: |
           set -euo pipefail
-          eas submit --platform android --profile production --latest --non-interactive
+          if [ -z "${EAS_BUILD_ID:-}" ]; then
+            echo "::error::EAS_BUILD_ID is empty — refusing to fall back to --latest," >&2
+            echo "::error::which can submit a different build than this run produced." >&2
+            exit 1
+          fi
+          echo "submitting build $EAS_BUILD_ID"
+          eas submit --platform android --profile production \
+            --id "$EAS_BUILD_ID" --non-interactive
