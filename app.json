@@ -70,10 +70,21 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "marketingtool.pro", "pathPrefix": "/" },
-            { "scheme": "https", "host": "www.marketingtool.pro", "pathPrefix": "/" }
+            {
+              "scheme": "https",
+              "host": "marketingtool.pro",
+              "pathPrefix": "/"
+            },
+            {
+              "scheme": "https",
+              "host": "www.marketingtool.pro",
+              "pathPrefix": "/"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -146,6 +157,7 @@
       ],
       "./plugins/withAndroid15EdgeToEdge.js",
       "./plugins/withRNEdgeToEdgeFix.js",
+      "./plugins/withAgp9.js",
       "./plugins/withFirebaseDeferredInit.js",
       "./plugins/withNotificationColorFix.js",
       "./plugins/withoutExpoDevScheme.js",
