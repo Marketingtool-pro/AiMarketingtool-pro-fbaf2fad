@@ -142,7 +142,7 @@
     "mvdan-sh": "^0.10.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-native": "0.86.2",
+    "react-native": "0.86.3",
     "react-native-appwrite": "0.34.0",
     "react-native-edge-to-edge": "^1.8.1",
     "react-native-gesture-handler": "~2.32.0",
@@ -235,9 +235,7 @@
       }
     },
     "install": {
-      "exclude": [
-        "react-native"
-      ]
+      "exclude": []
     }
   },
   "resolutions": {
@@ -255,7 +253,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "@expo/fingerprint": "~0.20.11",
-    "react-native": "0.86.2",
+    "react-native": "0.86.3",
     "expo-constants": "~57.0.16",
     "@expo/dom-webview": "~57.0.1",
     "@expo/log-box": "57.0.3",
