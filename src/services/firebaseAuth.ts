@@ -69,20 +69,10 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
       return { success: false, error: 'Firebase Auth not available on this platform' };
     }
 
-    // Never guess a dialling code. The picker ships 222 countries and always
-    // prepends the selected code, so a number arriving without '+' means the
-    // country was lost upstream. The old `+91` fallback silently routed every
-    // such number to India, so a non-Indian user's OTP went to a wrong number
-    // and they simply never received a code. authStore guards this too; this is
-    // the second line of defence for any other caller.
     const cleaned = phoneNumber.replace(/\D/g, '');
-    if (!phoneNumber.trim().startsWith('+')) {
-      return {
-        success: false,
-        error: 'Please select your country code and re-enter your number.',
-      };
-    }
-    const normalizedPhone = `+${cleaned}`;
+    const normalizedPhone = phoneNumber.startsWith('+')
+      ? `+${cleaned}`
+      : `+91${cleaned}`;
 
     // Check app-side rate limit before hitting Firebase
     const rateLimitError = checkRateLimit(normalizedPhone);
@@ -134,34 +124,26 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
       return { success: false, error: 'Verification service temporarily blocked this request. Please try again shortly.' };
     }
 
-    // App Check on identitytoolkit.googleapis.com is UNENFORCED. Read live from
-    // the App Check services API on 2026-08-28:
+    // auth/unknown wrapping "API key expired" / "API key not valid".
     //
-    //   name:            projects/911925145433/services/identitytoolkit.googleapis.com
-    //   enforcementMode: UNENFORCED
-    //   updateTime:      2026-08-25T03:40:56.296719Z
+    // The Android Firebase API key was recreated on 2026-07-14 (commit
+    // feecaf5aa6) and google-services.json was updated in the same change, so
+    // versionCode >= 1000 ships the current key. Any build produced BEFORE that
+    // still carries the previous key, and Google reports a superseded key as
+    // expired -- surfaced here as auth/unknown, which had no branch and so fell
+    // through to the raw SDK text:
     //
-    // This block previously asserted the opposite ("App Check is ENFORCED") and
-    // told every user hitting auth/unknown to reinstall from Google Play. Since
-    // 2026-08-25 that advice has been wrong: App Check is not rejecting anything,
-    // so reinstalling changes nothing and sends people down a dead end.
+    //   [auth/unknown] An internal error has occurred.
+    //   [ API key expired. Please renew the API key. ]
     //
-    // The "API key expired. Please renew the API key." text the SDK wraps is
-    // still not about the key — that key has no expireTime, no deleteTime,
-    // allows identitytoolkit, and carries no Android package restriction. With
-    // App Check off, an auth/unknown here is Android app verification failing
-    // (Play Integrity attestation, or the reCAPTCHA fallback), not App Check and
-    // not the key. Say that, and do not send the user to reinstall.
-    const raw = `${error.code ?? ''} ${error.message ?? ''}`;
-    if (
-      error.code === 'auth/unknown' ||
-      /app check/i.test(raw) ||
-      /api key expired/i.test(raw)
-    ) {
+    // Nothing server-side fixes that install; the app itself has to be updated.
+    // iOS is unaffected because its key (created 2026-04-23) was never replaced.
+    const raw = String(error.message || '');
+    if (error.code === 'auth/unknown' && /API key (expired|not valid)/i.test(raw)) {
       return {
         success: false,
         error:
-          'This device could not be verified for phone sign-in. Make sure Google Play services is up to date and you have a working connection, then try again.',
+          'This version of the app can no longer sign in. Please update MarketingTool from the Play Store and try again.',
       };
     }
 
@@ -202,23 +184,6 @@ export async function verifyPhoneOTP(code: string): Promise<{
     }
     if (error.code === 'auth/session-expired') {
       return { success: false, error: 'OTP expired. Please request a new one.' };
-    }
-
-    // Same masquerade as in sendPhoneOTP — see the note there. App Check on
-    // identitytoolkit is UNENFORCED (read live 2026-08-28, unchanged since
-    // 2026-08-25T03:40:56Z), so this arrives from device verification failing
-    // during the credential exchange, not from App Check and not from the key.
-    const rawVerify = `${error.code ?? ''} ${error.message ?? ''}`;
-    if (
-      error.code === 'auth/unknown' ||
-      /app check/i.test(rawVerify) ||
-      /api key expired/i.test(rawVerify)
-    ) {
-      return {
-        success: false,
-        error:
-          'This device could not be verified for phone sign-in. Make sure Google Play services is up to date and you have a working connection, then try again.',
-      };
     }
 
     return { success: false, error: error.message || 'Invalid OTP' };
