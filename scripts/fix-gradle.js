@@ -12,7 +12,7 @@ const wrapperPath = path.join(process.cwd(), 'android', 'gradle', 'wrapper', 'gr
 //
 // AGP and Gradle have to move together, so the version lives in one place and
 // withAgp9.js reads the same constant.
-const GRADLE_VERSION = process.env.GRADLE_WRAPPER_VERSION || '9.7.1';
+const GRADLE_VERSION = process.env.GRADLE_WRAPPER_VERSION || '9.5.0';
 
 try {
   // Read file directly. If it does not exist, it will throw an error to the catch block
