@@ -35,6 +35,37 @@ async function ensureAPNsRegistered() {
   }
 }
 
+// Send the real Firebase error to Crashlytics as a non-fatal.
+//
+// Why this exists: on 2026-08-30 an Android device running a build that already
+// contained the auth/unknown branch below still reported "API key expired".
+// The key was then checked directly and is NOT expired -- the key baked into
+// the shipped 1028 bundle is byte-identical to the one in google-services.json,
+// and that key answers identitytoolkit with HTTP 200, with no Android app
+// restrictions (a request carrying a bogus package and cert is still accepted).
+// So the message the user sees is not explained by the key, and no amount of
+// reasoning from this side narrowed it further without the device's own error.
+//
+// Only the phone reports the truth. Codes and messages here are Firebase's, and
+// contain no credential -- the phone number is deliberately NOT recorded.
+function reportOTPFailure(stage: string, error: any) {
+  try {
+    const crashlytics = require('@react-native-firebase/crashlytics').default;
+    const c = crashlytics();
+    c.setAttributes({
+      otp_stage: stage,
+      otp_error_code: String(error?.code || 'none'),
+      otp_platform: Platform.OS,
+    });
+    c.recordError(
+      new Error(`OTP ${stage} [${error?.code || 'no-code'}] ${String(error?.message || '')}`)
+    );
+  } catch {
+    // Crashlytics unavailable (dev client, native module missing) -- never let
+    // diagnostics break the sign-in path.
+  }
+}
+
 let verificationId: string | null = null;
 
 // Track OTP attempts per phone number to prevent hitting Firebase rate limits
@@ -102,6 +133,7 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
     return { success: true };
   } catch (error: any) {
     if (__DEV__) console.error('[FirebaseAuth] Send OTP error:', error);
+    reportOTPFailure('sendPhoneOTP', error);
 
     if (error.code === 'auth/invalid-phone-number') {
       return { success: false, error: 'Invalid phone number format' };
@@ -136,14 +168,30 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
     //   [auth/unknown] An internal error has occurred.
     //   [ API key expired. Please renew the API key. ]
     //
-    // Nothing server-side fixes that install; the app itself has to be updated.
-    // iOS is unaffected because its key (created 2026-04-23) was never replaced.
+    // CORRECTION (2026-08-30): the paragraph above is only half true, and the
+    // half that is false was shown to a real user. A device running a build that
+    // ALREADY contained this branch still hit it, so "your build carries the old
+    // key" cannot be the whole story:
+    //
+    //   shipped 1028 google_api_key  ==  repo google-services.json key (identical)
+    //   that key -> identitytoolkit /v1/recaptchaParams  HTTP 200
+    //   same key with a bogus X-Android-Package + X-Android-Cert  HTTP 200
+    //     (so the key carries no Android application restriction either)
+    //
+    // A pre-2026-07-14 install genuinely does carry a superseded key and for
+    // those the advice below is correct, so the branch stays. But it must not
+    // promise that updating is guaranteed to fix it, because for at least one
+    // current build it did not. reportOTPFailure() above now sends the real
+    // code and message to Crashlytics so the next occurrence is diagnosable
+    // instead of guessed at.
     const raw = String(error.message || '');
     if (error.code === 'auth/unknown' && /API key (expired|not valid)/i.test(raw)) {
       return {
         success: false,
         error:
-          'This version of the app can no longer sign in. Please update MarketingTool from the Play Store and try again.',
+          'Phone sign-in could not be completed on this device. Please update ' +
+          'MarketingTool from the Play Store and try again — if it still fails, ' +
+          'contact support so we can look at your device specifically.',
       };
     }
 
@@ -178,6 +226,7 @@ export async function verifyPhoneOTP(code: string): Promise<{
     return { success: true, user: userCredential.user };
   } catch (error: any) {
     if (__DEV__) console.error('[FirebaseAuth] Verify OTP error:', error);
+    reportOTPFailure('verifyOTP', error);
 
     if (error.code === 'auth/invalid-verification-code') {
       return { success: false, error: 'Invalid OTP code. Please try again.' };
