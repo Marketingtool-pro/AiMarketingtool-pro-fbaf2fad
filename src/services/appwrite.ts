@@ -128,6 +128,49 @@ export const deleteSession = async (): Promise<void> => {
   await SecureStore.deleteItemAsync(SESSION_KEY);
 };
 
+/**
+ * Finish an OAuth login from a deep link, independently of the browser session.
+ *
+ * Reported on Android: after choosing the Google account the browser redirects
+ * and the app shows its SPLASH SCREEN instead of a signed-in session.
+ *
+ * A splash screen means the app COLD STARTED. The callback
+ * marketingtool://oauth/success?userId=...&secret=... arrived as a launch
+ * intent rather than as a return into the running process, so the promise from
+ * WebBrowser.openAuthSessionAsync() died with the old process and its result --
+ * the userId and secret -- was never read by anyone. Nothing in this app looked
+ * at incoming links at all: there was no Linking.getInitialURL() and no 'url'
+ * listener anywhere, so those credentials were simply dropped on the floor.
+ *
+ * iOS does not hit this because ASWebAuthenticationSession returns inside the
+ * living process and the promise resolves normally.
+ *
+ * Handling the link directly makes the login independent of whether the process
+ * survived the round trip, which is the only version of this flow that can be
+ * relied on. Safe to call with any URL: anything that is not an OAuth success
+ * callback is ignored.
+ */
+export async function completeOAuthFromUrl(url: string | null): Promise<boolean> {
+  if (!url) return false;
+  if (!url.includes('oauth/success') && !url.includes('secret=')) return false;
+
+  const params = parseCallbackParams(url);
+  if (!params.userId || !params.secret) return false;
+
+  try {
+    const session = await account.createSession(params.userId, params.secret);
+    await saveSession(session.$id);
+    if (__DEV__) console.log('[OAuth] Session created from deep link');
+    return true;
+  } catch (error: any) {
+    // An already-consumed secret lands here when the in-process handler won the
+    // race and completed the login first. That is a success, not a failure, so
+    // it must not surface as an error to the user.
+    if (__DEV__) console.log('[OAuth] Deep link session failed:', error?.message || error);
+    return false;
+  }
+}
+
 // Auth Functions
 export const authService = {
   // Create Account

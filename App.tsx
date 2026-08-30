@@ -15,7 +15,9 @@ import * as Font from 'expo-font';
 import { Feather } from '@expo/vector-icons';
 import AppNavigator from './src/navigation/AppNavigator';
 import { initNotificationHistory } from './src/services/notificationHistory';
+import * as Linking from 'expo-linking';
 import { useAuthStore } from './src/store/authStore';
+import { completeOAuthFromUrl } from './src/services/appwrite';
 import { Colors } from './src/constants/theme';
 import { matomo } from './src/services/matomo';
 import { initializeAppCheck } from './src/services/firebaseAppCheck';
@@ -35,6 +37,37 @@ SplashScreen.preventAutoHideAsync();
 export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
   const { checkAuth } = useAuthStore();
+
+  // Finish an OAuth login that arrived as a deep link.
+  //
+  // On Android the callback can COLD START the app -- the user sees the splash
+  // screen and no session, because the browser-session promise died with the
+  // previous process and nothing else ever read the userId/secret out of the
+  // URL. Before this, the app registered no link handling of any kind.
+  //
+  // getInitialURL covers the cold start; the 'url' listener covers the case
+  // where the process survived and the link is delivered to it. Both funnel into
+  // completeOAuthFromUrl, which ignores anything that is not an OAuth callback.
+  useEffect(() => {
+    let active = true;
+
+    const handleUrl = async (url: string | null) => {
+      const signedIn = await completeOAuthFromUrl(url);
+      if (signedIn && active) await checkAuth();
+    };
+
+    Linking.getInitialURL()
+      .then(handleUrl)
+      .catch(() => {});
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      void handleUrl(url);
+    });
+
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, [checkAuth]);
 
   useEffect(() => {
     // Persist received notifications so the Notifications screen has a real
