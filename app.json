@@ -3,7 +3,7 @@
     "name": "MarketingTool",
     "slug": "marketingtool",
     "owner": "aimarketintool-2-2-2-2",
-    "version": "1.5.17",
+    "version": "1.5.18",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -57,7 +57,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 1029,
+      "versionCode": 1030,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
@@ -128,8 +128,7 @@
             "useLegacyPackaging": true,
             "buildArchs": [
               "armeabi-v7a",
-              "arm64-v8a",
-              "x86_64"
+              "arm64-v8a"
             ],
             "ndkVersion": "27.1.12297006",
             "kotlinVersion": "2.3.0",
@@ -183,6 +182,7 @@
       "expo-asset",
       "expo-tracking-transparency",
       "./plugins/withKotlinKspFix.js",
+      "./plugins/withAndroidAbiFilters.js",
       [
         "react-native-google-mobile-ads",
         {
