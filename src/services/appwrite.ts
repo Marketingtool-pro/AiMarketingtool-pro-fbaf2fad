@@ -65,6 +65,48 @@ client.call = async function(method, path, headers, params) {
     }
 };
 
+/**
+ * Pull userId/secret out of the OAuth callback URL without relying on `URL`.
+ *
+ * The callback arrives as a CUSTOM SCHEME:
+ *
+ *   marketingtool://oauth/success?userId=...&secret=...
+ *
+ * React Native has no complete WHATWG `URL`, and this project does not install
+ * react-native-url-polyfill, so `new URL(customScheme).searchParams` is not
+ * dependable -- it can come back empty or throw for a non-http(s) scheme.
+ *
+ * That failure is invisible on iOS and fatal on Android. When the parse yields
+ * nothing, the OAuth handlers fall through to "look for an existing session":
+ * on iOS the system browser shares cookies with the app, so account.get()
+ * finds the session and login still works; on Android a Chrome Custom Tab does
+ * NOT share cookies with the app's HTTP client, so there is nothing to find and
+ * the handler returns null with no error. Same code, works on Apple, silently
+ * does nothing on Android -- which is exactly the reported behaviour.
+ *
+ * Parsing the query string directly removes the dependency entirely.
+ */
+export function parseCallbackParams(url: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  const q = url.indexOf('?');
+  if (q === -1) return out;
+  // Drop any fragment; providers append it on some flows.
+  const query = url.slice(q + 1).split('#')[0];
+  for (const pair of query.split('&')) {
+    if (!pair) continue;
+    const eq = pair.indexOf('=');
+    const rawKey = eq === -1 ? pair : pair.slice(0, eq);
+    const rawVal = eq === -1 ? '' : pair.slice(eq + 1);
+    try {
+      out[decodeURIComponent(rawKey)] = decodeURIComponent(rawVal.replace(/\+/g, ' '));
+    } catch {
+      // A malformed escape must not take the whole login down.
+      out[rawKey] = rawVal;
+    }
+  }
+  return out;
+}
+
 // Initialize Services
 export const account = new Account(client);
 export const databases = new Databases(client);
@@ -142,9 +184,9 @@ export const authService = {
         // Check if it's a success callback
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
           // Parse the URL for session tokens
-          const urlParams = new URL(result.url);
-          const secret = urlParams.searchParams.get('secret');
-          const userId = urlParams.searchParams.get('userId');
+          const urlParams = parseCallbackParams(result.url);
+          const secret = urlParams.secret;
+          const userId = urlParams.userId;
 
           if (secret && userId) {
             if (__DEV__) console.log('[OAuth] Creating session with token...');
@@ -205,9 +247,9 @@ export const authService = {
 
       if (result.type === 'success' && result.url) {
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          const urlParams = new URL(result.url);
-          const secret = urlParams.searchParams.get('secret');
-          const userId = urlParams.searchParams.get('userId');
+          const urlParams = parseCallbackParams(result.url);
+          const secret = urlParams.secret;
+          const userId = urlParams.userId;
 
           if (secret && userId) {
             const session = await account.createSession(userId, secret);
@@ -260,9 +302,9 @@ export const authService = {
 
       if (result.type === 'success' && result.url) {
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          const urlParams = new URL(result.url);
-          const secret = urlParams.searchParams.get('secret');
-          const userId = urlParams.searchParams.get('userId');
+          const urlParams = parseCallbackParams(result.url);
+          const secret = urlParams.secret;
+          const userId = urlParams.userId;
 
           if (secret && userId) {
             const session = await account.createSession(userId, secret);
