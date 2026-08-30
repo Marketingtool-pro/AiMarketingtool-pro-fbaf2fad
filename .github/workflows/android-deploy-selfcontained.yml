@@ -47,7 +47,16 @@ jobs:
   android:
     name: Build (Android, production)
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    # 120 was not enough once x86_64 joined buildArchs. Run 33324935509 built
+    # 1.5.17 (1029) for three ABIs -- every source-built library (Skia,
+    # Reanimated, Nitro, Expo core, Screens, Gesture Handler, Worklets) compiled
+    # a third time -- and GitHub killed the job at the 120-minute cap while EAS
+    # was still building. The AAB was produced, but the submit step never ran,
+    # so the release had to be submitted by hand.
+    #
+    # This waits on a remote EAS build, so the job is idle, not busy: a longer
+    # cap costs nothing until it is actually needed.
+    timeout-minutes: 240
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EAS_CLI_VERSION: 18.13.1
