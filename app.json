@@ -3,7 +3,7 @@
     "name": "MarketingTool",
     "slug": "marketingtool",
     "owner": "aimarketintool-2-2-2-2",
-    "version": "1.5.18",
+    "version": "1.5.19",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -57,7 +57,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 1030,
+      "versionCode": 1031,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
