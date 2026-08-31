@@ -17,7 +17,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { initNotificationHistory } from './src/services/notificationHistory';
 import * as Linking from 'expo-linking';
 import { useAuthStore } from './src/store/authStore';
-import { completeOAuthFromUrl } from './src/services/appwrite';
+import { completeOAuthFromUrl, restoreSession } from './src/services/appwrite';
 import { Colors } from './src/constants/theme';
 import { matomo } from './src/services/matomo';
 import { initializeAppCheck } from './src/services/firebaseAppCheck';
@@ -120,7 +120,12 @@ export default function App() {
             'ComicNeue-Bold': require('./assets/fonts/ComicNeue-Bold.ttf'),
             'Tinos-Bold': require('./assets/fonts/Tinos-Bold.ttf'),
           }), 3000),
-          withTimeout(checkAuth(), 1500),
+          // Re-attach the stored session BEFORE checkAuth, or checkAuth runs as
+          // an anonymous request. The Appwrite RN SDK persists nothing itself
+          // (its only storage path is window.localStorage, which does not exist
+          // here), so without this the session is lost on every cold start --
+          // and on Android the OAuth callback cold-starts the app every time.
+          withTimeout(restoreSession().then(() => checkAuth()), 2500),
           withTimeout(initializeAppCheck(), 2000),
         ]);
       } catch (e) {

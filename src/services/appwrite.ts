@@ -120,12 +120,72 @@ export const functions = new Functions(client);
 // not exposed — use account.get() to check session validity instead.
 const SESSION_KEY = 'appwrite_session';
 
+// The session SECRET, which is what actually authenticates a request. Distinct
+// from SESSION_KEY above, which holds only the session's id and cannot
+// authenticate anything.
+const SESSION_SECRET_KEY = 'appwrite_session_secret';
+
 export const saveSession = async (session: string): Promise<void> => {
   await SecureStore.setItemAsync(SESSION_KEY, session);
 };
 
+/**
+ * Attach a freshly created session to the client and remember it.
+ *
+ * The React Native SDK persists NOTHING by itself. Its only session storage is
+ * the browser one, guarded by a check that is never true here:
+ *
+ *   if (typeof window !== 'undefined' && window.localStorage && cookieFallback)
+ *
+ * With no localStorage in React Native, an authenticated request depends on
+ * either the platform's cookie jar or an explicit X-Appwrite-Session header,
+ * which is what client.setSession() sets:
+ *
+ *   setSession(value) { this.headers['X-Appwrite-Session'] = value; }
+ *
+ * iOS shares its cookie store between the app and the system auth browser, so
+ * the session cookie set during OAuth is already present on the app's own
+ * requests and everything works without any of this. Android's Custom Tab does
+ * not share cookies with the app, so nothing carries the session forward -- the
+ * login succeeds and the very next account.get() is an anonymous request. The
+ * app reads that as "not signed in" and returns to onboarding, which is exactly
+ * what happens after the Google account picker.
+ *
+ * Appwrite only fills in `secret` on session responses in some flows; when it
+ * is empty this does nothing at all and behaviour is unchanged, so this is
+ * additive and cannot regress the platform that already works.
+ */
+export const adoptSession = async (session: Models.Session): Promise<void> => {
+  await saveSession(session.$id);
+
+  const secret = (session as unknown as { secret?: string }).secret;
+  if (!secret) return;
+
+  client.setSession(secret);
+  await SecureStore.setItemAsync(SESSION_SECRET_KEY, secret);
+};
+
+/**
+ * Re-attach a stored session secret on app start.
+ *
+ * Without this the header is lost on every cold start, which on Android is
+ * every time the OAuth callback relaunches the app.
+ */
+export const restoreSession = async (): Promise<boolean> => {
+  try {
+    const secret = await SecureStore.getItemAsync(SESSION_SECRET_KEY);
+    if (!secret) return false;
+    client.setSession(secret);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const deleteSession = async (): Promise<void> => {
   await SecureStore.deleteItemAsync(SESSION_KEY);
+  await SecureStore.deleteItemAsync(SESSION_SECRET_KEY);
+  client.setSession('');
 };
 
 /**
@@ -176,7 +236,7 @@ export async function completeOAuthFromUrl(url: string | null): Promise<boolean>
 
   try {
     const session = await account.createSession(params.userId, params.secret);
-    await saveSession(session.$id);
+    await adoptSession(session);
     if (__DEV__) console.log('[OAuth] Session created from deep link');
     return true;
   } catch (error: any) {
@@ -247,7 +307,7 @@ export const authService = {
   async login(email: string, password: string): Promise<Models.Session> {
     try {
       const session = await account.createEmailPasswordSession(email, password);
-      await saveSession(session.$id);
+      await adoptSession(session);
       return session;
     } catch (error) {
       reportAuthFailure('emailLogin', error);
@@ -294,7 +354,7 @@ export const authService = {
           if (secret && userId) {
             if (__DEV__) console.log('[OAuth] Creating session with token...');
             const session = await account.createSession(userId, secret);
-            await saveSession(session.$id);
+            await adoptSession(session);
             return session;
           }
         }
@@ -306,7 +366,7 @@ export const authService = {
           if (user) {
             const sessions = await account.listSessions();
             if (sessions.sessions.length > 0) {
-              await saveSession(sessions.sessions[0].$id);
+              await adoptSession(sessions.sessions[0]);
               if (__DEV__) console.log('[OAuth] Session found for:', user.email);
               return sessions.sessions[0];
             }
@@ -357,7 +417,7 @@ export const authService = {
 
           if (secret && userId) {
             const session = await account.createSession(userId, secret);
-            await saveSession(session.$id);
+            await adoptSession(session);
             return session;
           }
         }
@@ -367,7 +427,7 @@ export const authService = {
           if (user) {
             const sessions = await account.listSessions();
             if (sessions.sessions.length > 0) {
-              await saveSession(sessions.sessions[0].$id);
+              await adoptSession(sessions.sessions[0]);
               return sessions.sessions[0];
             }
           }
@@ -413,7 +473,7 @@ export const authService = {
 
           if (secret && userId) {
             const session = await account.createSession(userId, secret);
-            await saveSession(session.$id);
+            await adoptSession(session);
             return session;
           }
         }
@@ -423,7 +483,7 @@ export const authService = {
           if (user) {
             const sessions = await account.listSessions();
             if (sessions.sessions.length > 0) {
-              await saveSession(sessions.sessions[0].$id);
+              await adoptSession(sessions.sessions[0]);
               return sessions.sessions[0];
             }
           }
