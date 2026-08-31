@@ -171,6 +171,46 @@ export async function completeOAuthFromUrl(url: string | null): Promise<boolean>
   }
 }
 
+/**
+ * Send an Appwrite auth failure to Crashlytics as a non-fatal.
+ *
+ * Appwrite is the auth for every provider and every platform -- Google,
+ * Facebook, Apple, OpenID and email all go through it, on web, iOS and Android
+ * alike. Only the phone OTP uses Firebase. Yet sign-in fails on Android only,
+ * and every server-side check answers correctly to Android-shaped requests:
+ *
+ *   POST /v1/account/sessions/email   -> 401 user_invalid_credentials
+ *   GET  /v1/account                  -> 401 guest (not "Invalid Origin")
+ *   platform origin enforcement       -> not applied (verified with a control:
+ *                                        an unregistered package gets the same
+ *                                        answer as the real one)
+ *   TLS chain                         -> valid to ISRG Root X1
+ *   shipped bundle                    -> correct endpoint and project id
+ *
+ * So the failure happens inside the app, and until now the app reported
+ * nothing: only the Firebase OTP paths recorded anything, while the Appwrite
+ * paths -- the ones that actually matter -- rethrew bare and left no trace.
+ *
+ * Codes and messages here come from Appwrite. No password, secret, session id
+ * or email is recorded.
+ */
+function reportAuthFailure(stage: string, error: any) {
+  try {
+    const crashlytics = require('@react-native-firebase/crashlytics').default;
+    const c = crashlytics();
+    c.setAttributes({
+      auth_stage: stage,
+      auth_error_type: String(error?.type || 'none'),
+      auth_error_code: String(error?.code ?? 'none'),
+    });
+    c.recordError(
+      new Error(`Auth ${stage} [${error?.type || 'no-type'}/${error?.code ?? '?'}] ${String(error?.message || '')}`)
+    );
+  } catch {
+    // Diagnostics must never break sign-in.
+  }
+}
+
 // Auth Functions
 export const authService = {
   // Create Account
@@ -180,6 +220,7 @@ export const authService = {
       await this.login(email, password);
       return newAccount;
     } catch (error) {
+      reportAuthFailure('createAccount', error);
       throw error;
     }
   },
@@ -191,6 +232,7 @@ export const authService = {
       await saveSession(session.$id);
       return session;
     } catch (error) {
+      reportAuthFailure('emailLogin', error);
       throw error;
     }
   },
@@ -263,6 +305,7 @@ export const authService = {
       return null;
     } catch (error: any) {
       if (__DEV__) console.error('[OAuth] Google error:', error?.message || error);
+      reportAuthFailure('oauthGoogle', error);
       throw error;
     }
   },
@@ -318,6 +361,7 @@ export const authService = {
       return null;
     } catch (error: any) {
       if (__DEV__) console.error('[OAuth] Apple error:', error?.message || error);
+      reportAuthFailure('oauthApple', error);
       throw error;
     }
   },
@@ -373,6 +417,7 @@ export const authService = {
       return null;
     } catch (error: any) {
       if (__DEV__) console.error('[OAuth] Facebook error:', error?.message || error);
+      reportAuthFailure('oauthFacebook', error);
       throw error;
     }
   },
