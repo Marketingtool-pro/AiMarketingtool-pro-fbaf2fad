@@ -158,12 +158,93 @@ export const saveSession = async (session: string): Promise<void> => {
 export const adoptSession = async (session: Models.Session): Promise<void> => {
   await saveSession(session.$id);
 
+  // Appwrite returns an EMPTY secret on session responses to client requests --
+  // measured against the live server, not assumed:
+  //
+  //   POST /v1/account/sessions/anonymous -> 201, "secret" field length 0
+  //
+  // so this branch does nothing on its own. The real credential arrives in the
+  // response HEADERS, and captureSessionFromHeaders() below is what collects it.
   const secret = (session as unknown as { secret?: string }).secret;
   if (!secret) return;
 
   client.setSession(secret);
   await SecureStore.setItemAsync(SESSION_SECRET_KEY, secret);
 };
+
+/**
+ * Take the session out of the response headers, which is where Appwrite
+ * actually puts it for clients that have no cookie jar.
+ *
+ * A session response carries both:
+ *
+ *   set-cookie:          the session cookie
+ *   x-fallback-cookies:  the same value as JSON, for exactly this case
+ *
+ * The SDK reads that second header and stores it in window.localStorage:
+ *
+ *   const cookieFallback = response.headers.get('X-Fallback-Cookies');
+ *   if (typeof window !== 'undefined' && window.localStorage && cookieFallback) { ... }
+ *
+ * React Native has no window.localStorage, so the SDK drops it and the session
+ * survives only if the platform's cookie jar happens to keep it. iOS shares its
+ * cookie store with the system auth browser and does; Android's Custom Tab does
+ * not share cookies with the app, so the session is simply lost and the next
+ * request is anonymous -- the app then shows onboarding, which is the reported
+ * behaviour after the Google account picker.
+ *
+ * Storing it ourselves and replaying it as X-Appwrite-Session removes the
+ * dependency on cookie behaviour entirely, on both platforms.
+ */
+async function captureSessionFromHeaders(headers: Headers): Promise<boolean> {
+  const fallback = headers.get('x-fallback-cookies') || headers.get('X-Fallback-Cookies');
+  if (!fallback) return false;
+
+  try {
+    const parsed = JSON.parse(fallback);
+    const secret = parsed?.[`a_session_${APPWRITE_PROJECT_ID}`];
+    if (!secret) return false;
+
+    client.setSession(secret);
+    await SecureStore.setItemAsync(SESSION_SECRET_KEY, secret);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Create a session with a plain request so the response headers stay reachable.
+ *
+ * The SDK returns only the parsed body, so the header carrying the session is
+ * unreachable through it. These are the only two calls that need it: everything
+ * afterwards goes through the SDK as usual, authenticated by the header that
+ * client.setSession() adds.
+ */
+async function postSession(path: string, body: Record<string, string>): Promise<Models.Session> {
+  const response = await fetch(`${APPWRITE_ENDPOINT}${path}`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-appwrite-project': APPWRITE_PROJECT_ID,
+      'x-appwrite-response-format': '1.8.0',
+    },
+    body: JSON.stringify(body),
+  });
+
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : {};
+
+  if (!response.ok) {
+    const error: any = new Error(data?.message || `Session request failed (${response.status})`);
+    error.code = data?.code ?? response.status;
+    error.type = data?.type;
+    throw error;
+  }
+
+  await captureSessionFromHeaders(response.headers);
+  return data as Models.Session;
+}
 
 /**
  * Re-attach a stored session secret on app start.
@@ -235,7 +316,10 @@ export async function completeOAuthFromUrl(url: string | null): Promise<boolean>
   if (!params.userId || !params.secret) return false;
 
   try {
-    const session = await account.createSession(params.userId, params.secret);
+    const session = await postSession('/account/sessions/token', {
+      userId: params.userId,
+      secret: params.secret,
+    });
     await adoptSession(session);
     if (__DEV__) console.log('[OAuth] Session created from deep link');
     return true;
@@ -306,7 +390,7 @@ export const authService = {
   // Login with Email
   async login(email: string, password: string): Promise<Models.Session> {
     try {
-      const session = await account.createEmailPasswordSession(email, password);
+      const session = await postSession('/account/sessions/email', { email, password });
       await adoptSession(session);
       return session;
     } catch (error) {
