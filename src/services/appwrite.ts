@@ -437,7 +437,7 @@ export const authService = {
 
           if (secret && userId) {
             if (__DEV__) console.log('[OAuth] Creating session with token...');
-            const session = await account.createSession(userId, secret);
+            const session = await postSession('/account/sessions/token', { userId, secret });
             await adoptSession(session);
             return session;
           }
@@ -500,7 +500,7 @@ export const authService = {
           const userId = urlParams.userId;
 
           if (secret && userId) {
-            const session = await account.createSession(userId, secret);
+            const session = await postSession('/account/sessions/token', { userId, secret });
             await adoptSession(session);
             return session;
           }
@@ -556,7 +556,7 @@ export const authService = {
           const userId = urlParams.userId;
 
           if (secret && userId) {
-            const session = await account.createSession(userId, secret);
+            const session = await postSession('/account/sessions/token', { userId, secret });
             await adoptSession(session);
             return session;
           }
