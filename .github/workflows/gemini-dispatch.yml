@@ -20,7 +20,7 @@ on:
 
 defaults:
   run:
-    shell: 'zsh'
+    shell: 'bash'
 
 jobs:
   debugger:
@@ -122,11 +122,11 @@ jobs:
             --body "${MESSAGE}" \
             --repo "${REPOSITORY}"
 
-        review:
+  review:
     needs: 'dispatch'
     if: |-
       ${{ needs.dispatch.outputs.command == 'review' }}
-    uses: .github/workflows/gemini-review.yml
+    uses: './.github/workflows/gemini-review.yml'
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -140,7 +140,7 @@ jobs:
     needs: 'dispatch'
     if: |-
       ${{ needs.dispatch.outputs.command == 'triage' }}
-    uses: .github/workflows/gemini-triage.yml
+    uses: './.github/workflows/gemini-triage.yml'
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -154,7 +154,7 @@ jobs:
     needs: 'dispatch'
     if: |-
       ${{ needs.dispatch.outputs.command == 'invoke' }}
-    uses: .github/workflows/gemini-invoke.yml
+    uses: './.github/workflows/gemini-invoke.yml'
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -168,7 +168,7 @@ jobs:
     needs: 'dispatch'
     if: |-
       ${{ needs.dispatch.outputs.command == 'approve' }}
-    uses: .github/workflows/gemini-plan-execute.yml
+    uses: './.github/workflows/gemini-plan-execute.yml'
     permissions:
       contents: 'write'
       id-token: 'write'
