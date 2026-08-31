@@ -155,6 +155,23 @@ export async function completeOAuthFromUrl(url: string | null): Promise<boolean>
   if (!url.includes('oauth/success') && !url.includes('secret=')) return false;
 
   const params = parseCallbackParams(url);
+
+  // Record that a callback arrived and whether it carried usable credentials.
+  //
+  // Without this the failure is silent: on Android the app returns to its
+  // onboarding screen after the Google account picker, with no error anywhere,
+  // because a callback missing userId/secret simply returns false. Server-side
+  // the endpoint is fine -- POST /v1/account/sessions/token answers
+  // 401 user_invalid_token identically for an Android origin and a web origin --
+  // so the open question is whether the app receives those values at all.
+  //
+  // Only presence is recorded, never the secret itself.
+  reportAuthFailure('oauthCallbackReceived', {
+    type: 'diagnostic',
+    code: url.split('?')[0],
+    message: `hasUserId=${!!params.userId} hasSecret=${!!params.secret} keys=${Object.keys(params).join(',')}`,
+  });
+
   if (!params.userId || !params.secret) return false;
 
   try {
@@ -167,6 +184,7 @@ export async function completeOAuthFromUrl(url: string | null): Promise<boolean>
     // race and completed the login first. That is a success, not a failure, so
     // it must not surface as an error to the user.
     if (__DEV__) console.log('[OAuth] Deep link session failed:', error?.message || error);
+    reportAuthFailure('oauthDeepLinkSession', error);
     return false;
   }
 }
