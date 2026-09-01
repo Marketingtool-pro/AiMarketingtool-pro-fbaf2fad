@@ -77,6 +77,11 @@ const LoginScreen = () => {
   // verificationId, causing the auto-verify timeout to fire against the
   // stale ID. Ref (not state) so setTimeout reads the live value.
   const sendingRef = useRef(false);
+  // The identifier the live verificationId actually belongs to, as
+  // `${dialCode}${number}`. Set when an OTP is sent and when a pending one is
+  // restored; the reset effect below compares against it so that RESTORING a
+  // pending OTP is not mistaken for the user editing the number.
+  const otpIdentifierRef = useRef<string | null>(null);
 
   const [isBioAvailable, setIsBioAvailable] = useState(false);
   const [bioType, setBioType] = useState<BiometricType>('none');
@@ -133,8 +138,20 @@ const LoginScreen = () => {
   // verificationId points to the old session — using it causes Firebase to
   // throw auth/missing-verification-code on verify. Drop OTP state so the
   // user is forced to re-send for the new identifier.
+  //
+  // This MUST NOT fire when the restore effects below re-populate the field.
+  // They set phoneNumber ('' -> stored value) and otpSent(true), which changes
+  // this effect's deps with otpSent already true -- so it ran, and the
+  // setTimeout(0) landed after the restore committed. Restoring a pending OTP
+  // therefore destroyed it: the modal closed again and clearFirebaseVerification()
+  // discarded the verificationId, making the SMS the user had already received
+  // unusable. Comparing against the identifier the code was actually sent for
+  // distinguishes "user edited the number" from "we just restored it".
   useEffect(() => {
     if (!otpSent) return;
+    const current = `${selectedCountry.code}${phoneNumber}`;
+    if (otpIdentifierRef.current === current) return;
+    otpIdentifierRef.current = null;
     setTimeout(() => {
       setOtpSent(false);
       setOtpCode('');
@@ -154,6 +171,9 @@ const LoginScreen = () => {
       if (pending) {
         try {
           const { phone, countryCode, countryIso } = JSON.parse(pending);
+          // Claim the identifier BEFORE the state updates, so the reset effect
+          // sees a restore rather than an edit and leaves the pending OTP alone.
+          otpIdentifierRef.current = `${countryCode}${phone}`;
           setPhoneNumber(phone);
           setOtpSent(true);
           setShowOtpModal(true);
@@ -173,6 +193,8 @@ const LoginScreen = () => {
           if (pending) {
             try {
               const { phone, countryCode, countryIso } = JSON.parse(pending);
+              // Same claim as the cold-start restore above.
+              otpIdentifierRef.current = `${countryCode}${phone}`;
               setPhoneNumber(phone);
               setOtpSent(true);
               setShowOtpModal(true);
@@ -227,6 +249,8 @@ const LoginScreen = () => {
     try {
       // Send OTP via Firebase Phone Auth
       const userId = await sendPhoneOTP(formattedPhone);
+      // The live verificationId now belongs to this identifier.
+      otpIdentifierRef.current = formattedPhone;
       setOtpUserId(userId);
       setOtpSent(true);
       setShowOtpModal(true);
@@ -273,6 +297,9 @@ const LoginScreen = () => {
   };
 
   const handleCloseOtpModal = async () => {
+    // Release the identifier: the verification is being abandoned, so a later
+    // re-entry of the same number must count as a fresh send, not a restore.
+    otpIdentifierRef.current = null;
     setShowOtpModal(false);
     setOtpSent(false);
     setOtpCode('');

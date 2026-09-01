@@ -543,8 +543,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
       }
     } catch (error: any) {
-      // On error or timeout, proceed as not authenticated
-      set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
+      // Only an auth rejection proves there is no session. A timeout, a dropped
+      // connection or a 5xx says nothing about it, and clearing state on those
+      // signed users out whenever the network hiccuped -- on Android that lands
+      // them back on onboarding, indistinguishable from the real auth bug.
+      // getCurrentUser() now returns null for 401/403 and rethrows everything
+      // else, so a thrown error here without an auth code is transport-level:
+      // stop loading and keep whatever session state we already had.
+      const code = error?.code;
+      if (code === 401 || code === 403) {
+        set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
+      } else {
+        set({ isLoading: false });
+      }
     }
   },
 

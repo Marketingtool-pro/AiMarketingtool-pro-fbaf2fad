@@ -27,12 +27,20 @@ export const initializeAppCheck = async () => {
         modelName.includes('gce') ||
         modelName.includes('emulator') ||
         modelName.includes('sdk'));
-    const isFirebaseTestLab = process.env.FIREBASE_TEST_LAB === 'true';
+    // These MUST carry the EXPO_PUBLIC_ prefix. babel-preset-expo inlines only
+    // `process.env.EXPO_PUBLIC_*` into the JS bundle, and this project has no
+    // dotenv / react-native-config to widen that. Read without the prefix they
+    // are `undefined` at runtime in every shipped build, so `isFirebaseTestLab`
+    // and the IS_TESTING check were permanently false and NEITHER debug token
+    // could ever be applied -- on an emulator the code then selected the
+    // 'debug' provider with no token registered, which cannot attest. See
+    // appwrite.ts, which uses the prefix correctly.
+    const isFirebaseTestLab = process.env.EXPO_PUBLIC_FIREBASE_TEST_LAB === 'true';
     const isCloudTest = !Device.isDevice || isFirebaseTestLab || isLikelyCloudOrEmulatorAndroid;
-    const isTestEnvironment = __DEV__ || process.env.IS_TESTING === 'true' || isCloudTest;
-    
-    const androidDebugToken = process.env.FIREBASE_APPCHECK_DEBUG_TOKEN_ANDROID;
-    const iosDebugToken     = process.env.FIREBASE_APPCHECK_DEBUG_TOKEN_IOS;
+    const isTestEnvironment = __DEV__ || process.env.EXPO_PUBLIC_IS_TESTING === 'true' || isCloudTest;
+
+    const androidDebugToken = process.env.EXPO_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN_ANDROID;
+    const iosDebugToken     = process.env.EXPO_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN_IOS;
 
     const provider = appCheck().newReactNativeFirebaseAppCheckProvider();
 

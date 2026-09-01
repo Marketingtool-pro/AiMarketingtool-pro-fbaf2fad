@@ -399,209 +399,157 @@ export const authService = {
     }
   },
 
-  // Login with Google using Appwrite SDK OAuth
-  async loginWithGoogle(): Promise<Models.Session | null> {
-    try {
-      if (__DEV__) console.log('[OAuth] Starting Google OAuth via Appwrite SDK...');
+  // ---------------------------------------------------------------------------
+  // OAuth
+  //
+  // Google, Apple and Facebook were three ~60-line copies differing only by the
+  // provider constant. They had already drifted -- only Google logged the
+  // signed-in address -- so any fix had to be written three times or silently
+  // applied to one provider. One implementation, three thin wrappers.
+  // ---------------------------------------------------------------------------
 
-      // Use auth.marketingtool.pro for phone app OAuth (separate from web app)
+  /**
+   * Run the Appwrite OAuth2 token flow for one provider.
+   *
+   * The token flow returns userId+secret on the callback URL, and postSession()
+   * exchanges those for a real session. postSession is the ONLY path that reads
+   * the session out of the response headers, so it is the only one that works
+   * on Android -- see captureSessionFromHeaders above.
+   */
+  async loginWithOAuthProvider(
+    provider: OAuthProvider,
+    label: string,
+  ): Promise<Models.Session | null> {
+    try {
+      if (__DEV__) console.log(`[OAuth] Starting ${label} OAuth via Appwrite SDK...`);
+
+      // auth.marketingtool.pro is the phone app's OAuth host, separate from the
+      // web app. Nginx there redirects /oauth/success -> marketingtool://oauth/success.
       const successUrl = 'https://auth.marketingtool.pro/oauth/success';
       const failureUrl = 'https://auth.marketingtool.pro/oauth/failure';
 
-      // Use SDK's createOAuth2Token method for mobile - returns userId & secret in URL
-      const oauthUrl = account.createOAuth2Token(
-        OAuthProvider.Google,
-        successUrl,
-        failureUrl
+      const oauthUrl = account.createOAuth2Token(provider, successUrl, failureUrl);
+      if (!oauthUrl) throw new Error('Failed to generate OAuth URL');
+
+      const result = await WebBrowser.openAuthSessionAsync(
+        oauthUrl.toString(),
+        'marketingtool://'
       );
 
-      if (!oauthUrl) throw new Error('Failed to generate OAuth URL');
-      const oauthUrlString = oauthUrl.toString();
-
-      if (__DEV__) console.log('[OAuth] Opening URL:', oauthUrlString);
-
-      // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await WebBrowser.openAuthSessionAsync(oauthUrlString, 'marketingtool://');
-
-      if (__DEV__) console.log('[OAuth] Browser result type:', result.type);
-
-      if (result.type === 'success' && result.url) {
-        if (__DEV__) console.log('[OAuth] Callback URL:', result.url);
-
-        // Check if it's a success callback
-        if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          // Parse the URL for session tokens
-          const urlParams = parseCallbackParams(result.url);
-          const secret = urlParams.secret;
-          const userId = urlParams.userId;
-
-          if (secret && userId) {
-            if (__DEV__) console.log('[OAuth] Creating session with token...');
-            const session = await postSession('/account/sessions/token', { userId, secret });
-            await adoptSession(session);
-            return session;
-          }
-        }
-
-        // Try to get existing session (OAuth might have set cookies)
-        try {
-          if (__DEV__) console.log('[OAuth] Checking for session...');
-          const user = await account.get();
-          if (user) {
-            const sessions = await account.listSessions();
-            if (sessions.sessions.length > 0) {
-              await adoptSession(sessions.sessions[0]);
-              if (__DEV__) console.log('[OAuth] Session found for:', user.email);
-              return sessions.sessions[0];
-            }
-          }
-        } catch (e) {
-          if (__DEV__) console.log('[OAuth] No existing session');
-        }
-      }
+      if (__DEV__) console.log(`[OAuth] ${label} browser result:`, result.type);
 
       if (result.type === 'cancel') {
-        if (__DEV__) console.log('[OAuth] Cancelled by user');
+        if (__DEV__) console.log(`[OAuth] ${label} cancelled by user`);
+        return null;
+      }
+
+      if (result.type === 'success' && result.url) {
+        if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
+          const { userId, secret } = parseCallbackParams(result.url);
+
+          if (userId && secret) {
+            const session = await postSession('/account/sessions/token', { userId, secret });
+            await adoptSession(session);
+            if (__DEV__) console.log(`[OAuth] ${label} session created from token`);
+            return session;
+          }
+
+          // Callback carried no credentials. On Android this is terminal, and it
+          // used to fail silently -- the user just landed back on onboarding.
+          // Record presence only, never the secret, so the next occurrence is
+          // diagnosable instead of guessed at.
+          reportAuthFailure(`oauth${label}MissingParams`, {
+            type: 'diagnostic',
+            code: result.url.split('?')[0],
+            message: `hasUserId=${!!userId} hasSecret=${!!secret}`,
+          });
+        }
+
+        // Last resort: a session the browser established via cookies.
+        //
+        // This can only ever succeed on iOS. ASWebAuthenticationSession shares
+        // the app's cookie store, so account.get() finds the session; Android's
+        // Chrome Custom Tab shares nothing with the app, so account.get() goes
+        // out anonymous and this branch cannot help. Kept because it costs one
+        // request and does rescue the iOS flow when the callback had no params.
+        try {
+          const user = await account.get();
+          if (user) {
+            const { sessions } = await account.listSessions();
+            // Prefer the CURRENT session. Taking sessions[0] adopted whichever
+            // session happened to sort first, which is not necessarily the one
+            // this login just created.
+            const session = sessions.find((s) => s.current) ?? sessions[0];
+            if (session) {
+              await adoptSession(session);
+              if (__DEV__) console.log(`[OAuth] ${label} session found for:`, user.email);
+              return session;
+            }
+          }
+        } catch {
+          if (__DEV__) console.log(`[OAuth] No existing ${label} session`);
+        }
       }
 
       return null;
     } catch (error: any) {
-      if (__DEV__) console.error('[OAuth] Google error:', error?.message || error);
-      reportAuthFailure('oauthGoogle', error);
+      if (__DEV__) console.error(`[OAuth] ${label} error:`, error?.message || error);
+      reportAuthFailure(`oauth${label}`, error);
       throw error;
     }
   },
 
-  // Login with Apple using Appwrite SDK OAuth
-  async loginWithApple(): Promise<Models.Session | null> {
-    try {
-      if (__DEV__) console.log('[OAuth] Starting Apple OAuth...');
-
-      const successUrl = 'https://auth.marketingtool.pro/oauth/success';
-      const failureUrl = 'https://auth.marketingtool.pro/oauth/failure';
-
-      // Use SDK's createOAuth2Token method for mobile - returns userId & secret in URL
-      const oauthUrl = account.createOAuth2Token(
-        OAuthProvider.Apple,
-        successUrl,
-        failureUrl
-      );
-
-      if (!oauthUrl) throw new Error('Failed to generate OAuth URL');
-      const oauthUrlString = oauthUrl.toString();
-
-      // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await WebBrowser.openAuthSessionAsync(oauthUrlString, 'marketingtool://');
-
-      if (result.type === 'success' && result.url) {
-        if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          const urlParams = parseCallbackParams(result.url);
-          const secret = urlParams.secret;
-          const userId = urlParams.userId;
-
-          if (secret && userId) {
-            const session = await postSession('/account/sessions/token', { userId, secret });
-            await adoptSession(session);
-            return session;
-          }
-        }
-
-        try {
-          const user = await account.get();
-          if (user) {
-            const sessions = await account.listSessions();
-            if (sessions.sessions.length > 0) {
-              await adoptSession(sessions.sessions[0]);
-              return sessions.sessions[0];
-            }
-          }
-        } catch (e) {
-          if (__DEV__) console.log('[OAuth] No Apple session');
-        }
-      }
-
-      return null;
-    } catch (error: any) {
-      if (__DEV__) console.error('[OAuth] Apple error:', error?.message || error);
-      reportAuthFailure('oauthApple', error);
-      throw error;
-    }
+  loginWithGoogle(): Promise<Models.Session | null> {
+    return this.loginWithOAuthProvider(OAuthProvider.Google, 'Google');
   },
 
-  // Login with Facebook using Appwrite SDK OAuth
-  async loginWithFacebook(): Promise<Models.Session | null> {
-    try {
-      if (__DEV__) console.log('[OAuth] Starting Facebook OAuth...');
+  loginWithApple(): Promise<Models.Session | null> {
+    return this.loginWithOAuthProvider(OAuthProvider.Apple, 'Apple');
+  },
 
-      const successUrl = 'https://auth.marketingtool.pro/oauth/success';
-      const failureUrl = 'https://auth.marketingtool.pro/oauth/failure';
-
-      // Use SDK's createOAuth2Token method for mobile - returns userId & secret in URL
-      const oauthUrl = account.createOAuth2Token(
-        OAuthProvider.Facebook,
-        successUrl,
-        failureUrl
-      );
-
-      if (!oauthUrl) throw new Error('Failed to generate OAuth URL');
-      const oauthUrlString = oauthUrl.toString();
-
-      // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await WebBrowser.openAuthSessionAsync(oauthUrlString, 'marketingtool://');
-
-      if (result.type === 'success' && result.url) {
-        if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          const urlParams = parseCallbackParams(result.url);
-          const secret = urlParams.secret;
-          const userId = urlParams.userId;
-
-          if (secret && userId) {
-            const session = await postSession('/account/sessions/token', { userId, secret });
-            await adoptSession(session);
-            return session;
-          }
-        }
-
-        try {
-          const user = await account.get();
-          if (user) {
-            const sessions = await account.listSessions();
-            if (sessions.sessions.length > 0) {
-              await adoptSession(sessions.sessions[0]);
-              return sessions.sessions[0];
-            }
-          }
-        } catch (e) {
-          if (__DEV__) console.log('[OAuth] No Facebook session');
-        }
-      }
-
-      return null;
-    } catch (error: any) {
-      if (__DEV__) console.error('[OAuth] Facebook error:', error?.message || error);
-      reportAuthFailure('oauthFacebook', error);
-      throw error;
-    }
+  loginWithFacebook(): Promise<Models.Session | null> {
+    return this.loginWithOAuthProvider(OAuthProvider.Facebook, 'Facebook');
   },
 
   // Phone OTP is handled directly by Firebase Phone Auth. See src/store/authStore.ts.
 
   // Get Current User
+  //
+  // Only an auth rejection means "not signed in". This used to swallow EVERY
+  // error and return null, so a dropped connection, DNS failure, TLS error or
+  // 5xx was indistinguishable from a guest -- and checkAuth turned that into
+  // isAuthenticated:false, i.e. a signed-in user thrown back to onboarding by
+  // a bad network. That is the market this app's own comments call out (low-end
+  // devices, poor connectivity), so it is not a rare path.
+  //
+  // 401/403 -> genuinely no session, return null.
+  // Anything else -> transport-level, says nothing about the session, rethrow
+  //                  and let the caller decide (checkAuth keeps prior state).
   async getCurrentUser(): Promise<Models.User<Models.Preferences> | null> {
     try {
       return await account.get();
-    } catch (error) {
-      return null;
+    } catch (error: any) {
+      const code = error?.code;
+      if (code === 401 || code === 403) return null;
+      throw error;
     }
   },
 
   // Logout
+  //
+  // The local teardown runs in `finally`. Previously it sat after the server
+  // call, so a throw there -- an already-dead session, or no network -- skipped
+  // it entirely and rethrew, leaving the session secret in SecureStore and the
+  // X-Appwrite-Session header still attached to the client. The user believed
+  // they had signed out while the device kept usable credentials.
+  //
+  // Clearing locally is always correct: the intent is to end the session on
+  // THIS device, and a server session that outlives it expires on its own.
   async logout(): Promise<void> {
     try {
       await account.deleteSession('current');
+    } finally {
       await deleteSession();
-    } catch (error) {
-      throw error;
     }
   },
 
