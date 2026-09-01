@@ -1,20 +1,62 @@
-jobs:
-- job: linux
-  pool: {vmImage: 'ubuntu-latest'}
-  steps:
-    - task: UsePythonVersion@0
-    - bash: |
-        set -o errexit
-        python3 -m pip install --upgrade pip
-        pip3 install cibuildwheel==4.2.0
-      displayName: Install dependencies
-    - bash: cibuildwheel --output-dir wheelhouse .
-      displayName: Build wheels
-    - task: PublishBuildArtifacts@1
-      inputs: {pathtoPublish: 'wheelhouse'}
+- task: CmdLine@2
+  inputs:
+    script: |
+      echo Write your commands here
+      
+      echo Hello world
+          python-version: "3.12"
+          enable-cache: true
 
-- job: macos
-  pool: {vmImage: 'macOS-latest'}
+      - name: Run tests
+        run: uv run --group dev pytest -q
+- task: AzureRmWebAppDeployment@5
+  inputs:
+    ConnectionType: 'PublishProfile'
+    PublishProfilePath: '$(System.DefaultWorkingDirectory)/**/*.pubxml'
+    enableXmlTransform: true
+    enableXmlVariableSubstitution: true
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Verify distribution metadata
+        run: uvx twine check dist/*
+
+      # actions/upload-artifact@v4.6.1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a 
+        with:
+          name: release-dists
+          path: dist/
+          if-no-files-found: error
+
+  publish-testpypi:
+    name: Publish to TestPyPI
+    needs: build
+    # Only on a published release, or an explicit opt-in dispatch. Never on a
+    # bare build run.
+    if: github.event_name == 'release' || inputs.publish
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write # required for Trusted Publishing
+    steps:
+      # actions/download-artifact@v4.1.9 (Note: Must match upload-artifact major version v4!)
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c 
+        with:
+          name: release-dists
+          path: dist/
+
+      # pypa/gh-action-pypi-publish@v1.12.4
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 
+        with:
+          repository-url: https://test.pypi.org/legacy/
+jobs:
+  publish:$(System.DefaultWorkingDirectory)/**/*.pubxml
+
+- task: AzureRmWebAppDeployment@5
+  inputs:
+    ConnectionType: 'PublishProfile'
+    PublishProfilePath: '$(System.DefaultWorkingDirectory)/**/*.pubxml'
+
   steps:
     - task: UsePythonVersion@0
     - bash: |
@@ -27,16 +69,36 @@ jobs:
     - task: PublishBuildArtifacts@1
       inputs: {pathtoPublish: wheelhouse}
 
-- job: windows
-  pool: {vmImage: 'windows-latest'}
-  steps:
-    - task: UsePythonVersion@0
-    - bash: |
-        set -o errexit
-        python -m pip install --upgrade pip
-        pip install cibuildwheel==4.2.0
-      displayName: Install dependencies
-    - bash: cibuildwheel --output-dir wheelhouse .
-      displayName: Build wheels
-    - task: PublishBuildArtifacts@1
-      inputs: {pathtoPublish: 'wheelhouse'}
+- task: AzureCLI@3
+  inputs:
+    connectionType: 'azureDevOps'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    - task: Maven@4
+      inputs:
+        azureSubscription: 'Azure subscription 1(ba827d47-808a-41b5-8d0b-13540f777a86)'
+        mavenPomFile: 'pom.xml'
+        publishJUnitResults: true
+        testResultsFiles: '**/surefire-reports/TEST-*.xml'
+        javaHomeOption: 'JDKVersion'
+        mavenVersionOption: 'Default'
+        mavenAuthenticateFeed: false
+        effectivePomSkip: false
+        sonarQubeRunAnalysis: false
+        pmdRunAnalysis: true
+        findBugsRunAnalysis: true
+        - task: NodeTaskRunnerInstaller@0
+          inputs:
+            nodeVersion: '24'
+            - task: UseRubyVersion@0
+              inputs:
+                versionSpec: '>= 3.3'
+      - task: Npm@1
+        inputs:
+          command: 'ci'
+          verbose: true
+          customRegistry: 'useFeed'
+          customFeed: 'bff600a5-f052-4f13-aec3-f89105682bae'
+- task: Go@0
+  inputs:
+    command: 'get'
