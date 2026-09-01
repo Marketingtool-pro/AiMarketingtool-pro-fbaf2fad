@@ -67,22 +67,48 @@ import com.facebook.react.ReactActivity`
     return config;
   });
 
-  // Step 2: Scrub deprecated attrs from AppTheme in styles.xml.
-  // Never re-add them — enableEdgeToEdge() handles transparency.
+  // Step 2: Scrub the deprecated COLOUR attrs from AppTheme, and pin the
+  // display-cutout mode to `always`.
+  //
+  // windowLayoutInDisplayCutoutMode used to be stripped here too, on the theory
+  // that setting it at all counts as using a deprecated API. That is true for
+  // statusBarColor / navigationBarColor, but NOT for the cutout mode, and
+  // stripping it actively caused the Play Console finding. From Google's own
+  // Android 15 behaviour-changes page:
+  //
+  //   "layoutInDisplayCutoutMode of non-floating windows must be
+  //    LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS. SHORT_EDGES, NEVER, and DEFAULT
+  //    are interpreted as ALWAYS"
+  //
+  // and its "deprecated APIs" list names statusBarColor, navigationBarColor,
+  // navigationBarDividerColor and setDecorFitsSystemWindows -- it does NOT name
+  // layoutInDisplayCutoutMode. ALWAYS is the supported value; DEFAULT,
+  // SHORT_EDGES and NEVER are the flagged ones.
+  //
+  // With the attribute removed the theme fell back to DEFAULT, which is exactly
+  // what Play reports against 1.5.19:
+  //   LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+  //   LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+  // Setting it explicitly to `always` is the documented migration.
+  const CUTOUT_ATTR = 'android:windowLayoutInDisplayCutoutMode';
   config = withAndroidStyles(config, (config) => {
     const styles = config.modResults;
     const appTheme = styles.resources.style?.find((s) => s.$.name === 'AppTheme');
-    if (!appTheme || !appTheme.item) return config;
+    if (!appTheme) return config;
+    if (!appTheme.item) appTheme.item = [];
 
     appTheme.item = appTheme.item.filter(
       (item) =>
         item.$.name !== 'android:statusBarColor' &&
         item.$.name !== 'android:navigationBarColor' &&
-        item.$.name !== 'android:windowLayoutInDisplayCutoutMode' &&
+        item.$.name !== CUTOUT_ATTR &&
         item.$.name !== 'android:enforceEdgeToEdge' &&
         item.$.name !== 'android:windowTranslucentStatus' &&
         item.$.name !== 'android:windowTranslucentNavigation'
     );
+
+    // Re-add the cutout mode with the one value Android 15 accepts.
+    appTheme.item.push({ $: { name: CUTOUT_ATTR }, _: 'always' });
 
     return config;
   });
