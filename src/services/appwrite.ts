@@ -437,6 +437,32 @@ export const authService = {
     }
   },
 
+  /**
+   * Exchange a userId + one-time secret for a session, keeping the headers.
+   *
+   * The phone-OTP path used `account.createSession()` -- the SDK call. The SDK
+   * hands back only the parsed body, so the `x-fallback-cookies` header that
+   * carries the session on a client with no cookie jar is unreachable, and
+   * captureSessionFromHeaders never runs. On Android that means the session is
+   * created server-side and then immediately lost: the getCurrentUser() right
+   * after it goes out anonymous and the login is reported as failed.
+   *
+   * Email login and the OAuth token exchange already avoid this by going
+   * through postSession(). Phone was the one path still on the SDK, so it kept
+   * failing after the other two were fixed. Same endpoint, same payload --
+   * only the transport changes.
+   */
+  async createTokenSession(userId: string, secret: string): Promise<Models.Session> {
+    try {
+      const session = await postSession('/account/sessions/token', { userId, secret });
+      await adoptSession(session);
+      return session;
+    } catch (error) {
+      reportAuthFailure('phoneTokenSession', error);
+      throw error;
+    }
+  },
+
   // Login with Google using Appwrite SDK OAuth
   async loginWithGoogle(): Promise<Models.Session | null> {
     try {

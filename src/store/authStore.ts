@@ -435,11 +435,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // fail — a guaranteed-404/401 round-trip paid on EVERY login, with its
       // result thrown away. Create first; only clear and retry in the genuine
       // re-login case, so the common path costs one round-trip instead of two.
+      //
+      // Goes through authService.createTokenSession, not account.createSession:
+      // the SDK exposes only the parsed body, so the x-fallback-cookies header
+      // that carries the session is unreachable and the session is lost on
+      // Android the moment it is created. Email and OAuth already took this
+      // route; phone was the last path still on the SDK.
       try {
-        await account.createSession(sessionResult.userId, sessionResult.secret);
+        await authService.createTokenSession(sessionResult.userId, sessionResult.secret);
       } catch {
         try { await account.deleteSession('current'); } catch {}
-        await account.createSession(sessionResult.userId, sessionResult.secret);
+        await authService.createTokenSession(sessionResult.userId, sessionResult.secret);
       }
 
       const user = await authService.getCurrentUser();
