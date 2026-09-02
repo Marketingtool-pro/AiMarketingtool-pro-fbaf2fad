@@ -386,6 +386,19 @@ function reportAuthFailure(stage: string, error: any) {
   }
 }
 
+/**
+ * Does this error mean "the credentials were fine, MFA is still owed"?
+ *
+ * Appwrite's type is `user_more_factors_required` (401). The older string
+ * `user_mfa_required` is accepted too so a server that still sends it keeps
+ * working; matching on the message is the last resort for the same reason.
+ */
+export function isMfaRequiredError(error: any): boolean {
+  const type = String(error?.type || '');
+  if (type === 'user_more_factors_required' || type === 'user_mfa_required') return true;
+  return error?.code === 401 && /more factors|mfa/i.test(String(error?.message || ''));
+}
+
 // Auth Functions
 export const authService = {
   // Create Account
@@ -631,6 +644,40 @@ export const authService = {
       return await account.get();
     } catch (error) {
       return null;
+    }
+  },
+
+  /**
+   * account.get(), but telling "no session" apart from "session needs MFA".
+   *
+   * getCurrentUser() returns null for both, and that single null is what broke
+   * every sign-in on this project. Measured on the live server: the account
+   * madav6310@gmail.com has mfa=true and TEN sessions, one per failed attempt,
+   * every one of them provider=oauth2, factors=["email"], mfaUpdatedAt="". So
+   * the logins were succeeding; Appwrite then answered the follow-up
+   * account.get() with 401 user_more_factors_required because a second factor
+   * was still owed, getCurrentUser() swallowed that into null, and the caller
+   * read it as "not signed in" and went back to onboarding.
+   *
+   * Nothing was logged anywhere -- not Crashlytics, not logcat, not the server
+   * -- because there was no failure to log. A valid session was being thrown
+   * away.
+   *
+   * Note the type string: Appwrite sends `user_more_factors_required`. The
+   * existing check in authStore.login looked for `user_mfa_required`, which the
+   * server never sends, so even the email path's MFA branch was dead twice over
+   * (wrong string, and unreachable because nothing threw).
+   */
+  async getCurrentUserOrMfa(): Promise<{
+    user: Models.User<Models.Preferences> | null;
+    mfaRequired: boolean;
+  }> {
+    try {
+      return { user: await account.get(), mfaRequired: false };
+    } catch (error: any) {
+      if (isMfaRequiredError(error)) return { user: null, mfaRequired: true };
+      reportAuthFailure('getCurrentUser', error);
+      return { user: null, mfaRequired: false };
     }
   },
 
