@@ -202,7 +202,10 @@ async function captureSessionFromHeaders(headers: Headers): Promise<boolean> {
 
   try {
     const parsed = JSON.parse(fallback);
-    const secret = parsed?.[`a_session_${APPWRITE_PROJECT_ID}`];
+    const raw = parsed?.[`a_session_${APPWRITE_PROJECT_ID}`];
+    if (!raw) return false;
+
+    const secret = extractSessionSecret(raw);
     if (!secret) return false;
 
     client.setSession(secret);
@@ -211,6 +214,41 @@ async function captureSessionFromHeaders(headers: Headers): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Turn a fallback-cookie VALUE into the secret that X-Appwrite-Session wants.
+ *
+ * These are two different things, and conflating them is silent:
+ *
+ *   x-fallback-cookies  {"a_session_<project>": "eyJpZCI6...."}
+ *                                               ^ base64 of {"id":..,"secret":..}
+ *   X-Appwrite-Session  <the raw secret>        the hex string INSIDE that blob
+ *
+ * Verified against the live server: a session response sets
+ * `a_session_<project>=eyJpZCI6...`, i.e. the cookie value is a base64 JSON
+ * envelope, NOT the bare secret. Handing that envelope to client.setSession()
+ * sends an unusable X-Appwrite-Session, so every request after login goes out
+ * anonymous. The login itself still returns 201, so nothing throws -- the app
+ * just finds no account and returns to onboarding. iOS never notices because
+ * its cookie jar carries the real session anyway; Android has no shared jar,
+ * which is why it fails there and only there, on email, OAuth and phone alike.
+ *
+ * Written to accept either shape so it stays correct if Appwrite ever puts the
+ * bare secret in the cookie: decode, and only use the decoded `secret` when the
+ * envelope actually parses as one.
+ */
+function extractSessionSecret(raw: string): string | null {
+  try {
+    const decoded = typeof atob === 'function' ? atob(raw) : '';
+    if (decoded.startsWith('{')) {
+      const inner = JSON.parse(decoded);
+      if (inner?.secret) return String(inner.secret);
+    }
+  } catch {
+    // Not base64, or not JSON -- fall through and use the value as given.
+  }
+  return raw;
 }
 
 /**
