@@ -200,8 +200,8 @@
       "appwriteProjectId": "6952c8a0002d3365625d",
       "aiApiUrl": "https://app.marketingtool.pro",
       "firebase": {
-        "reCaptchaAndroid": "6LfbGWIsAAAAANFrzk-amOvKmohN6JCkft-uJXsR",
-        "reCaptchaIos": "6LegEWIsAAAAAOgbGP08ISyfgJWExxSRV9iLuanX"
+        "reCaptchaAndroid": "6LcmzNcsAAAAAKUz-wc5ukxP_xw81dykoN7DWIUf",
+        "reCaptchaIos": "6LdpPoUsAAAAAL0j9SOiDSg9gJE7h-3v-yJVyTKy"
       },
       "eas": {
         "projectId": "e7abf1ac-3cab-4cfb-9cb2-f55c1783dd7e"
