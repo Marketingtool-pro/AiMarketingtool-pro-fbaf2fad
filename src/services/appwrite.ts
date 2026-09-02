@@ -201,11 +201,21 @@ async function captureSessionFromHeaders(headers: Headers): Promise<boolean> {
   if (!fallback) return false;
 
   try {
+    // The value here is the cookie value -- base64 of {"id":..,"secret":..} --
+    // and that IS what X-Appwrite-Session takes. Checked in the SDK rather than
+    // assumed: setSession(v) sets `headers['X-Appwrite-Session'] = v`, and the
+    // SDK's own auth path treats config.session and
+    // cookie[`a_session_<project>`] as the same value:
+    //
+    //   let session = this.client.config.session;
+    //   if (!session) session = cookie?.[`a_session_${project}`];
+    //
+    // So it must NOT be decoded down to the inner secret. An earlier revision
+    // of this function did exactly that, on the theory that the header wanted
+    // the bare secret; it does not, and decoding would have broken email and
+    // OAuth login, which are the two paths that currently work.
     const parsed = JSON.parse(fallback);
-    const raw = parsed?.[`a_session_${APPWRITE_PROJECT_ID}`];
-    if (!raw) return false;
-
-    const secret = extractSessionSecret(raw);
+    const secret = parsed?.[`a_session_${APPWRITE_PROJECT_ID}`];
     if (!secret) return false;
 
     client.setSession(secret);
@@ -214,41 +224,6 @@ async function captureSessionFromHeaders(headers: Headers): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-/**
- * Turn a fallback-cookie VALUE into the secret that X-Appwrite-Session wants.
- *
- * These are two different things, and conflating them is silent:
- *
- *   x-fallback-cookies  {"a_session_<project>": "eyJpZCI6...."}
- *                                               ^ base64 of {"id":..,"secret":..}
- *   X-Appwrite-Session  <the raw secret>        the hex string INSIDE that blob
- *
- * Verified against the live server: a session response sets
- * `a_session_<project>=eyJpZCI6...`, i.e. the cookie value is a base64 JSON
- * envelope, NOT the bare secret. Handing that envelope to client.setSession()
- * sends an unusable X-Appwrite-Session, so every request after login goes out
- * anonymous. The login itself still returns 201, so nothing throws -- the app
- * just finds no account and returns to onboarding. iOS never notices because
- * its cookie jar carries the real session anyway; Android has no shared jar,
- * which is why it fails there and only there, on email, OAuth and phone alike.
- *
- * Written to accept either shape so it stays correct if Appwrite ever puts the
- * bare secret in the cookie: decode, and only use the decoded `secret` when the
- * envelope actually parses as one.
- */
-function extractSessionSecret(raw: string): string | null {
-  try {
-    const decoded = typeof atob === 'function' ? atob(raw) : '';
-    if (decoded.startsWith('{')) {
-      const inner = JSON.parse(decoded);
-      if (inner?.secret) return String(inner.secret);
-    }
-  } catch {
-    // Not base64, or not JSON -- fall through and use the value as given.
-  }
-  return raw;
 }
 
 /**
