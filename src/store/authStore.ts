@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import { Models, ExecutionMethod } from 'react-native-appwrite';
-import { authService, dbService, account, functions, COLLECTIONS, Query } from '../services/appwrite';
+import { authService, dbService, account, functions, COLLECTIONS, Query, isAwaitingExternalOAuth } from '../services/appwrite';
 import { biometricService } from '../services/biometric';
 import {
   sendPhoneOTP as firebaseSendOTP,
@@ -308,6 +308,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return;
         }
       }
+      // An external-browser handoff is still in flight; the deep link finishes it.
+      // Reporting failure here flashes a false error over a login about to succeed.
+      if (isAwaitingExternalOAuth()) { set({ isLoading: false }); return; }
       set({ isLoading: false, error: 'Google login was cancelled or failed' });
     } catch (error: any) {
       set({ error: error.message || 'Google login failed', isLoading: false });
@@ -327,6 +330,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return;
         }
       }
+      // An external-browser handoff is still in flight; the deep link finishes it.
+      // Reporting failure here flashes a false error over a login about to succeed.
+      if (isAwaitingExternalOAuth()) { set({ isLoading: false }); return; }
       set({ isLoading: false, error: 'Apple login was cancelled or failed' });
     } catch (error: any) {
       set({ error: error.message || 'Apple login failed', isLoading: false });
@@ -346,6 +352,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return;
         }
       }
+      // An external-browser handoff is still in flight; the deep link finishes it.
+      // Reporting failure here flashes a false error over a login about to succeed.
+      if (isAwaitingExternalOAuth()) { set({ isLoading: false }); return; }
       set({ isLoading: false, error: 'Facebook login was cancelled or failed' });
     } catch (error: any) {
       set({ error: error.message || 'Facebook login failed', isLoading: false });

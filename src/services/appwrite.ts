@@ -387,6 +387,57 @@ function reportAuthFailure(stage: string, error: any) {
 }
 
 /**
+ * True while an OAuth flow was handed to an external browser because no Custom
+ * Tabs activity existed. The sign-in is still in progress -- it finishes when
+ * the marketingtool:// deep link comes back -- so the UI must not report it as
+ * a failure.
+ */
+let awaitingExternalOAuth = false;
+export const isAwaitingExternalOAuth = (): boolean => awaitingExternalOAuth;
+export const clearAwaitingExternalOAuth = (): void => { awaitingExternalOAuth = false; };
+
+/**
+ * openAuthSessionAsync, but a device with no Custom Tabs browser is not fatal.
+ *
+ * Measured on the owner's device (Redmi 2411DRN47I, Android 16, v1.5.19/1033)
+ * via Crashlytics -- every OAuth provider died at the same line, before any
+ * network call:
+ *
+ *   Auth oauthGoogle   [ERR_NO_MATCHING_ACTIVITY] ExpoWebBrowser.openBrowserAsync rejected
+ *   Auth oauthFacebook [ERR_NO_MATCHING_ACTIVITY]  "
+ *   Auth oauthApple    [ERR_NO_MATCHING_ACTIVITY]  "
+ *   -> Caused by: No matching browser activity found
+ *
+ * The <queries> block is correct (it declares CustomTabsService and ACTION_VIEW,
+ * verified with apkanalyzer on the shipped APK), so this is not package
+ * visibility. The device simply has no browser exposing a Custom Tabs service --
+ * common on ROMs that ship only a vendor browser or where Chrome is disabled.
+ *
+ * Linking.openURL() has no such requirement: it hands the URL to whatever can
+ * open it. The redirect still lands on marketingtool://oauth/... and
+ * completeOAuthFromUrl() finishes the login from the deep link, which is a path
+ * that already exists and is already exercised on every Android OAuth return.
+ *
+ * iOS never reaches this: ASWebAuthenticationSession needs no such activity.
+ */
+async function openAuthSession(
+  url: string,
+  returnUrl: string
+): Promise<{ type: string; url?: string }> {
+  awaitingExternalOAuth = false;
+  try {
+    return await WebBrowser.openAuthSessionAsync(url, returnUrl);
+  } catch (error: any) {
+    const detail = `${error?.code || ''} ${error?.message || ''}`;
+    if (!/ERR_NO_MATCHING_ACTIVITY|No matching browser activity/i.test(detail)) throw error;
+    reportAuthFailure('openAuthSessionNoBrowser', error);
+    awaitingExternalOAuth = true;
+    await Linking.openURL(url);
+    return { type: 'external' };
+  }
+}
+
+/**
  * Does this error mean "the credentials were fine, MFA is still owed"?
  *
  * Appwrite's type is `user_more_factors_required` (401). The older string
@@ -473,7 +524,8 @@ export const authService = {
       if (__DEV__) console.log('[OAuth] Opening URL:', oauthUrlString);
 
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await WebBrowser.openAuthSessionAsync(oauthUrlString, 'marketingtool://');
+      const result = await openAuthSession(oauthUrlString, 'marketingtool://');
+      if (result.type === 'external') return null; // finishes via the deep link
 
       if (__DEV__) console.log('[OAuth] Browser result type:', result.type);
 
@@ -543,7 +595,8 @@ export const authService = {
       const oauthUrlString = oauthUrl.toString();
 
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await WebBrowser.openAuthSessionAsync(oauthUrlString, 'marketingtool://');
+      const result = await openAuthSession(oauthUrlString, 'marketingtool://');
+      if (result.type === 'external') return null; // finishes via the deep link
 
       if (result.type === 'success' && result.url) {
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
@@ -599,7 +652,8 @@ export const authService = {
       const oauthUrlString = oauthUrl.toString();
 
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await WebBrowser.openAuthSessionAsync(oauthUrlString, 'marketingtool://');
+      const result = await openAuthSession(oauthUrlString, 'marketingtool://');
+      if (result.type === 'external') return null; // finishes via the deep link
 
       if (result.type === 'success' && result.url) {
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
