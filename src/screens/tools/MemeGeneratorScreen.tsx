@@ -115,7 +115,7 @@ const MemeGeneratorScreen = () => {
   const requestPermissions = async () => {
     const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
     const { status: libraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    const { status: mediaStatus } = await MediaLibrary.requestPermissionsAsync();
+    await MediaLibrary.requestPermissionsAsync();
 
     if (cameraStatus !== 'granted' || libraryStatus !== 'granted') {
       Alert.alert(
