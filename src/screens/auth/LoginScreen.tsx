@@ -543,6 +543,7 @@ const LoginScreen = () => {
         visible={showEmailModal}
         animationType="slide"
         transparent={true}
+        onRequestClose={() => setShowEmailModal(false)}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -608,6 +609,7 @@ const LoginScreen = () => {
         visible={mfaPending}
         animationType="slide"
         transparent={true}
+        onRequestClose={() => useAuthStore.setState({ mfaPending: false })}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -670,6 +672,7 @@ const LoginScreen = () => {
         visible={showCountryPicker}
         animationType="slide"
         transparent={true}
+        onRequestClose={() => setShowCountryPicker(false)}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
