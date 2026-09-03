@@ -10,6 +10,20 @@ on:
 permissions:
   contents: read
 
+# One run per branch/PR. A new push cancels the run its push superseded
+# instead of queueing another alongside it. Without this, every push to a PR
+# stacked a further Build and Test run: 12 were sitting queued at once, which
+# is what exhausted the hosted-runner job concurrency limit for the whole org
+# (GitHub: "All GitHub-hosted runners with label [ubuntu-latest] are busy").
+#
+# Deploy workflows deliberately keep cancel-in-progress: false -- a release
+# must never be killed half way through. This applies to PR CI only, where
+# only the newest commit's result is of any use.
+concurrency:
+  group: build-and-test-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+
 jobs:
   test:
     runs-on: ubuntu-latest

@@ -10,6 +10,10 @@ permissions:
   checks: write
   contents: read
   pull-requests: write
+concurrency:
+  group: fb-hosting-pr-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build_and_preview:
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
