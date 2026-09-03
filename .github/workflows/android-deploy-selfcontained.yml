@@ -46,7 +46,12 @@ permissions:
 jobs:
   android:
     name: Build (Android, production)
-    runs-on: ubuntu-latest
+    # GitHub-hosted runners have been unavailable for hours at a time (jobs sit
+    # queued and never start), which blocked every release. The org-level
+    # self-hosted runner "Loken" is macOS/X64 and picks these up immediately.
+    # eas build/submit run on EAS's cloud builders, so this box only needs Node
+    # and network -- no Android SDK, no JDK.
+    runs-on: [self-hosted, macOS, X64]
     # 120 was not enough once x86_64 joined buildArchs. Run 33324935509 built
     # 1.5.17 (1029) for three ABIs -- every source-built library (Skia,
     # Reanimated, Nitro, Expo core, Screens, Gesture Handler, Worklets) compiled
