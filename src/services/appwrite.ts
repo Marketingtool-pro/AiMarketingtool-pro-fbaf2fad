@@ -304,6 +304,59 @@ export const deleteSession = async (): Promise<void> => {
  * relied on. Safe to call with any URL: anything that is not an OAuth success
  * callback is ignored.
  */
+/**
+ * Redeem an OAuth one-time secret EXACTLY once.
+ *
+ * Three separate paths race for the same callback:
+ *
+ *   App.tsx  Linking.getInitialURL()      -> completeOAuthFromUrl
+ *   App.tsx  Linking 'url' listener       -> completeOAuthFromUrl
+ *   appwrite loginWithGoogle/Apple/Facebook -> openAuthSession result
+ *
+ * Appwrite's secret is single-use, so whichever runs first succeeds and the
+ * others get 401 user_invalid_token. Measured on the owner's device via
+ * Crashlytics (1.5.19 build 1033, Android 16, 88% Xiaomi):
+ *
+ *   Auth oauthGoogle [user_invalid_token/401] Invalid token passed in the request.
+ *   16 events, 3 users
+ *
+ * So the login SUCCEEDED and the app then reported the loser of the race as a
+ * failure. Tracking consumed secrets makes the redemption idempotent: the first
+ * caller does the work, the rest return the same success without touching the
+ * network.
+ *
+ * The set is capped so a long-lived process cannot grow it without bound; only
+ * a handful of secrets are ever in flight.
+ */
+const consumedOAuthSecrets = new Map<string, Models.Session>();
+
+/**
+ * Appwrite's answer when a one-time OAuth secret has already been spent.
+ * Confirmed from the device: type `user_invalid_token`, HTTP 401,
+ * "Invalid token passed in the request."
+ */
+export function isOAuthTokenSpent(error: any): boolean {
+  return String(error?.type || '') === 'user_invalid_token'
+    || (error?.code === 401 && /invalid token/i.test(String(error?.message || '')));
+}
+
+async function redeemOAuthToken(userId: string, secret: string): Promise<Models.Session> {
+  // Return the SAME session the winner created, rather than null: every caller
+  // checks `if (session)` and a null would be read as "login failed" and flash
+  // an error over a login that already succeeded.
+  const already = consumedOAuthSecrets.get(secret);
+  if (already) return already;
+
+  const session = await postSession('/account/sessions/token', { userId, secret });
+  await adoptSession(session);
+
+  consumedOAuthSecrets.set(secret, session);
+  if (consumedOAuthSecrets.size > 20) {
+    consumedOAuthSecrets.delete(consumedOAuthSecrets.keys().next().value as string);
+  }
+  return session;
+}
+
 export async function completeOAuthFromUrl(url: string | null): Promise<boolean> {
   if (!url) return false;
   if (!url.includes('oauth/success') && !url.includes('secret=')) return false;
@@ -329,17 +382,21 @@ export async function completeOAuthFromUrl(url: string | null): Promise<boolean>
   if (!params.userId || !params.secret) return false;
 
   try {
-    const session = await postSession('/account/sessions/token', {
-      userId: params.userId,
-      secret: params.secret,
-    });
-    await adoptSession(session);
+    // redeemOAuthToken, not postSession directly: getInitialURL, the 'url'
+    // listener and the in-process handler all race for this same single-use
+    // secret. Whoever gets here second must not re-spend it.
+    await redeemOAuthToken(params.userId, params.secret);
     if (__DEV__) console.log('[OAuth] Session created from deep link');
     return true;
   } catch (error: any) {
-    // An already-consumed secret lands here when the in-process handler won the
-    // race and completed the login first. That is a success, not a failure, so
-    // it must not surface as an error to the user.
+    // A secret already spent by the winner of the race reaches here only if it
+    // was consumed outside this process. That is still a completed login, so it
+    // must not surface as an error -- reporting it is what put 16 spurious
+    // "Invalid token passed in the request" failures in front of the user.
+    if (isOAuthTokenSpent(error)) {
+      if (__DEV__) console.log('[OAuth] Secret already redeemed; treating as success');
+      return true;
+    }
     if (__DEV__) console.log('[OAuth] Deep link session failed:', error?.message || error);
     reportAuthFailure('oauthDeepLinkSession', error);
     return false;
@@ -493,9 +550,11 @@ export const authService = {
    */
   async createTokenSession(userId: string, secret: string): Promise<Models.Session> {
     try {
-      const session = await postSession('/account/sessions/token', { userId, secret });
-      await adoptSession(session);
-      return session;
+      // Shares redeemOAuthToken's once-only guard: the phone secret is
+      // single-use too, and verifyPhoneOTP retries this call after clearing a
+      // stale session, which would otherwise spend it twice.
+      // A repeat call returns the same session rather than re-spending the secret.
+      return await redeemOAuthToken(userId, secret);
     } catch (error) {
       reportAuthFailure('phoneTokenSession', error);
       throw error;
@@ -541,8 +600,9 @@ export const authService = {
 
           if (secret && userId) {
             if (__DEV__) console.log('[OAuth] Creating session with token...');
-            const session = await postSession('/account/sessions/token', { userId, secret });
-            await adoptSession(session);
+            const session = await redeemOAuthToken(userId, secret);
+            // null = another path already redeemed this secret and adopted the session.
+            // The user is signed in either way; re-spending it would 401.
             return session;
           }
         }
@@ -605,8 +665,9 @@ export const authService = {
           const userId = urlParams.userId;
 
           if (secret && userId) {
-            const session = await postSession('/account/sessions/token', { userId, secret });
-            await adoptSession(session);
+            const session = await redeemOAuthToken(userId, secret);
+            // null = another path already redeemed this secret and adopted the session.
+            // The user is signed in either way; re-spending it would 401.
             return session;
           }
         }
@@ -662,8 +723,9 @@ export const authService = {
           const userId = urlParams.userId;
 
           if (secret && userId) {
-            const session = await postSession('/account/sessions/token', { userId, secret });
-            await adoptSession(session);
+            const session = await redeemOAuthToken(userId, secret);
+            // null = another path already redeemed this secret and adopted the session.
+            // The user is signed in either way; re-spending it would 401.
             return session;
           }
         }
