@@ -28,6 +28,7 @@ jobs:
     # (org and repo runner lists are both empty), so the job could never be
     # picked up — it queued forever. Use a GitHub-hosted runner.
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write   # create/update the react-android-* release
       packages: write

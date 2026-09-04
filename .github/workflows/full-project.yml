@@ -41,6 +41,7 @@ jobs:
     if: ${{ inputs.target == 'full' || inputs.target == 'phone' }}
     environment: ORG_WORKFLOW_TOKEN
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Trigger and watch phone CI
@@ -55,6 +56,7 @@ jobs:
     if: ${{ inputs.target == 'full' || inputs.target == 'web' }}
     environment: ORG_WORKFLOW_TOKEN
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Trigger and watch web CI
@@ -70,6 +72,7 @@ jobs:
     needs: phone-ci
     environment: ORG_WORKFLOW_TOKEN
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Trigger and watch phone production deploy
