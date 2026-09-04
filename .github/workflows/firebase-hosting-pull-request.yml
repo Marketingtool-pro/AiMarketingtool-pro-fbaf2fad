@@ -10,10 +10,15 @@ permissions:
   checks: write
   contents: read
   pull-requests: write
+concurrency:
+  group: fb-hosting-pr-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build_and_preview:
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # bun repo (no package-lock.json) — `npm ci` failed instantly. Use plain install.
