@@ -26,7 +26,13 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Was ubuntu-latest and sat queued for hours. The org saturates the
+    # GitHub-hosted job concurrency limit -- GitHub's own message is "All
+    # GitHub-hosted runners with label [ubuntu-latest] are busy" -- and
+    # self-hosted runners are exempt from that limit. The sibling
+    # eas-build-preview job in this same workflow already ran self-hosted,
+    # so this job was the odd one out.
+    runs-on: [self-hosted, macOS, X64]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
