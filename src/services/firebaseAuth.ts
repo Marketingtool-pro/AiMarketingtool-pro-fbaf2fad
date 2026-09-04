@@ -186,12 +186,33 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
     // instead of guessed at.
     const raw = String(error.message || '');
     if (error.code === 'auth/unknown' && /API key (expired|not valid)/i.test(raw)) {
+      // CORRECTION (2026-09-04): "API key expired" here is Firebase's generic
+      // auth/unknown wrapper around an APP VERIFICATION failure -- it is not a
+      // statement about the API key. Verified live on 2026-09-04, all of which
+      // were fine while a device still showed this dialog:
+      //
+      //   both signing certs registered in Firebase (6 SHA entries: upload
+      //     b1eb06e5/dd1e7367 and Play deployment eaf2a45c/93ef0278)
+      //   reCAPTCHA key 6LfFzqUt... allowedPackageNames=pro.marketingtool.app,
+      //     supportNonGoogleAppStoreDistribution=true, no wafSettings
+      //   the reCAPTCHA SDK IS in the shipped APK (675 dex references)
+      //   no deleted API keys in the project (18 active)
+      //
+      // Play Integrity reports 0 requests in 30 days across 703 installs, so
+      // Android never gets an Integrity verdict and every attempt depends on
+      // the reCAPTCHA fallback.
+      //
+      // Telling the user to "update from the Play Store" sent them chasing an
+      // update that was not the fix. Surface the real code instead, so a
+      // screenshot is diagnostic rather than misleading.
+      const detail = [error.code, raw.slice(0, 120)].filter(Boolean).join(' — ');
       return {
         success: false,
         error:
-          'Phone sign-in could not be completed on this device. Please update ' +
-          'MarketingTool from the Play Store and try again — if it still fails, ' +
-          'contact support so we can look at your device specifically.',
+          'Phone verification failed on this device. This is an app-verification ' +
+          'failure, not a problem with your number.\n\n' +
+          `Details: ${detail}\n\n` +
+          'Use "Sign in with Email" to continue, and send this message to support.',
       };
     }
 
