@@ -221,7 +221,8 @@
     "react": "$react",
     "react-dom": "$react-dom",
     "react-native": "$react-native",
-    "expo-constants": "$expo-constants"
+    "expo-constants": "$expo-constants",
+    "qs": "^6.16.0"
   },
   "expo": {
     "doctor": {
