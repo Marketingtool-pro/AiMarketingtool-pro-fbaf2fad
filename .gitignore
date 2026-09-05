@@ -101,3 +101,22 @@ json-schema-org-JSON-Schema-Test-Suite-*/
 #
 # package-lock.json is not caught by ~/.gitignore_global's "*.lock" rule, so it
 # needs no negation. The old "!yarn.lock" line existed only to defeat that rule.
+
+# Self-hosted runner installs. A GitHub Actions runner was once unpacked into
+# this repo root, and its scripts were committed alongside a 68 MB CircleCI
+# runner binary. circleci-runner and swiftly.pkg were already listed above but
+# stayed tracked, because .gitignore does not untrack files already in the
+# index. They are untracked now; these rules stop them coming back.
+actions-runner/
+/config.sh
+/run.sh
+/run
+/run-helper.sh
+/run-helper.sh.template
+/run-helper.cmd.template
+
+# Shell redirect accidents and editor leftovers committed at the repo root.
+/=
+/0.6.0
+/1.14.4
+/.flF1AE00B8
