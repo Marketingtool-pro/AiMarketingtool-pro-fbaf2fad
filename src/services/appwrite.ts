@@ -201,6 +201,19 @@ async function captureSessionFromHeaders(headers: Headers): Promise<boolean> {
   if (!fallback) return false;
 
   try {
+    // The value here is the cookie value -- base64 of {"id":..,"secret":..} --
+    // and that IS what X-Appwrite-Session takes. Checked in the SDK rather than
+    // assumed: setSession(v) sets `headers['X-Appwrite-Session'] = v`, and the
+    // SDK's own auth path treats config.session and
+    // cookie[`a_session_<project>`] as the same value:
+    //
+    //   let session = this.client.config.session;
+    //   if (!session) session = cookie?.[`a_session_${project}`];
+    //
+    // So it must NOT be decoded down to the inner secret. An earlier revision
+    // of this function did exactly that, on the theory that the header wanted
+    // the bare secret; it does not, and decoding would have broken email and
+    // OAuth login, which are the two paths that currently work.
     const parsed = JSON.parse(fallback);
     const secret = parsed?.[`a_session_${APPWRITE_PROJECT_ID}`];
     if (!secret) return false;
@@ -291,6 +304,59 @@ export const deleteSession = async (): Promise<void> => {
  * relied on. Safe to call with any URL: anything that is not an OAuth success
  * callback is ignored.
  */
+/**
+ * Redeem an OAuth one-time secret EXACTLY once.
+ *
+ * Three separate paths race for the same callback:
+ *
+ *   App.tsx  Linking.getInitialURL()      -> completeOAuthFromUrl
+ *   App.tsx  Linking 'url' listener       -> completeOAuthFromUrl
+ *   appwrite loginWithGoogle/Apple/Facebook -> openAuthSession result
+ *
+ * Appwrite's secret is single-use, so whichever runs first succeeds and the
+ * others get 401 user_invalid_token. Measured on the owner's device via
+ * Crashlytics (1.5.19 build 1033, Android 16, 88% Xiaomi):
+ *
+ *   Auth oauthGoogle [user_invalid_token/401] Invalid token passed in the request.
+ *   16 events, 3 users
+ *
+ * So the login SUCCEEDED and the app then reported the loser of the race as a
+ * failure. Tracking consumed secrets makes the redemption idempotent: the first
+ * caller does the work, the rest return the same success without touching the
+ * network.
+ *
+ * The set is capped so a long-lived process cannot grow it without bound; only
+ * a handful of secrets are ever in flight.
+ */
+const consumedOAuthSecrets = new Map<string, Models.Session>();
+
+/**
+ * Appwrite's answer when a one-time OAuth secret has already been spent.
+ * Confirmed from the device: type `user_invalid_token`, HTTP 401,
+ * "Invalid token passed in the request."
+ */
+export function isOAuthTokenSpent(error: any): boolean {
+  return String(error?.type || '') === 'user_invalid_token'
+    || (error?.code === 401 && /invalid token/i.test(String(error?.message || '')));
+}
+
+async function redeemOAuthToken(userId: string, secret: string): Promise<Models.Session> {
+  // Return the SAME session the winner created, rather than null: every caller
+  // checks `if (session)` and a null would be read as "login failed" and flash
+  // an error over a login that already succeeded.
+  const already = consumedOAuthSecrets.get(secret);
+  if (already) return already;
+
+  const session = await postSession('/account/sessions/token', { userId, secret });
+  await adoptSession(session);
+
+  consumedOAuthSecrets.set(secret, session);
+  if (consumedOAuthSecrets.size > 20) {
+    consumedOAuthSecrets.delete(consumedOAuthSecrets.keys().next().value as string);
+  }
+  return session;
+}
+
 export async function completeOAuthFromUrl(url: string | null): Promise<boolean> {
   if (!url) return false;
   if (!url.includes('oauth/success') && !url.includes('secret=')) return false;
@@ -316,17 +382,21 @@ export async function completeOAuthFromUrl(url: string | null): Promise<boolean>
   if (!params.userId || !params.secret) return false;
 
   try {
-    const session = await postSession('/account/sessions/token', {
-      userId: params.userId,
-      secret: params.secret,
-    });
-    await adoptSession(session);
+    // redeemOAuthToken, not postSession directly: getInitialURL, the 'url'
+    // listener and the in-process handler all race for this same single-use
+    // secret. Whoever gets here second must not re-spend it.
+    await redeemOAuthToken(params.userId, params.secret);
     if (__DEV__) console.log('[OAuth] Session created from deep link');
     return true;
   } catch (error: any) {
-    // An already-consumed secret lands here when the in-process handler won the
-    // race and completed the login first. That is a success, not a failure, so
-    // it must not surface as an error to the user.
+    // A secret already spent by the winner of the race reaches here only if it
+    // was consumed outside this process. That is still a completed login, so it
+    // must not surface as an error -- reporting it is what put 16 spurious
+    // "Invalid token passed in the request" failures in front of the user.
+    if (isOAuthTokenSpent(error)) {
+      if (__DEV__) console.log('[OAuth] Secret already redeemed; treating as success');
+      return true;
+    }
     if (__DEV__) console.log('[OAuth] Deep link session failed:', error?.message || error);
     reportAuthFailure('oauthDeepLinkSession', error);
     return false;
@@ -373,6 +443,70 @@ function reportAuthFailure(stage: string, error: any) {
   }
 }
 
+/**
+ * True while an OAuth flow was handed to an external browser because no Custom
+ * Tabs activity existed. The sign-in is still in progress -- it finishes when
+ * the marketingtool:// deep link comes back -- so the UI must not report it as
+ * a failure.
+ */
+let awaitingExternalOAuth = false;
+export const isAwaitingExternalOAuth = (): boolean => awaitingExternalOAuth;
+export const clearAwaitingExternalOAuth = (): void => { awaitingExternalOAuth = false; };
+
+/**
+ * openAuthSessionAsync, but a device with no Custom Tabs browser is not fatal.
+ *
+ * Measured on the owner's device (Redmi 2411DRN47I, Android 16, v1.5.19/1033)
+ * via Crashlytics -- every OAuth provider died at the same line, before any
+ * network call:
+ *
+ *   Auth oauthGoogle   [ERR_NO_MATCHING_ACTIVITY] ExpoWebBrowser.openBrowserAsync rejected
+ *   Auth oauthFacebook [ERR_NO_MATCHING_ACTIVITY]  "
+ *   Auth oauthApple    [ERR_NO_MATCHING_ACTIVITY]  "
+ *   -> Caused by: No matching browser activity found
+ *
+ * The <queries> block is correct (it declares CustomTabsService and ACTION_VIEW,
+ * verified with apkanalyzer on the shipped APK), so this is not package
+ * visibility. The device simply has no browser exposing a Custom Tabs service --
+ * common on ROMs that ship only a vendor browser or where Chrome is disabled.
+ *
+ * Linking.openURL() has no such requirement: it hands the URL to whatever can
+ * open it. The redirect still lands on marketingtool://oauth/... and
+ * completeOAuthFromUrl() finishes the login from the deep link, which is a path
+ * that already exists and is already exercised on every Android OAuth return.
+ *
+ * iOS never reaches this: ASWebAuthenticationSession needs no such activity.
+ */
+async function openAuthSession(
+  url: string,
+  returnUrl: string
+): Promise<{ type: string; url?: string }> {
+  awaitingExternalOAuth = false;
+  try {
+    return await WebBrowser.openAuthSessionAsync(url, returnUrl);
+  } catch (error: any) {
+    const detail = `${error?.code || ''} ${error?.message || ''}`;
+    if (!/ERR_NO_MATCHING_ACTIVITY|No matching browser activity/i.test(detail)) throw error;
+    reportAuthFailure('openAuthSessionNoBrowser', error);
+    awaitingExternalOAuth = true;
+    await Linking.openURL(url);
+    return { type: 'external' };
+  }
+}
+
+/**
+ * Does this error mean "the credentials were fine, MFA is still owed"?
+ *
+ * Appwrite's type is `user_more_factors_required` (401). The older string
+ * `user_mfa_required` is accepted too so a server that still sends it keeps
+ * working; matching on the message is the last resort for the same reason.
+ */
+export function isMfaRequiredError(error: any): boolean {
+  const type = String(error?.type || '');
+  if (type === 'user_more_factors_required' || type === 'user_mfa_required') return true;
+  return error?.code === 401 && /more factors|mfa/i.test(String(error?.message || ''));
+}
+
 // Auth Functions
 export const authService = {
   // Create Account
@@ -399,6 +533,34 @@ export const authService = {
     }
   },
 
+  /**
+   * Exchange a userId + one-time secret for a session, keeping the headers.
+   *
+   * The phone-OTP path used `account.createSession()` -- the SDK call. The SDK
+   * hands back only the parsed body, so the `x-fallback-cookies` header that
+   * carries the session on a client with no cookie jar is unreachable, and
+   * captureSessionFromHeaders never runs. On Android that means the session is
+   * created server-side and then immediately lost: the getCurrentUser() right
+   * after it goes out anonymous and the login is reported as failed.
+   *
+   * Email login and the OAuth token exchange already avoid this by going
+   * through postSession(). Phone was the one path still on the SDK, so it kept
+   * failing after the other two were fixed. Same endpoint, same payload --
+   * only the transport changes.
+   */
+  async createTokenSession(userId: string, secret: string): Promise<Models.Session> {
+    try {
+      // Shares redeemOAuthToken's once-only guard: the phone secret is
+      // single-use too, and verifyPhoneOTP retries this call after clearing a
+      // stale session, which would otherwise spend it twice.
+      // A repeat call returns the same session rather than re-spending the secret.
+      return await redeemOAuthToken(userId, secret);
+    } catch (error) {
+      reportAuthFailure('phoneTokenSession', error);
+      throw error;
+    }
+  },
+
   // Login with Google using Appwrite SDK OAuth
   async loginWithGoogle(): Promise<Models.Session | null> {
     try {
@@ -421,7 +583,8 @@ export const authService = {
       if (__DEV__) console.log('[OAuth] Opening URL:', oauthUrlString);
 
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await WebBrowser.openAuthSessionAsync(oauthUrlString, 'marketingtool://');
+      const result = await openAuthSession(oauthUrlString, 'marketingtool://');
+      if (result.type === 'external') return null; // finishes via the deep link
 
       if (__DEV__) console.log('[OAuth] Browser result type:', result.type);
 
@@ -437,8 +600,9 @@ export const authService = {
 
           if (secret && userId) {
             if (__DEV__) console.log('[OAuth] Creating session with token...');
-            const session = await postSession('/account/sessions/token', { userId, secret });
-            await adoptSession(session);
+            const session = await redeemOAuthToken(userId, secret);
+            // null = another path already redeemed this secret and adopted the session.
+            // The user is signed in either way; re-spending it would 401.
             return session;
           }
         }
@@ -491,7 +655,8 @@ export const authService = {
       const oauthUrlString = oauthUrl.toString();
 
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await WebBrowser.openAuthSessionAsync(oauthUrlString, 'marketingtool://');
+      const result = await openAuthSession(oauthUrlString, 'marketingtool://');
+      if (result.type === 'external') return null; // finishes via the deep link
 
       if (result.type === 'success' && result.url) {
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
@@ -500,8 +665,9 @@ export const authService = {
           const userId = urlParams.userId;
 
           if (secret && userId) {
-            const session = await postSession('/account/sessions/token', { userId, secret });
-            await adoptSession(session);
+            const session = await redeemOAuthToken(userId, secret);
+            // null = another path already redeemed this secret and adopted the session.
+            // The user is signed in either way; re-spending it would 401.
             return session;
           }
         }
@@ -547,7 +713,8 @@ export const authService = {
       const oauthUrlString = oauthUrl.toString();
 
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await WebBrowser.openAuthSessionAsync(oauthUrlString, 'marketingtool://');
+      const result = await openAuthSession(oauthUrlString, 'marketingtool://');
+      if (result.type === 'external') return null; // finishes via the deep link
 
       if (result.type === 'success' && result.url) {
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
@@ -556,8 +723,9 @@ export const authService = {
           const userId = urlParams.userId;
 
           if (secret && userId) {
-            const session = await postSession('/account/sessions/token', { userId, secret });
-            await adoptSession(session);
+            const session = await redeemOAuthToken(userId, secret);
+            // null = another path already redeemed this secret and adopted the session.
+            // The user is signed in either way; re-spending it would 401.
             return session;
           }
         }
@@ -592,6 +760,40 @@ export const authService = {
       return await account.get();
     } catch (error) {
       return null;
+    }
+  },
+
+  /**
+   * account.get(), but telling "no session" apart from "session needs MFA".
+   *
+   * getCurrentUser() returns null for both, and that single null is what broke
+   * every sign-in on this project. Measured on the live server: the account
+   * madav6310@gmail.com has mfa=true and TEN sessions, one per failed attempt,
+   * every one of them provider=oauth2, factors=["email"], mfaUpdatedAt="". So
+   * the logins were succeeding; Appwrite then answered the follow-up
+   * account.get() with 401 user_more_factors_required because a second factor
+   * was still owed, getCurrentUser() swallowed that into null, and the caller
+   * read it as "not signed in" and went back to onboarding.
+   *
+   * Nothing was logged anywhere -- not Crashlytics, not logcat, not the server
+   * -- because there was no failure to log. A valid session was being thrown
+   * away.
+   *
+   * Note the type string: Appwrite sends `user_more_factors_required`. The
+   * existing check in authStore.login looked for `user_mfa_required`, which the
+   * server never sends, so even the email path's MFA branch was dead twice over
+   * (wrong string, and unreachable because nothing threw).
+   */
+  async getCurrentUserOrMfa(): Promise<{
+    user: Models.User<Models.Preferences> | null;
+    mfaRequired: boolean;
+  }> {
+    try {
+      return { user: await account.get(), mfaRequired: false };
+    } catch (error: any) {
+      if (isMfaRequiredError(error)) return { user: null, mfaRequired: true };
+      reportAuthFailure('getCurrentUser', error);
+      return { user: null, mfaRequired: false };
     }
   },
 

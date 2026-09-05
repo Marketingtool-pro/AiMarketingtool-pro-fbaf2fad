@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import { Models, ExecutionMethod } from 'react-native-appwrite';
-import { authService, dbService, account, functions, COLLECTIONS, Query } from '../services/appwrite';
+import { authService, dbService, account, functions, COLLECTIONS, Query, isAwaitingExternalOAuth } from '../services/appwrite';
 import { biometricService } from '../services/biometric';
 import {
   sendPhoneOTP as firebaseSendOTP,
@@ -195,7 +195,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         setTimeout(() => reject(new Error('Login timeout')), 30000)
       );
       await Promise.race([authService.login(email, password), timeoutPromise]);
-      const user = await Promise.race([authService.getCurrentUser(), timeoutPromise]) as any;
+      // getCurrentUserOrMfa, not getCurrentUser: the latter returns null both
+      // for "no session" and for "session is valid but still owes a second
+      // factor", and that conflation silently dropped every MFA-enabled login.
+      const cur = await Promise.race([authService.getCurrentUserOrMfa(), timeoutPromise]) as any;
+      if (cur?.mfaRequired) {
+        set({ mfaPending: true, isLoading: false });
+        return;
+      }
+      const user = cur?.user;
       if (user) {
         const profile = await get().fetchOrCreateProfile(user);
         set({ user, profile, isAuthenticated: true, isLoading: false });
@@ -285,13 +293,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const session = await authService.loginWithGoogle();
       if (session) {
-        const user = await authService.getCurrentUser();
+        // See authService.getCurrentUserOrMfa: a session that still owes a
+        // second factor is a SUCCESSFUL login, not a failed one. Reading it as
+        // failure is what sent MFA-enabled accounts back to onboarding after
+        // the Google account picker.
+        const { user, mfaRequired } = await authService.getCurrentUserOrMfa();
+        if (mfaRequired) {
+          set({ mfaPending: true, isLoading: false });
+          return;
+        }
         if (user) {
           const profile = await get().fetchOrCreateProfile(user);
           set({ user, profile, isAuthenticated: true, isLoading: false });
           return;
         }
       }
+      // An external-browser handoff is still in flight; the deep link finishes it.
+      // Reporting failure here flashes a false error over a login about to succeed.
+      if (isAwaitingExternalOAuth()) { set({ isLoading: false }); return; }
       set({ isLoading: false, error: 'Google login was cancelled or failed' });
     } catch (error: any) {
       set({ error: error.message || 'Google login failed', isLoading: false });
@@ -311,6 +330,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return;
         }
       }
+      // An external-browser handoff is still in flight; the deep link finishes it.
+      // Reporting failure here flashes a false error over a login about to succeed.
+      if (isAwaitingExternalOAuth()) { set({ isLoading: false }); return; }
       set({ isLoading: false, error: 'Apple login was cancelled or failed' });
     } catch (error: any) {
       set({ error: error.message || 'Apple login failed', isLoading: false });
@@ -330,6 +352,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return;
         }
       }
+      // An external-browser handoff is still in flight; the deep link finishes it.
+      // Reporting failure here flashes a false error over a login about to succeed.
+      if (isAwaitingExternalOAuth()) { set({ isLoading: false }); return; }
       set({ isLoading: false, error: 'Facebook login was cancelled or failed' });
     } catch (error: any) {
       set({ error: error.message || 'Facebook login failed', isLoading: false });
@@ -435,14 +460,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // fail — a guaranteed-404/401 round-trip paid on EVERY login, with its
       // result thrown away. Create first; only clear and retry in the genuine
       // re-login case, so the common path costs one round-trip instead of two.
+      //
+      // Goes through authService.createTokenSession, not account.createSession:
+      // the SDK exposes only the parsed body, so the x-fallback-cookies header
+      // that carries the session is unreachable and the session is lost on
+      // Android the moment it is created. Email and OAuth already took this
+      // route; phone was the last path still on the SDK.
       try {
-        await account.createSession(sessionResult.userId, sessionResult.secret);
+        await authService.createTokenSession(sessionResult.userId, sessionResult.secret);
       } catch {
         try { await account.deleteSession('current'); } catch {}
-        await account.createSession(sessionResult.userId, sessionResult.secret);
+        await authService.createTokenSession(sessionResult.userId, sessionResult.secret);
       }
 
-      const user = await authService.getCurrentUser();
+      // Same reasoning as loginWithGoogle: an MFA-pending session is a login
+      // that worked. Treating it as "could not fetch user" turned a solvable
+      // second-factor prompt into a hard OTP failure.
+      const { user, mfaRequired } = await authService.getCurrentUserOrMfa();
+      if (mfaRequired) {
+        set({ mfaPending: true, tempPhone: null, tempVerificationId: null });
+        return;
+      }
       if (!user) throw new Error('Session created but could not fetch user');
 
       // Authenticate as soon as the session is real.
@@ -532,10 +570,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Auth check timeout')), 30000)
       );
-      const user = await Promise.race([
-        authService.getCurrentUser(),
+      const cur = await Promise.race([
+        authService.getCurrentUserOrMfa(),
         timeoutPromise
       ]) as any;
+      // A stored session that still owes a second factor must land on the MFA
+      // prompt, not on onboarding -- otherwise the app forgets a real session
+      // on every cold start and the user can never finish signing in.
+      if (cur?.mfaRequired) {
+        set({ user: null, profile: null, isAuthenticated: false, mfaPending: true, isLoading: false });
+        return;
+      }
+      const user = cur?.user;
       if (user) {
         const profile = await get().fetchOrCreateProfile(user);
         set({ user, profile, isAuthenticated: true, isLoading: false });
