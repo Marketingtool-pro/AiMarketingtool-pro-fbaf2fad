@@ -64,16 +64,46 @@ const withAndroidAbiFilters = (config) =>
       return cfg;
     }
 
-    // Anchor on the versionName line inside defaultConfig, which the Expo bare
-    // template always emits, and insert immediately after it.
-    const anchor = /(defaultConfig\s*\{[\s\S]*?versionName\s+["'][^"']*["'])/;
-    if (!anchor.test(contents)) {
+    // Anchor on versionName inside the same defaultConfig block and insert
+    // immediately after it (brace-depth aware, avoids cross-block regex drift).
+    const defaultConfigMatch = /defaultConfig\s*\{/.exec(contents);
+    if (!defaultConfigMatch) {
       throw new Error(
         'withAndroidAbiFilters: could not find defaultConfig/versionName in app/build.gradle'
       );
     }
 
-    contents = contents.replace(anchor, `$1\n${ABI_FILTERS_BLOCK}`);
+    const blockStart = contents.indexOf('{', defaultConfigMatch.index);
+    let depth = 0;
+    let blockEnd = -1;
+    for (let i = blockStart; i < contents.length; i += 1) {
+      const ch = contents[i];
+      if (ch === '{') depth += 1;
+      else if (ch === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          blockEnd = i;
+          break;
+        }
+      }
+    }
+
+    if (blockEnd === -1) {
+      throw new Error(
+        'withAndroidAbiFilters: could not find defaultConfig/versionName in app/build.gradle'
+      );
+    }
+
+    const blockContents = contents.slice(blockStart + 1, blockEnd);
+    const versionNameMatch = /versionName\s+["'][^"']*["']/.exec(blockContents);
+    if (!versionNameMatch) {
+      throw new Error(
+        'withAndroidAbiFilters: could not find defaultConfig/versionName in app/build.gradle'
+      );
+    }
+
+    const insertPos = blockStart + 1 + versionNameMatch.index + versionNameMatch[0].length;
+    contents = `${contents.slice(0, insertPos)}\n${ABI_FILTERS_BLOCK}${contents.slice(insertPos)}`;
     cfg.modResults.contents = contents;
     return cfg;
   });
