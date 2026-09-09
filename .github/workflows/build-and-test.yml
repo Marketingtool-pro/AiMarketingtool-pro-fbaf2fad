@@ -58,7 +58,10 @@ jobs:
         run: npm test --if-present
 
   eas-build-preview:
-    runs-on: self-hosted
+    # Was `self-hosted`, but this org has no self-hosted runners registered
+    # (org and repo runner lists are both empty), so the job could never be
+    # picked up and just sat queued. Standard GitHub-hosted runner instead.
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
