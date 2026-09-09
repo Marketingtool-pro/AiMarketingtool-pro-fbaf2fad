@@ -27,15 +27,16 @@ import { Colors, Spacing } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 import { biometricService, BiometricType } from '../../services/biometric';
 import { clearVerification as clearFirebaseVerification } from '../../services/firebaseAuth';
-import { COUNTRIES, DEFAULT_COUNTRY, findCountry, type Country } from '../../data/countries';
+import { COUNTRIES, findCountry, DEFAULT_COUNTRY, Country } from '../../constants/countries';
+import { normalizePhone } from '../../utils/phone';
 
 import * as AppleAuthentication from 'expo-apple-authentication';
 
 
 
-// Country data for phone login. Previously a hardcoded four-entry list, which
-// left users outside the US/India/Canada/UK unable to pick their dialling code
-// -- and therefore unable to receive an OTP at all. See src/data/countries.ts.
+// Country data lives in src/constants/countries.ts (243 entries), keyed by
+// ISO-3166 alpha-2 rather than dial code: US and Canada are both +1, so a
+// dialCode lookup is ambiguous and silently resolved to whichever came first.
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
@@ -144,7 +145,7 @@ const LoginScreen = () => {
       clearFirebaseVerification();
     }, 0);
     SecureStore.deleteItemAsync('pendingOTP').catch(() => {});
-  }, [phoneNumber, selectedCountry.code]);
+  }, [phoneNumber, selectedCountry.iso2]);
 
   // Restore OTP modal across app foreground/background — pendingOTP is written
   // before sendPhoneOTP so a kill/relaunch mid-flow doesn't leave the user stuck
@@ -153,13 +154,11 @@ const LoginScreen = () => {
     SecureStore.getItemAsync('pendingOTP').then(pending => {
       if (pending) {
         try {
-          const { phone, countryCode, countryIso } = JSON.parse(pending);
+          const { phone, countryIso2, countryIso, countryCode } = JSON.parse(pending);
           setPhoneNumber(phone);
           setOtpSent(true);
           setShowOtpModal(true);
-          // Resolve by ISO first: dialling codes aren't unique, so looking up
-          // '+1' by code alone would restore the wrong country.
-          const country = findCountry(countryIso, countryCode);
+          const country = findCountry(countryIso2 ?? countryIso, countryCode);
           if (country) setSelectedCountry(country);
         } catch {}
       }
@@ -172,11 +171,11 @@ const LoginScreen = () => {
         SecureStore.getItemAsync('pendingOTP').then(pending => {
           if (pending) {
             try {
-              const { phone, countryCode, countryIso } = JSON.parse(pending);
+              const { phone, countryIso2, countryIso, countryCode } = JSON.parse(pending);
               setPhoneNumber(phone);
               setOtpSent(true);
               setShowOtpModal(true);
-              const country = findCountry(countryIso, countryCode);
+              const country = findCountry(countryIso2 ?? countryIso, countryCode);
               if (country) setSelectedCountry(country);
             } catch {}
           }
@@ -204,7 +203,16 @@ const LoginScreen = () => {
     }
     if (resendCooldown > 0) return;
 
-    const formattedPhone = `${selectedCountry.code}${phoneNumber}`;
+    // Normalize to E.164 and reject bad input HERE, rather than paying a
+    // network round-trip and an SMS quota slot to be told the same thing.
+    // Covers trunk zeros, a duplicated country code, spaces and pasted "+.."
+    // numbers — see src/utils/phone.ts.
+    const normalized = normalizePhone(selectedCountry, phoneNumber);
+    if (!normalized.valid || !normalized.e164) {
+      Alert.alert('Invalid Number', normalized.error || 'Please enter a valid phone number');
+      return;
+    }
+    const formattedPhone = normalized.e164;
     setOtpError('');
     setOtpCode('');
     setOtpSending(true);
@@ -220,8 +228,10 @@ const LoginScreen = () => {
     // can re-open the modal on relaunch.
     await SecureStore.setItemAsync('pendingOTP', JSON.stringify({
       phone: phoneNumber,
-      countryCode: selectedCountry.code,
-      countryIso: selectedCountry.iso,
+      countryIso2: selectedCountry.iso2,
+      // Written alongside iso2 so a build that only knows the older key can
+      // still restore the picker after a downgrade or a partial rollout.
+      countryCode: selectedCountry.dialCode,
     }));
 
     try {
@@ -288,7 +298,15 @@ const LoginScreen = () => {
   // and any OTP close button onPress.
 
   const filteredCountries = countrySearch
-    ? COUNTRIES.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()))
+    ? (() => {
+        const q = countrySearch.trim().toLowerCase();
+        const digits = q.replace(/\D/g, '');
+        return COUNTRIES.filter(c =>
+          c.name.toLowerCase().includes(q) ||
+          c.iso2.toLowerCase() === q ||
+          (!!digits && c.dialCode.replace(/\D/g, '').startsWith(digits))
+        );
+      })()
     : COUNTRIES;
 
   return (
@@ -327,7 +345,7 @@ const LoginScreen = () => {
                 onPress={() => setShowCountryPicker(true)}
               >
                 <Text style={styles.flagText}>{selectedCountry.flag}</Text>
-                <Text style={styles.codeText}>{selectedCountry.code}</Text>
+                <Text style={styles.codeText}>{selectedCountry.dialCode}</Text>
                 <Feather name="chevron-down" size={14} color="#8896A5" />
               </TouchableOpacity>
 
@@ -384,7 +402,7 @@ const LoginScreen = () => {
             {otpSent && (
               <View style={styles.otpSection}>
                 <Text style={styles.otpSentText}>
-                  Enter the 6-digit code sent via SMS to {selectedCountry.code} {phoneNumber}
+                  Enter the 6-digit code sent via SMS to {selectedCountry.dialCode} {phoneNumber}
                 </Text>
 
                 {!!otpError && (
@@ -694,7 +712,7 @@ const LoginScreen = () => {
             </View>
             <FlatList
               data={filteredCountries}
-              keyExtractor={(item) => item.iso}
+              keyExtractor={(item) => item.iso2}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.countryItem}
@@ -708,8 +726,8 @@ const LoginScreen = () => {
                     <Text style={styles.countryName}>{item.name}</Text>
                   </View>
                   <View style={styles.countryCodeRow}>
-                    <Text style={styles.countryCodeValue}>{item.code}</Text>
-                    {selectedCountry.name === item.name && (
+                    <Text style={styles.countryCodeValue}>{item.dialCode}</Text>
+                    {selectedCountry.iso2 === item.iso2 && (
                       <Feather name="check" size={18} color="#9D4EDD" style={{ marginLeft: 10 }} />
                     )}
                   </View>

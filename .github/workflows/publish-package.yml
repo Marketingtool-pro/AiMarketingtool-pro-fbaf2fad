@@ -1,12 +1,18 @@
 name: Publish Package
 
+# Manual-only.
+# npm-publish-github-packages.yml already publishes this same package on
+# `release: [created]`, with a build + test gate in front of it. Having both
+# fire on a release made two jobs race for the same version: one won, the other
+# died with 409 "version already exists" and turned every release red.
+# This workflow is kept as a hand-run fallback, not deleted.
 on:
-  release:
-    types: [created]
+  workflow_dispatch:
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
