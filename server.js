@@ -22,6 +22,7 @@ const { pipeline } = require('node:stream');
 const PORT = Number.parseInt(process.env.PORT, 10) || 8080;
 const HOST = process.env.HOST || '0.0.0.0';
 const ROOT = path.resolve(__dirname, 'dist');
+const INDEX = path.join(ROOT, 'index.html');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -72,6 +73,23 @@ function sendFile(req, res, file) {
   });
 }
 
+/**
+ * Turn a request path into an absolute path that is guaranteed to live inside
+ * ROOT, or return null. Three independent barriers are applied so a traversal
+ * attempt cannot escape the dist folder:
+ *   1. any '..' or NUL byte in the decoded path is rejected outright;
+ *   2. the path is rebuilt from a filtered segment list (no '.', '..', empty);
+ *   3. the resolved result must still be prefixed by ROOT.
+ */
+function safeResolve(pathname) {
+  if (pathname.indexOf('\0') !== -1) return null;
+  if (pathname.indexOf('..') !== -1) return null;
+  const segments = pathname.split('/').filter((s) => s !== '' && s !== '.' && s !== '..');
+  const resolved = path.resolve(ROOT, ...segments);
+  if (resolved !== ROOT && !resolved.startsWith(ROOT + path.sep)) return null;
+  return resolved;
+}
+
 const server = http.createServer((req, res) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.writeHead(405, { Allow: 'GET, HEAD' });
@@ -91,14 +109,14 @@ const server = http.createServer((req, res) => {
     return res.end('ok');
   }
 
-  const target = path.resolve(ROOT, '.' + pathname);
-  if (target !== ROOT && !target.startsWith(ROOT + path.sep)) return notFound(res);
+  const target = safeResolve(pathname);
+  if (target === null) return notFound(res);
 
   fs.stat(target, (err, st) => {
     if (!err && st.isDirectory()) return sendFile(req, res, path.join(target, 'index.html'));
     if (!err && st.isFile()) return sendFile(req, res, target);
     // Single-page-app fallback so client-side routes still resolve.
-    sendFile(req, res, path.join(ROOT, 'index.html'));
+    sendFile(req, res, INDEX);
   });
 });
 
