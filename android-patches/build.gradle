@@ -1,0 +1,198 @@
+import groovy.xml.XmlParser
+
+buildscript {
+    repositories { google(); mavenCentral() }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.8.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20'
+    }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'maven-publish'
+
+android {
+    namespace 'com.facebook.react.patch'
+    compileSdk 36
+    defaultConfig { minSdk 24 }
+    kotlinOptions { jvmTarget = '17' }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    // Only include our 2 patched files, not a full Android library
+    sourceSets {
+        main {
+            kotlin.srcDirs = ['src/main/kotlin']
+            manifest.srcFile 'src/main/AndroidManifest.xml'
+        }
+    }
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+// Which react-native release this patch is forked from. MUST equal the
+// react-native version in package.json: the patched AAR replaces EVERY
+// com.facebook.react:react-android request, so a mismatch pairs the wrong
+// native library with the JS runtime and the Android link fails on missing
+// facebook::jsi symbols. That is exactly what happened when this sat at
+// 0.85.3 after react-native moved to 0.86.2.
+//
+// The workflow passes -PreactVersion=${REACT_VERSION} so the two cannot drift
+// apart again; the literal below is only the local-build fallback.
+def reactVersion = findProperty('reactVersion') ?: '0.86.2'
+// Pinned revision — MUST stay in sync with PATCHED_VERSION in plugins/withRNEdgeToEdgeFix.js
+// and the release tag react-android-<version> published by .github/workflows/patch-react-android.yml.
+// Override with -PpatchRevision=N when cutting a new patch revision.
+def patchedVersion = "${reactVersion}-e2e.${findProperty('patchRevision') ?: '1'}"
+
+dependencies {
+    // All imports needed by our 2 patched files. compileOnly: these classes
+    // already exist in the AAR we are re-packing, we only need them to resolve.
+    compileOnly "com.facebook.react:react-android:${reactVersion}"
+    compileOnly "androidx.core:core:1.15.0"
+    compileOnly "androidx.core:core-ktx:1.15.0"
+    compileOnly "androidx.annotation:annotation:1.9.1"
+}
+
+// ── AAR Surgery ──────────────────────────────────────────────────────────────
+
+// Step 1: Download original react-android AAR + POM from Maven Central
+task downloadOriginalAAR {
+    def aarOut = file("${buildDir}/orig/react-android-${reactVersion}-release.aar")
+    def pomOut = file("${buildDir}/orig/react-android-${reactVersion}.pom")
+    outputs.files(aarOut, pomOut)
+    doLast {
+        aarOut.parentFile.mkdirs()
+        def base = "https://repo1.maven.org/maven2/com/facebook/react/react-android/${reactVersion}"
+        new URL("${base}/react-android-${reactVersion}-release.aar").withInputStream { i -> aarOut << i }
+        new URL("${base}/react-android-${reactVersion}.pom").withInputStream { i -> pomOut << i }
+        println "✅ Downloaded react-android-${reactVersion}.aar (${aarOut.length()} bytes)"
+    }
+}
+
+// Step 2: Extract the original AAR and classes.jar
+task extractOriginalAAR(dependsOn: downloadOriginalAAR) {
+    def aarIn  = file("${buildDir}/orig/react-android-${reactVersion}-release.aar")
+    def outDir = file("${buildDir}/aar-contents")
+    def classesDir = file("${buildDir}/orig-classes")
+    inputs.file(aarIn)
+    outputs.dir(outDir)
+    outputs.dir(classesDir)
+    doLast {
+        copy { from zipTree(aarIn); into outDir }
+        copy { from zipTree(new File(outDir, "classes.jar")); into classesDir }
+        println "✅ Extracted ${classesDir.list().length} entries from classes.jar"
+    }
+}
+
+// Step 3: Remove the old StatusBarModule + WindowUtil class files from extracted classes
+task deleteDeprecatedClasses(dependsOn: extractOriginalAAR) {
+    def classesDir = file("${buildDir}/orig-classes")
+    inputs.dir(classesDir)
+    outputs.dir(classesDir)
+    doLast {
+        def deleted = []
+        fileTree(classesDir) {
+            include 'com/facebook/react/modules/statusbar/StatusBarModule.class'
+            include 'com/facebook/react/modules/statusbar/StatusBarModule$*.class'
+            include 'com/facebook/react/views/view/WindowUtilKt.class'
+            include 'com/facebook/react/views/view/WindowUtil*.class'
+        }.each { f ->
+            deleted << f.name
+            f.delete()
+        }
+        println "✅ Deleted ${deleted.size()} deprecated class files: ${deleted}"
+    }
+}
+
+// Step 4: After compileReleaseKotlin, copy our patched class files into the extracted classes dir
+task injectPatchedClasses(dependsOn: ['deleteDeprecatedClasses', 'compileReleaseKotlin']) {
+    def compiledDir = file("${buildDir}/tmp/kotlin-classes/release")
+    def classesDir  = file("${buildDir}/orig-classes")
+    inputs.dir(compiledDir)
+    outputs.dir(classesDir)
+    doLast {
+        copy {
+            from(compiledDir) {
+                include 'com/facebook/react/modules/statusbar/**'
+                include 'com/facebook/react/views/view/WindowUtilKt.class'
+                include 'com/facebook/react/views/view/WindowUtil*.class'
+            }
+            into classesDir
+        }
+        println "✅ Injected patched StatusBarModule + WindowUtil classes"
+    }
+}
+
+// Step 5: Re-assemble the patched AAR
+task assemblePatchedAAR(dependsOn: injectPatchedClasses) {
+    def aarContents = file("${buildDir}/aar-contents")
+    def classesDir  = file("${buildDir}/orig-classes")
+    def outputAAR   = file("${buildDir}/patched/react-android-${patchedVersion}.aar")
+    def outputPOM   = file("${buildDir}/patched/react-android-${patchedVersion}.pom")
+    inputs.dir(aarContents)
+    inputs.dir(classesDir)
+    outputs.files(outputAAR, outputPOM)
+    doLast {
+        outputAAR.parentFile.mkdirs()
+        // Re-pack classes.jar
+        ant.zip(destfile: new File(aarContents, "classes.jar").absolutePath, update: false) {
+            fileset(dir: classesDir.absolutePath)
+        }
+        // Re-pack the full AAR
+        ant.zip(destfile: outputAAR.absolutePath) {
+            fileset(dir: aarContents.absolutePath)
+        }
+        // Copy POM, bump version
+        def origPomText = file("${buildDir}/orig/react-android-${reactVersion}.pom").text
+        outputPOM.text = origPomText.replace(
+            "<version>${reactVersion}</version>",
+            "<version>${patchedVersion}</version>"
+        )
+        println "✅ Patched AAR: ${outputAAR} (${outputAAR.length()} bytes)"
+    }
+}
+
+// ── Publishing ───────────────────────────────────────────────────────────────
+
+afterEvaluate {
+    publishing {
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad")
+                credentials {
+                    username = System.getenv("GITHUB_ACTOR") ?: "Marketingtool-pro"
+                    password = System.getenv("GITHUB_TOKEN") ?: ""
+                }
+            }
+        }
+        publications {
+            patchedReactAndroid(MavenPublication) {
+                groupId    = "com.facebook.react"
+                artifactId = "react-android"
+                version    = patchedVersion
+                artifact(file("${buildDir}/patched/react-android-${patchedVersion}.aar")) {
+                    builtBy(assemblePatchedAAR)
+                    extension = "aar"
+                }
+                pom {
+                    // Dependencies are resolved transitively from react-android:${reactVersion} at build time.
+                    // The withXml merge is intentionally omitted: the patched POM file is created
+                    // by assemblePatchedAAR at execution time, which runs after POM generation.
+                    // Consumers override only this AAR; all other transitive deps come from the
+                    // original react-android:${reactVersion} coordinates already on the classpath.
+                }
+            }
+        }
+    }
+}

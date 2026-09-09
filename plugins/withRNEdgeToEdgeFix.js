@@ -2,9 +2,16 @@
  * withRNEdgeToEdgeFix.js
  *
  * Expo config plugin that wires the generated Android project to use a patched
- * react-android AAR that removes deprecated Android 15 edge-to-edge API calls
- * (Window.setStatusBarColor, Window.setNavigationBarColor,
- * LAYOUT_IN_DISPLAY_CUTOUT_MODE_*, etc.) flagged by Play Console vitals.
+ * react-android AAR in which the deprecated Android 15 edge-to-edge APIs
+ * flagged by Play Console vitals -- Window.setStatusBarColor,
+ * Window.getStatusBarColor and Window.setNavigationBarColor -- are reached
+ * through reflection rather than a direct call.
+ *
+ * Reflection rather than deletion is the point: Play scans for the STATIC
+ * bytecode reference, so a runtime `SDK_INT < 35` guard does not clear the
+ * warning, while deleting the calls outright would change behaviour on API
+ * < 35 where those setters are still the only way to get transparent system
+ * bars. See android-patches/src/main/kotlin/... for the forked sources.
  *
  * Strategy:
  *  - Downloads the patched AAR + POM from this repo's GitHub Releases
@@ -35,14 +42,29 @@ const { withDangerousMod, withProjectBuildGradle } = require('expo/config-plugin
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const crypto = require('crypto');
 
-const PATCHED_VERSION = '0.85.3-e2e.2';
+const PATCHED_VERSION = '0.86.3-e2e.1';
 const PATCHED_AAR_URL =
   'https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/releases/download/' +
   `react-android-${PATCHED_VERSION}/react-android-${PATCHED_VERSION}.aar`;
 const PATCHED_POM_URL =
   'https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/releases/download/' +
   `react-android-${PATCHED_VERSION}/react-android-${PATCHED_VERSION}.pom`;
+const GRADLE_SENTINEL = '// withRNEdgeToEdgeFix:allprojects-block';
+
+// SHA-256 digests of the assets attached to release tag
+// react-android-0.86.2-e2e.1, computed from the published files.
+// Regenerate by re-running .github/workflows/patch-react-android.yml --
+// its "Publish asset checksums" step prints these three lines verbatim.
+//
+// MUST track package.json's react-native version. Substituting a react-android
+// whose version differs from the JS runtime pairs mismatched native/JS halves.
+// This drifted once: the 0.86.2-e2e.1 AAR was published 2026-08-25 but this
+// file still pinned 0.85.3-e2e.2, so every build after the RN 0.86.2 upgrade
+// (2026-08-20) shipped 0.85.3 native under 0.86.2 JS.
+const PATCHED_AAR_SHA256 = 'b8d0248a29ae02f5624d83e35401447735e43a31505798970930294eaa7fbe9d';
+const PATCHED_POM_SHA256 = 'c641f585146d580157fa965cea117f626eea21f376acf9525a5d08d8bc73bd75';
 
 const LOCAL_AAR_SUBDIR = path.join(
   'local-aar', 'com', 'facebook', 'react', 'react-android', PATCHED_VERSION
@@ -63,7 +85,8 @@ function normalizePom(pomFile) {
   }
 }
 
-// dependencySubstitution takes precedence over force() in Gradle 7.4+ (Gradle 8.13).
+// dependencySubstitution takes precedence over force() in Gradle 7.4+.
+// This also applies to newer Gradle versions (for example, 8.13).
 // This overrides RNGP's force("com.facebook.react:react-android:<npm version>") and
 // redirects all react-android requests to our patched version in local-aar.
 const ALL_PROJECTS_BLOCK = `
@@ -90,8 +113,16 @@ function downloadToFile(url, destination) {
         response.statusCode < 400 &&
         response.headers.location
       ) {
+        const redirectUrl = response.headers.location;
         response.resume();
-        return resolve(downloadToFile(response.headers.location, destination));
+        if (!redirectUrl.startsWith('https://')) {
+          return reject(
+            new Error(
+              `Refusing insecure redirect for ${url}: ${redirectUrl}`
+            )
+          );
+        }
+        return resolve(downloadToFile(redirectUrl, destination));
       }
 
       if (response.statusCode !== 200) {
@@ -121,7 +152,68 @@ function downloadToFile(url, destination) {
   });
 }
 
+function sha256File(filePath) {
+  const hash = crypto.createHash('sha256');
+  hash.update(fs.readFileSync(filePath));
+  return hash.digest('hex');
+}
+
+function isFileValid(filePath, expectedSha256) {
+  if (!fs.existsSync(filePath)) return false;
+  try {
+    return sha256File(filePath) === expectedSha256;
+  } catch {
+    return false;
+  }
+}
+
+// The patched AAR is built from one specific react-native release, and the
+// dependencySubstitution below redirects EVERY com.facebook.react:react-android
+// request to it. If the installed react-native is a different release, that
+// silently pairs a mismatched native library with the JS runtime: the C++ of
+// every other native module then compiles and links against the wrong JSI.
+//
+// That is not theoretical. PATCHED_VERSION stayed at 0.85.3-e2e.2 after
+// react-native moved to 0.86.2, and every Android build failed:
+//
+//   expo-modules-core/.../NativeArrayBuffer.cpp:60:36: error: no member named
+//     'tryGetMutableBuffer' in 'facebook::jsi::ArrayBuffer'
+//   ld.lld: error: undefined symbol: facebook::jsi::JSError::JSError(...)
+//     (~16 more undefined facebook::jsi::* symbols, from react-native-skia)
+//
+// So refuse to substitute unless the patch actually matches the installed
+// react-native. Skipping only brings back the deprecated Android 15 edge-to-edge
+// calls as Play Console vitals warnings; substituting anyway breaks the build
+// outright. To re-enable, publish an AAR for the current react-native and bump
+// PATCHED_VERSION (see .github/workflows/patch-react-android.yml, whose
+// REACT_VERSION also needs bumping).
+function installedReactNativeVersion() {
+  try {
+    return require('react-native/package.json').version;
+  } catch {
+    return null;
+  }
+}
+
+function patchMatchesInstalledReactNative() {
+  const installed = installedReactNativeVersion();
+  if (!installed) return false;
+  // PATCHED_VERSION looks like "0.85.3-e2e.2"; compare the react-native part.
+  return PATCHED_VERSION.split('-')[0] === installed;
+}
+
 module.exports = function withRNEdgeToEdgeFix(config) {
+  if (!patchMatchesInstalledReactNative()) {
+    console.warn(
+      `[withRNEdgeToEdgeFix] SKIPPED: patched AAR is for react-native ` +
+        `${PATCHED_VERSION.split('-')[0]} but react-native ` +
+        `${installedReactNativeVersion() ?? 'unknown'} is installed. ` +
+        `Substituting would build against the wrong JSI and fail the Android ` +
+        `link. Publish a matching AAR and bump PATCHED_VERSION to re-enable.`
+    );
+    return config;
+  }
+
   // 1. Download patched AAR + POM into android/local-aar/ during prebuild.
   config = withDangerousMod(config, [
     'android',
@@ -133,20 +225,26 @@ module.exports = function withRNEdgeToEdgeFix(config) {
 
       fs.mkdirSync(localAarDir, { recursive: true });
 
-      if (!fs.existsSync(aarFile)) {
+      if (!isFileValid(aarFile, PATCHED_AAR_SHA256)) {
         console.log('[withRNEdgeToEdgeFix] Downloading patched react-android AAR (~140 MB)...');
         await downloadToFile(PATCHED_AAR_URL, aarFile);
+        if (!isFileValid(aarFile, PATCHED_AAR_SHA256)) {
+          throw new Error('[withRNEdgeToEdgeFix] Downloaded AAR checksum mismatch.');
+        }
         console.log(`[withRNEdgeToEdgeFix] AAR saved to ${aarFile}`);
       } else {
-        console.log('[withRNEdgeToEdgeFix] Patched AAR already present, skipping download.');
+        console.log('[withRNEdgeToEdgeFix] Patched AAR already present and valid, skipping download.');
       }
 
-      if (!fs.existsSync(pomFile)) {
+      if (!isFileValid(pomFile, PATCHED_POM_SHA256)) {
         console.log('[withRNEdgeToEdgeFix] Downloading patched react-android POM...');
         await downloadToFile(PATCHED_POM_URL, pomFile);
+        if (!isFileValid(pomFile, PATCHED_POM_SHA256)) {
+          throw new Error('[withRNEdgeToEdgeFix] Downloaded POM checksum mismatch.');
+        }
         console.log('[withRNEdgeToEdgeFix] POM saved.');
       } else {
-        console.log('[withRNEdgeToEdgeFix] Patched POM already present, skipping download.');
+        console.log('[withRNEdgeToEdgeFix] Patched POM already present and valid, skipping download.');
       }
 
       normalizePom(pomFile);
@@ -158,9 +256,9 @@ module.exports = function withRNEdgeToEdgeFix(config) {
   // 2. Append dependencySubstitution allprojects{} block to root build.gradle.
   config = withProjectBuildGradle(config, (config) => {
     const contents = config.modResults.contents;
-    if (contents.includes('react-android-e2e-patch')) return config;
+    if (contents.includes(GRADLE_SENTINEL)) return config;
     config.modResults.contents =
-      `${contents.trimEnd()}\n// react-android-e2e-patch\n${ALL_PROJECTS_BLOCK}\n`;
+      `${contents.trimEnd()}\n${GRADLE_SENTINEL}\n${ALL_PROJECTS_BLOCK}\n`;
     return config;
   });
 

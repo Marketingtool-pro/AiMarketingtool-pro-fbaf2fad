@@ -91,6 +91,30 @@ interface AuthState {
   fetchOrCreateProfile: (user: Models.User<Models.Preferences>) => Promise<UserProfile>;
 }
 
+/**
+ * Store-review OTP bypass check.
+ *
+ * Deliberately strict, because this branch skips SMS verification entirely:
+ *
+ *  - Matches the FULL E.164 number. The previous implementation compared only
+ *    the last 10 digits, which meant any number ending in the reviewer's last
+ *    10 digits -- in any of the ~200 supported dialling codes -- could skip OTP.
+ *  - Requires BOTH EXPO_PUBLIC_REVIEWER_PHONE and EXPO_PUBLIC_REVIEWER_OTP to
+ *    be set. There are no hardcoded fallbacks, so the bypass is inert in any
+ *    build that does not explicitly configure it.
+ *
+ * Note this is still a client-side check, and EXPO_PUBLIC_* values are inlined
+ * into the JS bundle at build time. Configure it only for the build handed to
+ * store review; the durable fix is to move the reviewer session server-side
+ * (the Appwrite phone-session function) so no bypass ships to users at all.
+ */
+function isReviewerPhone(e164: string): boolean {
+  const phone = process.env.EXPO_PUBLIC_REVIEWER_PHONE?.trim();
+  const code = process.env.EXPO_PUBLIC_REVIEWER_OTP?.trim();
+  if (!phone || !code) return false;
+  return e164 === `+${phone.replace(/\D/g, '')}`;
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   profile: null,
@@ -322,23 +346,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Android automatically. firebaseAuth service is in services/firebaseAuth.ts.
     set({ error: null });
     try {
-      // Already E.164 — normalized by the caller via src/utils/phone.ts.
-      // This used to re-derive it and default non-'+' input to +91, duplicating
-      // (and disagreeing with) the same logic in services/firebaseAuth.ts.
+      // Already E.164 - normalized by the caller via src/utils/phone.ts.
+      // This used to re-derive it and default non-'+' input to +91, which
+      // silently routed a non-Indian user's OTP to a wrong number. Refuse
+      // rather than mis-deliver; the same guard lives in firebaseAuth.ts.
       const formatted = phoneNumber;
       if (!isE164(formatted)) {
-        throw new Error('Invalid phone number format');
+        throw new Error('Please select your country code and re-enter your number.');
       }
 
-      // Reviewer bypass — App Store/Play review team uses a fixed test number.
-      // Prefer EXPO_PUBLIC_REVIEWER_PHONE from .env / EAS secrets, but this code
-      // also falls back to a hardcoded default review number if the env var is unset.
-      const reviewerPhone = process.env.EXPO_PUBLIC_REVIEWER_PHONE || '+919999999999';
-      const cleanFormatted = formatted.replace(/\D/g, '');
-      const cleanReviewer = reviewerPhone.replace(/\D/g, '');
-      
-      // Match if the last 10 digits are the same (handles +1 vs +91 vs no prefix)
-      const isReviewer = cleanFormatted.endsWith(cleanReviewer.slice(-10)) || formatted === reviewerPhone;
+      // Reviewer bypass for store review (App Store Guideline 2.1(b)).
+      // Inert unless BOTH env vars are explicitly set, and matched on the FULL
+      // number. The previous check compared only the last 10 digits, so any
+      // number ending in those digits -- in any supported country -- skipped
+      // OTP entirely. The hardcoded '+919999999999' fallback also meant the
+      // bypass stayed live even with no configuration at all.
+      const isReviewer = isReviewerPhone(formatted);
 
       if (isReviewer) {
         if (__DEV__) console.log('[Auth] Reviewer bypass active for', formatted);
@@ -368,20 +391,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error('Verification session expired. Please request a new code.');
       }
 
-      // tempPhone was stored as E.164 by sendPhoneOTP above; no re-derivation.
+      // rawPhone comes from tempPhone, which sendPhoneOTP already validated as
+      // E.164, so no re-derivation and never inject a country code here.
       const phone = rawPhone;
 
       let firebaseUid: string;
 
-      // Reviewer bypass — accept fixed OTP for the configured reviewer phone.
-      const reviewerPhone = process.env.EXPO_PUBLIC_REVIEWER_PHONE || '+919999999999';
-      const reviewerCode = process.env.EXPO_PUBLIC_REVIEWER_OTP ?? '123456';
-      
-      const cleanPhone = phone.replace(/\D/g, '');
-      const cleanReviewer = reviewerPhone.replace(/\D/g, '');
-      const isReviewer = cleanPhone.endsWith(cleanReviewer.slice(-10)) || phone === reviewerPhone;
+      // Reviewer bypass — full-number match, and only when explicitly
+      // configured. See sendPhoneOTP for why the previous last-10-digits
+      // comparison was unsafe across ~200 dialling codes.
+      const reviewerCode = process.env.EXPO_PUBLIC_REVIEWER_OTP?.trim();
+      const isReviewer = isReviewerPhone(phone);
 
-      if (isReviewer && code === reviewerCode) {
+      if (isReviewer && !!reviewerCode && code === reviewerCode) {
         firebaseUid = 'reviewer_bypass_' + cleanPhone.slice(-10);
       } else {
         if (__DEV__) console.log('[Auth] Verifying OTP via Firebase for', phone);
@@ -407,14 +429,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error(sessionResult.error || 'Failed to create session');
       }
 
-      try { await account.deleteSession('current'); } catch {}
-      await account.createSession(sessionResult.userId, sessionResult.secret);
+      // Appwrite refuses createSession while a session is already active, which
+      // is why this used to deleteSession('current') unconditionally first. But
+      // on a fresh OTP login there IS no session, so that call could only ever
+      // fail — a guaranteed-404/401 round-trip paid on EVERY login, with its
+      // result thrown away. Create first; only clear and retry in the genuine
+      // re-login case, so the common path costs one round-trip instead of two.
+      try {
+        await account.createSession(sessionResult.userId, sessionResult.secret);
+      } catch {
+        try { await account.deleteSession('current'); } catch {}
+        await account.createSession(sessionResult.userId, sessionResult.secret);
+      }
 
       const user = await authService.getCurrentUser();
       if (!user) throw new Error('Session created but could not fetch user');
 
-      const profile = await get().fetchOrCreateProfile(user);
-      set({ user, profile, isAuthenticated: true, tempPhone: null, tempVerificationId: null });
+      // Authenticate as soon as the session is real.
+      //
+      // fetchOrCreateProfile is one more Appwrite round-trip (two for a new user:
+      // listDocuments then createDocument) sitting behind a 30s timeout, and it
+      // already returns a defaultProfile when it fails. So it was never a gate on
+      // login — only a delay in front of the home screen, and on a slow network a
+      // very long one. Land the user now and fill the profile in behind them.
+      set({ user, isAuthenticated: true, tempPhone: null, tempVerificationId: null });
+
+      get()
+        .fetchOrCreateProfile(user)
+        .then((profile) => set({ profile }))
+        .catch(() => { /* defaultProfile already applied inside; never block login */ });
       return;
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Verify OTP error:', error.message);

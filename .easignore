@@ -1,144 +1,85 @@
-# Dependencies
+# Files excluded from the EAS build upload.
+#
+# IMPORTANT: when this file exists, EAS uses it INSTEAD of .gitignore — it does
+# not merge the two. Everything that must stay out of the upload has to be
+# listed here explicitly, including node_modules.
+
+# --- Standard excludes (normally covered by .gitignore) ---
 node_modules/
-.yarn/
+.git/
 .expo/
-
-# Native folders
-ios/
+.eas/
+# …but keep the EAS Workflow definitions themselves.
+!.eas/workflows/
 android/
-
-# Build artifacts (FORCE EXCLUDE)
+ios/
 dist/
 build/
-web-build/
-out/
-.next/
+coverage/
+.DS_Store
+*.log
 
-# Python virtualenvs accidentally landed in the React Native repo
-# (combined ~660MB — caused EAS upload to fail with EPIPE on 472MB tarball)
-.venv/
-venv/
-__pycache__/
-*.pyc
+# --- Local GitHub Packages auth ---
+# Contains ${GITHUB_TOKEN}, which does not exist in the EAS build container, so
+# yarn aborts before installing anything:
+#   error Failed to replace env in config: ${GITHUB_TOKEN}
+# No @marketingtool-pro package is an actual dependency.
+.npmrc
+**/.npmrc
 
-# Other unrelated subprojects sitting in repo root
-mcdc/
-idv-quickstart/
+# --- Competing lockfiles ---
+# package-lock.json is deliberately NOT listed here. It is THE lockfile for this
+# repo (npm; there is no yarn.lock and yarn was dropped — see .gitignore). This
+# block used to exclude it, under a stale "EAS must resolve with yarn only"
+# assumption, which meant every EAS build uploaded with no lockfile at all. EAS
+# then re-resolved from the semver ranges in package.json, so pinned versions
+# were not honoured on the builder: `@shopify/react-native-skia: "^2.6.5"`
+# resolved to 2.11.0 there and broke the Android link with undefined
+# facebook::jsi::* symbols. `expo-doctor` on the build also reported
+# "No lock file detected". Keep the genuinely competing lockfiles out so npm is
+# the one that resolves, and let package-lock.json through so builds are
+# reproducible.
+bun.lock
+bun.lockb
+pnpm-lock.yaml
 
-# Tooling/IDE state — never needed for an EAS build
-.firebase/
-.idea/
-dataconnect/
-dataconnect-debug.log
-extensions/
-.tamagui/
-
-# Stray test/debug files
-test_appwrite.js
-google-cloud-sdk/
-
-# Huge Root Backups & Compressed Archives
-LotsOfFiles.tgz
-*.tgz
-*.zip
-*.tar.gz
-*.blend
-*.mp4
-*.jks
-
-# SECURE: BLOCK ALL CREDENTIALS & WORK TRACKS
-credentials/
+# --- Vendored projects that are not part of the app ---
+# These add gigabytes to the upload and drag unrelated Ruby/Maven/Go/Elixir
+# manifests into dependency scanning.
+m3/
+jsonschex/
+externals/
+bundletool-1.18.3/
+terraform-provider-exampletime/
+circleci-runner/
+travis-build/
+gh-cli/
+zsh-build/
 conductor/
-path/
-gemini-cli/
-*.p8
-*.p12
-*.key
-*.mobileprovision
-*.pem
-*.json
-!app.json
-!eas.json
-!package.json
-!package-lock.json
-!google-services.json
-!GoogleService-Info.plist
-!src/**/*.json
-
-# Tool version managers & build artifacts (from .gitignore)
-rbenv-plugin/
-testing-chruby/
-mise-oci/
-vcpkg/
-bats/
-gradle/
-www.ruby-lang.org/
-android-patches/
-platform-tools/
-gems/
-AiMarketingtool-pro-fbaf2fad/
-copilot-demo/
-auto/
-code./
-plugin/
-
-
-
-# Heavy local-only artifacts (EAS archive size limit is 2 GB)
-backup.bundle
-.cargo-features-manager-*
-ios/Pods
-ios/build
-ios/DerivedData
-externals
-codelab-android-compose
-agent-skills
-maven
-mise-oci
-vendor
-iwyu
-swiftly.pkg
-simtool
-mybundle
-my_gem
-my-module
-bazel-*
-.build
-github-ci-server
-Pods
-*.xcarchive
-*.ipa
-
-# =====================================================================
-# CRITICAL: the ~20 GB of unrelated dirs that made every EAS upload fail
-# (archive limit is 2 GB → "Compressing project files" hung/failed → 0 builds).
-# Verified by `du -sh */`. These are NOT part of the RN app — and the list is
-# SURGICAL: it excludes ONLY unrelated subprojects, NOT anything the build needs
-# (patches/, plugins/, assets/, src/, *.config.js are intentionally kept).
-# =====================================================================
-all function action/
-AiMarketingtool-pro-fbaf2fa/
-Xcode_27_beta/
-macports-ports/
-my-app/
-my-project/
-cargo/
-foodie/
-nuxt-nightly/
+MyMacro/
+my-env-plugin/
 marketingtool/
-marketing-tool/
-# Leading slash = repo-ROOT only. Without it, `tools/` also matched
-# src/screens/tools/ and stripped the app's tool screens from the build.
-/tools/
-/starter-workflows/
-/mac-cli/
-/learn-terraform-init/
-/learn-terraform-modules-use/
-/my_gem/
+AiMarketingtool-pro-fbaf2fa/
+erl_crash.dump
 
-# Security: secrets must never reach the EAS build archive.
-# If a future build needs an EXPO_PUBLIC_* value from .env, mirror it in
-# EAS environment variables (eas env) instead of shipping the file.
-.env
-.env.*
-*.keychain
+# --- Backend packages: deployed separately, not bundled into the app ---
+functions/
+appwrite-functions/
+infra/
+src/api/
+
+# --- Repo tooling and docs ---
+.github/
+docs/
+fastlane/
+# NOT scripts/ — package.json runs `node scripts/fix-gradle.js` as both
+# eas-build-pre-install and eas-build-post-install. Excluding it made EAS
+# upload an archive without the file, so the Pre-install hook phase failed
+# with "Unknown error" before dependencies were even installed.
+test/
+Tests/
+Sources/
+plugin-rn-mcp/
+profile-out/
+build-logs.md
+*.png.bak

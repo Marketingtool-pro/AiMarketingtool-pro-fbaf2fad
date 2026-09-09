@@ -12,7 +12,18 @@
 import { Platform } from 'react-native';
 
 const DEFAULTS = {
+  // NOTE: no longer sent to the tool backend. Windmill picks the model
+  // server-side for web, and the phone must not ask for a different one
+  // (MOBILE_TOOLS_POLICY.md: "AI models used" is not changed on mobile).
+  // Kept as a key so existing remote values stay harmless.
   gemini_model: 'gemini-3.1-flash-lite-preview',
+
+  // Windmill workspace token, so the phone can call the same scripts the web
+  // app calls. Empty by default: with no value the app falls back to the
+  // Appwrite tool-executor path, so an unconfigured build still runs tools.
+  // Set it here (or via EXPO_PUBLIC_WINDMILL_TOKEN at build time) rather than
+  // committing the token to the repo.
+  windmill_token: '',
 } as const;
 
 type Key = keyof typeof DEFAULTS;

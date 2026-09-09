@@ -1,0 +1,187 @@
+# Android build/submit with ZERO third-party actions.
+#
+# Why this exists: the org Actions policy only permits actions from a
+# repository owned by Marketingtool-pro. Every other workflow in this repo
+# therefore dies at `startup_failure` before a single step runs, because they
+# all reference actions/checkout, actions/setup-node, expo/expo-github-action
+# and so on.
+#
+# This workflow contains no `uses:` lines at all, so there is nothing for that
+# policy to reject. It reaches the same result with plain shell:
+#
+#   actions/checkout          -> git fetch --depth=1 with the run's own token
+#   actions/setup-node        -> Node and npm are preinstalled on ubuntu-latest
+#   expo/expo-github-action   -> npm i -g eas-cli@<pinned version>
+#
+# It does not replace production-deploy.yml. Keep this until the org policy is
+# widened, then either workflow can be used.
+name: Android Deploy (self-contained)
+
+on:
+  workflow_dispatch:
+    inputs:
+      # Defaults to true: a manual run of a *deploy* workflow is meant to ship.
+      # With default:false an unticked dispatch built an AAB and then skipped
+      # the submit step, so builds were paid for but never reached Play.
+      # Untick this to build only (e.g. to smoke-test a change).
+      submit:
+        description: "Also submit the build to Google Play"
+        type: boolean
+        default: true
+  # A v*.*.* tag or a published release ships Android, matching
+  # production-deploy.yml so behaviour does not diverge.
+  push:
+    tags:
+      - 'v*.*.*'
+  release:
+    types: [published]
+
+concurrency:
+  group: android-deploy-selfcontained-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Build (Android, production)
+    runs-on: ubuntu-latest
+    # 120 was not enough once x86_64 joined buildArchs. Run 33324935509 built
+    # 1.5.17 (1029) for three ABIs -- every source-built library (Skia,
+    # Reanimated, Nitro, Expo core, Screens, Gesture Handler, Worklets) compiled
+    # a third time -- and GitHub killed the job at the 120-minute cap while EAS
+    # was still building. The AAB was produced, but the submit step never ran,
+    # so the release had to be submitted by hand.
+    #
+    # This waits on a remote EAS build, so the job is idle, not busy: a longer
+    # cap costs nothing until it is actually needed.
+    timeout-minutes: 240
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_CLI_VERSION: 18.13.1
+    steps:
+      # Shallow checkout of exactly this run's commit, using the token GitHub
+      # already injects. No action required.
+      - name: Checkout ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git -c protocol.version=2 fetch -q --depth=1 origin "${{ github.sha }}"
+          git checkout -q --detach FETCH_HEAD
+          echo "checked out $(git rev-parse --short HEAD)"
+
+      - name: Toolchain versions
+        run: |
+          set -euo pipefail
+          echo "node $(node --version)"
+          echo "npm  $(npm --version)"
+          echo "java $(java -version 2>&1 | head -1)"
+
+      - name: Fail early if EXPO_TOKEN is missing
+        run: |
+          set -euo pipefail
+          if [ -z "${EXPO_TOKEN:-}" ]; then
+            echo "::error::EXPO_TOKEN secret is not set on this repository." >&2
+            exit 1
+          fi
+          echo "EXPO_TOKEN is present"
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          npm ci --include=dev --legacy-peer-deps --no-audit --no-fund
+
+      - name: Install EAS CLI
+        run: |
+          set -euo pipefail
+          npm i -g "eas-cli@${EAS_CLI_VERSION}"
+          eas --version
+
+      # Gate: a build that doesn't even typecheck has no business being built,
+      # let alone submitted to Play. This must fail (and stop the job) before
+      # Build/Submit run — do not add continue-on-error or `|| true` here.
+      - name: Typecheck (must pass before build/submit)
+        run: |
+          set -euo pipefail
+          npm run ts:check
+
+      - name: Sanity-check the Android config
+        run: |
+          set -euo pipefail
+          node -e '
+            const c = require("./app.json").expo;
+            const bp = c.plugins.find(p => Array.isArray(p) && p[0] === "expo-build-properties")[1].android;
+            console.log("versionCode      =", c.android.versionCode);
+            console.log("targetSdkVersion =", bp.targetSdkVersion);
+            console.log("ndkVersion       =", bp.ndkVersion);
+            if (bp.targetSdkVersion < 36) {
+              console.error("::error::targetSdkVersion must be >= 36 for Google Play");
+              process.exit(1);
+            }
+          '
+
+      # Capture THIS run's build id. The submit step used `--latest`, which
+      # submits whatever Android build is newest on the EAS account — not
+      # necessarily the one this run just produced. With more than one build in
+      # flight (parallel dispatches, a tag firing while a branch build runs)
+      # that silently ships an older binary. Pin the id instead.
+      - name: Build production AAB
+        run: |
+          set -euo pipefail
+          eas build --platform android --profile production --non-interactive --json \
+            | tee eas-build.json
+          BUILD_ID="$(node -e '
+            const r = JSON.parse(require("fs").readFileSync("eas-build.json","utf8"));
+            const b = Array.isArray(r) ? r[0] : r;
+            if (!b || !b.id) { console.error("could not read build id from eas output"); process.exit(1); }
+            console.log(b.id);
+          ')"
+          echo "EAS_BUILD_ID=$BUILD_ID" >> "$GITHUB_ENV"
+          echo "built $BUILD_ID"
+
+      # eas.json's serviceAccountKeyPath expects this file at the repo root. It is
+      # gitignored (*service-account*.json), so it only exists as a secret. The
+      # Expo-hosted copy of this key lives on the old, disabled account and was
+      # NOT carried over to aimarketintool-2-2-2-2, so without this step
+      # `eas submit --platform android` fails with no Play credentials.
+      - name: Restore Google Play service account key
+        if: >-
+          github.event_name == 'push' ||
+          github.event_name == 'release' ||
+          inputs.submit
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > google-play-service-account.json
+          # The secret may be stored raw or base64-encoded; accept either.
+          if ! node -e 'JSON.parse(require("fs").readFileSync("google-play-service-account.json","utf8"))' 2>/dev/null; then
+            base64 -d < google-play-service-account.json > tmp.json 2>/dev/null && mv tmp.json google-play-service-account.json
+          fi
+          node -e '
+            const k = JSON.parse(require("fs").readFileSync("google-play-service-account.json","utf8"));
+            if (k.type !== "service_account" || !k.client_email) {
+              console.error("::error::GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is not a valid service account key");
+              process.exit(1);
+            }
+            console.log("Play service account restored:", k.client_email);
+          '
+
+      - name: Submit to Google Play
+        if: >-
+          github.event_name == 'push' ||
+          github.event_name == 'release' ||
+          inputs.submit
+        run: |
+          set -euo pipefail
+          if [ -z "${EAS_BUILD_ID:-}" ]; then
+            echo "::error::EAS_BUILD_ID is empty — refusing to fall back to --latest," >&2
+            echo "::error::which can submit a different build than this run produced." >&2
+            exit 1
+          fi
+          echo "submitting build $EAS_BUILD_ID"
+          eas submit --platform android --profile production \
+            --id "$EAS_BUILD_ID" --non-interactive

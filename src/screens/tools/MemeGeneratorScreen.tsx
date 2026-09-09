@@ -12,13 +12,19 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
-  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+// Template thumbnails are remote URLs — expo-image (Glide-backed on Android)
+// downsamples + caches them, which is what Play Console's "bitmap image
+// optimization" advice asks for. NOTE: the meme canvas below deliberately
+// keeps RN's <Image>; it lives inside ViewShot, and expo-image's custom view
+// does not reliably snapshot on Android.
+import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -46,12 +52,26 @@ const MEME_TEMPLATES = [
   { id: '12', name: 'One Does Not Simply', url: 'https://i.imgflip.com/1bij.jpg', topText: '', bottomText: '' },
 ];
 
-// Font Styles - Harmonized for parity
+// Font Styles — bundled, so a meme renders identically on both platforms.
+//
+// These used to be Platform.select() over SYSTEM fonts: Impact/Arial-BoldMT/
+// Comic Sans MS/Times-Bold on iOS versus sans-serif-condensed/sans-serif/
+// casual/serif on Android. Those are different typefaces with different
+// metrics, so the same meme came out looking different depending on the
+// device, and text positioned to fit on one platform could overflow on the
+// other. The old "Harmonized for parity" comment was aspirational, not true.
+//
+// Now every option maps to a font file shipped in assets/fonts and loaded in
+// App.tsx, so there is exactly one rendering. All four are SIL OFL 1.1, which
+// permits redistribution inside the app.
+//
+//   Impact -> Anton        Arial -> Arimo (metric-compatible with Arial)
+//   Comic  -> Comic Neue   Times -> Tinos (metric-compatible with Times)
 const FONT_STYLES = [
-  { id: 'impact', name: 'Impact', fontFamily: Platform.select({ ios: 'Impact', android: 'sans-serif-condensed' }) || 'sans-serif' },
-  { id: 'arial', name: 'Arial', fontFamily: Platform.select({ ios: 'Arial-BoldMT', android: 'sans-serif' }) || 'sans-serif' },
-  { id: 'comic', name: 'Comic', fontFamily: Platform.select({ ios: 'Comic Sans MS', android: 'casual' }) || 'sans-serif' },
-  { id: 'times', name: 'Times', fontFamily: Platform.select({ ios: 'Times-Bold', android: 'serif' }) || 'serif' },
+  { id: 'impact', name: 'Impact', fontFamily: 'Anton-Regular' },
+  { id: 'arial', name: 'Arial', fontFamily: 'Arimo-Bold' },
+  { id: 'comic', name: 'Comic', fontFamily: 'ComicNeue-Bold' },
+  { id: 'times', name: 'Times', fontFamily: 'Tinos-Bold' },
 ];
 
 // Text Colors
@@ -108,6 +128,45 @@ const MemeGeneratorScreen = () => {
     return true;
   };
 
+
+  // Cap the long edge of a picked/captured photo before it is ever decoded for
+  // display. A full-resolution phone photo is 12MP-108MP; as an ARGB_8888
+  // bitmap a 4000x3000 image is ~48 MB, and a 50MP one ~200 MB, which is what
+  // Play Console flags as "excessive memory usage" and what OOM-kills the
+  // screen on cheaper devices.
+  //
+  // No output quality is lost: the meme that gets saved or shared is a
+  // react-native-view-shot capture of the on-screen view (~device resolution),
+  // so anything above ~2048px was only ever costing memory.
+  //
+  // If manipulation fails for any reason, fall back to the original URI --
+  // a large image is still better than a broken flow.
+  const MAX_IMAGE_EDGE = 2048;
+
+  const downscaleImage = async (uri: string, width?: number, height?: number) => {
+    try {
+      const longEdge = Math.max(width ?? 0, height ?? 0);
+      // Already small enough: skip the extra decode/encode round trip.
+      if (longEdge > 0 && longEdge <= MAX_IMAGE_EDGE) {
+        return uri;
+      }
+
+      const isLandscape = (width ?? 0) >= (height ?? 0);
+      const context = ImageManipulator.manipulate(uri).resize(
+        isLandscape ? { width: MAX_IMAGE_EDGE } : { height: MAX_IMAGE_EDGE }
+      );
+      const image = await context.renderAsync();
+      const result = await image.saveAsync({
+        format: SaveFormat.JPEG,
+        compress: 0.85,
+      });
+      return result.uri;
+    } catch (error) {
+      console.warn('Image downscale failed, using original:', error);
+      return uri;
+    }
+  };
+
   // Pick Image from Gallery
   const pickImage = async () => {
     const hasPermission = await requestPermissions();
@@ -117,12 +176,13 @@ const MemeGeneratorScreen = () => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
-        aspect: [1, 1],
-        quality: 1,
+        // `aspect` only applies when allowsEditing is true, so it was inert here.
+        quality: 0.85,
       });
 
       if (!result.canceled && result.assets[0]) {
-        setSelectedImage(result.assets[0].uri);
+        const asset = result.assets[0];
+        setSelectedImage(await downscaleImage(asset.uri, asset.width, asset.height));
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to pick image');
@@ -137,12 +197,13 @@ const MemeGeneratorScreen = () => {
     try {
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: false,
-        aspect: [1, 1],
-        quality: 1,
+        // `aspect` only applies when allowsEditing is true, so it was inert here.
+        quality: 0.85,
       });
 
       if (!result.canceled && result.assets[0]) {
-        setSelectedImage(result.assets[0].uri);
+        const asset = result.assets[0];
+        setSelectedImage(await downscaleImage(asset.uri, asset.width, asset.height));
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to take photo');
@@ -150,9 +211,30 @@ const MemeGeneratorScreen = () => {
   };
 
   // Select Template
-  const selectTemplate = (template: typeof MEME_TEMPLATES[0]) => {
-    setSelectedImage(template.url);
+  // Templates are remote URLs. Handing one straight to the <Image> inside
+  // ViewShot made React Native's Fresco pipeline fetch and decode it, which is
+  // what Play Console reports under "bitmap image optimization":
+  //
+  //   Downloaded in com.facebook.imagepipeline.producers
+  //                 .HttpUrlConnectionNetworkFetcher.fetchSync
+  //
+  // Routing through downscaleImage() instead means expo-image-manipulator does
+  // the fetch natively and hands back a LOCAL file, capped at MAX_IMAGE_EDGE.
+  // The canvas then renders a local file, so nothing is downloaded by <Image>
+  // and the bitmap is bounded. The canvas keeps RN's <Image> because
+  // expo-image's custom view does not snapshot reliably under ViewShot.
+  const selectTemplate = async (template: typeof MEME_TEMPLATES[0]) => {
     setShowTemplates(false);
+    setIsLoading(true);
+    try {
+      setSelectedImage(await downscaleImage(template.url));
+    } catch {
+      // downscaleImage already falls back to the original URI on failure;
+      // if even that throws, use the URL so the flow is never dead-ended.
+      setSelectedImage(template.url);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Save Meme
@@ -171,7 +253,7 @@ const MemeGeneratorScreen = () => {
       const uri = await viewShotRef.current?.capture?.();
       if (uri) {
         // Save to camera roll
-        const asset = await MediaLibrary.saveToLibraryAsync(uri);
+        await MediaLibrary.saveToLibraryAsync(uri);
         Alert.alert('Success! 🎉', 'Meme saved to your gallery', [{ text: 'OK' }]);
       }
     } catch (error) {
@@ -300,7 +382,7 @@ const MemeGeneratorScreen = () => {
       style={styles.templateItem}
       onPress={() => selectTemplate(item)}
     >
-      <Image source={{ uri: item.url }} style={styles.templateImage} />
+      <ExpoImage source={{ uri: item.url }} style={styles.templateImage} />
       <Text style={styles.templateName} numberOfLines={1}>{item.name}</Text>
     </TouchableOpacity>
   );

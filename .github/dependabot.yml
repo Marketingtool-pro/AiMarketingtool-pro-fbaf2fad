@@ -1,4 +1,4 @@
-version: 4
+version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -27,6 +27,109 @@ updates:
       - dependency-name: "react-native"
         versions:
           - ">=0.86.0"
+      # react-native-reanimated and react-native-worklets ship coupled C++ and
+      # must be upgraded together, as a pair the Expo SDK pins. A minor bump of
+      # worklets alone (0.11.4 -> 0.12.1, PR from 2026-08-22) left it outside
+      # reanimated's `react-native-worklets` peer range and broke every native
+      # build with "no member named 'executeSync' in 'worklets::WorkletRuntime'".
+      # Let the Expo SDK upgrade move these, not a weekly bump. Patch is ignored
+      # too: Dependabot walked them to 4.5.3 / 0.10.4 within two days of the pin,
+      # which `expo-doctor` then reports as out of date against the SDK's 4.5.1 /
+      # 0.10.1. The peer range still held, but the drift is noise that hides the
+      # next real break.
+      - dependency-name: "react-native-worklets"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      - dependency-name: "react-native-reanimated"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      # Same coupling between react-native-iap and its nitro-modules native
+      # bridge. Bumping nitro-modules to 0.37.0 on its own (PR #454) put it
+      # outside the "^0.36.1" peer range iap declares, which the native peer
+      # check caught on Master.
+      - dependency-name: "react-native-nitro-modules"
+        update-types:
+          - "version-update:semver-minor"
+      - dependency-name: "react-native-iap"
+        update-types:
+          - "version-update:semver-minor"
+      # lottie-react-native and react-dom are pinned to the versions Expo SDK 57
+      # expects. PR #460 bumped both straight back off those pins the same day
+      # they were set (7.3.8 -> 7.4.0, 19.2.3 -> 19.2.8), reintroducing the
+      # expo-doctor failure. react-dom must also stay in lockstep with react,
+      # which is pinned at 19.2.3. Let the SDK upgrade move them.
+      - dependency-name: "lottie-react-native"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      - dependency-name: "react-dom"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      # @shopify/react-native-skia is pinned to the Expo SDK 57 version
+      # (2.6.2). This is the one that got missed the first time: PR #462
+      # bumped it straight to 2.11.0 one hour after the pin landed, because it
+      # had no ignore rule here, and 2.11.0's compiled JSI helpers reference
+      # facebook::jsi::* symbols absent from react-native 0.86.2's libjsi:
+      #
+      #   ld.lld: error: undefined symbol: facebook::jsi::JSError::JSError(...)
+      #   NativeArrayBuffer.cpp:60:36: error: no member named
+      #     'tryGetMutableBuffer' in 'facebook::jsi::ArrayBuffer'
+      #
+      # skia's declared peers are too loose to catch this itself
+      # (react-native: ">=0.78"), so this ignore rule is the only thing
+      # standing between a routine Dependabot bump and every Android build
+      # breaking again.
+      - dependency-name: "@shopify/react-native-skia"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      # The remaining autolinked native modules, now pinned to their Expo SDK 57
+      # versions. Every one of these had drifted off the SDK pin and every one
+      # was listed in `expo.install.exclude`, so expo-doctor reported nothing --
+      # the same blind spot that hid the skia break until Android builds failed.
+      # The exclude list is now empty, so doctor guards them; these rules stop
+      # Dependabot walking them straight back off the pin, which is exactly what
+      # PR #462 did to skia one hour after it was set.
+      #
+      # These compile native code and are linked into every build even when the
+      # app never imports them (flash-list, keyboard-controller, webview,
+      # task-manager and slider are currently imported by no source file), so a
+      # bump can break the native link without touching a line of app code.
+      - dependency-name: "@shopify/flash-list"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      - dependency-name: "react-native-safe-area-context"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      - dependency-name: "react-native-screens"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      - dependency-name: "react-native-svg"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      - dependency-name: "react-native-webview"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      - dependency-name: "react-native-keyboard-controller"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      - dependency-name: "react-native-view-shot"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      - dependency-name: "@react-native-community/slider"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
 
   - package-ecosystem: "npm"
     directory: "/functions"

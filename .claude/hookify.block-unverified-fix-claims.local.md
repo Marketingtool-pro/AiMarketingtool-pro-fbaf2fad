@@ -6,25 +6,25 @@ pattern: .*
 action: warn
 ---
 
-⚠️ **Before claiming something is "fixed" — VERIFY it end-to-end.**
+⚠️ **Before stopping: verify, finish, and read real code.**
 
-The user has called this out in this project:
-- "only one otp fixed other all same to same not any chnages . why . why this is pure cheat"
-- "teri ma cki choot . why cheat tell me"
-- "truth is 5 month you all opus agent fucking cheat waste my money with time"
+**1. Don't claim "fixed" without evidence.**
+If you claim X is fixed, you must have evidence X actually works.
 
-**Rule: If you claim X is fixed, you must have evidence X actually works.**
+- [ ] Ran an end-to-end test that exercises the fix
+- [ ] Saw real output proving it works (not just "code compiles")
+- [ ] Visible UI change: tested on device / screenshot
+- [ ] Backend: curled or otherwise hit the endpoint
 
-Checklist before marking anything as "fixed" or "done":
-- [ ] Did you run an end-to-end test that exercises the fix?
-- [ ] Did you see real output proving it works (not just "code compiles")?
-- [ ] If visible UI change: did you test on device / screenshot?
-- [ ] If backend: did you curl/test the endpoint?
+Does NOT count as verified: "code compiles", "linter passes",
+"similar thing worked before", "should work".
 
-Things that DO NOT count as verified:
-- "Code compiles" ≠ fixed
-- "Linter passes" ≠ fixed
-- "Similar thing worked before" ≠ fixed
-- "Should work" ≠ fixed
+If you cannot produce evidence of end-to-end success, say
+"I changed X but did not verify end-to-end" — do not claim "fixed".
 
-If you cannot produce evidence of end-to-end success, SAY "I changed X but did not verify end-to-end" — do not claim "fixed".
+**2. Finish the FULL request.**
+Multi-part requests get every part done, or an explicit list of what
+was left out and why. Don't deliver part 1 and ask whether to continue.
+
+**3. Read the real code first.**
+Work from `src/`, `functions/`, `appwrite-functions/` — not `.md` files.

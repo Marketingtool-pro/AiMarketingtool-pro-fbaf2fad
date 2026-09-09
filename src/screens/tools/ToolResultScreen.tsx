@@ -120,8 +120,11 @@ const ToolResultScreen = () => {
     );
   };
 
-  // the 404. Swap back to the app deep-link once the web app is fixed.
-  const DESKTOP_URL = 'https://marketingtool.pro';
+  // MOBILE_TOOLS_POLICY.md (owner decision, URL corrected 2026-07-04) mandates
+  // this button opens the web app login — the same entry the marketingtool.pro
+  // "Get Started" funnel uses. The SPA root "/" and the old /tools/<slug> deep
+  // routes both client-render 404, so link only to the working URL.
+  const DESKTOP_URL = 'https://app.marketingtool.pro/login';
   const handleViewOnDesktop = async () => {
     try {
       await WebBrowser.openBrowserAsync(DESKTOP_URL);
@@ -265,6 +268,18 @@ const ToolResultScreen = () => {
                 Rendered as formatted rich text (MarkdownText), not raw markdown source. */}
             {isLargeOutput && !showFullContent ? (
               <>
+                {/* MOBILE_TOOLS_POLICY.md: "Clearly state when a preview is
+                    shown." The collapsed view renders maxChars={1200} of a
+                    longer result, so say so in the UI. Without this line the
+                    only signal was the "Show full result" button, which does
+                    not tell the user the tool finished or that what they are
+                    reading is partial. */}
+                <View style={styles.previewNotice}>
+                  <Feather name="check-circle" size={14} color={Colors.success} />
+                  <Text style={styles.previewNoticeText}>
+                    Tool completed. Showing a preview for readability — tap below for the full result.
+                  </Text>
+                </View>
                 <MarkdownText content={output.content} maxChars={1200} />
                 <TouchableOpacity
                   style={styles.showMoreBtn}
@@ -317,6 +332,19 @@ const ToolResultScreen = () => {
                   </TouchableOpacity>
                 </View>
               </View>
+            )}
+
+            {/* The web app is the main product; the phone is a companion, so
+                EVERY tool result must offer the full workspace — not just the
+                long ones. Results over LARGE_OUTPUT_THRESHOLD keep the richer
+                policy-mandated "View Full on Desktop" banner above; this is the
+                compact equivalent for everything shorter, which previously
+                surfaced no web-app entry at all. */}
+            {!isLargeOutput && (
+              <TouchableOpacity style={styles.desktopActionBtn} onPress={handleViewOnDesktop}>
+                <Feather name="external-link" size={16} color={Colors.white} />
+                <Text style={styles.desktopActionText}>Open in Web App</Text>
+              </TouchableOpacity>
             )}
 
             {/* Action Buttons */}
@@ -544,6 +572,18 @@ const styles = StyleSheet.create({
     color: Colors.white,
     lineHeight: 26,
     marginBottom: Spacing.lg,
+  },
+  previewNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginBottom: Spacing.sm,
+  },
+  previewNoticeText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+    color: Colors.textSecondary,
   },
   showMoreBtn: {
     flexDirection: 'row',

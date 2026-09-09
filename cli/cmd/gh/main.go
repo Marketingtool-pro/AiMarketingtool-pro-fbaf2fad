@@ -7,6 +7,6 @@ import (
 )
 
 func main() {
-	code := ghcmd.Main()
+	code := ghcmd.Master()
 	os.Exit(int(code))
 }

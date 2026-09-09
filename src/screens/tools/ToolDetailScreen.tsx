@@ -11,8 +11,10 @@ import {
   Platform,
   Alert,
   Image,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as WebBrowser from 'expo-web-browser';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,9 +22,28 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useToolsStore, Tool, ToolInput } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { effectiveTier, generationsLimitForTier } from '../../services/billingService';
+// Generated images are remote URLs. expo-image (Glide-backed on Android)
+// downsamples + caches them; plain RN <Image> network loads are what Play
+// Console flags under "bitmap image optimization".
+import { Image as ExpoImage } from 'expo-image';
 import { imageService, GeneratedImage } from '../../services/imageService';
 import { Colors, Gradients, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
+
+// The web app is the main product; the phone is a companion. Every tool screen
+// therefore offers the full workspace, not only the result screen after a run —
+// a user deciding whether to run a tool here had no route to the web app at all.
+// Same target as ToolResultScreen: MOBILE_TOOLS_POLICY.md pins /login because
+// the SPA root and /tools/<slug> both client-render 404.
+const WEB_APP_URL = 'https://app.marketingtool.pro/login';
+
+const openWebApp = async () => {
+  try {
+    await WebBrowser.openBrowserAsync(WEB_APP_URL);
+  } catch {
+    try { await Linking.openURL(WEB_APP_URL); } catch {}
+  }
+};
 
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -327,10 +348,10 @@ const ToolDetailScreen = () => {
               backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14,
               padding: 12, marginTop: 16,
             }}>
-              <Image
+              <ExpoImage
                 source={{ uri: generatedImage.image }}
                 style={{ width: '100%', aspectRatio: 1, borderRadius: 10 }}
-                resizeMode="cover"
+                contentFit="cover"
               />
               <Text style={{ color: Colors.textSecondary, fontSize: 13, marginTop: 10 }}>
                 {generatedImage.caption}
@@ -463,6 +484,12 @@ const ToolDetailScreen = () => {
             </View>
           )}
 
+          {/* Every tool offers the web app, regardless of tier or run state. */}
+          <TouchableOpacity style={styles.webAppBtn} onPress={openWebApp}>
+            <Feather name="external-link" size={16} color={Colors.secondary} />
+            <Text style={styles.webAppBtnText}>Open this tool in the Web App</Text>
+          </TouchableOpacity>
+
           <View style={{ height: 120 }} />
         </ScrollView>
 
@@ -512,6 +539,22 @@ const ToolDetailScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  webAppBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.secondary + '50',
+    paddingVertical: 12,
+    borderRadius: BorderRadius.sm,
+    gap: 8,
+    marginTop: Spacing.md,
+  },
+  webAppBtnText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.secondary,
+  },
   screenContainer: {
     flex: 1,
     backgroundColor: '#0D0F1C',

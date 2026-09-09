@@ -13,21 +13,30 @@ env:
   # Single source of truth for the patch revision. MUST stay in sync with
   # PATCHED_VERSION in plugins/withRNEdgeToEdgeFix.js (consumed at prebuild)
   # and the default patchRevision in android-patches/build.gradle.
-  PATCH_REVISION: '2'
-  REACT_VERSION: '0.85.3'
+  PATCH_REVISION: '1'
+  # Must track the react-native version in package.json. It sat at 0.85.3 after
+  # react-native moved to 0.86.2, so the AAR this workflow publishes no longer
+  # matched the installed runtime — and withRNEdgeToEdgeFix substitutes it for
+  # EVERY com.facebook.react:react-android request, which broke every Android
+  # build on a JSI mismatch. The plugin now refuses to substitute a mismatched
+  # AAR, so publishing 0.86.2-e2e.1 from here is what re-enables the fix.
+  REACT_VERSION: '0.86.3'
 
 jobs:
   build-patched-aar:
-    runs-on: self-hosted
+    # Was `self-hosted`, but this org has no self-hosted runners registered
+    # (org and repo runner lists are both empty), so the job could never be
+    # picked up — it queued forever. Use a GitHub-hosted runner.
+    runs-on: ubuntu-latest
     permissions:
       contents: write   # create/update the react-android-* release
       packages: write
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
-      - uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a  # v5.5.0
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c  # v6.0.0
         with:
           java-version: '21.0.5'
           distribution: temurin
@@ -54,7 +63,7 @@ jobs:
 
       - name: Build Patched AAR
         working-directory: android-patches
-        run: ./gradlew assemblePatchedAAR -PpatchRevision=${{ env.PATCH_REVISION }} --no-daemon --stacktrace
+        run: ./gradlew assemblePatchedAAR -PpatchRevision=${{ env.PATCH_REVISION }} -PreactVersion=${{ env.REACT_VERSION }} --no-daemon --stacktrace
 
       - name: Publish to GitHub Packages (maven)
         if: steps.published.outputs.exists != 'true'
@@ -62,19 +71,74 @@ jobs:
         env:
           GITHUB_ACTOR: ${{ secrets.MAVEN_USERNAME || github.actor }}
           GITHUB_TOKEN: ${{ secrets.MAVEN_PASSWORD || secrets.GITHUB_TOKEN }}
-        run: ./gradlew publish -PpatchRevision=${{ env.PATCH_REVISION }} --no-daemon --stacktrace
+        run: ./gradlew publish -PpatchRevision=${{ env.PATCH_REVISION }} -PreactVersion=${{ env.REACT_VERSION }} --no-daemon --stacktrace
 
-      - name: Verify patched classes (no deprecated APIs)
+      - name: Verify patched AAR
         working-directory: android-patches
         run: |
+          set -euo pipefail
           V="${REACT_VERSION}-e2e.${PATCH_REVISION}"
-          cd build/patched
-          unzip -o -q "react-android-${V}.aar" classes.jar
-          unzip -o -q classes.jar 'com/facebook/react/views/view/WindowUtil*' 'com/facebook/react/modules/statusbar/StatusBarModule*'
-          if grep -lr setStatusBarColor com/facebook/react/views/view/ com/facebook/react/modules/statusbar/; then
-            echo "::error::Patched classes still reference setStatusBarColor"; exit 1
-          fi
-          echo "OK: patched classes contain no deprecated edge-to-edge API references"
+          GLOBS=(
+            'com/facebook/react/views/view/WindowUtil*'
+            'com/facebook/react/modules/statusbar/StatusBarModule*'
+          )
+
+          # Extract the classes we replaced, from both the patched AAR and the
+          # pristine upstream one downloaded by the build.
+          mkdir -p verify/new verify/orig
+          ( cd verify/new  && unzip -o -q "../../build/patched/react-android-${V}.aar" classes.jar \
+              && unzip -o -q classes.jar "${GLOBS[@]}" )
+          ( cd verify/orig && unzip -o -q "../../build/orig/react-android-${REACT_VERSION}-release.aar" classes.jar \
+              && unzip -o -q classes.jar "${GLOBS[@]}" )
+
+          # (A) No deprecated API may be REFERENCED. The patch reaches these
+          #     setters through reflection, so their names appear in the
+          #     constant pool as plain strings -- a text grep would match those
+          #     and fail a correct build. Only javap distinguishes a real
+          #     method reference from a string literal.
+          fail=0
+          while IFS= read -r f; do
+            if javap -p -c "$f" | grep -qE 'Window\.(set|get)StatusBarColor|Window\.setNavigationBarColor'; then
+              echo "::error::$f still references a deprecated edge-to-edge API"
+              javap -p -c "$f" | grep -E 'Window\.(set|get)StatusBarColor|Window\.setNavigationBarColor' | sort -u
+              fail=1
+            fi
+          done < <(find verify/new -name '*.class')
+          [ "$fail" = 0 ] && echo "OK: no deprecated edge-to-edge API references"
+
+          # (B) Signature parity. These class files REPLACE the upstream ones
+          #     inside the AAR, so any member that upstream exposed and the
+          #     patch drops becomes a NoSuchMethodError at runtime, everywhere
+          #     in react-android that calls it.
+          members() {
+            javap -p "$1" | grep -vE '^Compiled from|class |^\}|^\{' | sed 's/^  //' | sort
+          }
+          while IFS= read -r orig; do
+            rel="${orig#verify/orig/}"
+            new="verify/new/$rel"
+            if [ ! -f "$new" ]; then
+              echo "::error::$rel present upstream but missing from the patched AAR"
+              fail=1
+              continue
+            fi
+            missing=$(comm -23 <(members "$orig") <(members "$new"))
+            if [ -n "$missing" ]; then
+              echo "::error::$rel drops members that upstream exposes:"
+              echo "$missing"
+              fail=1
+            fi
+          done < <(find verify/orig -name '*.class')
+          [ "$fail" = 0 ] && echo "OK: every upstream member retained"
+
+          exit "$fail"
+
+      - name: Publish asset checksums (paste into withRNEdgeToEdgeFix.js)
+        working-directory: android-patches/build/patched
+        run: |
+          V="${REACT_VERSION}-e2e.${PATCH_REVISION}"
+          echo "PATCHED_VERSION   = '${V}'"
+          echo "PATCHED_AAR_SHA256 = '$(sha256sum "react-android-${V}.aar" | cut -d' ' -f1)'"
+          echo "PATCHED_POM_SHA256 = '$(sha256sum "react-android-${V}.pom" | cut -d' ' -f1)'"
 
       - name: Publish GitHub Release (consumed by withRNEdgeToEdgeFix.js)
         if: steps.published.outputs.exists != 'true'
@@ -91,7 +155,7 @@ jobs:
             --notes "Patched react-android ${REACT_VERSION}: removes deprecated Android 15 edge-to-edge APIs. Downloaded by plugins/withRNEdgeToEdgeFix.js during expo prebuild." \
             --latest=false --target "$GITHUB_SHA"
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: react-android-patched
           path: |

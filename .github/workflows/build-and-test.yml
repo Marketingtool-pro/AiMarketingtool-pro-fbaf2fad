@@ -14,15 +14,21 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '24'
       
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund --package-lock=false
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
       
+      # Blocking: nothing else in CI compiles native code, so a bad native
+      # version pair (see the script header) otherwise stays green here and
+      # only shows up ~20 minutes into an EAS build.
+      - name: Check native dependency compatibility
+        run: node .github/scripts/check-native-peers.mjs
+
       - name: Lint
         # Non-blocking: lint is quality, not a ship gate, and the eslint stack
         # has been churned repeatedly. Report issues without failing the build.
@@ -36,9 +42,9 @@ jobs:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       
-      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       
       - uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385  # v9
         with:
@@ -46,7 +52,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
       
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund --package-lock=false
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
       
       # iOS held — Android only in CI (iOS is built/submitted manually).
       - name: Build preview for Android & Ios

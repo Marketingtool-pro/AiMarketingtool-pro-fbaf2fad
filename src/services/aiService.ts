@@ -4,10 +4,9 @@
 
 import { functions, account } from './appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
-import { getString } from './firebaseRemoteConfig';
+import { isWindmillConfigured, runTool, readToolResult } from './windmillService';
 
 const TOOL_EXECUTOR_FUNCTION_ID = 'tool-executor';
-const NEXTJS_API_BASE = 'https://app.marketingtool.pro';
 const MIN_PARSEABLE_RESPONSE_LENGTH = 20;
 const MIN_SPLIT_PART_LENGTH = 20;
 const MIN_VARIATION_PART_LENGTH = 50;
@@ -15,6 +14,14 @@ const MIN_VARIATION_PART_LENGTH = 50;
 export interface AIGenerationRequest {
   toolSlug: string;
   toolName: string;
+  // Tool identity beyond the name. 301 of the 314 tools share the same single
+  // `mainInput` field and 152 share the label "Describe what you need", so the
+  // NAME was previously the only thing that differed between two tools' prompts
+  // — which is why every tool returned near-identical copy. These carry the
+  // tool's actual job into the request.
+  toolDescription?: string;
+  toolCategory?: string;
+  deliverable?: string;
   inputs: Record<string, any>;
   tone?: string;
   language?: string;
@@ -35,9 +42,40 @@ export interface AIGenerationResponse {
   model?: string;
 }
 
-// Main AI Generation — calls Appwrite Function, falls back to Next.js API
+// Main AI Generation — Appwrite tool-executor ONLY.
+// Phone app and web app are not mixed: the phone reaches Windmill through the
+// Appwrite function, the web app calls Windmill directly. No HTTP fallback.
+// Turns a tool's own metadata into an explicit job description for the model.
+// Without this the prompt was `${toolName}\n\n${inputsText}\n\nTone: …`, so two
+// different tools fed the same text differed by exactly one line and produced
+// the same generic marketing copy.
+function buildToolInstruction(req: AIGenerationRequest): string {
+  const { toolName, toolSlug, toolDescription, toolCategory, deliverable } = req;
+  const lines: string[] = [];
+
+  lines.push(`You are the "${toolName}" tool on MarketingTool.`);
+  if (toolCategory) lines.push(`Category: ${toolCategory}.`);
+  if (toolDescription && toolDescription.trim() && toolDescription.trim() !== toolName) {
+    lines.push(`What this tool does: ${toolDescription.trim()}`);
+  }
+  if (deliverable) lines.push(`Expected deliverable: ${deliverable}`);
+
+  // The slug is the most reliable per-tool signal (314 unique values) and is the
+  // key the backend routes on, so state it explicitly rather than relying on the
+  // display name, which repeats across variants.
+  lines.push(`Tool id: ${toolSlug}.`);
+  lines.push(
+    `Produce ONLY the specific output this tool exists to create. Do not answer as a general marketing assistant, do not restate the request, and do not explain what you are about to do.`
+  );
+
+  return lines.join('\n');
+}
+
 export async function generateAIContent(request: AIGenerationRequest): Promise<AIGenerationResponse> {
-  const { toolSlug, toolName, inputs, tone, language, outputCount = 3, userId, tier, simulation } = request;
+  const {
+    toolSlug, toolName, toolDescription, toolCategory, deliverable,
+    inputs, tone, language, outputCount = 3, userId, tier, simulation,
+  } = request;
 
   // Build user prompt from inputs
   const inputsText = Object.entries(inputs)
@@ -49,24 +87,131 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
   // mid-prompt was being ignored, so tools sometimes answered in French. State it
   // as an imperative at the end so the model writes the whole response in that language.
   const outputLanguage = language || 'English';
-  const userPrompt = `${toolName}\n\n${inputsText}\n\nTone: ${tone || 'professional'}\n\nIMPORTANT: Write the ENTIRE response in ${outputLanguage}. Do not use any other language under any circumstances.`;
+  const toolInstruction = buildToolInstruction(request);
+  const userPrompt = [
+    toolInstruction,
+    '',
+    '--- USER INPUT ---',
+    inputsText,
+    '',
+    `Tone: ${tone || 'professional'}`,
+    `Variations required: ${outputCount}. Separate each with a line containing exactly ---VARIATION---`,
+    '',
+    `IMPORTANT: Write the ENTIRE response in ${outputLanguage}. Do not use any other language under any circumstances.`,
+  ].join('\n');
 
-  // Primary: Appwrite Function (tool-executor → Windmill → Claude)
+  // PRIMARY: the same Windmill script the web app calls, with the same payload.
+  //
+  // One product, one backend. app.marketingtool.pro's tool-detail page runs a tool
+  // as runTool({ toolSlug, toolName, mainInput, additionalInputs, userId }) against
+  // f/tools/ai-generate, and the per-tool instructions live in THAT script keyed by
+  // toolSlug. Going through the Appwrite tool-executor instead meant the phone
+  // (a) paid an extra serverless cold start on every run, and (b) shipped its own
+  // device-built prompt, overriding the real server template — which is why a phone
+  // result read as generic copy while the web result was on-task.
+  //
+  // Falls through to the Appwrite path below when Windmill is not configured or the
+  // call fails, so this can never leave the phone with no way to run a tool.
+  if (isWindmillConfigured()) {
+    try {
+      if (__DEV__) console.log(`[AI] Windmill (web parity) for: ${toolSlug}`);
+
+      // Web sends the raw mainInput and everything else as additionalInputs.
+      const { mainInput, ...additionalInputs } = inputs;
+
+      const raw = await runTool({
+        toolSlug,
+        toolName,
+        toolDescription,
+        toolBadge: toolCategory,
+        mainInput: String(mainInput ?? ''),
+        additionalInputs: {
+          ...additionalInputs,
+          tone: tone || 'professional',
+          language: language || 'English',
+        },
+        userId: userId || 'anonymous',
+      });
+
+      const text = readToolResult(raw);
+      if (text && text.trim().length >= MIN_PARSEABLE_RESPONSE_LENGTH) {
+        // Web renders ONE result, so this returns one.
+        //
+        // Deliberately NOT routed through splitOutputs(): its separator list
+        // includes '---' and '###', which are markdown syntax, not variation
+        // markers. A single well-formed markdown answer (headings, horizontal
+        // rules) gets sliced at those boundaries into N fake "variations" — so
+        // one answer is presented as "3 outputs generated" across three Option
+        // tabs, each holding a fragment of the same reply.
+        //
+        // Only an explicit ---VARIATION--- marker means real variations here.
+        const parts = text
+          .split('---VARIATION---')
+          .map((p) => p.trim())
+          .filter((p) => p.length >= MIN_SPLIT_PART_LENGTH);
+        return {
+          success: true,
+          outputs: parts.length > 1 ? parts.slice(0, outputCount) : [text.trim()],
+        };
+      }
+      if (__DEV__) console.log('[AI] Windmill returned nothing usable; falling back');
+    } catch (error: any) {
+      if (__DEV__) console.log(`[AI] Windmill error, falling back: ${error.message}`);
+    }
+  }
+
+  // FALLBACK: Appwrite Function (tool-executor → Windmill)
   try {
     if (__DEV__) console.log(`[AI] Executing tool-executor for: ${toolSlug}`);
 
-    // Read model from Remote Config (falls back to 'gemini-2.5-flash-lite' if not fetched)
-    const geminiModel = getString('gemini_model');
+    // Model is deliberately NOT sent any more.
+    //
+    // The web app's Windmill client (assets/windmill-*.js on app.marketingtool.pro)
+    // posts { toolSlug, toolName, toolDescription, toolBadge, input, additionalInputs,
+    // userId } and NO `model` field — Windmill picks the model server-side. The phone
+    // was overriding that with Remote Config `gemini_model`
+    // (default 'gemini-3.1-flash-lite-preview'), i.e. asking for the weakest tier while
+    // the web got whatever the engine chose. Same tool, same input, thinner answer.
+    //
+    // MOBILE_TOOLS_POLICY.md is explicit that "AI models used" is NOT changed on
+    // mobile, so sending it at all violated the policy. Let the backend decide, exactly
+    // as it does for web.
 
     // Sync execution (false) — same reasoning as ChatScreen: async + getExecution
     // polling needs the executions.read scope, which phone-OTP (Firebase) users
     // don't have, so polling failed and tools looked broken. fetch() is async at
     // the JS layer, so a sync execution does NOT block the UI thread (no ANR).
+    // Appwrite JWT, so the backend can verify WHO is running the tool.
+    //
+    // MOBILE_TOOLS_POLICY.md requires the same execution logic as web, and the
+    // web path is verified: its Windmill engines start with
+    //   user, err = _validate_jwt(appwriteJwt, userId)
+    // which calls Appwrite /account with X-Appwrite-JWT and refuses the run
+    // without it ("Authentication required"). The phone sent only a plain
+    // user_id string, which is a claim, not proof.
+    //
+    // Additive and safe: a backend that ignores the field behaves exactly as
+    // before, and a failure to mint one must not block a tool run.
+    let appwriteJwt = '';
+    try {
+      const { jwt } = await account.createJWT();
+      appwriteJwt = jwt || '';
+    } catch (e: any) {
+      if (__DEV__) console.log('[AI] No Appwrite JWT available: ' + e?.message);
+    }
+
     const execution = await functions.createExecution(
       TOOL_EXECUTOR_FUNCTION_ID,
       JSON.stringify({
+        appwriteJwt,
         tool_slug: toolSlug,
         tool_name: toolName,
+        // Sent alongside the prompt so the backend can route or template on the
+        // tool's real job instead of only its slug.
+        tool_description: toolDescription || '',
+        tool_category: toolCategory || '',
+        deliverable: deliverable || '',
+        instruction: toolInstruction,
         input: userPrompt,
         inputs: { ...inputs, tone: tone || 'professional', language: language || 'English' },
         output_count: outputCount,
@@ -74,7 +219,6 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         tier: tier || 'free',
         simulation: simulation ?? false, // mobile policy: REAL execution for all tiers (quota-limited, never demo/sample)
         options: { tone: tone || 'professional', language: language || 'English' },
-        model: geminiModel,
       }),
       false,  // sync — result arrives in this response, no polling/scope needed
       '/',    // path
@@ -90,82 +234,9 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
       }
     }
 
-    if (__DEV__) console.log(`[AI] Function failed with status ${execution.status}, trying fallback`);
+    if (__DEV__) console.log(`[AI] Function failed with status ${execution.status}`);
   } catch (error: any) {
-    if (__DEV__) console.log(`[AI] Function error: ${error.message}, trying fallback`);
-  }
-
-  // Fallback: Call Next.js API directly (middleware supports Bearer auth)
-  try {
-    if (__DEV__) console.log(`[AI] Fallback: calling Next.js API for ${toolSlug}`);
-
-    // createJWT requires an Appwrite session — phone-OTP (Firebase) users have
-    // none. Send the request without a bearer in that case instead of dying.
-    let bearer = '';
-    try {
-      const jwt = await account.createJWT();
-      bearer = `Bearer ${jwt.jwt}`;
-    } catch {
-      if (__DEV__) console.log('[AI] No Appwrite session for JWT — calling API without bearer');
-    }
-
-    const response = await fetch(`${NEXTJS_API_BASE}/api/tools/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(bearer ? { Authorization: bearer } : {}),
-      },
-      body: JSON.stringify({
-        tool: toolSlug,
-        input: userPrompt,
-        options: { tone: tone || 'professional', language: language || 'English' },
-        model: getString('gemini_model'),
-      }),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.success && data.output) {
-        if (__DEV__) console.log(`[AI] API fallback success`);
-        return {
-          outputs: splitOutputs(data.output, outputCount),
-          success: true,
-          // White-label: never surface the underlying provider/model name to the
-          // client. Tag results with our own brand engine, not "claude".
-          model: 'marketingtool',
-        };
-      }
-    }
-
-    // Try the simpler /api/generate endpoint
-    const response2 = await fetch(`${NEXTJS_API_BASE}/api/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(bearer ? { Authorization: bearer } : {}),
-      },
-      body: JSON.stringify({
-        tool: toolSlug,
-        input: userPrompt,
-        tone: tone || 'professional',
-        language: language || 'English',
-      }),
-    });
-
-    if (response2.ok) {
-      const data2 = await response2.json();
-      if (data2.result) {
-        return {
-          outputs: splitOutputs(data2.result, outputCount),
-          success: true,
-          // White-label: ignore any provider/model name the backend returns
-          // (could be "claude"/"gemini") and report our own brand engine.
-          model: 'marketingtool',
-        };
-      }
-    }
-  } catch (fallbackError: any) {
-    if (__DEV__) console.error('[AI] Fallback also failed:', fallbackError.message);
+    if (__DEV__) console.log(`[AI] Function error: ${error.message}`);
   }
 
   return {

@@ -1,0 +1,98 @@
+name: Actions Cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_cancel_stuck:
+        description: Force-cancel runs stuck in queued or in_progress
+        type: boolean
+        default: true
+      stuck_minutes:
+        description: Only touch stuck runs older than this many minutes
+        type: string
+        default: "30"
+      delete_old:
+        description: PERMANENTLY delete completed runs older than delete_days
+        type: boolean
+        default: false
+      delete_days:
+        description: Age in days used by delete_old
+        type: string
+        default: "30"
+      max_delete:
+        description: Maximum runs to delete in one execution
+        type: string
+        default: "200"
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: actions-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Clean Actions queue
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      SELF: ${{ github.run_id }}
+    steps:
+      - name: Force-cancel stuck runs
+        if: ${{ inputs.force_cancel_stuck }}
+        run: |
+          cutoff=$(date -u -d "-${{ inputs.stuck_minutes }} minutes" +%Y-%m-%dT%H:%M:%SZ)
+          echo "Cutoff: $cutoff"
+          : > ids.txt
+          for st in queued in_progress requested waiting pending action_required; do
+            gh api --paginate "repos/$REPO/actions/runs?status=$st&per_page=100" \
+              --jq ".workflow_runs[] | select(.created_at < \"$cutoff\") | .id" >> ids.txt || true
+          done
+          sort -u ids.txt -o ids.txt
+          echo "Stuck runs found: $(wc -l < ids.txt)"
+          ok=0; fail=0
+          while read -r id; do
+            if [ -z "$id" ] || [ "$id" = "$SELF" ]; then
+              continue
+            fi
+            if gh api -X POST "repos/$REPO/actions/runs/$id/force-cancel" >/dev/null 2>&1; then
+              echo "force-cancelled $id"; ok=$((ok+1))
+            elif gh api -X POST "repos/$REPO/actions/runs/$id/cancel" >/dev/null 2>&1; then
+              echo "cancelled $id"; ok=$((ok+1))
+            else
+              echo "could not cancel $id"; fail=$((fail+1))
+            fi
+          done < ids.txt
+          echo "cleared=$ok refused=$fail"
+          echo "Force-cancel: cleared $ok, refused $fail" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Delete old completed runs
+        if: ${{ inputs.delete_old }}
+        run: |
+          cutoff=$(date -u -d "-${{ inputs.delete_days }} days" +%Y-%m-%dT%H:%M:%SZ)
+          echo "Deleting completed runs created before $cutoff"
+          gh api --paginate "repos/$REPO/actions/runs?status=completed&per_page=100" \
+            --jq ".workflow_runs[] | select(.created_at < \"$cutoff\") | .id" \
+            | head -n "${{ inputs.max_delete }}" > del.txt || true
+          n=0
+          while read -r id; do
+            if [ -n "$id" ] && [ "$id" != "$SELF" ]; then
+              if gh api -X DELETE "repos/$REPO/actions/runs/$id" >/dev/null 2>&1; then
+                n=$((n+1))
+              fi
+            fi
+          done < del.txt
+          echo "Deleted $n runs"
+          echo "Deleted $n old runs" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report queue state
+        run: |
+          for st in queued in_progress; do
+            c=$(gh api "repos/$REPO/actions/runs?status=$st&per_page=1" --jq .total_count)
+            echo "$st: $c"
+            echo "$st: $c" >> "$GITHUB_STEP_SUMMARY"
+          done

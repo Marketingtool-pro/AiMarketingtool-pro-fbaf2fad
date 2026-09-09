@@ -65,6 +65,48 @@ client.call = async function(method, path, headers, params) {
     }
 };
 
+/**
+ * Pull userId/secret out of the OAuth callback URL without relying on `URL`.
+ *
+ * The callback arrives as a CUSTOM SCHEME:
+ *
+ *   marketingtool://oauth/success?userId=...&secret=...
+ *
+ * React Native has no complete WHATWG `URL`, and this project does not install
+ * react-native-url-polyfill, so `new URL(customScheme).searchParams` is not
+ * dependable -- it can come back empty or throw for a non-http(s) scheme.
+ *
+ * That failure is invisible on iOS and fatal on Android. When the parse yields
+ * nothing, the OAuth handlers fall through to "look for an existing session":
+ * on iOS the system browser shares cookies with the app, so account.get()
+ * finds the session and login still works; on Android a Chrome Custom Tab does
+ * NOT share cookies with the app's HTTP client, so there is nothing to find and
+ * the handler returns null with no error. Same code, works on Apple, silently
+ * does nothing on Android -- which is exactly the reported behaviour.
+ *
+ * Parsing the query string directly removes the dependency entirely.
+ */
+export function parseCallbackParams(url: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  const q = url.indexOf('?');
+  if (q === -1) return out;
+  // Drop any fragment; providers append it on some flows.
+  const query = url.slice(q + 1).split('#')[0];
+  for (const pair of query.split('&')) {
+    if (!pair) continue;
+    const eq = pair.indexOf('=');
+    const rawKey = eq === -1 ? pair : pair.slice(0, eq);
+    const rawVal = eq === -1 ? '' : pair.slice(eq + 1);
+    try {
+      out[decodeURIComponent(rawKey)] = decodeURIComponent(rawVal.replace(/\+/g, ' '));
+    } catch {
+      // A malformed escape must not take the whole login down.
+      out[rawKey] = rawVal;
+    }
+  }
+  return out;
+}
+
 // Initialize Services
 export const account = new Account(client);
 export const databases = new Databases(client);
@@ -78,13 +120,258 @@ export const functions = new Functions(client);
 // not exposed — use account.get() to check session validity instead.
 const SESSION_KEY = 'appwrite_session';
 
+// The session SECRET, which is what actually authenticates a request. Distinct
+// from SESSION_KEY above, which holds only the session's id and cannot
+// authenticate anything.
+const SESSION_SECRET_KEY = 'appwrite_session_secret';
+
 export const saveSession = async (session: string): Promise<void> => {
   await SecureStore.setItemAsync(SESSION_KEY, session);
 };
 
+/**
+ * Attach a freshly created session to the client and remember it.
+ *
+ * The React Native SDK persists NOTHING by itself. Its only session storage is
+ * the browser one, guarded by a check that is never true here:
+ *
+ *   if (typeof window !== 'undefined' && window.localStorage && cookieFallback)
+ *
+ * With no localStorage in React Native, an authenticated request depends on
+ * either the platform's cookie jar or an explicit X-Appwrite-Session header,
+ * which is what client.setSession() sets:
+ *
+ *   setSession(value) { this.headers['X-Appwrite-Session'] = value; }
+ *
+ * iOS shares its cookie store between the app and the system auth browser, so
+ * the session cookie set during OAuth is already present on the app's own
+ * requests and everything works without any of this. Android's Custom Tab does
+ * not share cookies with the app, so nothing carries the session forward -- the
+ * login succeeds and the very next account.get() is an anonymous request. The
+ * app reads that as "not signed in" and returns to onboarding, which is exactly
+ * what happens after the Google account picker.
+ *
+ * Appwrite only fills in `secret` on session responses in some flows; when it
+ * is empty this does nothing at all and behaviour is unchanged, so this is
+ * additive and cannot regress the platform that already works.
+ */
+export const adoptSession = async (session: Models.Session): Promise<void> => {
+  await saveSession(session.$id);
+
+  // Appwrite returns an EMPTY secret on session responses to client requests --
+  // measured against the live server, not assumed:
+  //
+  //   POST /v1/account/sessions/anonymous -> 201, "secret" field length 0
+  //
+  // so this branch does nothing on its own. The real credential arrives in the
+  // response HEADERS, and captureSessionFromHeaders() below is what collects it.
+  const secret = (session as unknown as { secret?: string }).secret;
+  if (!secret) return;
+
+  client.setSession(secret);
+  await SecureStore.setItemAsync(SESSION_SECRET_KEY, secret);
+};
+
+/**
+ * Take the session out of the response headers, which is where Appwrite
+ * actually puts it for clients that have no cookie jar.
+ *
+ * A session response carries both:
+ *
+ *   set-cookie:          the session cookie
+ *   x-fallback-cookies:  the same value as JSON, for exactly this case
+ *
+ * The SDK reads that second header and stores it in window.localStorage:
+ *
+ *   const cookieFallback = response.headers.get('X-Fallback-Cookies');
+ *   if (typeof window !== 'undefined' && window.localStorage && cookieFallback) { ... }
+ *
+ * React Native has no window.localStorage, so the SDK drops it and the session
+ * survives only if the platform's cookie jar happens to keep it. iOS shares its
+ * cookie store with the system auth browser and does; Android's Custom Tab does
+ * not share cookies with the app, so the session is simply lost and the next
+ * request is anonymous -- the app then shows onboarding, which is the reported
+ * behaviour after the Google account picker.
+ *
+ * Storing it ourselves and replaying it as X-Appwrite-Session removes the
+ * dependency on cookie behaviour entirely, on both platforms.
+ */
+async function captureSessionFromHeaders(headers: Headers): Promise<boolean> {
+  const fallback = headers.get('x-fallback-cookies') || headers.get('X-Fallback-Cookies');
+  if (!fallback) return false;
+
+  try {
+    const parsed = JSON.parse(fallback);
+    const secret = parsed?.[`a_session_${APPWRITE_PROJECT_ID}`];
+    if (!secret) return false;
+
+    client.setSession(secret);
+    await SecureStore.setItemAsync(SESSION_SECRET_KEY, secret);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Create a session with a plain request so the response headers stay reachable.
+ *
+ * The SDK returns only the parsed body, so the header carrying the session is
+ * unreachable through it. These are the only two calls that need it: everything
+ * afterwards goes through the SDK as usual, authenticated by the header that
+ * client.setSession() adds.
+ */
+async function postSession(path: string, body: Record<string, string>): Promise<Models.Session> {
+  const response = await fetch(`${APPWRITE_ENDPOINT}${path}`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-appwrite-project': APPWRITE_PROJECT_ID,
+      'x-appwrite-response-format': '1.8.0',
+    },
+    body: JSON.stringify(body),
+  });
+
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : {};
+
+  if (!response.ok) {
+    const error: any = new Error(data?.message || `Session request failed (${response.status})`);
+    error.code = data?.code ?? response.status;
+    error.type = data?.type;
+    throw error;
+  }
+
+  await captureSessionFromHeaders(response.headers);
+  return data as Models.Session;
+}
+
+/**
+ * Re-attach a stored session secret on app start.
+ *
+ * Without this the header is lost on every cold start, which on Android is
+ * every time the OAuth callback relaunches the app.
+ */
+export const restoreSession = async (): Promise<boolean> => {
+  try {
+    const secret = await SecureStore.getItemAsync(SESSION_SECRET_KEY);
+    if (!secret) return false;
+    client.setSession(secret);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const deleteSession = async (): Promise<void> => {
   await SecureStore.deleteItemAsync(SESSION_KEY);
+  await SecureStore.deleteItemAsync(SESSION_SECRET_KEY);
+  client.setSession('');
 };
+
+/**
+ * Finish an OAuth login from a deep link, independently of the browser session.
+ *
+ * Reported on Android: after choosing the Google account the browser redirects
+ * and the app shows its SPLASH SCREEN instead of a signed-in session.
+ *
+ * A splash screen means the app COLD STARTED. The callback
+ * marketingtool://oauth/success?userId=...&secret=... arrived as a launch
+ * intent rather than as a return into the running process, so the promise from
+ * WebBrowser.openAuthSessionAsync() died with the old process and its result --
+ * the userId and secret -- was never read by anyone. Nothing in this app looked
+ * at incoming links at all: there was no Linking.getInitialURL() and no 'url'
+ * listener anywhere, so those credentials were simply dropped on the floor.
+ *
+ * iOS does not hit this because ASWebAuthenticationSession returns inside the
+ * living process and the promise resolves normally.
+ *
+ * Handling the link directly makes the login independent of whether the process
+ * survived the round trip, which is the only version of this flow that can be
+ * relied on. Safe to call with any URL: anything that is not an OAuth success
+ * callback is ignored.
+ */
+export async function completeOAuthFromUrl(url: string | null): Promise<boolean> {
+  if (!url) return false;
+  if (!url.includes('oauth/success') && !url.includes('secret=')) return false;
+
+  const params = parseCallbackParams(url);
+
+  // Record that a callback arrived and whether it carried usable credentials.
+  //
+  // Without this the failure is silent: on Android the app returns to its
+  // onboarding screen after the Google account picker, with no error anywhere,
+  // because a callback missing userId/secret simply returns false. Server-side
+  // the endpoint is fine -- POST /v1/account/sessions/token answers
+  // 401 user_invalid_token identically for an Android origin and a web origin --
+  // so the open question is whether the app receives those values at all.
+  //
+  // Only presence is recorded, never the secret itself.
+  reportAuthFailure('oauthCallbackReceived', {
+    type: 'diagnostic',
+    code: url.split('?')[0],
+    message: `hasUserId=${!!params.userId} hasSecret=${!!params.secret} keys=${Object.keys(params).join(',')}`,
+  });
+
+  if (!params.userId || !params.secret) return false;
+
+  try {
+    const session = await postSession('/account/sessions/token', {
+      userId: params.userId,
+      secret: params.secret,
+    });
+    await adoptSession(session);
+    if (__DEV__) console.log('[OAuth] Session created from deep link');
+    return true;
+  } catch (error: any) {
+    // An already-consumed secret lands here when the in-process handler won the
+    // race and completed the login first. That is a success, not a failure, so
+    // it must not surface as an error to the user.
+    if (__DEV__) console.log('[OAuth] Deep link session failed:', error?.message || error);
+    reportAuthFailure('oauthDeepLinkSession', error);
+    return false;
+  }
+}
+
+/**
+ * Send an Appwrite auth failure to Crashlytics as a non-fatal.
+ *
+ * Appwrite is the auth for every provider and every platform -- Google,
+ * Facebook, Apple, OpenID and email all go through it, on web, iOS and Android
+ * alike. Only the phone OTP uses Firebase. Yet sign-in fails on Android only,
+ * and every server-side check answers correctly to Android-shaped requests:
+ *
+ *   POST /v1/account/sessions/email   -> 401 user_invalid_credentials
+ *   GET  /v1/account                  -> 401 guest (not "Invalid Origin")
+ *   platform origin enforcement       -> not applied (verified with a control:
+ *                                        an unregistered package gets the same
+ *                                        answer as the real one)
+ *   TLS chain                         -> valid to ISRG Root X1
+ *   shipped bundle                    -> correct endpoint and project id
+ *
+ * So the failure happens inside the app, and until now the app reported
+ * nothing: only the Firebase OTP paths recorded anything, while the Appwrite
+ * paths -- the ones that actually matter -- rethrew bare and left no trace.
+ *
+ * Codes and messages here come from Appwrite. No password, secret, session id
+ * or email is recorded.
+ */
+function reportAuthFailure(stage: string, error: any) {
+  try {
+    const crashlytics = require('@react-native-firebase/crashlytics').default;
+    const c = crashlytics();
+    c.setAttributes({
+      auth_stage: stage,
+      auth_error_type: String(error?.type || 'none'),
+      auth_error_code: String(error?.code ?? 'none'),
+    });
+    c.recordError(
+      new Error(`Auth ${stage} [${error?.type || 'no-type'}/${error?.code ?? '?'}] ${String(error?.message || '')}`)
+    );
+  } catch {
+    // Diagnostics must never break sign-in.
+  }
+}
 
 // Auth Functions
 export const authService = {
@@ -95,6 +382,7 @@ export const authService = {
       await this.login(email, password);
       return newAccount;
     } catch (error) {
+      reportAuthFailure('createAccount', error);
       throw error;
     }
   },
@@ -102,10 +390,11 @@ export const authService = {
   // Login with Email
   async login(email: string, password: string): Promise<Models.Session> {
     try {
-      const session = await account.createEmailPasswordSession(email, password);
-      await saveSession(session.$id);
+      const session = await postSession('/account/sessions/email', { email, password });
+      await adoptSession(session);
       return session;
     } catch (error) {
+      reportAuthFailure('emailLogin', error);
       throw error;
     }
   },
@@ -142,14 +431,14 @@ export const authService = {
         // Check if it's a success callback
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
           // Parse the URL for session tokens
-          const urlParams = new URL(result.url);
-          const secret = urlParams.searchParams.get('secret');
-          const userId = urlParams.searchParams.get('userId');
+          const urlParams = parseCallbackParams(result.url);
+          const secret = urlParams.secret;
+          const userId = urlParams.userId;
 
           if (secret && userId) {
             if (__DEV__) console.log('[OAuth] Creating session with token...');
-            const session = await account.createSession(userId, secret);
-            await saveSession(session.$id);
+            const session = await postSession('/account/sessions/token', { userId, secret });
+            await adoptSession(session);
             return session;
           }
         }
@@ -161,7 +450,7 @@ export const authService = {
           if (user) {
             const sessions = await account.listSessions();
             if (sessions.sessions.length > 0) {
-              await saveSession(sessions.sessions[0].$id);
+              await adoptSession(sessions.sessions[0]);
               if (__DEV__) console.log('[OAuth] Session found for:', user.email);
               return sessions.sessions[0];
             }
@@ -178,6 +467,7 @@ export const authService = {
       return null;
     } catch (error: any) {
       if (__DEV__) console.error('[OAuth] Google error:', error?.message || error);
+      reportAuthFailure('oauthGoogle', error);
       throw error;
     }
   },
@@ -205,13 +495,13 @@ export const authService = {
 
       if (result.type === 'success' && result.url) {
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          const urlParams = new URL(result.url);
-          const secret = urlParams.searchParams.get('secret');
-          const userId = urlParams.searchParams.get('userId');
+          const urlParams = parseCallbackParams(result.url);
+          const secret = urlParams.secret;
+          const userId = urlParams.userId;
 
           if (secret && userId) {
-            const session = await account.createSession(userId, secret);
-            await saveSession(session.$id);
+            const session = await postSession('/account/sessions/token', { userId, secret });
+            await adoptSession(session);
             return session;
           }
         }
@@ -221,7 +511,7 @@ export const authService = {
           if (user) {
             const sessions = await account.listSessions();
             if (sessions.sessions.length > 0) {
-              await saveSession(sessions.sessions[0].$id);
+              await adoptSession(sessions.sessions[0]);
               return sessions.sessions[0];
             }
           }
@@ -233,6 +523,7 @@ export const authService = {
       return null;
     } catch (error: any) {
       if (__DEV__) console.error('[OAuth] Apple error:', error?.message || error);
+      reportAuthFailure('oauthApple', error);
       throw error;
     }
   },
@@ -260,13 +551,13 @@ export const authService = {
 
       if (result.type === 'success' && result.url) {
         if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          const urlParams = new URL(result.url);
-          const secret = urlParams.searchParams.get('secret');
-          const userId = urlParams.searchParams.get('userId');
+          const urlParams = parseCallbackParams(result.url);
+          const secret = urlParams.secret;
+          const userId = urlParams.userId;
 
           if (secret && userId) {
-            const session = await account.createSession(userId, secret);
-            await saveSession(session.$id);
+            const session = await postSession('/account/sessions/token', { userId, secret });
+            await adoptSession(session);
             return session;
           }
         }
@@ -276,7 +567,7 @@ export const authService = {
           if (user) {
             const sessions = await account.listSessions();
             if (sessions.sessions.length > 0) {
-              await saveSession(sessions.sessions[0].$id);
+              await adoptSession(sessions.sessions[0]);
               return sessions.sessions[0];
             }
           }
@@ -288,6 +579,7 @@ export const authService = {
       return null;
     } catch (error: any) {
       if (__DEV__) console.error('[OAuth] Facebook error:', error?.message || error);
+      reportAuthFailure('oauthFacebook', error);
       throw error;
     }
   },

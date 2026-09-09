@@ -270,11 +270,28 @@ export const COUNTRIES: Country[] = [
   { iso2: 'ZW', name: "Zimbabwe", dialCode: '+263', flag: '🇿🇼' },
 ];
 
-/** Look up by ISO-3166 alpha-2. Use this instead of matching on dialCode. */
-export function findCountry(iso2: string | undefined | null): Country | undefined {
-  if (!iso2) return undefined;
-  const target = iso2.toUpperCase();
-  return COUNTRIES.find(c => c.iso2 === target);
+/**
+ * Look up by ISO-3166 alpha-2. Always prefer this over matching on dialCode.
+ *
+ * `dialCode` is accepted only as a migration fallback, for a `pendingOTP` blob
+ * written by a build that stored the dial code alone. It is deliberately last:
+ * codes are not unique (+1 is the US, Canada and much of the Caribbean), so a
+ * dialCode-only match resolves to whichever entry comes first in the table.
+ */
+export function findCountry(
+  iso2: string | undefined | null,
+  dialCode?: string | null,
+): Country | undefined {
+  if (iso2) {
+    const target = iso2.toUpperCase();
+    const byIso = COUNTRIES.find(c => c.iso2 === target);
+    if (byIso) return byIso;
+  }
+  if (dialCode) {
+    const target = dialCode.startsWith('+') ? dialCode : `+${dialCode}`;
+    return COUNTRIES.find(c => c.dialCode === target);
+  }
+  return undefined;
 }
 
 export const DEFAULT_COUNTRY: Country =

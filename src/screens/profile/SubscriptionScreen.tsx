@@ -274,7 +274,10 @@ const SubscriptionScreen = () => {
     } else if (Platform.OS === 'android') {
       Linking.openURL('https://play.google.com/store/account/subscriptions');
     } else {
-      Linking.openURL('https://marketingtool.pro/account/billing');
+      // Web / desktop: the previous target
+      // (https://marketingtool.pro/account/billing) returned 404.
+      // /pricing/ is the live page.
+      Linking.openURL('https://marketingtool.pro/pricing/');
     }
   };
 
@@ -521,10 +524,13 @@ const SubscriptionScreen = () => {
         </TouchableOpacity>
         <Text style={styles.secureText}>Cancel anytime. Secure payment via Store.</Text>
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 8 }}>
-          <TouchableOpacity onPress={() => Linking.openURL('https://marketingtool.pro/terms')}>
+          {/* Guideline 3.1.2 requires working Terms/Privacy links on the
+              subscription screen. /terms and /privacy both return 404 --
+              the live pages are /terms-policy/ and /privacy-policy/. */}
+          <TouchableOpacity onPress={() => Linking.openURL('https://marketingtool.pro/terms-policy/')}>
             <Text style={{ fontSize: 11, color: '#71717A', textDecorationLine: 'underline' }}>Terms of Use</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => Linking.openURL('https://marketingtool.pro/privacy')}>
+          <TouchableOpacity onPress={() => Linking.openURL('https://marketingtool.pro/privacy-policy/')}>
             <Text style={{ fontSize: 11, color: '#71717A', textDecorationLine: 'underline' }}>Privacy Policy</Text>
           </TouchableOpacity>
         </View>

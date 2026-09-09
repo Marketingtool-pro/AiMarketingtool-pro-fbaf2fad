@@ -2,8 +2,8 @@
   "expo": {
     "name": "MarketingTool",
     "slug": "marketingtool",
-    "owner": "aimarketintool-2-2-2",
-    "version": "1.5.11",
+    "owner": "aimarketintool-2-2-2-2",
+    "version": "1.5.19",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -19,8 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "pro.marketingtool.app",
-      "buildNumber": "1000",
-      "buildNumber": "559",
+      "buildNumber": "1014",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -54,18 +53,39 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#060b28"
+        "backgroundColor": "#0D0F1C"
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
-      "versionCode": 1000,
-      "versionCode": 559,
+      "versionCode": 1031,
       "allowBackup": false,
       "permissions": [
         "CAMERA",
         "USE_BIOMETRIC",
         "VIBRATE",
         "com.google.android.gms.permission.AD_ID"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "marketingtool.pro",
+              "pathPrefix": "/"
+            },
+            {
+              "scheme": "https",
+              "host": "www.marketingtool.pro",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
       ]
     },
     "web": {
@@ -112,7 +132,10 @@
             ],
             "ndkVersion": "27.1.12297006",
             "kotlinVersion": "2.3.0",
-            "kspVersion": "2.3.0"
+            "kspVersion": "2.3.0",
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "# --- React Native / Hermes core ---\n-keep class com.facebook.react.** { *; }\n-keep class com.facebook.hermes.** { *; }\n-keep class com.facebook.jni.** { *; }\n-dontwarn com.facebook.react.**\n-keepclasseswithmembernames class * { native <methods>; }\n-keepclassmembers class * { @com.facebook.react.bridge.ReactMethod <methods>; }\n-keepclassmembers class * { @com.facebook.react.uimanager.annotations.ReactProp <methods>; }\n-keepclassmembers class * { @com.facebook.react.uimanager.annotations.ReactPropGroup <methods>; }\n\n# --- Expo modules (resolved reflectively) ---\n-keep class expo.modules.** { *; }\n-dontwarn expo.modules.**\n\n# --- Firebase ---\n-keep class com.google.firebase.** { *; }\n-dontwarn com.google.firebase.**\n\n# --- Google Play services / AdMob / Play Core ---\n-keep class com.google.android.gms.** { *; }\n-dontwarn com.google.android.gms.**\n-keep class com.google.android.play.** { *; }\n-dontwarn com.google.android.play.**\n\n# --- Appwrite + networking ---\n-keep class io.appwrite.** { *; }\n-dontwarn okhttp3.**\n-dontwarn okio.**\n-dontwarn kotlinx.coroutines.**\n\n# --- Google Play Billing (react-native-iap) ---\n-keep class com.android.billingclient.api.** { *; }\n-dontwarn com.android.billingclient.api.**\n-keep class com.android.vending.billing.** { *; }\n\n# --- edge-to-edge ---\n-keep class com.zoontek.rnedgetoedge.** { *; }\n\n# --- Standard Android keeps ---\n-keepclassmembers enum * { public static **[] values(); public static ** valueOf(java.lang.String); }\n-keepclassmembers class * implements android.os.Parcelable { public static final android.os.Parcelable$Creator *; }\n-keepattributes Signature,InnerClasses,EnclosingMethod,*Annotation*,SourceFile,LineNumberTable"
           }
         }
       ],
@@ -135,16 +158,23 @@
       "./plugins/withAndroid15EdgeToEdge.js",
       "./plugins/withRNEdgeToEdgeFix.js",
       "./plugins/withFirebaseDeferredInit.js",
+      "./plugins/withNotificationColorFix.js",
+      "./plugins/withoutExpoDevScheme.js",
       [
         "expo-splash-screen",
         {
           "image": "./assets/icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#060b28"
+          "backgroundColor": "#0D0F1C"
         }
       ],
-      "expo-notifications",
-      "react-native-iap",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#7C3AED"
+        }
+      ],
       "expo-secure-store",
       "expo-font",
       "expo-sharing",
@@ -152,6 +182,7 @@
       "expo-asset",
       "expo-tracking-transparency",
       "./plugins/withKotlinKspFix.js",
+      "./plugins/withAndroidAbiFilters.js",
       [
         "react-native-google-mobile-ads",
         {
@@ -160,8 +191,9 @@
           "delayAppMeasurementInit": true
         }
       ],
-      "expo-dev-launcher",
-      "expo-updates"
+      "expo-updates",
+      "./plugins/withR8Optimization.js",
+      "./plugins/withAndroidRecaptcha.js"
     ],
     "extra": {
       "appwriteEndpoint": "https://api.marketingtool.pro/v1",
@@ -172,7 +204,7 @@
         "reCaptchaIos": "6LegEWIsAAAAAOgbGP08ISyfgJWExxSRV9iLuanX"
       },
       "eas": {
-        "projectId": "93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
+        "projectId": "e7abf1ac-3cab-4cfb-9cb2-f55c1783dd7e"
       }
     },
     "runtimeVersion": {
@@ -180,7 +212,7 @@
     },
     "updates": {
       "enabled": false,
-      "url": "https://u.expo.dev/93b0a546-bd05-4250-b2c9-58aa43ecc1f2"
+      "url": "https://u.expo.dev/e7abf1ac-3cab-4cfb-9cb2-f55c1783dd7e"
     }
   }
 }

@@ -1,7 +1,7 @@
 // fatalGuard must be the FIRST import: it replaces RN's global JS exception
 // handler before any other module can throw, so an unhandled error is recorded
 // to Crashlytics instead of killing the app (the 550-554 logout/teardown crash).
-import './src/utils/fatalGuard';
+import { markAppMounted } from './src/utils/fatalGuard';
 import React, { useEffect, useState, useCallback } from 'react';
 // expo-status-bar removed: it routes through deprecated APIs on Android 15
 // (StatusBarModule -> Window.setStatusBarColor). react-native-edge-to-edge's
@@ -15,7 +15,9 @@ import * as Font from 'expo-font';
 import { Feather } from '@expo/vector-icons';
 import AppNavigator from './src/navigation/AppNavigator';
 import { initNotificationHistory } from './src/services/notificationHistory';
+import * as Linking from 'expo-linking';
 import { useAuthStore } from './src/store/authStore';
+import { completeOAuthFromUrl, restoreSession } from './src/services/appwrite';
 import { Colors } from './src/constants/theme';
 import { matomo } from './src/services/matomo';
 import { initializeAppCheck } from './src/services/firebaseAppCheck';
@@ -35,6 +37,37 @@ SplashScreen.preventAutoHideAsync();
 export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
   const { checkAuth } = useAuthStore();
+
+  // Finish an OAuth login that arrived as a deep link.
+  //
+  // On Android the callback can COLD START the app -- the user sees the splash
+  // screen and no session, because the browser-session promise died with the
+  // previous process and nothing else ever read the userId/secret out of the
+  // URL. Before this, the app registered no link handling of any kind.
+  //
+  // getInitialURL covers the cold start; the 'url' listener covers the case
+  // where the process survived and the link is delivered to it. Both funnel into
+  // completeOAuthFromUrl, which ignores anything that is not an OAuth callback.
+  useEffect(() => {
+    let active = true;
+
+    const handleUrl = async (url: string | null) => {
+      const signedIn = await completeOAuthFromUrl(url);
+      if (signedIn && active) await checkAuth();
+    };
+
+    Linking.getInitialURL()
+      .then(handleUrl)
+      .catch(() => {});
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      void handleUrl(url);
+    });
+
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, [checkAuth]);
 
   useEffect(() => {
     // Persist received notifications so the Notifications screen has a real
@@ -76,8 +109,23 @@ export default function App() {
             'Poppins-Medium': require('./assets/fonts/Poppins-Medium.ttf'),
             'Poppins-SemiBold': require('./assets/fonts/Poppins-SemiBold.ttf'),
             'Poppins-Bold': require('./assets/fonts/Poppins-Bold.ttf'),
+            // Meme caption faces. Previously MemeGeneratorScreen picked SYSTEM
+            // fonts per platform (Impact/Arial/Comic Sans/Times on iOS vs
+            // sans-serif-condensed/sans-serif/casual/serif on Android), so the
+            // same meme rendered in different typefaces with different metrics
+            // depending on the device. Bundling them means one rendering
+            // everywhere. All SIL OFL 1.1.
+            'Anton-Regular': require('./assets/fonts/Anton-Regular.ttf'),
+            'Arimo-Bold': require('./assets/fonts/Arimo-Bold.ttf'),
+            'ComicNeue-Bold': require('./assets/fonts/ComicNeue-Bold.ttf'),
+            'Tinos-Bold': require('./assets/fonts/Tinos-Bold.ttf'),
           }), 3000),
-          withTimeout(checkAuth(), 1500),
+          // Re-attach the stored session BEFORE checkAuth, or checkAuth runs as
+          // an anonymous request. The Appwrite RN SDK persists nothing itself
+          // (its only storage path is window.localStorage, which does not exist
+          // here), so without this the session is lost on every cold start --
+          // and on Android the OAuth callback cold-starts the app every time.
+          withTimeout(restoreSession().then(() => checkAuth()), 2500),
           withTimeout(initializeAppCheck(), 2000),
         ]);
       } catch (e) {
@@ -85,7 +133,8 @@ export default function App() {
       } finally {
         setAppIsReady(true);
         // Non-critical inits run AFTER UI is ready — prevents ANR on cold start
-        deferredInit();
+        // Set timeout ensures React completes the layout and SplashScreen.hideAsync() runs first
+        setTimeout(() => deferredInit(), 500);
       }
     }
 
@@ -156,6 +205,11 @@ export default function App() {
 
   const onLayoutRootView = useCallback(async () => {
     if (appIsReady) {
+      // The UI has laid out, so from here on a JS fatal costs a broken screen
+      // rather than a dead app — fatalGuard switches to suppressing. Before
+      // this point it forwards fatals through, so a startup failure is a
+      // reported crash instead of a silent forever-splash.
+      markAppMounted();
       // This tells the splash screen to hide immediately
       await SplashScreen.hideAsync();
     }

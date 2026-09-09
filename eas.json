@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 5.9.1",
-    "appVersionSource": "local"
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -14,7 +14,14 @@
       },
       "env": {
         "IS_TESTING": "true",
-        "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
+        "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1",
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+      }
+    },
+    "development-ios-simulator": {
+      "extends": "development",
+      "ios": {
+        "simulator": true
       }
     },
     "preview": {
@@ -27,18 +34,20 @@
       },
       "env": {
         "IS_TESTING": "true",
-        "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
+        "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1",
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
     },
     "production": {
-      "autoIncrement": false,
+      "autoIncrement": true,
       "channel": "production",
       "node": "24.18.0",
       "android": {
         "resourceClass": "large"
       },
       "env": {
-        "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
+        "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1",
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
     }
   },
@@ -49,6 +58,16 @@
         "ascApiKeyId": "69JDXUCPU3",
         "ascApiKeyIssuerId": "313ffa8d-5aed-4aad-a012-b1057717634c",
         "ascAppId": "6758618412"
+      },
+      "android": {
+        "track": "production",
+        "releaseStatus": "completed"
+      }
+    },
+    "internal": {
+      "android": {
+        "track": "internal",
+        "releaseStatus": "completed"
       }
     }
   }
