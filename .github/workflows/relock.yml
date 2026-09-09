@@ -21,16 +21,23 @@ jobs:
 
       - name: Regenerate lockfiles
         run: |
-          for d in . functions AiMarketingtool-pro-fbaf2fa plugin-rn-mcp/server; do
+          for d in . functions plugin-rn-mcp/server; do
             echo "::group::relock $d"
             (cd "$d" && npm install --package-lock-only --legacy-peer-deps --no-audit --no-fund)
             echo "::endgroup::"
           done
 
-      - name: Commit lockfiles
+      - name: Push lockfiles to a new branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BR="lockfix/${GITHUB_SHA::7}"
+          git checkout -b "$BR"
           git add "*package-lock.json"
-          git commit -m "chore(deps): regenerate lockfiles [skip ci]" || echo "nothing to commit"
-          git push
+          if git diff --cached --quiet; then
+            echo "lockfiles already up to date"
+            exit 0
+          fi
+          git commit -m "chore(deps): regenerate lockfiles [skip ci]"
+          git push origin "$BR"
+          echo "pushed $BR" >> $GITHUB_STEP_SUMMARY
