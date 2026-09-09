@@ -202,6 +202,8 @@
   },
   "overrides": {
     "qs": "^6.16.0",
+    "decode-uri-component": "^0.5.0",
+    "stream-json": "^3.5.0",
     "mysql2": "^3.23.1",
     "undici": "^6.23.0",
     "@opentelemetry/core": "^2.10.0",
@@ -242,6 +244,8 @@
   },
   "resolutions": {
     "qs": "^6.16.0",
+    "decode-uri-component": "^0.5.0",
+    "stream-json": "^3.5.0",
     "mysql2": "^3.23.1",
     "@xmldom/xmldom": "0.8.15",
     "expo-file-system": "~57.0.6",
