@@ -201,10 +201,14 @@
     "access": "restricted"
   },
   "overrides": {
+    "qs": "^6.16.0",
+    "decode-uri-component": "^0.5.0",
+    "stream-json": "^3.5.0",
+    "mysql2": "^3.23.1",
     "undici": "^6.23.0",
     "@opentelemetry/core": "^2.10.0",
     "@opentelemetry/propagator-jaeger": "^2.10.0",
-    "@xmldom/xmldom": "0.8.13",
+    "@xmldom/xmldom": "0.8.15",
     "esbuild": "$esbuild",
     "expo-file-system": "$expo-file-system",
     "expo-web-browser": "$expo-web-browser",
@@ -239,7 +243,11 @@
     }
   },
   "resolutions": {
-    "@xmldom/xmldom": "0.8.13",
+    "qs": "^6.16.0",
+    "decode-uri-component": "^0.5.0",
+    "stream-json": "^3.5.0",
+    "mysql2": "^3.23.1",
+    "@xmldom/xmldom": "0.8.15",
     "expo-file-system": "~57.0.6",
     "expo-web-browser": "~57.0.2",
     "protobufjs": "^7.5.5",
