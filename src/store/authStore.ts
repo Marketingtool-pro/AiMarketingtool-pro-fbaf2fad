@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Models, ExecutionMethod } from 'react-native-appwrite';
 import { authService, dbService, account, functions, COLLECTIONS, Query, isAwaitingExternalOAuth } from '../services/appwrite';
 import { biometricService } from '../services/biometric';
+import { isE164 } from '../utils/phone';
 import {
   sendPhoneOTP as firebaseSendOTP,
   verifyPhoneOTP as firebaseVerifyOTP,
@@ -370,14 +371,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Android automatically. firebaseAuth service is in services/firebaseAuth.ts.
     set({ error: null });
     try {
-      // The login UI always prepends the selected dialling code, so a number
-      // without '+' means the country was lost upstream. Guessing (this used to
-      // default to '+91') silently routes a non-Indian user's OTP to a wrong
-      // number, so refuse rather than mis-deliver.
-      if (!phoneNumber.trim().startsWith('+')) {
+      // Already E.164 - normalized by the caller via src/utils/phone.ts.
+      // This used to re-derive it and default non-'+' input to +91, which
+      // silently routed a non-Indian user's OTP to a wrong number. Refuse
+      // rather than mis-deliver; the same guard lives in firebaseAuth.ts.
+      const formatted = phoneNumber;
+      if (!isE164(formatted)) {
         throw new Error('Please select your country code and re-enter your number.');
       }
-      const formatted = `+${phoneNumber.replace(/\D/g, '')}`;
 
       // Reviewer bypass for store review (App Store Guideline 2.1(b)).
       // Inert unless BOTH env vars are explicitly set, and matched on the FULL
@@ -415,10 +416,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error('Verification session expired. Please request a new code.');
       }
 
-      // rawPhone comes from tempPhone, which sendPhoneOTP already normalised to
-      // E.164, so only ensure the '+' -- never inject a country code here.
-      const cleanPhone = rawPhone.replace(/\D/g, '');
-      const phone = `+${cleanPhone}`;
+      // rawPhone comes from tempPhone, which sendPhoneOTP already validated as
+      // E.164, so no re-derivation and never inject a country code here.
+      const phone = rawPhone;
 
       let firebaseUid: string;
 
@@ -429,7 +429,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const isReviewer = isReviewerPhone(phone);
 
       if (isReviewer && !!reviewerCode && code === reviewerCode) {
-        firebaseUid = 'reviewer_bypass_' + cleanPhone.slice(-10);
+        firebaseUid = 'reviewer_bypass_' + phone.replace(/\D/g, '').slice(-10);
       } else {
         if (__DEV__) console.log('[Auth] Verifying OTP via Firebase for', phone);
         const verifyResult = await firebaseVerifyOTP(code);
