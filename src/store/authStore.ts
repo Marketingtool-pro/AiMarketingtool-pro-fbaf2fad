@@ -404,7 +404,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const isReviewer = isReviewerPhone(phone);
 
       if (isReviewer && !!reviewerCode && code === reviewerCode) {
-        firebaseUid = 'reviewer_bypass_' + cleanPhone.slice(-10);
+        firebaseUid = 'reviewer_bypass_' + phone.replace(/\D/g, '').slice(-10);
       } else {
         if (__DEV__) console.log('[Auth] Verifying OTP via Firebase for', phone);
         const verifyResult = await firebaseVerifyOTP(code);
@@ -435,11 +435,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // fail — a guaranteed-404/401 round-trip paid on EVERY login, with its
       // result thrown away. Create first; only clear and retry in the genuine
       // re-login case, so the common path costs one round-trip instead of two.
+      // Goes through authService.createTokenSession, NOT account.createSession.
+      // The SDK call returns only the parsed body, so the x-fallback-cookies
+      // header that carries the session on a client with no cookie jar is
+      // dropped -- which is why a correct code still bounced Android users
+      // back to onboarding. See the doc comment on createTokenSession.
       try {
-        await account.createSession(sessionResult.userId, sessionResult.secret);
+        await authService.createTokenSession(sessionResult.userId, sessionResult.secret);
       } catch {
         try { await account.deleteSession('current'); } catch {}
-        await account.createSession(sessionResult.userId, sessionResult.secret);
+        await authService.createTokenSession(sessionResult.userId, sessionResult.secret);
       }
 
       const user = await authService.getCurrentUser();
