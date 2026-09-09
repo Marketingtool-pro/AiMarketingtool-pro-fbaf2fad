@@ -23,7 +23,7 @@ jobs:
         run: |
           for d in . functions plugin-rn-mcp/server; do
             echo "::group::relock $d"
-            (cd "$d" && npm install --package-lock-only --legacy-peer-deps --no-audit --no-fund)
+            (cd "$d" && npm install --package-lock-only --ignore-scripts --legacy-peer-deps --no-audit --no-fund)
             echo "::endgroup::"
           done
 
