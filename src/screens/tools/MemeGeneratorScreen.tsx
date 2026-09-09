@@ -117,10 +117,10 @@ const MemeGeneratorScreen = () => {
     const { status: libraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     const { status: mediaStatus } = await MediaLibrary.requestPermissionsAsync();
 
-    if (cameraStatus !== 'granted' || libraryStatus !== 'granted') {
+    if (cameraStatus !== 'granted' || libraryStatus !== 'granted' || mediaStatus !== 'granted') {
       Alert.alert(
         'Permissions Required',
-        'Camera and photo library access is required to create memes.',
+        'Camera, photo library and media library access are required to create memes.',
         [{ text: 'OK' }]
       );
       return false;
