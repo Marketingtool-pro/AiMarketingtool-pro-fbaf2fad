@@ -1,14 +1,15 @@
-# Firebase App Hosting build + run configuration for the phone repo.
+# Firebase App Hosting run configuration for the phone repo.
 #
-# This repository is an Expo (React Native) app. Its "npm start" script runs
-# "expo start", which is the Metro DEVELOPMENT server on port 8081. Cloud Run
-# requires the container to listen on 0.0.0.0:$PORT (8080), so every rollout
-# failed with "the user-provided container failed to start and listen on the
-# port defined provided by the PORT=8080 environment variable" even though the
-# Cloud Build step itself reported success.
+# This repository is an Expo (React Native) app. App Hosting builds it with the
+# default Node buildpack (which runs `npm run build`, i.e.
+# `expo export --platform web` -> ./dist) and then starts it with `npm start`.
 #
-# Fix: build the static web export (expo export --platform web -> ./dist) and
-# serve it with the dependency-free ./server.js, which binds to $PORT.
+# `npm start` therefore has to be a REAL web server: Cloud Run requires the
+# container to listen on 0.0.0.0:$PORT (8080). It used to be `expo start`, the
+# Metro development server on port 8081, so every rollout failed with
+# "the user-provided container failed to start and listen on the port defined
+# provided by the PORT=8080 environment variable". `npm start` is now
+# `node server.js`; the Expo dev server moved to `npm run dev`.
 
 runConfig:
   cpu: 1
@@ -16,7 +17,3 @@ runConfig:
   concurrency: 80
   minInstances: 0
   maxInstances: 5
-
-scripts:
-  buildCommand: npm run build
-  runCommand: node server.js
