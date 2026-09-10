@@ -26,7 +26,6 @@ import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as MediaLibrary from 'expo-media-library';
-import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import ViewShot from 'react-native-view-shot';
 import { RootStackParamList } from '../../navigation/AppNavigator';
@@ -117,10 +116,10 @@ const MemeGeneratorScreen = () => {
     const { status: libraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     const { status: mediaStatus } = await MediaLibrary.requestPermissionsAsync();
 
-    if (cameraStatus !== 'granted' || libraryStatus !== 'granted') {
+    if (cameraStatus !== 'granted' || libraryStatus !== 'granted' || mediaStatus !== 'granted') {
       Alert.alert(
         'Permissions Required',
-        'Camera and photo library access is required to create memes.',
+        'Camera, photo library and media library access are required to create memes.',
         [{ text: 'OK' }]
       );
       return false;
