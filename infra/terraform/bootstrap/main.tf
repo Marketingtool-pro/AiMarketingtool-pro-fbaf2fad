@@ -2,22 +2,12 @@
 #
 # No cloud resources are managed here. Google Cloud and Firebase resources for
 # marketing-tool-484720 are managed outside Terraform. This module only gives
-# the stack a valid component to plan.
+# the stack a valid component to plan, and deliberately uses no providers.
 
-terraform {
-required_providers {
-random = {
-source  = "hashicorp/random"
-version = "~> 3.6"
-}
-}
+locals {
+project = "marketing-tool-484720"
 }
 
-resource "random_id" "stack_bootstrap" {
-byte_length = 8
+output "project" {
+value = local.project
 }
-
-output "stack_bootstrap_id" {
-value = random_id.stack_bootstrap.hex
-}
-
