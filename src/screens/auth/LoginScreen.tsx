@@ -26,7 +26,7 @@ import { useAuthStore } from '../../store/authStore';
 import { Colors, Spacing } from '../../constants/theme';
 import AnimatedBackground from '../../components/common/AnimatedBackground';
 import { biometricService, BiometricType } from '../../services/biometric';
-import { clearVerification as clearFirebaseVerification } from '../../services/firebaseAuth';
+import { clearVerification as clearFirebaseVerification, reportOTPFailure } from '../../services/firebaseAuth';
 import { COUNTRIES, findCountry, DEFAULT_COUNTRY, Country } from '../../constants/countries';
 import { normalizePhone } from '../../utils/phone';
 
@@ -203,16 +203,33 @@ const LoginScreen = () => {
     }
     if (resendCooldown > 0) return;
 
-    // Normalize to E.164 and reject bad input HERE, rather than paying a
-    // network round-trip and an SMS quota slot to be told the same thing.
-    // Covers trunk zeros, a duplicated country code, spaces and pasted "+.."
-    // numbers — see src/utils/phone.ts.
+    // Normalize to E.164 (trunk zeros, duplicated country code, spaces, pasted
+    // "+.." numbers -- see src/utils/phone.ts).
+    //
+    // ADVISORY, NEVER A GATE. This used to `return` on a failed normalization
+    // and show an "Invalid Number" alert. That is a hard stop BEFORE Firebase
+    // is called, so it also never reached reportOTPFailure -- a number this
+    // validator judged wrong killed OTP with zero telemetry, and the build
+    // before it (which just concatenated the dial code) worked. Any bug in the
+    // length table -- and 201 of 243 countries carry no length metadata at all
+    // -- silently became "OTP is broken".
+    //
+    // So: prefer the normalized value, fall back to the old concatenation, and
+    // report the disagreement so the next one is diagnosable instead of silent.
     const normalized = normalizePhone(selectedCountry, phoneNumber);
-    if (!normalized.valid || !normalized.e164) {
-      Alert.alert('Invalid Number', normalized.error || 'Please enter a valid phone number');
-      return;
+    let formattedPhone: string;
+    if (normalized.valid && normalized.e164) {
+      formattedPhone = normalized.e164;
+    } else {
+      const digits = phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
+      formattedPhone = phoneNumber.trim().startsWith('+')
+        ? `+${phoneNumber.replace(/\D/g, '')}`
+        : `${selectedCountry.dialCode}${digits}`;
+      reportOTPFailure('normalizeFallback', {
+        code: 'local/normalize-rejected',
+        message: `${normalized.error || 'rejected'} country=${selectedCountry.iso2} len=${digits.length}`,
+      });
     }
-    const formattedPhone = normalized.e164;
     setOtpError('');
     setOtpCode('');
     setOtpSending(true);

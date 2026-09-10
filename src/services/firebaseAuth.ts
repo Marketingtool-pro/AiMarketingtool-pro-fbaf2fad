@@ -49,7 +49,7 @@ async function ensureAPNsRegistered() {
 //
 // Only the phone reports the truth. Codes and messages here are Firebase's, and
 // contain no credential -- the phone number is deliberately NOT recorded.
-function reportOTPFailure(stage: string, error: any) {
+export function reportOTPFailure(stage: string, error: any) {
   try {
     const crashlytics = require('@react-native-firebase/crashlytics').default;
     const c = crashlytics();
@@ -107,8 +107,15 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
     // mangled Indian numbers written with a trunk 0 (09876543210).
     const normalizedPhone = phoneNumber;
     if (!isE164(normalizedPhone)) {
+      // Report, do NOT reject. Returning here is a silent stop that never
+      // reaches Firebase, so no real error is ever recorded and OTP just dies.
+      // Let Firebase judge the number: auth/invalid-phone-number is a real,
+      // reported, actionable error, whereas this guard was only ever a guess.
       if (__DEV__) console.warn('[FirebaseAuth] Number is not E.164:', normalizedPhone);
-      return { success: false, error: 'Invalid phone number format' };
+      reportOTPFailure('notE164', {
+        code: 'local/not-e164',
+        message: `len=${normalizedPhone?.length ?? 0}`,
+      });
     }
 
     // Check app-side rate limit before hitting Firebase

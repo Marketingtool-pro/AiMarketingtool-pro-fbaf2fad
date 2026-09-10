@@ -352,7 +352,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // rather than mis-deliver; the same guard lives in firebaseAuth.ts.
       const formatted = phoneNumber;
       if (!isE164(formatted)) {
-        throw new Error('Please select your country code and re-enter your number.');
+        // Log, do not throw. LoginScreen already normalized and fell back; a
+        // throw here would be a second silent stop in front of Firebase.
+        if (__DEV__) console.warn('[Auth] Number is not E.164:', formatted);
       }
 
       // Reviewer bypass for store review (App Store Guideline 2.1(b)).
