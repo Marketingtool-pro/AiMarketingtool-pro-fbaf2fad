@@ -117,7 +117,6 @@
     "expo-manifests": "~57.0.1",
     "expo-media-library": "~57.0.4",
     "expo-mesh-gradient": "~57.0.1",
-    "expo-navigation-bar": "~57.0.2",
     "expo-network": "~57.0.1",
     "expo-notifications": "~57.0.15",
     "expo-observe": "~57.0.17",
