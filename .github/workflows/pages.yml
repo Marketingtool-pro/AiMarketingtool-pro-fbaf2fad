@@ -1,0 +1,91 @@
+name: Deploy site to GitHub Pages
+
+# The published site is index.html plus three self-contained HTML exports and
+# two markdown pages rendered through _layouts/default.html.
+#
+# It used to be produced by GitHub's legacy "Deploy from a branch" builder.
+# That builder runs Jekyll over the WHOLE repository on EVERY push to Master,
+# which is why pages-build-deployment reached 800+ runs, 250+ failures and
+# single builds of over an hour: it was walking android-patches/, functions/,
+# public/, assets/, src/ and every stray file in the repository root, and
+# queued builds cancelled each other ("Failed to deploy to github-pages").
+#
+# This workflow copies only the files that are actually part of the site into
+# a staging folder and builds that. Same URLs, same output, seconds instead of
+# hours, and it only runs when a site file actually changes.
+
+on:
+  push:
+    branches:
+      - Master
+    paths:
+      - index.html
+      - app-screens.html
+      - project-page.html
+      - tool-ui-blueprint.html
+      - tests.html
+      - ARCHITECTURE.md
+      - MOBILE_TOOLS_POLICY.md
+      - README.md
+      - SECURITY.md
+      - CONTRIBUTING.md
+      - CODE_OF_CONDUCT.md
+      - app-ads.txt
+      - _config.yml
+      - _layouts/**
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One Pages build at a time. The legacy builder had no concurrency group, so
+# overlapping builds killed each other and were recorded as failed deploys.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Stage only the published site files
+        run: |
+          set -euo pipefail
+          mkdir -p site
+          cp -R _layouts site/
+          for f in _config.yml index.html app-screens.html project-page.html \
+                   tool-ui-blueprint.html tests.html ARCHITECTURE.md \
+                   MOBILE_TOOLS_POLICY.md README.md SECURITY.md \
+                   CONTRIBUTING.md CODE_OF_CONDUCT.md LICENSE app-ads.txt; do
+            if [ -f "$f" ]; then cp "$f" site/; fi
+          done
+          ls -la site
+
+      - name: Setup Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b  # v5.0.0
+
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697  # v1.0.13
+        with:
+          source: ./site
+          destination: ./_site
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1

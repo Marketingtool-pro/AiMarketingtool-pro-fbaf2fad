@@ -22,7 +22,8 @@
     "test": "test"
   },
   "scripts": {
-    "start": "expo start",
+    "start": "node server.js",
+    "dev": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "ts:check": "npx --package typescript tsc --noEmit",
