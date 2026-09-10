@@ -36,6 +36,37 @@ async function ensureAPNsRegistered() {
   }
 }
 
+// Send the real Firebase error to Crashlytics as a non-fatal.
+//
+// Why this exists: on 2026-08-30 an Android device running a build that already
+// contained the auth/unknown branch below still reported "API key expired".
+// The key was then checked directly and is NOT expired -- the key baked into
+// the shipped 1028 bundle is byte-identical to the one in google-services.json,
+// and that key answers identitytoolkit with HTTP 200, with no Android app
+// restrictions (a request carrying a bogus package and cert is still accepted).
+// So the message the user sees is not explained by the key, and no amount of
+// reasoning from this side narrowed it further without the device's own error.
+//
+// Only the phone reports the truth. Codes and messages here are Firebase's, and
+// contain no credential -- the phone number is deliberately NOT recorded.
+export function reportOTPFailure(stage: string, error: any) {
+  try {
+    const crashlytics = require('@react-native-firebase/crashlytics').default;
+    const c = crashlytics();
+    c.setAttributes({
+      otp_stage: stage,
+      otp_error_code: String(error?.code || 'none'),
+      otp_platform: Platform.OS,
+    });
+    c.recordError(
+      new Error(`OTP ${stage} [${error?.code || 'no-code'}] ${String(error?.message || '')}`)
+    );
+  } catch {
+    // Crashlytics unavailable (dev client, native module missing) -- never let
+    // diagnostics break the sign-in path.
+  }
+}
+
 let verificationId: string | null = null;
 
 // Track OTP attempts per phone number to prevent hitting Firebase rate limits
@@ -76,8 +107,15 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
     // mangled Indian numbers written with a trunk 0 (09876543210).
     const normalizedPhone = phoneNumber;
     if (!isE164(normalizedPhone)) {
+      // Report, do NOT reject. Returning here is a silent stop that never
+      // reaches Firebase, so no real error is ever recorded and OTP just dies.
+      // Let Firebase judge the number: auth/invalid-phone-number is a real,
+      // reported, actionable error, whereas this guard was only ever a guess.
       if (__DEV__) console.warn('[FirebaseAuth] Number is not E.164:', normalizedPhone);
-      return { success: false, error: 'Invalid phone number format' };
+      reportOTPFailure('notE164', {
+        code: 'local/not-e164',
+        message: `len=${normalizedPhone?.length ?? 0}`,
+      });
     }
 
     // Check app-side rate limit before hitting Firebase
@@ -97,7 +135,49 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
       new Promise<void>((resolve) => setTimeout(resolve, 2500)),
     ]);
 
-    const confirmation = await firebaseAuth().signInWithPhoneNumber(normalizedPhone);
+    // signInWithPhoneNumber can hang FOREVER on Android. This is not defensive
+    // programming, it is a specific defect in the version this app ships.
+    //
+    // @react-native-firebase/auth 24.1.1 (confirmed as the installed version in
+    // the EAS build log for 1047), ReactNativeFirebaseAuthModule.java:1624:
+    //
+    //     if (activity != null) {
+    //       PhoneAuthProvider.getInstance(firebaseAuth)
+    //           .verifyPhoneNumber(phoneNumber, timeout, SECONDS, activity, callbacks);
+    //     }
+    //
+    // There is no `else`. When getCurrentActivity() returns null the native
+    // module returns having done nothing at all: Firebase is never called, no
+    // callback fires, the promise never settles, and the catch below -- which is
+    // the ONLY thing that calls reportOTPFailure -- never runs. The failure is
+    // therefore invisible in Crashlytics, which matches the exports from
+    // 2026-09-03: they contain oauthGoogle, oauthFacebook, oauthApple and
+    // emailLogin non-fatals from the same sessions, and not one OTP entry.
+    //
+    // getCurrentActivity() returns null while the host Activity is paused or
+    // being recreated. The same Crashlytics breadcrumbs show RecaptchaActivity
+    // taking the foreground and MainActivity returning three times in ~30s, so
+    // that window is real on this device and a resend landing inside it hits
+    // line 1624 and dies silently.
+    //
+    // 45s is deliberately longer than the SDK's own 30s auto-retrieval timeout,
+    // so a slow-but-working send is never cut short; only a send that never
+    // started can reach it.
+    const OTP_SEND_TIMEOUT_MS = 45_000;
+    const confirmation: any = await Promise.race([
+      firebaseAuth().signInWithPhoneNumber(normalizedPhone),
+      new Promise((_resolve, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              Object.assign(new Error('OTP request did not start on this device.'), {
+                code: 'local/send-timeout',
+              })
+            ),
+          OTP_SEND_TIMEOUT_MS
+        )
+      ),
+    ]);
     verificationId = confirmation.verificationId;
     // Persist verificationId so it survives app restart from reCAPTCHA
     if (verificationId) {
@@ -108,7 +188,21 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
     return { success: true };
   } catch (error: any) {
     if (__DEV__) console.error('[FirebaseAuth] Send OTP error:', error);
+    reportOTPFailure('sendPhoneOTP', error);
 
+    // The native module returned without starting the request (see the
+    // OTP_SEND_TIMEOUT_MS comment above). Nothing was sent, so a retry is the
+    // correct advice -- the next attempt usually lands with a live Activity.
+    // reportOTPFailure has already run by this point, so unlike before this
+    // failure is now visible in Crashlytics as [local/send-timeout].
+    if (error.code === 'local/send-timeout') {
+      return {
+        success: false,
+        error:
+          'The OTP request did not start. Tap Resend, and if it keeps failing use ' +
+          'Sign in with Email.',
+      };
+    }
     if (error.code === 'auth/invalid-phone-number') {
       return { success: false, error: 'Invalid phone number format' };
     }
@@ -128,6 +222,45 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
     }
     if (error.code === 'auth/internal-error') {
       return { success: false, error: 'Verification service temporarily blocked this request. Please try again shortly.' };
+    }
+
+    // auth/unknown wrapping "API key expired" / "API key not valid".
+    //
+    // The Android Firebase API key was recreated on 2026-07-14 (commit
+    // feecaf5aa6) and google-services.json was updated in the same change, so
+    // versionCode >= 1000 ships the current key. Any build produced BEFORE that
+    // still carries the previous key, and Google reports a superseded key as
+    // expired -- surfaced here as auth/unknown, which had no branch and so fell
+    // through to the raw SDK text:
+    //
+    //   [auth/unknown] An internal error has occurred.
+    //   [ API key expired. Please renew the API key. ]
+    //
+    // CORRECTION (2026-08-30): the paragraph above is only half true, and the
+    // half that is false was shown to a real user. A device running a build that
+    // ALREADY contained this branch still hit it, so "your build carries the old
+    // key" cannot be the whole story:
+    //
+    //   shipped 1028 google_api_key  ==  repo google-services.json key (identical)
+    //   that key -> identitytoolkit /v1/recaptchaParams  HTTP 200
+    //   same key with a bogus X-Android-Package + X-Android-Cert  HTTP 200
+    //     (so the key carries no Android application restriction either)
+    //
+    // A pre-2026-07-14 install genuinely does carry a superseded key and for
+    // those the advice below is correct, so the branch stays. But it must not
+    // promise that updating is guaranteed to fix it, because for at least one
+    // current build it did not. reportOTPFailure() above now sends the real
+    // code and message to Crashlytics so the next occurrence is diagnosable
+    // instead of guessed at.
+    const raw = String(error.message || '');
+    if (error.code === 'auth/unknown' && /API key (expired|not valid)/i.test(raw)) {
+      return {
+        success: false,
+        error:
+          'Phone sign-in could not be completed on this device. Please update ' +
+          'MarketingTool from the Play Store and try again — if it still fails, ' +
+          'contact support so we can look at your device specifically.',
+      };
     }
 
     return { success: false, error: error.message || 'Failed to send OTP' };
@@ -161,6 +294,7 @@ export async function verifyPhoneOTP(code: string): Promise<{
     return { success: true, user: userCredential.user };
   } catch (error: any) {
     if (__DEV__) console.error('[FirebaseAuth] Verify OTP error:', error);
+    reportOTPFailure('verifyOTP', error);
 
     if (error.code === 'auth/invalid-verification-code') {
       return { success: false, error: 'Invalid OTP code. Please try again.' };
