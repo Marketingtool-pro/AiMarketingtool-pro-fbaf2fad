@@ -134,7 +134,6 @@
     "expo-system-ui": "~57.0.3",
     "expo-task-manager": "~57.0.14",
     "expo-tracking-transparency": "~57.0.1",
-    "expo-updates": "~57.0.19",
     "expo-web-browser": "~57.0.2",
     "firebase-admin": "^14.3.0",
     "lottie-react-native": "~7.3.8",

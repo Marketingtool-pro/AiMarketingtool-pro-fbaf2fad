@@ -191,7 +191,6 @@
           "delayAppMeasurementInit": true
         }
       ],
-      "expo-updates",
       "./plugins/withR8Optimization.js",
       "./plugins/withAndroidRecaptcha.js"
     ],
@@ -209,10 +208,6 @@
     },
     "runtimeVersion": {
       "policy": "appVersion"
-    },
-    "updates": {
-      "enabled": false,
-      "url": "https://u.expo.dev/e7abf1ac-3cab-4cfb-9cb2-f55c1783dd7e"
     }
   }
 }
