@@ -1,5 +1,5 @@
 // Firebase Phone Auth Service - Safe lazy loading
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 import { isE164 } from '../utils/phone';
@@ -65,6 +65,59 @@ export function reportOTPFailure(stage: string, error: any) {
     // Crashlytics unavailable (dev client, native module missing) -- never let
     // diagnostics break the sign-in path.
   }
+}
+
+/**
+ * Wait until the app is genuinely foregrounded, so Android has a live Activity.
+ *
+ * THIS IS THE ANDROID EQUIVALENT OF ensureAPNsRegistered() ABOVE.
+ *
+ * iOS phone auth works because the app guarantees its own verification channel:
+ * it fetches an APNs token, so Firebase verifies by silent push and needs
+ * neither a browser nor an Activity. Android had no such guarantee, and its
+ * send goes through a native path that requires one:
+ *
+ *   @react-native-firebase/auth 24.1.1 -- the version the EAS build log for
+ *   1047 confirms is installed -- ReactNativeFirebaseAuthModule.java:1624
+ *
+ *     if (activity != null) {
+ *       PhoneAuthProvider.getInstance(firebaseAuth)
+ *           .verifyPhoneNumber(phoneNumber, timeout, SECONDS, activity, callbacks);
+ *     }
+ *
+ * No else. React Native's getCurrentActivity() returns null whenever the host
+ * Activity is paused or being recreated, and when it does this method returns
+ * having done nothing: no SMS, no callback, no error, no telemetry.
+ *
+ * That window is not hypothetical here. The Crashlytics breadcrumbs from
+ * 2026-09-03 show RecaptchaActivity taking the foreground and MainActivity
+ * coming back three times in about thirty seconds. A send or a resend landing
+ * inside one of those transitions hits line 1624 and dies silently -- which is
+ * why those exports carry oauthGoogle, oauthFacebook, oauthApple and emailLogin
+ * non-fatals from the same sessions and not a single OTP entry.
+ *
+ * Resolves true once AppState is 'active'. Gives up after `timeoutMs` rather
+ * than blocking sign-in forever; the caller still attempts the send, because a
+ * missed guarantee must not become a second silent stop in front of Firebase.
+ */
+async function waitForForeground(timeoutMs = 4000): Promise<boolean> {
+  if (Platform.OS !== 'android') return true;
+  if (AppState.currentState === 'active') return true;
+
+  return new Promise<boolean>((resolve) => {
+    let settled = false;
+    const finish = (value: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      sub.remove();
+      resolve(value);
+    };
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') finish(true);
+    });
+    const timer = setTimeout(() => finish(false), timeoutMs);
+  });
 }
 
 let verificationId: string | null = null;
@@ -134,6 +187,20 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
       ensureAPNsRegistered(),
       new Promise<void>((resolve) => setTimeout(resolve, 2500)),
     ]);
+
+    // Android only: make sure a live Activity exists before calling the native
+    // module. See waitForForeground() for why this is the counterpart to the
+    // APNs registration iOS does above, and for the exact native line involved.
+    const foreground = await waitForForeground();
+    if (!foreground) {
+      // Report, never block. A hard stop here would be exactly the silent
+      // pre-Firebase return this whole change exists to remove; the send is
+      // still attempted and Firebase gets to judge it.
+      reportOTPFailure('notForeground', {
+        code: 'local/not-foreground',
+        message: `appState=${AppState.currentState}`,
+      });
+    }
 
     // signInWithPhoneNumber can hang FOREVER on Android. This is not defensive
     // programming, it is a specific defect in the version this app ships.
