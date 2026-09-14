@@ -20,6 +20,7 @@ import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme'
 import * as Haptics from 'expo-haptics';
 import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, entitlementForProduct, CREDITS_PER_TOKEN_PACK, type Entitlement } from '../../services/billingService';
 import { functions } from '../../services/appwrite';
+import { openWebPage } from '../../utils/openWebPage';
 import { ExecutionMethod } from 'react-native-appwrite';
 
 const { width } = Dimensions.get('window');
@@ -277,7 +278,7 @@ const SubscriptionScreen = () => {
       // Web / desktop: the previous target
       // (https://marketingtool.pro/account/billing) returned 404.
       // /pricing/ is the live page.
-      Linking.openURL('https://marketingtool.pro/pricing/');
+      void openWebPage('https://marketingtool.pro/pricing/');
     }
   };
 
@@ -527,10 +528,10 @@ const SubscriptionScreen = () => {
           {/* Guideline 3.1.2 requires working Terms/Privacy links on the
               subscription screen. /terms and /privacy both return 404 --
               the live pages are /terms-policy/ and /privacy-policy/. */}
-          <TouchableOpacity onPress={() => Linking.openURL('https://marketingtool.pro/terms-policy/')}>
+          <TouchableOpacity onPress={() => void openWebPage('https://marketingtool.pro/terms-policy/')}>
             <Text style={{ fontSize: 11, color: '#71717A', textDecorationLine: 'underline' }}>Terms of Use</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => Linking.openURL('https://marketingtool.pro/privacy-policy/')}>
+          <TouchableOpacity onPress={() => void openWebPage('https://marketingtool.pro/privacy-policy/')}>
             <Text style={{ fontSize: 11, color: '#71717A', textDecorationLine: 'underline' }}>Privacy Policy</Text>
           </TouchableOpacity>
         </View>

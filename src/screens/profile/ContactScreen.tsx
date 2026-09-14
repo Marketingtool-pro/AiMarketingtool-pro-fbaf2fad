@@ -14,9 +14,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-// In-app browser: keeps the app foregrounded (tapping website links previously
-// backgrounded the app to Safari and users saw it as "app closed").
-import * as WebBrowser from 'expo-web-browser';
+// In-app browser, with a fallback that cannot bounce back into this app.
+import { openWebPage } from '../../utils/openWebPage';
 import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 
 const ContactScreen = () => {
@@ -81,7 +80,7 @@ const ContactScreen = () => {
 
             <TouchableOpacity
               style={styles.methodCard}
-              onPress={() => WebBrowser.openBrowserAsync('https://marketingtool.pro/help/').catch(() => Linking.openURL('https://marketingtool.pro/help/'))}
+              onPress={() => void openWebPage('https://marketingtool.pro/help/')}
             >
               <View style={[styles.methodIcon, { backgroundColor: Colors.success + '20' }]}>
                 <Feather name="help-circle" size={20} color={Colors.success} />
@@ -157,7 +156,7 @@ const ContactScreen = () => {
           {/* Website link */}
           <TouchableOpacity
             style={styles.webLink}
-            onPress={() => WebBrowser.openBrowserAsync('https://marketingtool.pro/contact/').catch(() => Linking.openURL('https://marketingtool.pro/contact/'))}
+            onPress={() => void openWebPage('https://marketingtool.pro/contact/')}
           >
             <Feather name="external-link" size={16} color={Colors.secondary} />
             <Text style={styles.webLinkText}>Visit our website contact page</Text>
