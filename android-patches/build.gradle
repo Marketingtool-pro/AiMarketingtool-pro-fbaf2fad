@@ -52,7 +52,7 @@ def reactVersion = findProperty('reactVersion') ?: '0.86.2'
 // Pinned revision — MUST stay in sync with PATCHED_VERSION in plugins/withRNEdgeToEdgeFix.js
 // and the release tag react-android-<version> published by .github/workflows/patch-react-android.yml.
 // Override with -PpatchRevision=N when cutting a new patch revision.
-def patchedVersion = "${reactVersion}-e2e.${findProperty('patchRevision') ?: '1'}"
+def patchedVersion = "${reactVersion}-e2e.${findProperty('patchRevision') ?: '2'}"
 
 dependencies {
     // All imports needed by our 2 patched files. compileOnly: these classes
