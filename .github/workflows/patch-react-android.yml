@@ -13,7 +13,7 @@ env:
   # Single source of truth for the patch revision. MUST stay in sync with
   # PATCHED_VERSION in plugins/withRNEdgeToEdgeFix.js (consumed at prebuild)
   # and the default patchRevision in android-patches/build.gradle.
-  PATCH_REVISION: '1'
+  PATCH_REVISION: '2'
   # Must track the react-native version in package.json. It sat at 0.85.3 after
   # react-native moved to 0.86.2, so the AAR this workflow publishes no longer
   # matched the installed runtime — and withRNEdgeToEdgeFix substitutes it for

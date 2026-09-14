@@ -33,9 +33,12 @@
  * EVERY public/internal declaration keeps its upstream signature — this class
  * file REPLACES the upstream WindowUtilKt in the AAR, so any missing or
  * renamed function becomes a NoSuchMethodError in the rest of react-android.
- * The deprecated LAYOUT_IN_DISPLAY_CUTOUT_MODE_* constants are deliberately
- * left untouched: Play did not flag them for this app, and changing them would
- * alter cutout behaviour for no benefit.
+ * Cutout mode (patch revision 2): Play's edge-to-edge recommendation flags every
+ * write of LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT / SHORT_EDGES / NEVER. The shipped
+ * 1.5.22 dex showed statusBarShow writing DEFAULT, and statusBarHide plus
+ * enableEdgeToEdge writing SHORT_EDGES. Android 15 already treats all three as
+ * ALWAYS for non-floating windows, so these now write ALWAYS on API 30+ (where the
+ * constant exists) and leave the mode alone on API 28-29.
  */
 
 package com.facebook.react.views.view
@@ -201,9 +204,10 @@ private fun Window.statusBarHide() {
     }
   } else {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-      // Ensure the content extends into the cutout area
+      // Ensure the content extends into the cutout area.
+      // PATCHED: was LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES.
       attributes.layoutInDisplayCutoutMode =
-          WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+          WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
       setDecorFitsSystemWindows(false)
     }
     addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
@@ -220,8 +224,10 @@ private fun Window.statusBarShow() {
     }
   } else {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      // PATCHED: was LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT. setDecorFitsSystemWindows(true)
+      // below already insets the content, so ALWAYS does not draw it under the cutout.
       attributes.layoutInDisplayCutoutMode =
-          WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+          WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
       setDecorFitsSystemWindows(true)
     }
     addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN)
@@ -271,13 +277,10 @@ public fun Window.enableEdgeToEdge() {
     insetsController.isAppearanceLightNavigationBars = isAppearanceLightNavigationBars
   }
 
-  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+  // PATCHED: API 28-29 used to get SHORT_EDGES; that write is what Play flags.
+  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
     attributes.layoutInDisplayCutoutMode =
-        when {
-          Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ->
-              WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
-          else -> WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-        }
+        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
   }
 }
 
