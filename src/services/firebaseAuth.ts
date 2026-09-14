@@ -135,21 +135,6 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
       new Promise<void>((resolve) => setTimeout(resolve, 2500)),
     ]);
 
-    // Android: verify the device with reCAPTCHA, never Play Integrity.
-    //
-    // Measured 2026-09-14. The same Firebase API key, the same
-    // @react-native-firebase 24.1.1 and the same OTP code give opposite results:
-    //   1.5.19 vc 1034, sideloaded (no Play Integrity -> reCAPTCHA)   OTP works
-    //   1.5.22 vc 1050, installed from Play (Play Integrity path)     OTP fails
-    //     Crashlytics: [auth/unknown] ... API key expired (25+ events)
-    // Play-installed builds are the only ones that take the Play Integrity path,
-    // and they are the only ones that fail. This setting makes every install use
-    // the reCAPTCHA path the working build uses. The name says "ForTesting" but
-    // it only selects the verification flow; real SMS is still sent.
-    if (Platform.OS === 'android') {
-      firebaseAuth().settings.forceRecaptchaFlowForTesting = true;
-    }
-
     const confirmation = await firebaseAuth().signInWithPhoneNumber(normalizedPhone);
     verificationId = confirmation.verificationId;
     // Persist verificationId so it survives app restart from reCAPTCHA
