@@ -49,7 +49,10 @@ const MIME = {
 
 function headersFor(file) {
   const ext = path.extname(file).toLowerCase();
-  const hashed = ext !== '.html' && /(?:_expo|assets|static)/.test(file);
+  const rel = path.relative(ROOT, file).split(path.sep).join('/');
+  const hashed =
+    ext !== '.html' &&
+    (rel.startsWith('_expo/') || rel.startsWith('assets/') || rel.startsWith('static/'));
   return {
     'Content-Type': MIME[ext] || 'application/octet-stream',
     'Cache-Control': hashed
@@ -64,9 +67,22 @@ function notFound(res) {
   res.end('Not Found');
 }
 
-function sendFile(req, res, file) {
+function sendFile(req, res, file, context = {}) {
   fs.stat(file, (err, st) => {
-    if (err || !st.isFile()) return notFound(res);
+    if (err || !st.isFile()) {
+      if (context.isFallback) {
+        const reason = err ? (err.code || err.message) : 'target is not a file';
+        console.warn(
+          '[server] fallback not found',
+          JSON.stringify({
+            originalPath: context.originalPath || req.url || '',
+            attemptedFile: file,
+            reason
+          })
+        );
+      }
+      return notFound(res);
+    }
     res.writeHead(200, Object.assign({ 'Content-Length': st.size }, headersFor(file)));
     if (req.method === 'HEAD') return res.end();
     pipeline(fs.createReadStream(file), res, () => {});
