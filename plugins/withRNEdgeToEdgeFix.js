@@ -44,7 +44,7 @@ const path = require('path');
 const https = require('https');
 const crypto = require('crypto');
 
-const PATCHED_VERSION = '0.86.3-e2e.1';
+const PATCHED_VERSION = '0.86.3-e2e.2';
 const PATCHED_AAR_URL =
   'https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/releases/download/' +
   `react-android-${PATCHED_VERSION}/react-android-${PATCHED_VERSION}.aar`;
@@ -54,7 +54,8 @@ const PATCHED_POM_URL =
 const GRADLE_SENTINEL = '// withRNEdgeToEdgeFix:allprojects-block';
 
 // SHA-256 digests of the assets attached to release tag
-// react-android-0.86.2-e2e.1, computed from the published files.
+// react-android-0.86.3-e2e.2, computed from the published files (run 34902646629).
+// e2e.2 adds the cutout-mode patch: WindowUtilKt writes only ALWAYS.
 // Regenerate by re-running .github/workflows/patch-react-android.yml --
 // its "Publish asset checksums" step prints these three lines verbatim.
 //
@@ -63,8 +64,8 @@ const GRADLE_SENTINEL = '// withRNEdgeToEdgeFix:allprojects-block';
 // This drifted once: the 0.86.2-e2e.1 AAR was published 2026-08-25 but this
 // file still pinned 0.85.3-e2e.2, so every build after the RN 0.86.2 upgrade
 // (2026-08-20) shipped 0.85.3 native under 0.86.2 JS.
-const PATCHED_AAR_SHA256 = 'b8d0248a29ae02f5624d83e35401447735e43a31505798970930294eaa7fbe9d';
-const PATCHED_POM_SHA256 = 'c641f585146d580157fa965cea117f626eea21f376acf9525a5d08d8bc73bd75';
+const PATCHED_AAR_SHA256 = '9f9a0d9dbc1ad5f9c50be57d4aa4683b1f29782440278609c15d81781d58f1a9';
+const PATCHED_POM_SHA256 = 'a59623ca92269430e4dcb38ebc9190bce46d9739f6bb1273be53b14424e13156';
 
 const LOCAL_AAR_SUBDIR = path.join(
   'local-aar', 'com', 'facebook', 'react', 'react-android', PATCHED_VERSION
