@@ -1,0 +1,138 @@
+# Submit an EXISTING EAS Android build to Google Play — no rebuild.
+#
+# Android counterpart of asc-submit.yml. "Android Deploy (self-contained)"
+# always builds first (~25 min of EAS time) even when a verified AAB already
+# exists; this ships that exact binary by its EAS build id instead.
+#
+# Written like android-deploy-selfcontained.yml: zero `uses:` lines, plain
+# shell only, same Play service-account restore.
+#
+#   gh workflow run "Play Submit (no rebuild)" \
+#     -f build_id=<eas build uuid> -f profile=internal
+#
+# profile maps to eas.json submit profiles:
+#   internal   -> track internal,   releaseStatus completed
+#   production -> track production, releaseStatus completed
+name: Play Submit (no rebuild)
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:
+        description: "EAS Android build id (full UUID), e.g. from `eas build:list`"
+        required: true
+        type: string
+      profile:
+        description: "eas.json submit profile: internal or production"
+        required: true
+        default: internal
+        type: choice
+        options:
+          - internal
+          - production
+
+concurrency:
+  group: play-submit
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    name: Submit build to Google Play
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_CLI_VERSION: 18.13.1
+      BUILD_ID: ${{ inputs.build_id }}
+      SUBMIT_PROFILE: ${{ inputs.profile }}
+    steps:
+      - name: Checkout ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git -c protocol.version=2 fetch -q --depth=1 origin "${{ github.sha }}"
+          git checkout -q --detach FETCH_HEAD
+          echo "checked out $(git rev-parse --short HEAD)"
+
+      - name: Validate inputs
+        run: |
+          set -euo pipefail
+          if [ -z "${EXPO_TOKEN:-}" ]; then
+            echo "::error::EXPO_TOKEN secret is not set on this repository." >&2
+            exit 1
+          fi
+          if ! printf '%s' "$BUILD_ID" | grep -Eq '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'; then
+            echo "::error::build_id must be the full EAS build UUID, got: $BUILD_ID" >&2
+            exit 1
+          fi
+
+      # eas submit loads the project config (plugins included), so it needs
+      # node_modules, exactly like the deploy workflow.
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          npm ci --include=dev --legacy-peer-deps --no-audit --no-fund
+
+      - name: Install EAS CLI
+        run: |
+          set -euo pipefail
+          npm i -g "eas-cli@${EAS_CLI_VERSION}"
+          eas --version
+
+      # Refuse anything that is not a finished Android store build, so a typo'd
+      # id or an iOS/APK build can never reach the Play track.
+      - name: Check the build before submitting
+        run: |
+          set -euo pipefail
+          eas build:view "$BUILD_ID" --json > eas-build.json
+          node -e '
+            const b = JSON.parse(require("fs").readFileSync("eas-build.json", "utf8"));
+            console.log("build        =", b.id);
+            console.log("platform     =", b.platform);
+            console.log("status       =", b.status);
+            console.log("distribution =", b.distribution);
+            console.log("versionCode  =", b.appBuildVersion);
+            console.log("commit       =", b.gitCommitHash);
+            const bad = [];
+            if (b.platform !== "ANDROID") bad.push("platform is " + b.platform);
+            if (b.status !== "FINISHED") bad.push("status is " + b.status);
+            if (b.distribution !== "STORE") bad.push("distribution is " + b.distribution);
+            const url = (b.artifacts && b.artifacts.applicationArchiveUrl) || "";
+            if (!url.endsWith(".aab")) bad.push("artifact is not an .aab");
+            if (bad.length) {
+              console.error("::error::refusing to submit: " + bad.join("; "));
+              process.exit(1);
+            }
+          '
+
+      # Same restore as android-deploy-selfcontained.yml: eas.json's submit
+      # profile reads the key from the repo root, and it only exists as a secret.
+      - name: Restore Google Play service account key
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > google-play-service-account.json
+          if ! node -e 'JSON.parse(require("fs").readFileSync("google-play-service-account.json","utf8"))' 2>/dev/null; then
+            base64 -d < google-play-service-account.json > tmp.json 2>/dev/null && mv tmp.json google-play-service-account.json
+          fi
+          node -e '
+            const k = JSON.parse(require("fs").readFileSync("google-play-service-account.json","utf8"));
+            if (k.type !== "service_account" || !k.client_email) {
+              console.error("::error::GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is not a valid service account key");
+              process.exit(1);
+            }
+            console.log("Play service account restored:", k.client_email);
+          '
+
+      - name: Submit to Google Play
+        run: |
+          set -euo pipefail
+          echo "submitting build $BUILD_ID with submit profile $SUBMIT_PROFILE"
+          eas submit --platform android --profile "$SUBMIT_PROFILE" \
+            --id "$BUILD_ID" --non-interactive
