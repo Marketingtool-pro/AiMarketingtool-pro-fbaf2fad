@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Dimensions,
   Linking,
   Platform,
   Image,
@@ -22,8 +21,6 @@ import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, entitlementForProduct, 
 import { functions } from '../../services/appwrite';
 import { openWebPage } from '../../utils/openWebPage';
 import { ExecutionMethod } from 'react-native-appwrite';
-
-const { width } = Dimensions.get('window');
 
 interface Plan {
   id: string;
