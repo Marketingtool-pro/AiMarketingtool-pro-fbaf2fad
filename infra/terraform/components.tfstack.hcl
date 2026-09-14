@@ -8,5 +8,5 @@
 # No providers are used, which keeps the dependency lock file empty.
 
 component "bootstrap" {
-source = "./bootstrap"
+  source = "./bootstrap"
 }
