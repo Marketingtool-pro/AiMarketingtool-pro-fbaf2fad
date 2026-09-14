@@ -637,19 +637,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (e: any) {
       console.warn('[AuthStore] Save local subscription override failed:', e);
     }
-    const { profile } = get();
-    if (!profile) return;
-    set({ profile: { ...profile, subscription: tier, generationsLimit } });
-    try {
-      const updated = await dbService.updateDocument<UserProfile & Models.Document>(
-        COLLECTIONS.USERS,
-        profile.$id,
-        { subscription: tier, generationsLimit }
-      );
-      set({ profile: updated as UserProfile });
-    } catch (error: any) {
-      console.warn('[AuthStore] grantEntitlement persist failed (local unlock kept):', error);
-    }
+    await get().optimisticUpdateProfile(
+      { subscription: tier, generationsLimit },
+      '[AuthStore] grantEntitlement persist failed (local unlock kept):'
+    );
   },
 
   // Token packs are "added instantly to your account" (pricing page). Credit
