@@ -422,6 +422,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const phone = rawPhone;
 
       let firebaseUid: string;
+      // Firebase ID token proving this device just passed OTP for `phone`.
+      // phone-session v2 derives the account from this token alone; v1 (live
+      // until every installed app sends it) still reads firebaseUid + phone,
+      // so both are sent and either function version works.
+      let idToken: string | undefined;
+      let reviewerFields: { reviewerPhone: string; reviewerCode: string } | undefined;
 
       // Reviewer bypass — full-number match, and only when explicitly
       // configured. See sendPhoneOTP for why the previous last-10-digits
@@ -431,6 +437,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (isReviewer && !!reviewerCode && code === reviewerCode) {
         firebaseUid = 'reviewer_bypass_' + phone.replace(/\D/g, '').slice(-10);
+        // v2 checks these against its own REVIEWER_PHONE / REVIEWER_OTP.
+        reviewerFields = { reviewerPhone: phone, reviewerCode: code };
       } else {
         if (__DEV__) console.log('[Auth] Verifying OTP via Firebase for', phone);
         const verifyResult = await firebaseVerifyOTP(code);
@@ -438,14 +446,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           throw new Error(verifyResult.error || 'Invalid OTP. Please try again.');
         }
         firebaseUid = verifyResult.user.uid;
+        idToken = await verifyResult.user.getIdToken();
       }
 
-      // Mint Appwrite session via phone-session function. The function takes
-      // firebaseUid + phone and returns a one-time secret we exchange for a
-      // session token. Sync execution — guests can't poll executions.read.
+      // Mint Appwrite session via phone-session function. It returns a
+      // one-time secret we exchange for a session token. Sync execution —
+      // guests can't poll executions.read.
       const sessionExec = await functions.createExecution(
         'phone-session',
-        JSON.stringify({ firebaseUid, phone, displayName: '' }),
+        JSON.stringify({ idToken, firebaseUid, phone, displayName: '', ...reviewerFields }),
         false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
