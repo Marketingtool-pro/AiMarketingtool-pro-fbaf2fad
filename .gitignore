@@ -141,3 +141,6 @@ json-schema-org-JSON-Schema-Test-Suite-*/
 *.swp
 .*.swp
 .fl[A-F0-9]*
+
+# Test coverage output
+/coverage/

@@ -40,7 +40,8 @@
     "ship:ios": "eas build --platform ios --profile production --auto-submit --non-interactive",
     "ship:android": "eas build --platform android --profile production --auto-submit --non-interactive",
     "build": "expo export --platform web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test": "bun test src --path-ignore-patterns='src/data/**'"
   },
   "dependencies": {
     "@actions/core": "^3.0.1",
