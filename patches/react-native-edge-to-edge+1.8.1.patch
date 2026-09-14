@@ -78,3 +78,20 @@ index 0000000..0000000 100644
  
          insetsController.run {
            isAppearanceLightNavigationBars = when {
+@@ -107,11 +141,11 @@
+         }
+       }
+
+-      if (VERSION.SDK_INT >= VERSION_CODES.P) {
+-        window.attributes.layoutInDisplayCutoutMode = when {
+-          VERSION.SDK_INT >= VERSION_CODES.R -> WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+-          else -> WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+-        }
++      // Play's edge-to-edge recommendation flags any SHORT_EDGES write, even one
++      // behind an SDK check. Android 15 treats SHORT_EDGES as ALWAYS anyway, so
++      // only write ALWAYS (API 30+) and leave API 28-29 on the platform default.
++      if (VERSION.SDK_INT >= VERSION_CODES.R) {
++        window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+       }
+     }
+   }
