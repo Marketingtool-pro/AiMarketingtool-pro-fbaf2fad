@@ -49,7 +49,10 @@ const MIME = {
 
 function headersFor(file) {
   const ext = path.extname(file).toLowerCase();
-  const hashed = ext !== '.html' && /(?:_expo|assets|static)/.test(file);
+  const rel = path.relative(ROOT, file).split(path.sep).join('/');
+  const hashed =
+    ext !== '.html' &&
+    (rel.startsWith('_expo/') || rel.startsWith('assets/') || rel.startsWith('static/'));
   return {
     'Content-Type': MIME[ext] || 'application/octet-stream',
     'Cache-Control': hashed
