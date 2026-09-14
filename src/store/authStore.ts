@@ -145,7 +145,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       .filter(Boolean);
     if (
       email.trim().toLowerCase() === 'demo@marketingtool.pro' &&
-      REVIEWER_PASSWORDS.length > 0 &&
       REVIEWER_PASSWORDS.includes(password.trim())
     ) {
       const mockUser = {
