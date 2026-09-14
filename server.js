@@ -64,9 +64,22 @@ function notFound(res) {
   res.end('Not Found');
 }
 
-function sendFile(req, res, file) {
+function sendFile(req, res, file, context = {}) {
   fs.stat(file, (err, st) => {
-    if (err || !st.isFile()) return notFound(res);
+    if (err || !st.isFile()) {
+      if (context.isFallback) {
+        const reason = err ? (err.code || err.message) : 'target is not a file';
+        console.warn(
+          '[server] fallback not found',
+          JSON.stringify({
+            originalPath: context.originalPath || req.url || '',
+            attemptedFile: file,
+            reason
+          })
+        );
+      }
+      return notFound(res);
+    }
     res.writeHead(200, Object.assign({ 'Content-Length': st.size }, headersFor(file)));
     if (req.method === 'HEAD') return res.end();
     pipeline(fs.createReadStream(file), res, () => {});
