@@ -4,10 +4,12 @@
 # marketing-tool-484720 are managed outside Terraform. This module only gives
 # the stack a valid component to plan, and deliberately uses no providers.
 
-locals {
-project = "marketing-tool-484720"
+variable "project" {
+  description = "GCP project ID used by this bootstrap component."
+  type        = string
+  default     = "marketing-tool-484720"
 }
 
 output "project" {
-value = local.project
+  value = var.project
 }
