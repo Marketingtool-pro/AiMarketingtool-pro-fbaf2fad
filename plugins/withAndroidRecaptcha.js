@@ -52,10 +52,28 @@ const { withAppBuildGradle } = require('expo/config-plugins');
  * in this app (85a749bf2b, to kill the 551 AppLoader launch crash), so there is
  * no OTA path for it either way.
  */
-// Pinned, not a range. Latest stable on Google's Maven at the time of writing,
-// confirmed resolvable:
-//   GET .../com/google/android/recaptcha/recaptcha/18.9.2/recaptcha-18.9.2.pom -> 200
-const RECAPTCHA_DEPENDENCY = "com.google.android.recaptcha:recaptcha:18.9.2";
+// Pinned to the version Firebase Auth itself depends on -- NOT the newest.
+//
+// firebase-auth 24.1.0's POM declares com.google.android.recaptcha:recaptcha
+// 18.6.1. This plugin previously forced 18.9.2 ("latest stable"), and that
+// version is binary-incompatible with the kotlinx-coroutines this app ships
+// (1.10.2). Measured 2026-09-15:
+//
+//   javap recaptcha-18.9.2 classes.jar (zzib, zzcb, zzgn), 6 call sites:
+//     invokestatic InterfaceMethod kotlinx/coroutines/Job.cancel$default
+//   javap kotlinx-coroutines-core 1.7.3 and 1.10.2:
+//     cancel$default exists ONLY in Job$DefaultImpls, never on Job
+//   javap recaptcha-18.6.1 classes.jar (zzbu):
+//     invokestatic Method kotlinx/coroutines/Job$DefaultImpls.cancel$default  <- matches
+//
+// With 18.9.2 the reCAPTCHA Enterprise token crashes on every Android phone:
+//   Failed to get reCAPTCHA enterprise token: java.lang.NoSuchMethodError:
+//   No static method cancel$default(...) in class Lkotlinx/coroutines/Job;
+// Firebase then falls back to Play Integrity / reCAPTCHA v2 and the OTP send
+// fails ("API key expired" on Play installs, 17028 on a debug-signed build).
+// Do not bump this past what firebase-auth declares without re-running that
+// javap check against the coroutines version in the build.
+const RECAPTCHA_DEPENDENCY = "com.google.android.recaptcha:recaptcha:18.6.1";
 
 const MARKER = 'withAndroidRecaptcha';
 
