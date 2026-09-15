@@ -162,7 +162,8 @@
       "./plugins/withKotlinKspFix.js",
       "./plugins/withAndroidAbiFilters.js",
       "./plugins/withR8Optimization.js",
-      "./plugins/withAndroidRecaptcha.js"
+      "./plugins/withAndroidRecaptcha.js",
+      "./plugins/withLocaleProofFirebaseOptions.js"
     ],
     "extra": {
       "appwriteEndpoint": "https://api.marketingtool.pro/v1",
