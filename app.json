@@ -161,14 +161,6 @@
       "expo-tracking-transparency",
       "./plugins/withKotlinKspFix.js",
       "./plugins/withAndroidAbiFilters.js",
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-2789940907288323~8551339904",
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
-          "delayAppMeasurementInit": true
-        }
-      ],
       "./plugins/withR8Optimization.js",
       "./plugins/withAndroidRecaptcha.js"
     ],
