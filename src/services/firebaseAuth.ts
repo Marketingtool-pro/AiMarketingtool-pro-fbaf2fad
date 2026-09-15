@@ -197,13 +197,18 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
     // current build it did not. reportOTPFailure() above now sends the real
     // code and message to Crashlytics so the next occurrence is diagnosable
     // instead of guessed at.
+    //
+    // 2026-09-15: on 1.5.22 (1050) this text followed the reCAPTCHA 18.9.2
+    // NoSuchMethodError chain (fixed in 1055 by pinning 18.6.1), and telling the
+    // user to "update from the Play Store" was wrong whenever no update existed
+    // yet. Point to sign-in methods that work instead of promising an update.
     const raw = String(error.message || '');
     if (error.code === 'auth/unknown' && /API key (expired|not valid)/i.test(raw)) {
       return {
         success: false,
         error:
-          'Phone sign-in could not be completed on this device. Please update ' +
-          'MarketingTool from the Play Store and try again — if it still fails, ' +
+          'Phone sign-in is not available on this device right now. Please sign ' +
+          'in with email, Google or Apple instead — if you need phone sign-in, ' +
           'contact support so we can look at your device specifically.',
       };
     }
