@@ -26,36 +26,62 @@ const path = require('path');
 module.exports = function withAndroid15EdgeToEdge(config, options = {}) {
   const preferLightStatusBar = options.preferLightStatusBar === true;
 
-  // Step 1: Inject enableEdgeToEdge() into MainActivity (Kotlin only)
+  // Step 1: Edge-to-edge in MainActivity (Kotlin only) WITHOUT
+  // androidx.activity.enableEdgeToEdge().
+  //
+  // Play Console on 1.5.22 (vc 1056) still reported
+  // LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES "starting in
+  // com.bumptech.glide.load.resource.a.t". Resolved from the shipped dex: that
+  // is an R8 outline whose only caller is androidx.activity's EdgeToEdgeApi28,
+  // reached solely from the enableEdgeToEdge() this plugin used to inject. It
+  // writes SHORT_EDGES on API 28-29. React Native's own edge-to-edge (patched
+  // react-android e2e.2, expo.edgeToEdgeEnabled) already does the window setup
+  // and writes only ALWAYS on API 30+, so the androidx call was redundant.
+  // Bar colours need no call either: the Window colour setters are stripped by
+  // withR8Optimization's -assumenosideeffects, and API 35+ enforces
+  // edge-to-edge regardless.
   config = withMainActivity(config, (config) => {
     const lang = config.modResults.language;
     if (lang !== 'kt' && lang !== 'kotlin') {
       if (lang === 'java') {
-        console.warn('[withAndroid15EdgeToEdge] MainActivity is Java; this plugin only patches Kotlin. Convert MainActivity to Kotlin or add enableEdgeToEdge() in onCreate manually.');      }
+        console.warn('[withAndroid15EdgeToEdge] MainActivity is Java; this plugin only patches Kotlin. Convert MainActivity to Kotlin or add the edge-to-edge block in onCreate manually.');      }
       return config;
     }
 
     let content = config.modResults.contents;
     const superOnCreatePattern = /super\.onCreate\((null|savedInstanceState)\)/;
-    const alreadyPatched = content.includes('enableEdgeToEdge()');
-    if (alreadyPatched || !superOnCreatePattern.test(content)) {
+
+    // Undo what earlier versions of this plugin injected.
+    content = content
+      .replace(/^import androidx\.activity\.enableEdgeToEdge\n/m, '')
+      .replace(/^\s*enableEdgeToEdge\(\)\n/m, '');
+
+    if (content.includes('WindowCompat.setDecorFitsSystemWindows(window, false)') || !superOnCreatePattern.test(content)) {
       config.modResults.contents = content;
       return config;
     }
 
-    if (!content.includes('import androidx.activity.enableEdgeToEdge')) {
+    const imports = [
+      'import android.view.WindowManager',
+      'import androidx.core.view.WindowCompat',
+      'import androidx.core.view.WindowInsetsControllerCompat',
+    ].filter((line) => !content.includes(line));
+    if (imports.length) {
       content = content.replace(
         /import com\.facebook\.react\.ReactActivity/,
-        `import androidx.activity.enableEdgeToEdge
-import androidx.core.view.WindowInsetsControllerCompat
-import com.facebook.react.ReactActivity`
+        `${imports.join('\n')}\nimport com.facebook.react.ReactActivity`
       );
     }
 
     const match = content.match(superOnCreatePattern);
     content = content.replace(
       match[0],
-      `enableEdgeToEdge()
+      `WindowCompat.setDecorFitsSystemWindows(window, false)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      window.attributes = window.attributes.apply {
+        layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+      }
+    }
     ${match[0]}
 
     val controller = WindowInsetsControllerCompat(window, window.decorView)
