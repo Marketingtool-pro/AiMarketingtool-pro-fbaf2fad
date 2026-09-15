@@ -14,9 +14,12 @@
   "author": "",
   "type": "commonjs",
   "main": "index.ts",
-  "bin": {
-    "marketingtool": "bin/RunnerService.js"
-  },
+  "files": [
+    "index.ts",
+    "App.tsx",
+    "app.json",
+    "src"
+  ],
   "directories": {
     "doc": "docs",
     "test": "test"
