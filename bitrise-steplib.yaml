@@ -1,0 +1,78 @@
+---
+format_version: '25'
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+project_type: node-js
+app:
+  envs:
+  - temp_id_0: ''
+    opts:
+      is_expand: false
+meta:
+  bitrise.io:
+    stack: ubuntu-noble-24.04-bitrise-2025-android
+    machine_type: default
+    machine_type_id: elite
+pipelines:
+  push:
+    workflows:
+      lint: {}
+      test: {}
+      build:
+        depends_on:
+        - lint
+        - test
+  pr:
+    workflows:
+      test-full: {}
+workflows:
+  lint:
+    steps:
+    - git-clone@8: {}
+    - restore-npm-cache@3: {}
+    - npm@3:
+        inputs:
+        - command: install
+    - npm@3:
+        inputs:
+        - command: run ts:check
+    - save-npm-cache@1: {}
+  test:
+    steps:
+    - git-clone@8: {}
+    - restore-npm-cache@3: {}
+    - npm@3:
+        inputs:
+        - command: install
+    - npm@3:
+        inputs:
+        - command: run ts:check
+    - save-npm-cache@1: {}
+  build:
+    steps:
+    - git-clone@8: {}
+    - restore-npm-cache@3: {}
+    - npm@3:
+        inputs:
+        - command: install
+    - npm@3:
+        inputs:
+        - command: run build
+    - deploy-to-bitrise-io@2: {}
+    - save-npm-cache@1: {}
+    triggers:
+      push:
+      - branch: Master
+      pull_request:
+      - source_branch: "*"
+  test-full:
+    steps:
+    - git-clone@8: {}
+    - restore-npm-cache@3: {}
+    - npm@3:
+        inputs:
+        - command: install
+    - npm@3:
+        inputs:
+        - command: run ts:check
+    - deploy-to-bitrise-io@2: {}
+    - save-npm-cache@1: {}
