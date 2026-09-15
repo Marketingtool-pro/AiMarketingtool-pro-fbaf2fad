@@ -30,7 +30,6 @@ import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constan
 import { getToolIcon } from '../../constants/toolIcons';
 import LottieView from 'lottie-react-native';
 import Glass3DLogo from '../../components/common/Glass3DLogo';
-import NativeAdCard from '../../components/NativeAdCard';
 
 const { width } = Dimensions.get('window');
 
@@ -548,10 +547,6 @@ const DashboardScreen = () => {
             })}
           </ScrollView>
         </View>
-
-        {/* AdMob Native Advanced ad — Android only (renders null on iOS, so the
-            iOS layout is unchanged). This is the "android extra" ad placement. */}
-        <NativeAdCard />
 
         {/* Popular Tools */}
         <View style={styles.section}>
