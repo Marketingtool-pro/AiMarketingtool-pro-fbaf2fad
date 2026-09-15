@@ -10,7 +10,6 @@ import {
   Image,
   Animated,
   Easing,
-  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -23,7 +22,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
-import { hasProAccess, generationsLimitForTier } from '../../services/billingService';
+import { generationsLimitForTier } from '../../services/billingService';
 import { useAuthStore } from '../../store/authStore';
 import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
 import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
@@ -40,8 +39,6 @@ type PopularToolItem = {
   color: string;
   img?: any;
 };
-
-const isVisionOS = (Platform.OS as any) === 'visionos';
 
 const Animations = {
   aiRobot: require('../../../assets/animations/ai-robot.js'),
@@ -185,15 +182,13 @@ const DashboardScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   // A user is free only if BOTH the server profile and the local purchase
   // override say so — the override is set by a finished StoreKit transaction
-  const { tools, fetchTools, isLoading, generations, fetchGenerations } = useToolsStore();
+  const { tools, fetchTools, generations, fetchGenerations } = useToolsStore();
   const [refreshing, setRefreshing] = React.useState(false);
   // and must win even when the server write failed (e.g. Apple's sandbox).
   const { user, profile, localSubscriptionOverride } = useAuthStore();
   const isFreeUser =
     (!profile?.subscription || profile.subscription === 'free') &&
     localSubscriptionOverride === 'free';
-  // PRO-badged tools need the Pro tier or higher, not just any paid plan.
-  const canUsePro = hasProAccess(profile?.subscription, localSubscriptionOverride);
 
   // Update counts when generations change
   const userGenerations = (user?.$id && generations.length > 0) ? generations.filter(g => g.userId === user.$id) : [];
