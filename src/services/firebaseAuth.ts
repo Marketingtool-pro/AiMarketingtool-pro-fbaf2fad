@@ -68,6 +68,11 @@ export function reportOTPFailure(stage: string, error: any) {
 }
 
 let verificationId: string | null = null;
+// The E.164 number the current verificationId was sent to. Persisted next to
+// the id so the auto-verification recovery in verifyPhoneOTP below can confirm
+// that an already-signed-in Firebase user is the SAME number this flow asked
+// for, and never adopt a stale account left over from an earlier session.
+let pendingPhone: string | null = null;
 
 // Track OTP attempts per phone number to prevent hitting Firebase rate limits
 const otpAttempts: Record<string, { count: number; firstAttempt: number }> = {};
@@ -143,9 +148,11 @@ export async function sendPhoneOTP(phoneNumber: string): Promise<{ success: bool
 
     const confirmation = await firebaseAuth().signInWithPhoneNumber(normalizedPhone);
     verificationId = confirmation.verificationId;
+    pendingPhone = normalizedPhone;
     // Persist verificationId so it survives app restart from reCAPTCHA
     if (verificationId) {
       await SecureStore.setItemAsync('firebaseVerificationId', verificationId);
+      await SecureStore.setItemAsync('firebasePendingPhone', normalizedPhone);
     }
 
     if (__DEV__) console.log('[FirebaseAuth] OTP sent successfully');
@@ -234,6 +241,9 @@ export async function verifyPhoneOTP(code: string): Promise<{
     if (!verificationId) {
       verificationId = await SecureStore.getItemAsync('firebaseVerificationId');
     }
+    if (!pendingPhone) {
+      pendingPhone = await SecureStore.getItemAsync('firebasePendingPhone');
+    }
     if (!firebaseAuth || !verificationId) {
       return { success: false, error: 'No pending verification. Please request OTP first.' };
     }
@@ -245,11 +255,58 @@ export async function verifyPhoneOTP(code: string): Promise<{
 
     if (__DEV__) console.log('[FirebaseAuth] OTP verified successfully');
     verificationId = null;
+    pendingPhone = null;
     await SecureStore.deleteItemAsync('firebaseVerificationId');
+    await SecureStore.deleteItemAsync('firebasePendingPhone');
 
     return { success: true, user: userCredential.user };
   } catch (error: any) {
     if (__DEV__) console.error('[FirebaseAuth] Verify OTP error:', error);
+
+    // Android instant verification, and why this branch exists.
+    //
+    // On Android, Google Play services can complete the phone credential by
+    // itself via SMS auto-retrieval and sign the user in. Doing so CONSUMES
+    // the verification session. The code the user then types by hand is
+    // checked against a session Firebase has already spent, so Firebase
+    // answers auth/session-expired -- correctly -- and the screen said
+    // "OTP expired. Please request a new one." forever, on a code that was
+    // seconds old. iOS is unaffected because it uses the silent-push path.
+    //
+    // Measured on the owner's device (samsung SM-F956B, 1.5.22) 2026-09-16:
+    //
+    //   Firebase login succeeded 07:35:02Z
+    //   Crashlytics verifyOTP [auth/session-expired] 07:35:07Z   <- 5s later
+    //   Firebase login succeeded 08:53:04Z, screen showed "OTP expired"
+    //
+    // The sign-in had already WORKED both times; nothing observed it, because
+    // onAuthStateChanged is exported from this file and never subscribed to.
+    // So: if Firebase is already holding a signed-in user for the very number
+    // this flow sent to, that is this OTP succeeding, not failing. Hand the
+    // user back so the caller continues to the Appwrite phone-session
+    // exchange exactly as it does on the normal path.
+    //
+    // The phoneNumber equality check is the safety guard -- without it a stale
+    // signed-in account from an earlier session could be adopted by whoever
+    // types a wrong code next.
+    if (error.code === 'auth/session-expired') {
+      const existingUser = getCurrentFirebaseUser();
+      if (existingUser && pendingPhone && existingUser.phoneNumber === pendingPhone) {
+        if (__DEV__) {
+          console.log('[FirebaseAuth] Session already consumed by Android auto-verification; recovering signed-in user');
+        }
+        verificationId = null;
+        pendingPhone = null;
+        try {
+          await SecureStore.deleteItemAsync('firebaseVerificationId');
+          await SecureStore.deleteItemAsync('firebasePendingPhone');
+        } catch {}
+        // Deliberately NOT reported to Crashlytics: this path is a successful
+        // sign-in, and recordError would manufacture a false OTP issue.
+        return { success: true, user: existingUser };
+      }
+    }
+
     reportOTPFailure('verifyOTP', error);
 
     if (error.code === 'auth/invalid-verification-code') {
@@ -282,7 +339,9 @@ export async function signOutFirebase(): Promise<void> {
 // always starts fresh. Call when user changes phone, country, or aborts.
 export async function clearVerification(): Promise<void> {
   verificationId = null;
+  pendingPhone = null;
   try { await SecureStore.deleteItemAsync('firebaseVerificationId'); } catch {}
+  try { await SecureStore.deleteItemAsync('firebasePendingPhone'); } catch {}
 }
 
 export function onAuthStateChanged(
