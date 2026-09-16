@@ -38,7 +38,7 @@ jobs:
           if [ "$NPM_VIEW_STATUS" -eq 0 ]; then
             echo "already_published=true" >> "$GITHUB_OUTPUT"
             echo "Version ${PACKAGE_VERSION} is already published for ${PACKAGE_NAME}. Skipping publish."
-          elif echo "$NPM_VIEW_OUTPUT" | grep -Eq 'E404|404[[:space:]]+Not[[:space:]]+Found'; then
+          elif echo "$NPM_VIEW_OUTPUT" | grep -Eqi 'E404|404[[:space:]]+Not[[:space:]]+Found|not[[:space:]]+in[[:space:]]+this[[:space:]]+registry'; then
             echo "already_published=false" >> "$GITHUB_OUTPUT"
             echo "Version ${PACKAGE_VERSION} is not published yet for ${PACKAGE_NAME}. Proceeding to publish."
           else
