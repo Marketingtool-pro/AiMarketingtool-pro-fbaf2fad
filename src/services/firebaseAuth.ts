@@ -71,7 +71,13 @@ let verificationId: string | null = null;
 
 // Track OTP attempts per phone number to prevent hitting Firebase rate limits
 const otpAttempts: Record<string, { count: number; firstAttempt: number }> = {};
-const MAX_OTP_ATTEMPTS = 3;
+// Phone OTP is the ONLY way in for phone users, so this app-side guard must not
+// be stricter than Firebase's own throttle. It was 3 sends / 10 min counting the
+// FIRST send, which left a user exactly 2 retries and then a dead "Resend"
+// button for up to 10 minutes — measured on a real device 2026-09-16: 7 attempts,
+// sends 4-7 never reached Firebase at all, while the screen still showed a
+// "Resend in 47s" countdown as if nothing was wrong.
+const MAX_OTP_ATTEMPTS = 6;
 const OTP_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
 function checkRateLimit(phone: string): string | null {
