@@ -24,6 +24,31 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           scope: '@marketingtool-pro'
       - run: npm ci
+      - name: Check if package version already exists
+        id: package_version_check
+        run: |
+          PACKAGE_NAME="$(node -p "require('./package.json').name")"
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+
+          set +e
+          NPM_VIEW_OUTPUT="$(npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version --registry https://npm.pkg.github.com 2>&1)"
+          NPM_VIEW_STATUS=$?
+          set -e
+
+          if [ "$NPM_VIEW_STATUS" -eq 0 ]; then
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+            echo "Version ${PACKAGE_VERSION} is already published for ${PACKAGE_NAME}. Skipping publish."
+          elif echo "$NPM_VIEW_OUTPUT" | grep -Eqi 'E404|404[[:space:]]+Not[[:space:]]+Found|not[[:space:]]+in[[:space:]]+this[[:space:]]+registry'; then
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+            echo "Version ${PACKAGE_VERSION} is not published yet for ${PACKAGE_NAME}. Proceeding to publish."
+          else
+            echo "$NPM_VIEW_OUTPUT"
+            echo "Unable to determine whether ${PACKAGE_NAME}@${PACKAGE_VERSION} exists in GitHub Packages."
+            exit 1
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npm publish --access restricted
+        if: steps.package_version_check.outputs.already_published != 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
