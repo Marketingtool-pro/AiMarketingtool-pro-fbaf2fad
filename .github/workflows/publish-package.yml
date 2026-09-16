@@ -30,11 +30,21 @@ jobs:
           PACKAGE_NAME="$(node -p "require('./package.json').name")"
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
 
-          if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version --registry https://npm.pkg.github.com >/dev/null 2>&1; then
+          set +e
+          NPM_VIEW_OUTPUT="$(npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version --registry https://npm.pkg.github.com 2>&1)"
+          NPM_VIEW_STATUS=$?
+          set -e
+
+          if [ "$NPM_VIEW_STATUS" -eq 0 ]; then
             echo "already_published=true" >> "$GITHUB_OUTPUT"
             echo "Version ${PACKAGE_VERSION} is already published for ${PACKAGE_NAME}. Skipping publish."
-          else
+          elif echo "$NPM_VIEW_OUTPUT" | grep -Eq 'E404|404[[:space:]]+Not[[:space:]]+Found'; then
             echo "already_published=false" >> "$GITHUB_OUTPUT"
+            echo "Version ${PACKAGE_VERSION} is not published yet for ${PACKAGE_NAME}. Proceeding to publish."
+          else
+            echo "$NPM_VIEW_OUTPUT"
+            echo "Unable to determine whether ${PACKAGE_NAME}@${PACKAGE_VERSION} exists in GitHub Packages."
+            exit 1
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
