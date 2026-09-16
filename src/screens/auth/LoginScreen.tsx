@@ -68,6 +68,13 @@ const LoginScreen = () => {
   // multi-round-trip verify — which is why a login looked frozen.
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  // The identifier ("<iso2>:<number>") the current OTP was actually sent for.
+  // The clearing effect below used to rely on `otpSent` alone, but React
+  // batches the restore effect's setPhoneNumber + setOtpSent into ONE render,
+  // so on a cold start with a pending OTP the guard saw otpSent === true and
+  // wiped the very session it had just restored. Comparing identifiers instead
+  // means a restore (same number) is a no-op and only a real edit clears.
+  const otpIdentifierRef = useRef<string | null>(null);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Guards against handleVerifyOTP being invoked twice (auto-verify on 6th
   // digit + manual button tap). The second call would arrive after Firebase
@@ -136,6 +143,10 @@ const LoginScreen = () => {
   // user is forced to re-send for the new identifier.
   useEffect(() => {
     if (!otpSent) return;
+    // Only clear when the identifier genuinely differs from the one the OTP was
+    // sent for. On a cold-start restore these are equal, so the pending OTP
+    // survives instead of the modal disappearing on the user.
+    if (otpIdentifierRef.current === `${selectedCountry.iso2}:${phoneNumber}`) return;
     setTimeout(() => {
       setOtpSent(false);
       setOtpCode('');
@@ -155,10 +166,13 @@ const LoginScreen = () => {
       if (pending) {
         try {
           const { phone, countryIso2, countryIso, countryCode } = JSON.parse(pending);
+          const country = findCountry(countryIso2 ?? countryIso, countryCode);
+          // Record the restored identifier BEFORE the state updates land, so
+          // the clearing effect recognises this as a restore and not an edit.
+          otpIdentifierRef.current = `${country?.iso2 ?? selectedCountry.iso2}:${phone}`;
           setPhoneNumber(phone);
           setOtpSent(true);
           setShowOtpModal(true);
-          const country = findCountry(countryIso2 ?? countryIso, countryCode);
           if (country) setSelectedCountry(country);
         } catch {}
       }
@@ -172,10 +186,11 @@ const LoginScreen = () => {
           if (pending) {
             try {
               const { phone, countryIso2, countryIso, countryCode } = JSON.parse(pending);
+              const country = findCountry(countryIso2 ?? countryIso, countryCode);
+              otpIdentifierRef.current = `${country?.iso2 ?? selectedCountry.iso2}:${phone}`;
               setPhoneNumber(phone);
               setOtpSent(true);
               setShowOtpModal(true);
-              const country = findCountry(countryIso2 ?? countryIso, countryCode);
               if (country) setSelectedCountry(country);
             } catch {}
           }
@@ -254,6 +269,9 @@ const LoginScreen = () => {
     try {
       // Send OTP via Firebase Phone Auth
       const userId = await sendPhoneOTP(formattedPhone);
+      // This is the identifier the session now belongs to; the clearing effect
+      // compares against it so a restore never wipes a live OTP.
+      otpIdentifierRef.current = `${selectedCountry.iso2}:${phoneNumber}`;
       setOtpUserId(userId);
       setOtpSent(true);
       setShowOtpModal(true);
