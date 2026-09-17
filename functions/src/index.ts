@@ -21,7 +21,33 @@ if (getApps().length === 0) {
 enableFirebaseTelemetry();
 
 // Global options
-setGlobalOptions({ maxInstances: 20, region: "us-central1" });
+//
+// serviceAccount is pinned deliberately. Without it, Cloud Functions v2 defaults
+// to the project's default compute service account
+// (911925145433-compute@developer.gserviceaccount.com) -- which does NOT exist on
+// this project. firebase-tools then tries to grant that principal
+// roles/monitoring.metricWriter, roles/cloudtrace.agent and roles/logging.logWriter,
+// and the deploy dies with:
+//
+//   Error: We failed to modify the IAM policy for the project.
+//
+// That is not a permissions problem: the deploying SA already holds roles/owner and
+// roles/iam.admin. You simply cannot bind a role to a principal that does not exist,
+// so every `firebase deploy --only functions` has failed since 2026-08-20.
+//
+// marketing-deployer@ exists and is the least-privileged account that fits what these
+// functions actually do: secretmanager.secretAccessor for GOOGLE_GENAI_API_KEY and
+// firebase.admin for Firestore history. The other candidates on this project
+// (firebase-adminsdk-fbsvc@, firebase-app-hosting-compute@) carry roles/owner, which
+// would make every deployed function an Owner.
+//
+// firebase-tools grants the three telemetry roles to the runtime SA during deploy,
+// and that binding now succeeds because the principal is real.
+setGlobalOptions({
+  maxInstances: 20,
+  region: "us-central1",
+  serviceAccount: "marketing-deployer@marketing-tool-484720.iam.gserviceaccount.com",
+});
 
 // Gemini API key stored in Cloud Secret Manager
 const googleGenaiApiKey = defineSecret("GOOGLE_GENAI_API_KEY");
