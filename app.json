@@ -169,15 +169,7 @@
       "./plugins/withAndroidAbiFilters.js",
       "./plugins/withR8Optimization.js",
       "./plugins/withAndroidRecaptcha.js",
-      "./plugins/withLocaleProofFirebaseOptions.js",
-      [
-        "@sentry/react-native/expo",
-        {
-          "url": "https://sentry.io/",
-          "project": "javascript-react",
-          "organization": "ai-marketingtool-pro"
-        }
-      ]
+      "./plugins/withLocaleProofFirebaseOptions.js"
     ],
     "extra": {
       "appwriteEndpoint": "https://api.marketingtool.pro/v1",
@@ -193,9 +185,6 @@
     },
     "runtimeVersion": {
       "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/e7abf1ac-3cab-4cfb-9cb2-f55c1783dd7e"
     }
   }
 }
