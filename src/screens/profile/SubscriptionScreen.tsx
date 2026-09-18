@@ -349,9 +349,12 @@ const SubscriptionScreen = () => {
 
         {/* Trust Stats Bar — only verifiable facts */}
         <View style={styles.trustStatsBar}>
+          {/* Never show a tool count anywhere in the product. This said
+              "130+ AI Tools", which was also simply wrong. "All 7 platforms"
+              is the verifiable fact and matches the plan feature lists. */}
           <View style={styles.trustStat}>
-            <Text style={styles.trustStatValue}>130+</Text>
-            <Text style={styles.trustStatLabel}>AI Tools</Text>
+            <Text style={styles.trustStatValue}>All 7</Text>
+            <Text style={styles.trustStatLabel}>Platforms</Text>
           </View>
           <View style={styles.trustDivider} />
           <View style={styles.trustStat}>

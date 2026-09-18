@@ -21,6 +21,15 @@ import { authService, functions } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { biometricService } from '../../services/biometric';
+import Constants from 'expo-constants';
+import * as Application from 'expo-application';
+
+// The version baked into the build (app.json `expo.version`). Falls back to
+// the runtime config, then to an honest placeholder rather than a wrong number.
+const APP_VERSION =
+  Application.nativeApplicationVersion ||
+  Constants.expoConfig?.version ||
+  '—';
 
 const SettingsScreen = () => {
   const navigation = useNavigation();
@@ -262,11 +271,63 @@ const SettingsScreen = () => {
     );
   };
 
+  // Clear genuinely disposable data only.
+  //
+  // This used to delete the 'appwrite_session' item from SecureStore and then
+  // report "App cache has been cleared successfully." That is not a cache
+  // clear, it is a silent sign-out: the UI stays on the authenticated stack, and
+  // the next cold start finds nothing for restoreSession() so the user is thrown
+  // back to login with no idea why — and on phone-OTP accounts that means doing
+  // the whole SMS flow again. Sitting under "DATA & STORAGE / Free up storage
+  // space", nobody tapping it is consenting to being logged out.
+  //
+  // What is actually safe to drop: the cached image files and the local
+  // notification history. Both regenerate on their own.
   const handleClearCache = async () => {
     try {
-      const SecureStore = require('expo-secure-store');
-      await SecureStore.deleteItemAsync('appwrite_session');
-      Alert.alert('Cache Cleared', 'App cache has been cleared successfully.', [{ text: 'OK' }]);
+      let freedNote = '';
+
+      // Bundled/remote images cached by expo-image.
+      try {
+        const { Image } = require('expo-image');
+        await Promise.all([
+          Image.clearMemoryCache?.(),
+          Image.clearDiskCache?.(),
+        ]);
+      } catch {
+        // expo-image cache API unavailable — skip, never fail the whole action.
+      }
+
+      // Downloaded/derived files under the app cache directory.
+      try {
+        const FileSystem = require('expo-file-system/legacy');
+        const dir = FileSystem.cacheDirectory;
+        if (dir) {
+          const entries: string[] = await FileSystem.readDirectoryAsync(dir);
+          await Promise.all(
+            entries.map((name) =>
+              FileSystem.deleteAsync(`${dir}${name}`, { idempotent: true }).catch(() => {}),
+            ),
+          );
+          freedNote = entries.length ? ` (${entries.length} cached files removed)` : '';
+        }
+      } catch {
+        // Cache directory not readable on this platform — skip.
+      }
+
+      // Stored notification list (rebuilds as notifications arrive).
+      try {
+        const { clearNotificationHistory } = require('../../services/notificationHistory');
+        await clearNotificationHistory();
+      } catch {
+        // Non-essential.
+      }
+
+      Alert.alert(
+        'Cache Cleared',
+        `Temporary files have been removed${freedNote}. You are still signed in.`,
+        [{ text: 'OK' }],
+      );
     } catch (error: any) {
       Alert.alert('Clear Failed', error?.message || 'Could not clear cache. Please try again.');
     }
@@ -429,7 +490,10 @@ const SettingsScreen = () => {
         {
           icon: 'info',
           label: 'App Version',
-          description: '1.5.0',
+          // Was hardcoded '1.5.0' while the app shipped as 1.5.22, so every
+          // user saw the wrong version and a support report could not be tied
+          // to a build. Read it from the build instead.
+          description: APP_VERSION,
           type: 'info',
         },
         {
