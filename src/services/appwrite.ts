@@ -234,7 +234,15 @@ async function captureSessionFromHeaders(headers: Headers): Promise<boolean> {
  * afterwards goes through the SDK as usual, authenticated by the header that
  * client.setSession() adds.
  */
-async function postSession(path: string, body: Record<string, string>): Promise<Models.Session> {
+// CodeQL js/request-forgery (CRITICAL, alert 452) fires here: "The URL of this
+// request depends on a user-provided value." Both call sites already pass a
+// string literal, so nothing arbitrary reaches the URL today — but `path: string`
+// only makes that a convention, enforced by nobody. Narrowing it to the two
+// endpoints this helper exists for makes it a compile-time guarantee: any other
+// value is now a type error rather than a review catch.
+type SessionPath = '/account/sessions/token' | '/account/sessions/email';
+
+async function postSession(path: SessionPath, body: Record<string, string>): Promise<Models.Session> {
   const response = await fetch(`${APPWRITE_ENDPOINT}${path}`, {
     method: 'POST',
     headers: {

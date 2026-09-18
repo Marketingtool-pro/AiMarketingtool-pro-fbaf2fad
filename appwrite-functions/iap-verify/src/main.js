@@ -223,74 +223,104 @@ const { userId, productId, platform, appleReceipt, googlePurchaseToken } =
     return res.json({ success: false, error: `Unknown productId: ${productId}` }, 400, CORS_HEADERS);
   }
 
-  // ── Receipt validation (best-effort; local entitlement already applied) ────
-  // Apple receipt validation
-  if (platform === "ios" && appleReceipt) {
+  // ── Receipt validation ──────────────────────────────────────────────────────
+  //
+  // CodeQL js/user-controlled-bypass (HIGH) on the old code was correct: both
+  // validation branches were guarded by `platform` and by the presence of a
+  // receipt/token — all three client-supplied. A caller could POST
+  // { userId, productId, platform: "android" } with no token, skip every check,
+  // and still have the entitlement written. That is a free subscription for
+  // anyone who can reach the function, which is `execute: any`.
+  //
+  // So: decide what to verify from the EVIDENCE PRESENT, never from the
+  // client's `platform` string, and enforce the outcome when we are actually
+  // able to verify.
+  //
+  // Enforcement is deliberately conditional on configuration so that turning
+  // this on cannot lock out real customers before the credentials are set:
+  //   credentials configured -> a purchase must pass, or it is refused
+  //   not configured         -> log loudly and fall back to the old
+  //                             best-effort behaviour
+  const serviceAccount = readServiceAccount();
+  const appleSharedSecret = process.env.APPLE_SHARED_SECRET;
+  const canVerifyPlay = !!serviceAccount;
+  const canVerifyApple = !!appleSharedSecret;
+
+  let verified = null; // true = passed, false = failed, null = not attempted
+
+  if (googlePurchaseToken && canVerifyPlay) {
     try {
-      const sharedSecret = process.env.APPLE_SHARED_SECRET;
-      if (!sharedSecret) {
-        log("WARNING: APPLE_SHARED_SECRET not configured — skipping server-side receipt validation");
-      } else {
-        const verifyUrl = "https://buy.itunes.apple.com/verifyReceipt";
-        const sandboxUrl = "https://sandbox.itunes.apple.com/verifyReceipt";
-        const payload = JSON.stringify({ "receipt-data": appleReceipt, password: sharedSecret });
-
-        const verifyReceipt = async (url) => {
-          const https = require("https");
-          return new Promise((resolve, reject) => {
-            const parsed = new URL(url);
-            const reqOptions = { hostname: parsed.hostname, path: parsed.pathname, method: "POST",
-              headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(payload) } };
-            const r = https.request(reqOptions, (resp) => {
-              let data = "";
-              resp.on("data", (chunk) => data += chunk);
-              resp.on("end", () => { try { resolve(JSON.parse(data)); } catch { resolve({}); } });
-            });
-            r.on("error", reject);
-            r.write(payload);
-            r.end();
-          });
-        };
-
-        let result = await verifyReceipt(verifyUrl);
-        // status 21007 = sandbox receipt sent to production; retry with sandbox
-        if (result.status === 21007) result = await verifyReceipt(sandboxUrl);
-        if (result.status !== 0) {
-          log(`Apple receipt validation returned status ${result.status} — proceeding with local entitlement`);
-        } else {
-          log("Apple receipt validation: OK");
-        }
-      }
+      const packageName = process.env.ANDROID_PACKAGE_NAME || "pro.marketingtool.app";
+      const accessToken = await getPlayAccessToken(serviceAccount);
+      const { ok, state } = await verifyGooglePlay(
+        packageName,
+        productId,
+        googlePurchaseToken,
+        isConsumable,
+        accessToken,
+      );
+      verified = ok;
+      log(`Play validation: ok=${ok} ${state}`);
     } catch (e) {
-      log(`Apple receipt validation failed (non-blocking): ${e.message}`);
+      verified = false;
+      log(`Play validation error: ${e.message}`);
     }
+  } else if (appleReceipt && canVerifyApple) {
+    try {
+      const verifyUrl = "https://buy.itunes.apple.com/verifyReceipt";
+      const sandboxUrl = "https://sandbox.itunes.apple.com/verifyReceipt";
+      const payload = JSON.stringify({
+        "receipt-data": appleReceipt,
+        password: appleSharedSecret,
+      });
+
+      const verifyReceipt = async (url) => {
+        const parsed = new URL(url);
+        const { body } = await httpsJson(
+          {
+            hostname: parsed.hostname,
+            path: parsed.pathname,
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Content-Length": Buffer.byteLength(payload),
+            },
+          },
+          payload,
+        );
+        return body;
+      };
+
+      let result = await verifyReceipt(verifyUrl);
+      // 21007 = a sandbox receipt sent to production; retry against sandbox so
+      // TestFlight and App Review purchases validate normally.
+      if (result.status === 21007) result = await verifyReceipt(sandboxUrl);
+      verified = result.status === 0;
+      log(`Apple receipt validation: status=${result.status} ok=${verified}`);
+    } catch (e) {
+      verified = false;
+      log(`Apple receipt validation error: ${e.message}`);
+    }
+  } else if (canVerifyPlay || canVerifyApple) {
+    // We could have verified, but the caller supplied no evidence at all.
+    // This is exactly the bypass shape, so treat it as a failure.
+    verified = false;
+    log("No purchase evidence supplied while verification is configured — refusing");
+  } else {
+    log(
+      "WARNING: no store credentials configured (APPLE_SHARED_SECRET / " +
+        "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON) — entitlement written WITHOUT " +
+        "server-side verification",
+    );
   }
 
-  // Google Play validation (best-effort; local entitlement already applied)
-  if (platform === "android" && googlePurchaseToken) {
-    try {
-      const sa = readServiceAccount();
-      const packageName = process.env.ANDROID_PACKAGE_NAME || "pro.marketingtool.app";
-      if (!sa) {
-        log(
-          "WARNING: no Play service account configured " +
-            "(GOOGLE_PLAY_SERVICE_ACCOUNT_JSON / GOOGLE_SERVICE_ACCOUNT_JSON) — " +
-            "skipping Play validation",
-        );
-      } else {
-        const accessToken = await getPlayAccessToken(sa);
-        const { ok, state } = await verifyGooglePlay(
-          packageName,
-          productId,
-          googlePurchaseToken,
-          isConsumable,
-          accessToken,
-        );
-        log(`Play validation: ok=${ok} ${state}`);
-      }
-    } catch (e) {
-      log(`Play validation failed (non-blocking): ${e.message}`);
-    }
+  if (verified === false) {
+    error(`Refusing unverified purchase: userId=${userId} productId=${productId}`);
+    return res.json(
+      { success: false, error: "Purchase could not be verified" },
+      403,
+      CORS_HEADERS,
+    );
   }
 
   // ── Update Appwrite profile ─────────────────────────────────────────────────
