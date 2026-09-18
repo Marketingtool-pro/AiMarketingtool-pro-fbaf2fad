@@ -1,4 +1,4 @@
-import { Client, Account, Databases, Storage, Functions, ID, Query, Models, OAuthProvider, AuthenticatorType } from 'react-native-appwrite';
+import { Client, Account, Databases, Storage, Functions, ID, Query, Models, OAuthProvider, AuthenticatorType, ExecutionMethod } from 'react-native-appwrite';
 import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
@@ -1025,6 +1025,112 @@ export const functionService = {
     }
   },
 };
+
+/**
+ * Run an Appwrite Function and return its result, WITHOUT the 30-second wall.
+ *
+ * Appwrite caps a *synchronous* execution at 30s and returns
+ *   "Synchronous function execution timed out. Use asynchronous execution
+ *    instead, or ensure the execution duration doesn't exceed 30 seconds."
+ * as a 500. Measured on the live project on 2026-09-18, tool-executor had 470
+ * executions and 287 of them (61%) failed exactly that way, while a successful
+ * run took 22.9s. Tool runs genuinely take 20-30s, so the app was sitting on
+ * the ceiling and losing more often than winning.
+ *
+ * The app used sync because of a belief, written in a code comment, that async
+ * polling needs an `executions.read` scope that phone-OTP users do not have.
+ * That belief is wrong, and the running system says so: every execution row
+ * created by a phone user carries
+ *     "$permissions": ["read(\"user:phone_<number>\")"]
+ * i.e. the creating user is granted read on their own execution. Polling works.
+ *
+ * Still written defensively, because being wrong here breaks the only path that
+ * works today: if the FIRST poll is rejected, we remember that for the rest of
+ * the session and fall back to the old synchronous call. Worst case this
+ * behaves exactly as before, plus one orphaned execution per session.
+ */
+const EXEC_POLL_INTERVAL_MS = 1500;
+const EXEC_DEFAULT_TIMEOUT_MS = 180_000;
+
+// Set only if polling is actually refused, so the fallback is per-session, not
+// per-call.
+let executionPollingUnavailable = false;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function isPermissionError(err: any): boolean {
+  const code = err?.code ?? err?.response?.code;
+  const type = String(err?.type ?? '');
+  return code === 401 || code === 403 || type.includes('unauthorized') || type.includes('missing_scope');
+}
+
+export interface FunctionRunResult {
+  status: string;
+  responseBody: string;
+  timedOut?: boolean;
+}
+
+async function runFunctionSync(
+  functionId: string,
+  payload: string,
+  path: string,
+  method: any,
+): Promise<FunctionRunResult> {
+  const execution: any = await functions.createExecution(functionId, payload, false, path, method);
+  return { status: execution.status, responseBody: execution.responseBody ?? '' };
+}
+
+export async function runFunction(
+  functionId: string,
+  payload: string,
+  options: { path?: string; method?: any; timeoutMs?: number } = {},
+): Promise<FunctionRunResult> {
+  const path = options.path ?? '/';
+  const method = options.method ?? ExecutionMethod.POST;
+  const timeoutMs = options.timeoutMs ?? EXEC_DEFAULT_TIMEOUT_MS;
+
+  if (executionPollingUnavailable) {
+    return runFunctionSync(functionId, payload, path, method);
+  }
+
+  let created: any;
+  try {
+    created = await functions.createExecution(functionId, payload, true, path, method);
+  } catch (err) {
+    // Could not even dispatch asynchronously — use the old path.
+    executionPollingUnavailable = true;
+    return runFunctionSync(functionId, payload, path, method);
+  }
+
+  const deadline = Date.now() + timeoutMs;
+  let current = created;
+  let firstPoll = true;
+
+  while (current.status !== 'completed' && current.status !== 'failed') {
+    if (Date.now() > deadline) {
+      return { status: current.status, responseBody: current.responseBody ?? '', timedOut: true };
+    }
+    await sleep(EXEC_POLL_INTERVAL_MS);
+    try {
+      current = await functions.getExecution(functionId, created.$id);
+    } catch (err: any) {
+      if (firstPoll && isPermissionError(err)) {
+        // The belief in the old comment was right after all for this session.
+        // Fall back so the user still gets a result.
+        executionPollingUnavailable = true;
+        return runFunctionSync(functionId, payload, path, method);
+      }
+      // A transient read failure mid-poll: keep waiting rather than abandoning
+      // an execution that is probably still running.
+      if (Date.now() > deadline) {
+        return { status: current.status, responseBody: '', timedOut: true };
+      }
+    }
+    firstPoll = false;
+  }
+
+  return { status: current.status, responseBody: current.responseBody ?? '' };
+}
 
 export { client, ID, Query };
 export default { authService, dbService, storageService, functionService };

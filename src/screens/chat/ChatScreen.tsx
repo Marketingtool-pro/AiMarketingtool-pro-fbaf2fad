@@ -21,7 +21,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
-import { functions, account } from '../../services/appwrite';
+import { functions, account, runFunction } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 import { getToolIcon } from '../../constants/toolIcons';
 import { useToolsStore } from '../../store/toolsStore';
@@ -383,17 +383,27 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
       // executions.read scope, and even when granted it adds 1-30s of
       // polling latency. fetch() under the hood is async at the JS layer
       // so this doesn't block the UI thread / cause ANRs.
-      const execution = await functions.createExecution(
+      // Async + poll: chat-ai was also on the 30s synchronous cap (96 of 388
+      // executions failed). runFunction falls back to a sync call if polling is
+      // ever refused, so this cannot be worse than before.
+      const execution = await runFunction(
         'chat-ai',
         JSON.stringify({
           system_prompt: systemPrompt,
           user_message: userMessage,
           conversation_history: conversationHistory,
         }),
-        false,
-        '/',
-        ExecutionMethod.POST
+        { path: '/', method: ExecutionMethod.POST, timeoutMs: 120_000 },
       );
+
+      // An execution that did not complete has an empty body. Throw so the
+      // caller's retry / soft-message path handles it, instead of rendering
+      // "I could not generate a response." as if the model had replied.
+      if (execution.status !== 'completed') {
+        throw new Error(
+          execution.timedOut ? 'Chat request timed out' : `Chat execution ${execution.status}`,
+        );
+      }
 
       const result = parseAppwriteResponse(execution.responseBody);
       if (result.error) throw new Error(result.error);
