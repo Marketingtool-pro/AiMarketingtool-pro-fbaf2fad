@@ -651,6 +651,22 @@ const LoginScreen = () => {
                   )}
                 </LinearGradient>
               </TouchableOpacity>
+
+              {/* ForgotPasswordScreen is registered in the Auth stack and
+                  authStore.resetPassword() works, but nothing ever linked to
+                  either one — so a user who forgot their email password had no
+                  way to recover the account from inside the app. */}
+              <TouchableOpacity
+                style={styles.forgotBtn}
+                onPress={() => {
+                  setShowEmailModal(false);
+                  navigation.navigate('ForgotPassword');
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Reset your password"
+              >
+                <Text style={styles.forgotText}>Forgot password?</Text>
+              </TouchableOpacity>
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
@@ -968,6 +984,17 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: '#A0AEC0',
+  },
+  forgotBtn: {
+    alignSelf: 'center',
+    marginTop: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  forgotText: {
+    color: '#9D4EDD',
+    fontSize: 14,
+    fontWeight: '600',
   },
   signupText: {
     color: '#9D4EDD',
