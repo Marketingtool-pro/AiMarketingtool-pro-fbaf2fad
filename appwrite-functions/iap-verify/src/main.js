@@ -142,8 +142,18 @@ const { userId, productId, platform, appleReceipt } = body || {};
       .setKey(process.env.APPWRITE_API_KEY);
     const db = new Databases(client);
 
-    const DATABASE_ID   = "marketingtool";
-    const COLLECTION_ID = "profiles";
+    // Verified against the live Appwrite project on 2026-09-18: the database is
+    // `main` and the profile collection is `users`. There is no `marketingtool`
+    // database and no `profiles` collection, so the previous constants made every
+    // updateDocument here fail with "Database not found" — the purchase would
+    // validate and then never be recorded.
+    //
+    // This is the SAME defect already fixed once on the client: see the comment in
+    // src/services/appwrite.ts, where DATABASE_ID was wrongly 'marketingtool_db'
+    // and that was "the real reason credits never showed and plans never unlocked
+    // after purchase". Keep these two in step with COLLECTIONS.USERS there.
+    const DATABASE_ID   = "main";
+    const COLLECTION_ID = "users";
 
     const existing = await db.listDocuments(DATABASE_ID, COLLECTION_ID, [
       Query.equal("userId", userId),
