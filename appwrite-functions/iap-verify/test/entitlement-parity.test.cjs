@@ -9,6 +9,11 @@
 //   subscriptions -> PRODUCT_TO_ENTITLEMENT on both sides must map to the same tier
 //   consumables   -> the client's isConsumableProduct() set must equal the
 //                    server's CONSUMABLE_IDS set
+//
+// Results are collected into a Map, never a plain object. Assigning
+// `obj[nameFromRegex]` lets a crafted source file write `__proto__` and pollute
+// Object.prototype (CodeQL js/remote-property-injection, alert #457, which this
+// file originally triggered). A Map has no prototype chain to poison.
 const fs = require("fs");
 const path = require("path");
 
@@ -31,14 +36,15 @@ function grabObject(src, name) {
   return src.slice(open, j + 1);
 }
 
+/** product id -> tier, as a Map. Consumables (null) are covered separately. */
 function tiers(objectSrc) {
-  const out = {};
+  const out = new Map();
   const re = /["']([^"']+)["']\s*:\s*(\{[^}]*\}|null)/g;
   let m;
   while ((m = re.exec(objectSrc))) {
-    if (m[2] === "null") continue; // consumable, covered by the other check
+    if (m[2] === "null") continue;
     const tier = /tier:\s*["']([^"']+)["']/.exec(m[2]);
-    if (tier) out[m[1]] = tier[1];
+    if (tier) out.set(m[1], tier[1]);
   }
   return out;
 }
@@ -65,9 +71,11 @@ const c = tiers(grabObject(client, "PRODUCT_TO_ENTITLEMENT"));
 const s = tiers(grabObject(server, "PRODUCT_TO_ENTITLEMENT"));
 
 console.log("subscription products:");
-for (const id of [...new Set([...Object.keys(c), ...Object.keys(s)])].sort()) {
-  check(`${id} -> ${c[id] || "MISSING"}`, c[id] === s[id],
-    `client=${c[id] || "MISSING"} server=${s[id] || "MISSING"}`);
+for (const id of [...new Set([...c.keys(), ...s.keys()])].sort()) {
+  const cv = c.get(id);
+  const sv = s.get(id);
+  check(`${id} -> ${cv || "MISSING"}`, cv === sv,
+    `client=${cv || "MISSING"} server=${sv || "MISSING"}`);
 }
 
 console.log("consumable products:");
