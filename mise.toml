@@ -153,5 +153,17 @@ dotnet = {}
 forgejo = {}
 
 [env]
-NODE_ENV = "production"
+# NODE_ENV is deliberately NOT set here.
+#
+# `NODE_ENV = "production"` used to live in this block. npm derives its `omit`
+# setting from NODE_ENV, so that one line made every local `npm install` resolve
+# with `omit=dev` and silently drop devDependencies from package-lock.json.
+#
+# Symptom it caused: `expo-doctor` and typecheck fail locally while CI is green,
+# because GitHub runners never load this file. Diagnosed 2026-09-18 by tracing
+# the login shell (`zsh -lixc true`) to `_mise_hook` -> `export NODE_ENV=production`;
+# `npm config get omit` returned `dev` with no `omit` line in any .npmrc.
+#
+# If a task genuinely needs a production NODE_ENV, set it for that command only
+# (`NODE_ENV=production npm run build`), never for the whole directory.
 
