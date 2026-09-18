@@ -21,6 +21,11 @@ git log --oneline HEAD..origin/Master   # empty = up to date. NOT empty = local 
   copy, while git was clean.
 - **Verify content, not commit ids.** Master is squash-merged, so merged work gets a
   new SHA and `git merge-base --is-ancestor` wrongly reports "not merged".
+- **Read `REPO-MAP.md` before hunting through the tree.** 4442 files, over half of
+  them in `externals/`. It says which directories ship, which are inert, and which
+  are traps — a plugin whose "committed" server is not committed, an Actions
+  workflow at the repo root that never runs, a config nothing imports, an entry
+  point that is never typechecked.
 
 ---
 

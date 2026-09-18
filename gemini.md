@@ -7,7 +7,7 @@ Welcome to the AI integration guide for **MarketingTool Pro** (`AiMarketingtool-
 ## 🛠️ Project Stack & Architecture
 
 This is a premium hybrid React Native application utilizing:
-- **Core Framework**: Expo SDK 56 + React Native 0.85
+- **Core Framework**: Expo SDK 57 + React Native 0.86
 - **Design System**: Tamagui (Sleek dark mode interfaces)
 - **Data & Auth**: Appwrite (Core Auth, User Profiles, Database)
 - **AI & Serverless**: Firebase (Genkit-powered AI Functions, App Check, Hosting)
@@ -20,7 +20,7 @@ This is a premium hybrid React Native application utilizing:
 When modifying this repository, follow these precise guidelines:
 
 ### 1. Android SDK & Compile Requirements (API 36 / Android 16)
-- **Important**: This project uses Expo SDK 56 which relies on `WindowCompat.enableEdgeToEdge()` inside `expo-dev-launcher`. This API requires compiling against **Android 16 (API 36)**.
+- **Important**: This project uses Expo SDK 57 which relies on `WindowCompat.enableEdgeToEdge()` inside `expo-dev-launcher`. This API requires compiling against **Android 16 (API 36)**.
 - Always ensure `compileSdkVersion` and `targetSdkVersion` are set to `36` in both `android/build.gradle` and `app.json` (under `expo-build-properties` plugin configurations).
 - **Core Dependency Pin**: Do **NOT** pin `androidx.core` to older versions (e.g., `1.15.0`) in Gradle's `resolutionStrategy` because it will cause compilation errors with unresolved edge-to-edge references.
 
