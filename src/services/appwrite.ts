@@ -810,9 +810,16 @@ export const authService = {
   // Reset Password
   async resetPassword(email: string): Promise<Models.Token> {
     try {
+      // This URL MUST match a real route on the web app. `/reset-password`
+      // is not one: web-app-router- registers the page as `password-recovery`
+      // (src/routes/AuthRoutes.jsx and PagesRoutes.jsx), and the web app's own
+      // forgotPassword() sends `${window.location.origin}/password-recovery`.
+      // Appwrite appends its recovery query parameters to whatever URL is given
+      // here, and only that page reads them — so any other path dead-ends and
+      // the reset can never complete.
       return await account.createRecovery(
         email,
-        'https://app.marketingtool.pro/reset-password'
+        'https://app.marketingtool.pro/password-recovery'
       );
     } catch (error) {
       throw error;
