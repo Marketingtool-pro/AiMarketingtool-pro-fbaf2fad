@@ -193,8 +193,16 @@ const DashboardScreen = () => {
   // Update counts when generations change
   const userGenerations = (user?.$id && generations.length > 0) ? generations.filter(g => g.userId === user.$id) : [];
   const generationsCount = userGenerations.length;
-  // Campaigns = unique tools used
-  const campaignsCount = new Set(userGenerations.map(g => g.toolId)).size;
+  // Campaigns = unique tools used. Key on the slug, which is the tool's real
+  // identity; `toolId` is positional (`t${index}` in tools.js) and older rows
+  // may not carry a slug at all, so fall back to it.
+  const campaignsCount = new Set(
+    userGenerations.map(g => g.toolSlug || g.toolId)
+  ).size;
+  // Saved = generations the user actually favourited. This used to be
+  // Math.min(generationsCount, 999) — i.e. the SAME number as "Generated",
+  // relabelled, so the tile reported a figure that was never measured.
+  const savedCount = userGenerations.filter(g => g.isFavorite).length;
 
   useEffect(() => {
     fetchTools();
@@ -231,7 +239,7 @@ const DashboardScreen = () => {
     { label: 'Credits Left', value: creditsLeft, icon: 'zap', img: require('../../../assets/images/tool-icons-v2/ai-3d.png'), color: Colors.secondary, badge: 'Upgrade', screen: 'Subscription' },
     { label: 'Generated', value: generationsCount > 0 ? generationsCount.toString() : '0', icon: 'layers', img: require('../../../assets/images/tool-icons-v2/analytics-3d.png'), color: Colors.success, badge: generationsCount > 0 ? 'Active' : 'Start', screen: 'History' },
     { label: 'Campaigns', value: campaignsCount > 0 ? campaignsCount.toString() : '0', icon: 'target', img: require('../../../assets/images/tool-icons-v2/rocket.png'), color: Colors.accent, badge: campaignsCount > 0 ? `${campaignsCount} tools` : 'New', screen: 'Tools' },
-    { label: 'Saved', value: generationsCount > 0 ? `${Math.min(generationsCount, 999)}` : '0', icon: 'bookmark', img: require('../../../assets/images/tool-icons-v2/trophy.png'), color: Colors.gold, badge: generationsCount > 0 ? 'Saved' : 'None', screen: 'History' },
+    { label: 'Saved', value: String(savedCount), icon: 'bookmark', img: require('../../../assets/images/tool-icons-v2/trophy.png'), color: Colors.gold, badge: savedCount > 0 ? 'Saved' : 'None', screen: 'History' },
   ];
 
   // Horizontal banner data
