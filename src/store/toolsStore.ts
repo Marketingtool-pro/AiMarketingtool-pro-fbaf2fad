@@ -50,7 +50,14 @@ export interface ToolInput {
 export interface Generation {
   $id: string;
   userId: string;
+  // `Tool.$id` is derived as `t${index}` from the position of the tool in
+  // data/tools.js, so it is NOT stable: adding, removing or reordering a tool
+  // silently repoints every history row written before the change at whatever
+  // tool now occupies that slot. Keep it for backwards compatibility with rows
+  // already written, but match on `toolSlug` first — the slug is the tool's real
+  // identity and is what the backend routes on.
   toolId: string;
+  toolSlug?: string;
   toolName: string;
   input: Record<string, any>;
   output: string;
