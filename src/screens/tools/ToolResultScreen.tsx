@@ -73,6 +73,7 @@ const ToolResultScreen = () => {
           await addGeneration({
             userId: user.$id,
             toolId: tool.$id,
+            toolSlug: tool.slug,
             toolName: tool.name,
             input: savedInputs || {},
             output: result.outputs.join('\n\n---\n\n'),
@@ -158,6 +159,7 @@ const ToolResultScreen = () => {
       await addGeneration({
         userId: user.$id,
         toolId: tool.$id,
+        toolSlug: tool.slug,
         toolName: tool.name,
         input: savedInputs || {},
         output: outputs.map(o => o.content).join('\n\n---\n\n'),
