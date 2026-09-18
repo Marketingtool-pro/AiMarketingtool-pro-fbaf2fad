@@ -16,7 +16,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import * as Haptics from 'expo-haptics';
-import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, entitlementForProduct, CREDITS_PER_TOKEN_PACK, type Entitlement } from '../../services/billingService';
+import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, entitlementForProduct, isConsumableProduct, CREDITS_PER_TOKEN_PACK, type Entitlement } from '../../services/billingService';
 import { functions } from '../../services/appwrite';
 import { openWebPage } from '../../utils/openWebPage';
 import { ExecutionMethod } from 'react-native-appwrite';
@@ -48,7 +48,17 @@ const SubscriptionScreen = () => {
     billingService.startListeners({
       onSuccess: async (productId: string, entitlement?: Entitlement | null) => {
         setIsLoading(false);
-        const kind = pendingKindRef.current;
+        // Classify from the product the STORE delivered, not from
+        // pendingKindRef. That ref only holds a value when this screen started
+        // the purchase in this process; a purchase that Play/StoreKit delivers
+        // later — after an app restart, or on restore — arrives with the ref
+        // null, which fell through to the subscription branch. A token pack
+        // then granted no credits and still told the user "Your subscription is
+        // now active!". The product id is authoritative and is what
+        // iap-verify keys on server-side.
+        const kind = isConsumableProduct(productId)
+          ? 'consumable'
+          : pendingKindRef.current ?? 'subscription';
         pendingKindRef.current = null;
         // Apply entitlement immediately so Pro features unlock without waiting
         // for the server round-trip (Guideline 2.1b fix — client-side unlock).

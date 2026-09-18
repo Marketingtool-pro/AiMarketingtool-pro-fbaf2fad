@@ -72,6 +72,16 @@ const PRODUCT_TO_ENTITLEMENT: Record<string, Entitlement> = {
 export const entitlementForProduct = (productId: string): Entitlement | null =>
   PRODUCT_TO_ENTITLEMENT[productId] ?? null;
 
+// Whether a product is the credit pack rather than a subscription, decided from
+// the PRODUCT ID — which is what the store actually delivers — instead of from
+// UI state. Accepts both stores' ids (App Store `pro.marketingtool.tokens`,
+// Play `tokens`) because a restored or replayed purchase can carry either.
+// iap-verify classifies the same way server-side (CONSUMABLE_IDS), so the two
+// sides now agree on what a purchase is.
+const ALL_CONSUMABLE_IDS = new Set(['pro.marketingtool.tokens', 'tokens']);
+export const isConsumableProduct = (productId: string): boolean =>
+  ALL_CONSUMABLE_IDS.has(productId);
+
 // ── Tier model (matches marketingtool.pro/pricing) ───────────────────────────
 // Gates must be tier-aware, not binary: Starter buys the standard platform and
 // 200 generations/month, but PRO-badged tools require the Pro tier or higher.
