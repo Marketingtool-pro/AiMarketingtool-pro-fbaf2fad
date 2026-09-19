@@ -25,6 +25,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import ViewShot from 'react-native-view-shot';
@@ -142,6 +143,38 @@ const MemeGeneratorScreen = () => {
   // a large image is still better than a broken flow.
   const MAX_IMAGE_EDGE = 2048;
 
+  /**
+   * Fetch a remote image to the cache directory and return the LOCAL uri.
+   *
+   * This is what actually removes the app from Play's "manually downloading and
+   * decoding images from the network" list. The previous approach handed
+   * `template.url` (an https:// URL) straight to ImageManipulator, but
+   * expo-image-manipulator needs a local file on Android, so it threw every
+   * time and the catch returned the original remote URL. That URL then reached
+   * React Native's <Image> inside ViewShot, which is Fresco — i.e. exactly
+   *   com.facebook.imagepipeline.producers
+   *     .HttpUrlConnectionNetworkFetcher.fetchSync
+   * the caller Play names. The "fix" never fired.
+   *
+   * Downloading first means Fresco only ever sees a local file, and the
+   * downscale below can actually run, so the decoded bitmap stays bounded.
+   * Cached by URL, so re-picking a template costs nothing.
+   */
+  const ensureLocalCopy = async (uri: string): Promise<string> => {
+    if (!/^https?:/i.test(uri)) return uri;
+    const safeName = uri.replace(/[^a-zA-Z0-9.]/g, '_').slice(-64);
+    const target = `${FileSystem.cacheDirectory}meme-tpl-${safeName}`;
+    try {
+      const info = await FileSystem.getInfoAsync(target);
+      if (info.exists && (info as any).size > 0) return target;
+      const { uri: local } = await FileSystem.downloadAsync(uri, target);
+      return local;
+    } catch (error) {
+      console.warn('Template download failed:', error);
+      throw error;
+    }
+  };
+
   const downscaleImage = async (uri: string, width?: number, height?: number) => {
     try {
       const longEdge = Math.max(width ?? 0, height ?? 0);
@@ -226,11 +259,18 @@ const MemeGeneratorScreen = () => {
     setShowTemplates(false);
     setIsLoading(true);
     try {
-      setSelectedImage(await downscaleImage(template.url));
+      // Local copy FIRST. Handing the https URL to <Image> is what put the app
+      // on Fresco's network fetcher; handing it to ImageManipulator just threw.
+      const local = await ensureLocalCopy(template.url);
+      setSelectedImage(await downscaleImage(local));
     } catch {
-      // downscaleImage already falls back to the original URI on failure;
-      // if even that throws, use the URL so the flow is never dead-ended.
-      setSelectedImage(template.url);
+      // Deliberately NOT falling back to template.url. That fallback is the
+      // network-decode path Play flags, and it silently defeated the downscale.
+      // Better to say the template could not be loaded than to reintroduce it.
+      Alert.alert(
+        'Template Unavailable',
+        'That template could not be loaded. Check your connection, or pick a photo from your gallery.',
+      );
     } finally {
       setIsLoading(false);
     }

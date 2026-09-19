@@ -2,7 +2,7 @@
 // Routes through Appwrite Function "tool-executor" → Windmill → Claude
 // NO direct Windmill calls — clients never talk to Windmill directly
 
-import { functions, account } from './appwrite';
+import { functions, account, runFunction } from './appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 import { isWindmillConfigured, runTool, readToolResult } from './windmillService';
 
@@ -200,7 +200,7 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
       if (__DEV__) console.log('[AI] No Appwrite JWT available: ' + e?.message);
     }
 
-    const execution = await functions.createExecution(
+    const execution = await runFunction(
       TOOL_EXECUTOR_FUNCTION_ID,
       JSON.stringify({
         appwriteJwt,
@@ -220,12 +220,12 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
         simulation: simulation ?? false, // mobile policy: REAL execution for all tiers (quota-limited, never demo/sample)
         options: { tone: tone || 'professional', language: language || 'English' },
       }),
-      false,  // sync — result arrives in this response, no polling/scope needed
-      '/',    // path
-      ExecutionMethod.POST, // method
+      // Async + poll. A sync execution is capped at 30s by Appwrite and tool
+      // runs take 20-30s, which is why 287 of 470 runs failed. runFunction
+      // falls back to the old sync call if polling is ever refused.
+      { path: '/', method: ExecutionMethod.POST, timeoutMs: 180_000 },
     );
 
-    // Sync executions return the result directly.
     if (execution.status === 'completed') {
       const result = parseExecutionResponse(execution.responseBody, outputCount);
       if (result.success && result.outputs.length > 0) {

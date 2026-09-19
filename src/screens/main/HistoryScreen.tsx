@@ -86,9 +86,14 @@ const HistoryScreen = () => {
     }
   }, [user?.$id]);
 
-  // Look up tool info for icon/category
-  const getToolInfo = useCallback((toolId: string) => {
-    const tool = tools.find(t => t.$id === toolId);
+  // Look up tool info for icon/category.
+  // Resolve by slug first: `$id` is positional (`t${index}` in tools.js), so a
+  // catalogue edit makes it point at the wrong tool. Rows written before
+  // toolSlug existed still fall back to the old id.
+  const getToolInfo = useCallback((item: { toolId: string; toolSlug?: string }) => {
+    const tool =
+      (item.toolSlug ? tools.find(t => t.slug === item.toolSlug) : undefined) ??
+      tools.find(t => t.$id === item.toolId);
     return {
       icon: tool?.icon || 'zap',
       category: tool?.category ? getCategoryDisplay(tool.category) : 'Content',
@@ -110,7 +115,7 @@ const HistoryScreen = () => {
 
     if (selectedFilter && selectedFilter !== 'All') {
       items = items.filter(item => {
-        const info = getToolInfo(item.toolId);
+        const info = getToolInfo(item);
         return info.category === selectedFilter;
       });
     }
@@ -171,7 +176,7 @@ const HistoryScreen = () => {
   );
 
   const renderItem = ({ item }: { item: Generation }) => {
-    const toolInfo = getToolInfo(item.toolId);
+    const toolInfo = getToolInfo(item);
     return (
       <View style={styles.historyCard}>
         <View style={styles.cardHeader}>
@@ -226,8 +231,12 @@ const HistoryScreen = () => {
           <TouchableOpacity
             style={styles.expandBtn}
             onPress={() => {
-              // Generations store the tool's $id in `toolId`; ToolResultScreen needs the slug.
-              const toolSlug = tools.find(t => t.$id === item.toolId)?.slug ?? item.toolId;
+              // ToolResultScreen needs the slug. Prefer the stored slug; fall
+              // back to the positional id only for rows written before it existed.
+              const toolSlug =
+                item.toolSlug ??
+                tools.find(t => t.$id === item.toolId)?.slug ??
+                item.toolId;
               navigation.navigate('ToolResult', {
                 // ToolResultScreen expects result.outputs: string[]; the saved output is a
                 // single string joined with this separator when generated.

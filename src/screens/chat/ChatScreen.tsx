@@ -20,8 +20,9 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
-import { functions, account } from '../../services/appwrite';
+import { functions, account, runFunction } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 import { getToolIcon } from '../../constants/toolIcons';
 import { useToolsStore } from '../../store/toolsStore';
@@ -46,6 +47,54 @@ interface Message {
 // component render code (react-hooks/purity flags impure calls made inside
 // component-scope functions). IDs stay unique within a session.
 let messageSeq = 0;
+// ── Conversation persistence ────────────────────────────────────────────────
+// Chat was pure useState, so every conversation was destroyed the moment the
+// user switched tabs or the app was backgrounded, and the in-chat "History" tab
+// rendered a hardcoded line that never listed anything. Nothing in the app ever
+// wrote to the chat_sessions / chat_messages collections either — they hold 0
+// rows. This keeps the conversation on the device, which is what "history"
+// means to the user, without inventing a server schema mid-flight.
+const CHAT_STORAGE_PREFIX = 'chat_history_v1:';
+const MAX_STORED_MESSAGES = 200;
+
+const chatStorageKey = (userId?: string | null) =>
+  `${CHAT_STORAGE_PREFIX}${userId || 'anonymous'}`;
+
+// Date does not survive JSON, so store an ISO string and rebuild on read.
+type StoredMessage = Omit<Message, 'timestamp'> & { timestamp: string };
+
+async function loadStoredMessages(userId?: string | null): Promise<Message[]> {
+  try {
+    const raw = await AsyncStorage.getItem(chatStorageKey(userId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as StoredMessage[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((m) => ({ ...m, timestamp: new Date(m.timestamp) }));
+  } catch {
+    return [];
+  }
+}
+
+async function saveStoredMessages(userId: string | null | undefined, messages: Message[]) {
+  try {
+    const trimmed = messages.slice(-MAX_STORED_MESSAGES).map((m) => ({
+      ...m,
+      timestamp: (m.timestamp instanceof Date ? m.timestamp : new Date()).toISOString(),
+    }));
+    await AsyncStorage.setItem(chatStorageKey(userId), JSON.stringify(trimmed));
+  } catch {
+    // Persistence is a convenience — never block the chat on it.
+  }
+}
+
+async function clearStoredMessages(userId?: string | null) {
+  try {
+    await AsyncStorage.removeItem(chatStorageKey(userId));
+  } catch {
+    // ignore
+  }
+}
+
 const createMessage = (
   role: Message['role'],
   content: string,
@@ -155,11 +204,37 @@ const ChatScreen = () => {
   const { tools, categories } = useToolsStore();
   const scrollViewRef = useRef<ScrollView>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  // Guard so the first (empty) render does not overwrite what is on disk
+  // before the restore has finished.
+  const [historyRestored, setHistoryRestored] = useState(false);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [activeTab, setActiveTab] = useState<ChatTab>('chat');
   const [activeCategory, setActiveCategory] = useState('All');
   const typingAnim = useRef(new Animated.Value(0)).current;
+  const chatUserId = profile?.userId || profile?.$id || null;
+
+  // Restore the conversation for this account on mount / account change.
+  useEffect(() => {
+    let active = true;
+    setHistoryRestored(false);
+    loadStoredMessages(chatUserId).then((restored) => {
+      if (!active) return;
+      if (restored.length) setMessages(restored);
+      setHistoryRestored(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, [chatUserId]);
+
+  // Persist after every change, once the restore has run.
+  useEffect(() => {
+    if (!historyRestored) return;
+    void saveStoredMessages(chatUserId, messages);
+  }, [messages, chatUserId, historyRestored]);
+
+
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
 
@@ -383,17 +458,27 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
       // executions.read scope, and even when granted it adds 1-30s of
       // polling latency. fetch() under the hood is async at the JS layer
       // so this doesn't block the UI thread / cause ANRs.
-      const execution = await functions.createExecution(
+      // Async + poll: chat-ai was also on the 30s synchronous cap (96 of 388
+      // executions failed). runFunction falls back to a sync call if polling is
+      // ever refused, so this cannot be worse than before.
+      const execution = await runFunction(
         'chat-ai',
         JSON.stringify({
           system_prompt: systemPrompt,
           user_message: userMessage,
           conversation_history: conversationHistory,
         }),
-        false,
-        '/',
-        ExecutionMethod.POST
+        { path: '/', method: ExecutionMethod.POST, timeoutMs: 120_000 },
       );
+
+      // An execution that did not complete has an empty body. Throw so the
+      // caller's retry / soft-message path handles it, instead of rendering
+      // "I could not generate a response." as if the model had replied.
+      if (execution.status !== 'completed') {
+        throw new Error(
+          execution.timedOut ? 'Chat request timed out' : `Chat execution ${execution.status}`,
+        );
+      }
 
       const result = parseAppwriteResponse(execution.responseBody);
       if (result.error) throw new Error(result.error);
@@ -421,6 +506,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
 
   const clearChat = () => {
     setMessages([]);
+    void clearStoredMessages(chatUserId);
   };
 
   const renderMessage = (message: Message) => {
@@ -650,7 +736,39 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
                       <Text style={styles.emptyHistorySubtext}>Start a conversation to see your history here</Text>
                     </View>
                   ) : (
-                    <Text style={styles.emptyHistorySubtext}>Previous conversations will appear here</Text>
+                    // Was a hardcoded line that never listed anything. Now lists
+                    // the restored conversation, newest first; tapping a turn
+                    // opens the thread.
+                    <View>
+                      {[...messages]
+                        .filter((m) => !m.isError)
+                        .reverse()
+                        .slice(0, 30)
+                        .map((m) => (
+                          <TouchableOpacity
+                            key={m.id}
+                            style={styles.historyRow}
+                            onPress={() => setActiveTab('chat')}
+                            activeOpacity={0.7}
+                          >
+                            <Feather
+                              name={m.role === 'user' ? 'user' : 'message-circle'}
+                              size={14}
+                              color={m.role === 'user' ? Colors.secondary : Colors.accent}
+                            />
+                            <View style={styles.historyRowBody}>
+                              <Text style={styles.historyRowText} numberOfLines={2}>
+                                {m.content}
+                              </Text>
+                              <Text style={styles.historyRowTime}>
+                                {m.timestamp instanceof Date
+                                  ? m.timestamp.toLocaleString()
+                                  : ''}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        ))}
+                    </View>
                   )}
                 </View>
               )}
@@ -996,6 +1114,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: Colors.white,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  historyRowBody: {
+    flex: 1,
+  },
+  historyRowText: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  historyRowTime: {
+    color: Colors.textTertiary,
+    fontSize: 11,
+    marginTop: 2,
   },
   historyTabContent: {
     width: '100%',
