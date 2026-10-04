@@ -19,11 +19,16 @@ jobs:
         with:
           node-version: '24'
 
+      # functions/ is installed by deploy-functions.yml with a plain `npm ci`,
+      # which needs the peer tree in the lockfile, so it relocks without
+      # --legacy-peer-deps (see functions/.npmrc).
       - name: Regenerate lockfiles
         run: |
           for d in . functions plugin-rn-mcp/server AiMarketingtool-pro-fbaf2fa; do
             echo "::group::relock $d"
-            (cd "$d" && npm install --package-lock-only --ignore-scripts --legacy-peer-deps --no-audit --no-fund)
+            peers=--legacy-peer-deps
+            [ "$d" = functions ] && peers=
+            (cd "$d" && npm install --package-lock-only --ignore-scripts $peers --no-audit --no-fund)
             echo "::endgroup::"
           done
 
