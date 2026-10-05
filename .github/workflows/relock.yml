@@ -19,11 +19,13 @@ jobs:
         with:
           node-version: '24'
 
+      # Peer handling comes from each directory's .npmrc, the same file
+      # Dependabot reads. A --legacy-peer-deps flag here would override it.
       - name: Regenerate lockfiles
         run: |
           for d in . functions plugin-rn-mcp/server AiMarketingtool-pro-fbaf2fa; do
             echo "::group::relock $d"
-            (cd "$d" && npm install --package-lock-only --ignore-scripts --legacy-peer-deps --no-audit --no-fund)
+            (cd "$d" && npm install --package-lock-only --ignore-scripts --no-audit --no-fund)
             echo "::endgroup::"
           done
 
