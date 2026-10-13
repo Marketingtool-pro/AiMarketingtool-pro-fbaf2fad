@@ -49,20 +49,25 @@ jobs:
     name: Publish OTA (production)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # EXPO_TOKEN is given only to the steps that call EAS, not to the whole
+    # job, so `npm ci` lifecycle scripts never see it.
     env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EAS_CLI_VERSION: 18.13.1
     steps:
       # Shallow checkout of exactly this run's commit, using the token GitHub
       # already injects. No action required.
       - name: Checkout ${{ github.sha }}
+        env:
+          GH_FETCH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git init -q .
-          git remote add origin "https://github.com/${{ github.repository }}.git"
-          AUTH_HEADER="$(printf 'x-access-token:%s' "${{ github.token }}" | base64 -w0)"
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          # Token via env, not interpolated into the script text.
+          AUTH_HEADER="$(printf 'x-access-token:%s' "$GH_FETCH_TOKEN" | base64 -w0)"
+          echo "::add-mask::${AUTH_HEADER}"
           git -c http.https://github.com/.extraheader="AUTHORIZATION: basic ${AUTH_HEADER}" \
-            -c protocol.version=2 fetch -q --depth=1 origin "${{ github.sha }}"
+            -c protocol.version=2 fetch -q --depth=1 origin "${GITHUB_SHA}"
           git checkout -q --detach FETCH_HEAD
           echo "checked out $(git rev-parse --short HEAD)"
 
@@ -73,6 +78,8 @@ jobs:
           echo "npm  $(npm --version)"
 
       - name: Fail early if EXPO_TOKEN is missing
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           set -euo pipefail
           if [ -z "${EXPO_TOKEN:-}" ]; then
@@ -110,6 +117,7 @@ jobs:
       # Message and branch passed via env (never interpolated into the shell).
       - name: Publish EAS Update
         env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           UPDATE_MSG: ${{ inputs.message }}
           UPDATE_BRANCH: ${{ inputs.branch }}
         run: |

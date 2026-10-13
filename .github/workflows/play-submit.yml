@@ -43,23 +43,33 @@ jobs:
     name: Submit build to Google Play
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # EXPO_TOKEN is given only to the steps that call EAS, not to the whole
+    # job, so `npm ci` lifecycle scripts never see it.
     env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EAS_CLI_VERSION: 18.13.1
       BUILD_ID: ${{ inputs.build_id }}
       SUBMIT_PROFILE: ${{ inputs.profile }}
     steps:
       - name: Checkout ${{ github.sha }}
+        env:
+          GH_FETCH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           git init -q .
-          git remote add origin \
-            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-          git -c protocol.version=2 fetch -q --depth=1 origin "${{ github.sha }}"
+          # The token is sent only as a one-off header for this fetch. It is not
+          # written into .git/config (the old remote URL embedded it), so later
+          # steps -- npm lifecycle scripts included -- cannot read it back.
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          AUTH_HEADER="$(printf 'x-access-token:%s' "$GH_FETCH_TOKEN" | base64 -w0)"
+          echo "::add-mask::${AUTH_HEADER}"
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic ${AUTH_HEADER}" \
+            -c protocol.version=2 fetch -q --depth=1 origin "${GITHUB_SHA}"
           git checkout -q --detach FETCH_HEAD
           echo "checked out $(git rev-parse --short HEAD)"
 
       - name: Validate inputs
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           set -euo pipefail
           if [ -z "${EXPO_TOKEN:-}" ]; then
@@ -87,6 +97,8 @@ jobs:
       # Refuse anything that is not a finished Android store build, so a typo'd
       # id or an iOS/APK build can never reach the Play track.
       - name: Check the build before submitting
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           set -euo pipefail
           eas build:view "$BUILD_ID" --json > eas-build.json
@@ -131,6 +143,8 @@ jobs:
           '
 
       - name: Submit to Google Play
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           set -euo pipefail
           echo "submitting build $BUILD_ID with submit profile $SUBMIT_PROFILE"

@@ -10,13 +10,16 @@ require 'openssl'
 require 'net/http'
 require 'json'
 require 'uri'
-KEY_ID = ENV.fetch("ASC_KEY_ID") { raise "Missing required env var ASC_KEY_ID" }
+require_relative 'lib/asc_safe_input'
+KEY_ID = AscSafeInput.key_id!("ASC_KEY_ID", ENV.fetch("ASC_KEY_ID") { raise "Missing required env var ASC_KEY_ID" })
 ISSUER = ENV.fetch("ASC_ISSUER_ID") { raise "Missing required env var ASC_ISSUER_ID" }
-KEY = File.expand_path(ENV.fetch("ASC_PRIVATE_KEY_PATH") { raise "Missing required env var ASC_PRIVATE_KEY_PATH" }, __dir__)
+# Confined to the repo root / Apple key directories (path traversal guard).
+KEY = AscSafeInput.key_path(ENV.fetch("ASC_PRIVATE_KEY_PATH") { raise "Missing required env var ASC_PRIVATE_KEY_PATH" }, relative_to: __dir__)
 DRY=ENV.fetch("DRY_RUN","true")!="false"
 DEFAULT_SUBS=%w[6760442919 6760486886 6760490715 6760491034 6760491514 6760492298]
-SUBS=(ENV["SUBS"] || "").split(/[,\s]+/).reject(&:empty?)
-SUBS=DEFAULT_SUBS if SUBS.empty?
+requested_subs=(ENV["SUBS"] || "").split(/[,\s]+/).reject(&:empty?)
+# Subscription ids go into API paths, so only numeric ids are accepted.
+SUBS=(requested_subs.empty? ? DEFAULT_SUBS : requested_subs).map { |sid| AscSafeInput.numeric_id!("SUBS entry", sid) }
 pk=OpenSSL::PKey::EC.new(File.read(KEY)); n=Time.now.to_i
 TOK=JWT.encode({iss:ISSUER,iat:n,exp:n+1100,aud:"appstoreconnect-v1"},pk,"ES256",{kid:KEY_ID,typ:"JWT"})
 BASE="https://api.appstoreconnect.apple.com"
