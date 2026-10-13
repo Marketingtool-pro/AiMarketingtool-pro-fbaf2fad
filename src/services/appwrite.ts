@@ -107,6 +107,66 @@ export function parseCallbackParams(url: string): Record<string, string> {
   return out;
 }
 
+/**
+ * OAuth redirect targets. These are fixed server-side values, never taken from
+ * the client, a deep link or any other caller-supplied input, so the provider
+ * can only ever send the user back to a URL we own (no open redirect).
+ *
+ * Nginx on auth.marketingtool.pro redirects /oauth/success to
+ * marketingtool://oauth/success, which is how the app receives the callback.
+ */
+export const OAUTH_SUCCESS_URL = 'https://auth.marketingtool.pro/oauth/success';
+export const OAUTH_FAILURE_URL = 'https://auth.marketingtool.pro/oauth/failure';
+const OAUTH_APP_RETURN_URL = 'marketingtool://';
+
+/**
+ * The only callback locations whose userId/secret this app will redeem.
+ *
+ * Before this allowlist, ANY link that merely contained "secret=" or
+ * "oauth/success" anywhere in it was redeemed. Any web page, QR code or other
+ * app could open marketingtool://whatever?userId=<attacker>&secret=<attacker>
+ * and silently sign the victim into the attacker's account (login CSRF /
+ * session fixation), after which anything the victim saved went to the
+ * attacker. Only our own success callback is accepted now.
+ */
+const TRUSTED_OAUTH_CALLBACK_PREFIXES = [
+  'marketingtool://oauth/success',
+  'marketingtool:///oauth/success',
+  OAUTH_SUCCESS_URL,
+];
+
+/** True only for our own OAuth success callback (exact scheme, host and path). */
+export function isTrustedOAuthCallback(url: string | null | undefined): boolean {
+  if (!url || typeof url !== 'string') return false;
+  const lower = url.trim().toLowerCase();
+  return TRUSTED_OAUTH_CALLBACK_PREFIXES.some((prefix) => {
+    if (!lower.startsWith(prefix)) return false;
+    // The prefix must end at a path/query/fragment boundary, so lookalikes such
+    // as ".../oauth/success.evil" or "https://auth.marketingtool.pro.evil.com"
+    // are rejected.
+    const next = lower.charAt(prefix.length);
+    return next === '' || next === '?' || next === '#' || next === '/';
+  });
+}
+
+/**
+ * Appwrite user ids are at most 36 chars of [a-zA-Z0-9._-]; token secrets are
+ * opaque printable strings. Anything else is not something Appwrite issued.
+ */
+function isPlausibleTokenPair(userId: string | undefined, secret: string | undefined): boolean {
+  if (!userId || !secret) return false;
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,35}$/.test(userId)) return false;
+  return /^[A-Za-z0-9._~-]{6,512}$/.test(secret);
+}
+
+/** Extract userId/secret from a callback, but only from a trusted callback. */
+function readTrustedOAuthCallback(url: string | null | undefined): { userId: string; secret: string } | null {
+  if (!isTrustedOAuthCallback(url)) return null;
+  const params = parseCallbackParams(url as string);
+  if (!isPlausibleTokenPair(params.userId, params.secret)) return null;
+  return { userId: params.userId, secret: params.secret };
+}
+
 // Initialize Services
 export const account = new Account(client);
 export const databases = new Databases(client);
@@ -359,7 +419,9 @@ async function redeemOAuthToken(userId: string, secret: string): Promise<Models.
 
 export async function completeOAuthFromUrl(url: string | null): Promise<boolean> {
   if (!url) return false;
-  if (!url.includes('oauth/success') && !url.includes('secret=')) return false;
+  // Only our own success callback may carry credentials we redeem. Any other
+  // link -- including one that just happens to contain "secret=" -- is ignored.
+  if (!isTrustedOAuthCallback(url)) return false;
 
   const params = parseCallbackParams(url);
 
@@ -379,7 +441,7 @@ export async function completeOAuthFromUrl(url: string | null): Promise<boolean>
     message: `hasUserId=${!!params.userId} hasSecret=${!!params.secret} keys=${Object.keys(params).join(',')}`,
   });
 
-  if (!params.userId || !params.secret) return false;
+  if (!isPlausibleTokenPair(params.userId, params.secret)) return false;
 
   try {
     // redeemOAuthToken, not postSession directly: getInitialURL, the 'url'
@@ -567,8 +629,8 @@ export const authService = {
       if (__DEV__) console.log('[OAuth] Starting Google OAuth via Appwrite SDK...');
 
       // Use auth.marketingtool.pro for phone app OAuth (separate from web app)
-      const successUrl = 'https://auth.marketingtool.pro/oauth/success';
-      const failureUrl = 'https://auth.marketingtool.pro/oauth/failure';
+      const successUrl = OAUTH_SUCCESS_URL;
+      const failureUrl = OAUTH_FAILURE_URL;
 
       // Use SDK's createOAuth2Token method for mobile - returns userId & secret in URL
       const oauthUrl = account.createOAuth2Token(
@@ -583,7 +645,7 @@ export const authService = {
       if (__DEV__) console.log('[OAuth] Opening URL:', oauthUrlString);
 
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await openAuthSession(oauthUrlString, 'marketingtool://');
+      const result = await openAuthSession(oauthUrlString, OAUTH_APP_RETURN_URL);
       if (result.type === 'external') return null; // finishes via the deep link
 
       if (__DEV__) console.log('[OAuth] Browser result type:', result.type);
@@ -591,20 +653,15 @@ export const authService = {
       if (result.type === 'success' && result.url) {
         if (__DEV__) console.log('[OAuth] Callback URL:', result.url);
 
-        // Check if it's a success callback
-        if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          // Parse the URL for session tokens
-          const urlParams = parseCallbackParams(result.url);
-          const secret = urlParams.secret;
-          const userId = urlParams.userId;
-
-          if (secret && userId) {
-            if (__DEV__) console.log('[OAuth] Creating session with token...');
-            const session = await redeemOAuthToken(userId, secret);
-            // null = another path already redeemed this secret and adopted the session.
-            // The user is signed in either way; re-spending it would 401.
-            return session;
-          }
+        // Only our own success callback is redeemed (see isTrustedOAuthCallback).
+        const callback = readTrustedOAuthCallback(result.url);
+        if (callback) {
+          const { userId, secret } = callback;
+          if (__DEV__) console.log('[OAuth] Creating session with token...');
+          const session = await redeemOAuthToken(userId, secret);
+          // null = another path already redeemed this secret and adopted the session.
+          // The user is signed in either way; re-spending it would 401.
+          return session;
         }
 
         // Try to get existing session (OAuth might have set cookies)
@@ -613,10 +670,11 @@ export const authService = {
           const user = await account.get();
           if (user) {
             const sessions = await account.listSessions();
-            if (sessions.sessions.length > 0) {
-              await adoptSession(sessions.sessions[0]);
+            const current = sessions.sessions.find((s) => s.current) ?? sessions.sessions[0];
+            if (current) {
+              await adoptSession(current);
               if (__DEV__) console.log('[OAuth] Session found for:', user.email);
-              return sessions.sessions[0];
+              return current;
             }
           }
         } catch (e) {
@@ -641,8 +699,8 @@ export const authService = {
     try {
       if (__DEV__) console.log('[OAuth] Starting Apple OAuth...');
 
-      const successUrl = 'https://auth.marketingtool.pro/oauth/success';
-      const failureUrl = 'https://auth.marketingtool.pro/oauth/failure';
+      const successUrl = OAUTH_SUCCESS_URL;
+      const failureUrl = OAUTH_FAILURE_URL;
 
       // Use SDK's createOAuth2Token method for mobile - returns userId & secret in URL
       const oauthUrl = account.createOAuth2Token(
@@ -655,30 +713,28 @@ export const authService = {
       const oauthUrlString = oauthUrl.toString();
 
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await openAuthSession(oauthUrlString, 'marketingtool://');
+      const result = await openAuthSession(oauthUrlString, OAUTH_APP_RETURN_URL);
       if (result.type === 'external') return null; // finishes via the deep link
 
       if (result.type === 'success' && result.url) {
-        if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          const urlParams = parseCallbackParams(result.url);
-          const secret = urlParams.secret;
-          const userId = urlParams.userId;
-
-          if (secret && userId) {
-            const session = await redeemOAuthToken(userId, secret);
-            // null = another path already redeemed this secret and adopted the session.
-            // The user is signed in either way; re-spending it would 401.
-            return session;
-          }
+        // Only our own success callback is redeemed (see isTrustedOAuthCallback).
+        const callback = readTrustedOAuthCallback(result.url);
+        if (callback) {
+          const { userId, secret } = callback;
+          const session = await redeemOAuthToken(userId, secret);
+          // null = another path already redeemed this secret and adopted the session.
+          // The user is signed in either way; re-spending it would 401.
+          return session;
         }
 
         try {
           const user = await account.get();
           if (user) {
             const sessions = await account.listSessions();
-            if (sessions.sessions.length > 0) {
-              await adoptSession(sessions.sessions[0]);
-              return sessions.sessions[0];
+            const current = sessions.sessions.find((s) => s.current) ?? sessions.sessions[0];
+            if (current) {
+              await adoptSession(current);
+              return current;
             }
           }
         } catch (e) {
@@ -699,8 +755,8 @@ export const authService = {
     try {
       if (__DEV__) console.log('[OAuth] Starting Facebook OAuth...');
 
-      const successUrl = 'https://auth.marketingtool.pro/oauth/success';
-      const failureUrl = 'https://auth.marketingtool.pro/oauth/failure';
+      const successUrl = OAUTH_SUCCESS_URL;
+      const failureUrl = OAUTH_FAILURE_URL;
 
       // Use SDK's createOAuth2Token method for mobile - returns userId & secret in URL
       const oauthUrl = account.createOAuth2Token(
@@ -713,30 +769,28 @@ export const authService = {
       const oauthUrlString = oauthUrl.toString();
 
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await openAuthSession(oauthUrlString, 'marketingtool://');
+      const result = await openAuthSession(oauthUrlString, OAUTH_APP_RETURN_URL);
       if (result.type === 'external') return null; // finishes via the deep link
 
       if (result.type === 'success' && result.url) {
-        if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          const urlParams = parseCallbackParams(result.url);
-          const secret = urlParams.secret;
-          const userId = urlParams.userId;
-
-          if (secret && userId) {
-            const session = await redeemOAuthToken(userId, secret);
-            // null = another path already redeemed this secret and adopted the session.
-            // The user is signed in either way; re-spending it would 401.
-            return session;
-          }
+        // Only our own success callback is redeemed (see isTrustedOAuthCallback).
+        const callback = readTrustedOAuthCallback(result.url);
+        if (callback) {
+          const { userId, secret } = callback;
+          const session = await redeemOAuthToken(userId, secret);
+          // null = another path already redeemed this secret and adopted the session.
+          // The user is signed in either way; re-spending it would 401.
+          return session;
         }
 
         try {
           const user = await account.get();
           if (user) {
             const sessions = await account.listSessions();
-            if (sessions.sessions.length > 0) {
-              await adoptSession(sessions.sessions[0]);
-              return sessions.sessions[0];
+            const current = sessions.sessions.find((s) => s.current) ?? sessions.sessions[0];
+            if (current) {
+              await adoptSession(current);
+              return current;
             }
           }
         } catch (e) {

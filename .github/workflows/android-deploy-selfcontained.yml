@@ -57,19 +57,27 @@ jobs:
     # This waits on a remote EAS build, so the job is idle, not busy: a longer
     # cap costs nothing until it is actually needed.
     timeout-minutes: 240
+    # EXPO_TOKEN is given only to the steps that call EAS, not to the whole
+    # job, so `npm ci` lifecycle scripts never see it.
     env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EAS_CLI_VERSION: 18.13.1
     steps:
       # Shallow checkout of exactly this run's commit, using the token GitHub
       # already injects. No action required.
       - name: Checkout ${{ github.sha }}
+        env:
+          GH_FETCH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           git init -q .
-          git remote add origin \
-            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-          git -c protocol.version=2 fetch -q --depth=1 origin "${{ github.sha }}"
+          # The token is sent only as a one-off header for this fetch. It is not
+          # written into .git/config (the old remote URL embedded it), so later
+          # steps -- npm lifecycle scripts included -- cannot read it back.
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          AUTH_HEADER="$(printf 'x-access-token:%s' "$GH_FETCH_TOKEN" | base64 -w0)"
+          echo "::add-mask::${AUTH_HEADER}"
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic ${AUTH_HEADER}" \
+            -c protocol.version=2 fetch -q --depth=1 origin "${GITHUB_SHA}"
           git checkout -q --detach FETCH_HEAD
           echo "checked out $(git rev-parse --short HEAD)"
 
@@ -81,6 +89,8 @@ jobs:
           echo "java $(java -version 2>&1 | head -1)"
 
       - name: Fail early if EXPO_TOKEN is missing
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           set -euo pipefail
           if [ -z "${EXPO_TOKEN:-}" ]; then
@@ -129,6 +139,8 @@ jobs:
       # flight (parallel dispatches, a tag firing while a branch build runs)
       # that silently ships an older binary. Pin the id instead.
       - name: Build production AAB
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           set -euo pipefail
           eas build --platform android --profile production --non-interactive --json \
@@ -175,6 +187,8 @@ jobs:
           github.event_name == 'push' ||
           github.event_name == 'release' ||
           inputs.submit
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           set -euo pipefail
           if [ -z "${EAS_BUILD_ID:-}" ]; then
