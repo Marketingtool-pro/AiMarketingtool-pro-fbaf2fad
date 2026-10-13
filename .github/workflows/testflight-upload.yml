@@ -48,8 +48,9 @@ jobs:
           test -s AuthKey_69JDXUCPU3.p8 && echo "ASC key restored" || (echo "ASC key empty — set ASC_API_KEY_BASE64 secret" && exit 1)
 
       - name: Submit existing build to TestFlight
+        env:
+          BUILD_ID: ${{ inputs.build_id }}
         run: |
-          BUILD_ID="${{ inputs.build_id }}"
           if [ -n "$BUILD_ID" ]; then
             echo "Uploading EAS build $BUILD_ID"
             eas submit --platform ios --profile production --non-interactive --id "$BUILD_ID"
