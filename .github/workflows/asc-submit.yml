@@ -30,8 +30,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: '24'
 
@@ -45,14 +47,17 @@ jobs:
       - name: Create version + submit build (IAPs already approved)
         env:
           ASC_KEY_PATH: ./AuthKey_69JDXUCPU3.p8
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
           VERSION_STRING: ${{ inputs.version_string }}
           BUILD_NUMBER: ${{ inputs.build_number }}
           WHATS_NEW: ${{ inputs.whats_new }}
           DRY_RUN: 'false'
         run: |
-          sudo gem install jwt --no-document
+          sudo gem install jwt --version '~> 2.10' --no-document
           export VERSION_STRING="${VERSION_STRING:-$(node -pe "require('./app.json').expo.version")}"
           export ASC_KEY_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyId")"
-          export ASC_ISSUER_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyIssuerId")"
+          # The issuer id now lives in the ASC_API_KEY_ISSUER_ID secret, not in
+          # the public eas.json.
+          export ASC_ISSUER_ID="${ASC_API_KEY_ISSUER_ID:?set the ASC_API_KEY_ISSUER_ID repository secret}"
           export ASC_APP_ID="$(node -pe "require('./eas.json').submit.production.ios.ascAppId")"
           ruby scripts/asc_autosubmit.rb

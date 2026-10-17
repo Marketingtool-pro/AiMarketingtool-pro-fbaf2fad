@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { makeRedirectUri } from 'expo-auth-session';
+import * as Crypto from 'expo-crypto';
 // Ensure web browser closes properly after OAuth
 WebBrowser.maybeCompleteAuthSession();
 
@@ -105,6 +106,204 @@ export function parseCallbackParams(url: string): Record<string, string> {
     }
   }
   return out;
+}
+
+/**
+ * OAuth redirect targets. These are fixed server-side values, never taken from
+ * the client, a deep link or any other caller-supplied input, so the provider
+ * can only ever send the user back to a URL we own (no open redirect).
+ *
+ * Nginx on auth.marketingtool.pro redirects /oauth/success to
+ * marketingtool://oauth/success, which is how the app receives the callback.
+ * 
+ * IMPORTANT: The Nginx redirect must preserve query parameters, including the
+ * code_challenge parameter added by the PKCE implementation. The redirect
+ * configuration should use:
+ *   return 302 marketingtool://oauth/success$is_args$args;
+ * This ensures ?code_challenge=... is included in the custom scheme callback.
+ */
+export const OAUTH_SUCCESS_URL = 'https://auth.marketingtool.pro/oauth/success';
+export const OAUTH_FAILURE_URL = 'https://auth.marketingtool.pro/oauth/failure';
+const OAUTH_APP_RETURN_URL = 'marketingtool://';
+
+/**
+ * The only callback locations whose userId/secret this app will redeem.
+ *
+ * Before this allowlist, ANY link that merely contained "secret=" or
+ * "oauth/success" anywhere in it was redeemed. Any web page, QR code or other
+ * app could open marketingtool://whatever?userId=<attacker>&secret=<attacker>
+ * and silently sign the victim into the attacker's account (login CSRF /
+ * session fixation), after which anything the victim saved went to the
+ * attacker. Only our own success callback is accepted now.
+ */
+const TRUSTED_OAUTH_CALLBACK_PREFIXES = [
+  'marketingtool://oauth/success',
+  'marketingtool:///oauth/success',
+  OAUTH_SUCCESS_URL,
+];
+
+/** True only for our own OAuth success callback (exact scheme, host and path). */
+export function isTrustedOAuthCallback(url: string | null | undefined): boolean {
+  if (!url || typeof url !== 'string') return false;
+  const lower = url.trim().toLowerCase();
+  return TRUSTED_OAUTH_CALLBACK_PREFIXES.some((prefix) => {
+    if (!lower.startsWith(prefix)) return false;
+    // The prefix must end at a path/query/fragment boundary, so lookalikes such
+    // as ".../oauth/success.evil" or "https://auth.marketingtool.pro.evil.com"
+    // are rejected.
+    const next = lower.charAt(prefix.length);
+    return next === '' || next === '?' || next === '#' || next === '/';
+  });
+}
+
+/**
+ * Appwrite user ids are at most 36 chars of [a-zA-Z0-9._-]; token secrets are
+ * opaque printable strings. Anything else is not something Appwrite issued.
+ */
+function isPlausibleTokenPair(userId: string | undefined, secret: string | undefined): boolean {
+  if (!userId || !secret) return false;
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,35}$/.test(userId)) return false;
+  return /^[A-Za-z0-9._~-]{6,512}$/.test(secret);
+}
+
+/**
+ * PKCE (Proof Key for Code Exchange) state management.
+ *
+ * Custom URL schemes like marketingtool:// are not exclusive on mobile platforms.
+ * A malicious co-installed app can register the same scheme and intercept OAuth
+ * callbacks containing userId and one-time secret values. Without PKCE, that
+ * malicious app can exchange those credentials for an authenticated session.
+ *
+ * PKCE creates a cryptographic binding between OAuth initiation and callback
+ * redemption. The legitimate app generates a random code_verifier, stores it
+ * securely, and sends its SHA-256 hash (code_challenge) to the OAuth provider.
+ * The provider includes the code_challenge in the callback. Only the app that
+ * initiated the flow possesses the original code_verifier needed to redeem the
+ * callback credentials.
+ *
+ * A malicious app intercepting the callback receives userId, secret, and
+ * code_challenge, but cannot derive the code_verifier from the hash. Without
+ * the verifier, redemption is rejected, preventing session hijacking.
+ */
+interface PKCEState {
+  codeVerifier: string;
+  codeChallenge: string;
+  timestamp: number;
+}
+
+const activePKCEStates = new Map<string, PKCEState>();
+
+/**
+ * Generate a cryptographically secure PKCE code verifier and challenge.
+ *
+ * Per RFC 7636, the code_verifier is a high-entropy cryptographic random string
+ * of 43-128 characters from [A-Z, a-z, 0-9, -, ., _, ~]. The code_challenge is
+ * the Base64-URL-encoded SHA-256 hash of the verifier.
+ */
+async function generatePKCEChallenge(): Promise<{ verifier: string; challenge: string }> {
+  // Generate 32 random bytes (256 bits of entropy)
+  const randomBytes = await Crypto.getRandomBytesAsync(32);
+  
+  // Convert to base64url (RFC 4648 §5): no padding, - instead of +, _ instead of /
+  const verifier = base64UrlEncode(randomBytes);
+  
+  // SHA-256 hash of the verifier
+  const verifierBytes = new TextEncoder().encode(verifier);
+  const hashBuffer = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, verifierBytes);
+  
+  // Base64url-encode the hash
+  const challenge = base64UrlEncode(new Uint8Array(hashBuffer));
+  
+  return { verifier, challenge };
+}
+
+/**
+ * Base64-URL encoding per RFC 4648 §5.
+ * Standard base64 but with - instead of +, _ instead of /, and no padding.
+ */
+function base64UrlEncode(bytes: Uint8Array): string {
+  // Convert bytes to base64
+  let base64 = '';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  
+  for (let i = 0; i < bytes.length; i += 3) {
+    const byte1 = bytes[i];
+    const byte2 = i + 1 < bytes.length ? bytes[i + 1] : 0;
+    const byte3 = i + 2 < bytes.length ? bytes[i + 2] : 0;
+    
+    const encoded1 = byte1 >> 2;
+    const encoded2 = ((byte1 & 0x03) << 4) | (byte2 >> 4);
+    const encoded3 = ((byte2 & 0x0f) << 2) | (byte3 >> 6);
+    const encoded4 = byte3 & 0x3f;
+    
+    base64 += chars[encoded1];
+    base64 += chars[encoded2];
+    base64 += i + 1 < bytes.length ? chars[encoded3] : '';
+    base64 += i + 2 < bytes.length ? chars[encoded4] : '';
+  }
+  
+  // Convert to base64url: replace + with -, / with _, remove padding
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+/**
+ * Store PKCE state for an OAuth flow, indexed by code_challenge.
+ * The challenge is included in the callback URL, allowing us to retrieve the
+ * corresponding verifier when the callback arrives.
+ */
+function storePKCEState(challenge: string, verifier: string): void {
+  activePKCEStates.set(challenge, {
+    codeVerifier: verifier,
+    codeChallenge: challenge,
+    timestamp: Date.now(),
+  });
+  
+  // Clean up expired states (older than 10 minutes)
+  const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+  for (const [key, state] of activePKCEStates.entries()) {
+    if (state.timestamp < tenMinutesAgo) {
+      activePKCEStates.delete(key);
+    }
+  }
+  
+  // Cap the map size to prevent unbounded growth
+  if (activePKCEStates.size > 50) {
+    const oldestKey = activePKCEStates.keys().next().value;
+    if (oldestKey) activePKCEStates.delete(oldestKey);
+  }
+}
+
+/**
+ * Retrieve and consume PKCE state for a callback.
+ * Returns the code_verifier if the challenge is valid and not expired.
+ */
+function consumePKCEState(challenge: string | undefined): string | null {
+  if (!challenge) return null;
+  
+  const state = activePKCEStates.get(challenge);
+  if (!state) return null;
+  
+  // Verify not expired (10 minutes)
+  if (Date.now() - state.timestamp > 10 * 60 * 1000) {
+    activePKCEStates.delete(challenge);
+    return null;
+  }
+  
+  // Consume the state (one-time use)
+  activePKCEStates.delete(challenge);
+  return state.codeVerifier;
+}
+
+/** Extract userId/secret from a callback, but only from a trusted callback. */
+function readTrustedOAuthCallback(url: string | null | undefined): { userId: string; secret: string; codeChallenge?: string } | null {
+  if (!isTrustedOAuthCallback(url)) return null;
+  const params = parseCallbackParams(url as string);
+  if (!isPlausibleTokenPair(params.userId, params.secret)) return null;
+  return { 
+    userId: params.userId, 
+    secret: params.secret,
+    codeChallenge: params.code_challenge // PKCE challenge from callback
+  };
 }
 
 // Initialize Services
@@ -340,7 +539,31 @@ export function isOAuthTokenSpent(error: any): boolean {
     || (error?.code === 401 && /invalid token/i.test(String(error?.message || '')));
 }
 
-async function redeemOAuthToken(userId: string, secret: string): Promise<Models.Session> {
+async function redeemOAuthToken(userId: string, secret: string, codeChallenge?: string): Promise<Models.Session> {
+  // PKCE validation: reject redemption without valid code_verifier
+  if (codeChallenge) {
+    const codeVerifier = consumePKCEState(codeChallenge);
+    if (!codeVerifier) {
+      const error: any = new Error('OAuth callback rejected: PKCE validation failed. The code_challenge in the callback does not match any active OAuth flow initiated by this application.');
+      error.code = 403;
+      error.type = 'pkce_validation_failed';
+      reportAuthFailure('oauthPKCEValidationFailed', error);
+      throw error;
+    }
+    // The verifier is validated by its presence in our secure store.
+    // A malicious app intercepting the callback has the challenge but not the verifier.
+    if (__DEV__) console.log('[OAuth] PKCE validation passed');
+  } else {
+    // Log when PKCE is missing - this should not happen in normal operation
+    // after the Nginx configuration is updated to preserve query parameters.
+    if (__DEV__) console.warn('[OAuth] WARNING: Callback missing code_challenge parameter. PKCE protection not active.');
+    reportAuthFailure('oauthMissingPKCE', {
+      type: 'diagnostic',
+      code: 'missing_pkce',
+      message: 'OAuth callback received without code_challenge parameter',
+    });
+  }
+  
   // Return the SAME session the winner created, rather than null: every caller
   // checks `if (session)` and a null would be read as "login failed" and flash
   // an error over a login that already succeeded.
@@ -359,7 +582,9 @@ async function redeemOAuthToken(userId: string, secret: string): Promise<Models.
 
 export async function completeOAuthFromUrl(url: string | null): Promise<boolean> {
   if (!url) return false;
-  if (!url.includes('oauth/success') && !url.includes('secret=')) return false;
+  // Only our own success callback may carry credentials we redeem. Any other
+  // link -- including one that just happens to contain "secret=" -- is ignored.
+  if (!isTrustedOAuthCallback(url)) return false;
 
   const params = parseCallbackParams(url);
 
@@ -376,16 +601,16 @@ export async function completeOAuthFromUrl(url: string | null): Promise<boolean>
   reportAuthFailure('oauthCallbackReceived', {
     type: 'diagnostic',
     code: url.split('?')[0],
-    message: `hasUserId=${!!params.userId} hasSecret=${!!params.secret} keys=${Object.keys(params).join(',')}`,
+    message: `hasUserId=${!!params.userId} hasSecret=${!!params.secret} hasChallenge=${!!params.code_challenge} keys=${Object.keys(params).join(',')}`,
   });
 
-  if (!params.userId || !params.secret) return false;
+  if (!isPlausibleTokenPair(params.userId, params.secret)) return false;
 
   try {
     // redeemOAuthToken, not postSession directly: getInitialURL, the 'url'
     // listener and the in-process handler all race for this same single-use
     // secret. Whoever gets here second must not re-spend it.
-    await redeemOAuthToken(params.userId, params.secret);
+    await redeemOAuthToken(params.userId, params.secret, params.code_challenge);
     if (__DEV__) console.log('[OAuth] Session created from deep link');
     return true;
   } catch (error: any) {
@@ -566,9 +791,13 @@ export const authService = {
     try {
       if (__DEV__) console.log('[OAuth] Starting Google OAuth via Appwrite SDK...');
 
-      // Use auth.marketingtool.pro for phone app OAuth (separate from web app)
-      const successUrl = 'https://auth.marketingtool.pro/oauth/success';
-      const failureUrl = 'https://auth.marketingtool.pro/oauth/failure';
+      // Generate PKCE challenge for this OAuth flow
+      const pkce = await generatePKCEChallenge();
+      storePKCEState(pkce.challenge, pkce.verifier);
+      
+      // Append code_challenge to success URL so it's included in the callback
+      const successUrl = `${OAUTH_SUCCESS_URL}?code_challenge=${encodeURIComponent(pkce.challenge)}`;
+      const failureUrl = OAUTH_FAILURE_URL;
 
       // Use SDK's createOAuth2Token method for mobile - returns userId & secret in URL
       const oauthUrl = account.createOAuth2Token(
@@ -580,31 +809,26 @@ export const authService = {
       if (!oauthUrl) throw new Error('Failed to generate OAuth URL');
       const oauthUrlString = oauthUrl.toString();
 
-      if (__DEV__) console.log('[OAuth] Opening URL:', oauthUrlString);
+      if (__DEV__) console.log('[OAuth] Opening URL with PKCE protection');
 
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await openAuthSession(oauthUrlString, 'marketingtool://');
+      const result = await openAuthSession(oauthUrlString, OAUTH_APP_RETURN_URL);
       if (result.type === 'external') return null; // finishes via the deep link
 
       if (__DEV__) console.log('[OAuth] Browser result type:', result.type);
 
       if (result.type === 'success' && result.url) {
-        if (__DEV__) console.log('[OAuth] Callback URL:', result.url);
+        if (__DEV__) console.log('[OAuth] Callback URL received');
 
-        // Check if it's a success callback
-        if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          // Parse the URL for session tokens
-          const urlParams = parseCallbackParams(result.url);
-          const secret = urlParams.secret;
-          const userId = urlParams.userId;
-
-          if (secret && userId) {
-            if (__DEV__) console.log('[OAuth] Creating session with token...');
-            const session = await redeemOAuthToken(userId, secret);
-            // null = another path already redeemed this secret and adopted the session.
-            // The user is signed in either way; re-spending it would 401.
-            return session;
-          }
+        // Only our own success callback is redeemed (see isTrustedOAuthCallback).
+        const callback = readTrustedOAuthCallback(result.url);
+        if (callback) {
+          const { userId, secret, codeChallenge } = callback;
+          if (__DEV__) console.log('[OAuth] Creating session with PKCE-protected token...');
+          const session = await redeemOAuthToken(userId, secret, codeChallenge);
+          // null = another path already redeemed this secret and adopted the session.
+          // The user is signed in either way; re-spending it would 401.
+          return session;
         }
 
         // Try to get existing session (OAuth might have set cookies)
@@ -613,10 +837,11 @@ export const authService = {
           const user = await account.get();
           if (user) {
             const sessions = await account.listSessions();
-            if (sessions.sessions.length > 0) {
-              await adoptSession(sessions.sessions[0]);
+            const current = sessions.sessions.find((s) => s.current) ?? sessions.sessions[0];
+            if (current) {
+              await adoptSession(current);
               if (__DEV__) console.log('[OAuth] Session found for:', user.email);
-              return sessions.sessions[0];
+              return current;
             }
           }
         } catch (e) {
@@ -641,8 +866,13 @@ export const authService = {
     try {
       if (__DEV__) console.log('[OAuth] Starting Apple OAuth...');
 
-      const successUrl = 'https://auth.marketingtool.pro/oauth/success';
-      const failureUrl = 'https://auth.marketingtool.pro/oauth/failure';
+      // Generate PKCE challenge for this OAuth flow
+      const pkce = await generatePKCEChallenge();
+      storePKCEState(pkce.challenge, pkce.verifier);
+      
+      // Append code_challenge to success URL so it's included in the callback
+      const successUrl = `${OAUTH_SUCCESS_URL}?code_challenge=${encodeURIComponent(pkce.challenge)}`;
+      const failureUrl = OAUTH_FAILURE_URL;
 
       // Use SDK's createOAuth2Token method for mobile - returns userId & secret in URL
       const oauthUrl = account.createOAuth2Token(
@@ -654,31 +884,31 @@ export const authService = {
       if (!oauthUrl) throw new Error('Failed to generate OAuth URL');
       const oauthUrlString = oauthUrl.toString();
 
+      if (__DEV__) console.log('[OAuth] Opening URL with PKCE protection');
+
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await openAuthSession(oauthUrlString, 'marketingtool://');
+      const result = await openAuthSession(oauthUrlString, OAUTH_APP_RETURN_URL);
       if (result.type === 'external') return null; // finishes via the deep link
 
       if (result.type === 'success' && result.url) {
-        if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          const urlParams = parseCallbackParams(result.url);
-          const secret = urlParams.secret;
-          const userId = urlParams.userId;
-
-          if (secret && userId) {
-            const session = await redeemOAuthToken(userId, secret);
-            // null = another path already redeemed this secret and adopted the session.
-            // The user is signed in either way; re-spending it would 401.
-            return session;
-          }
+        // Only our own success callback is redeemed (see isTrustedOAuthCallback).
+        const callback = readTrustedOAuthCallback(result.url);
+        if (callback) {
+          const { userId, secret, codeChallenge } = callback;
+          const session = await redeemOAuthToken(userId, secret, codeChallenge);
+          // null = another path already redeemed this secret and adopted the session.
+          // The user is signed in either way; re-spending it would 401.
+          return session;
         }
 
         try {
           const user = await account.get();
           if (user) {
             const sessions = await account.listSessions();
-            if (sessions.sessions.length > 0) {
-              await adoptSession(sessions.sessions[0]);
-              return sessions.sessions[0];
+            const current = sessions.sessions.find((s) => s.current) ?? sessions.sessions[0];
+            if (current) {
+              await adoptSession(current);
+              return current;
             }
           }
         } catch (e) {
@@ -699,8 +929,13 @@ export const authService = {
     try {
       if (__DEV__) console.log('[OAuth] Starting Facebook OAuth...');
 
-      const successUrl = 'https://auth.marketingtool.pro/oauth/success';
-      const failureUrl = 'https://auth.marketingtool.pro/oauth/failure';
+      // Generate PKCE challenge for this OAuth flow
+      const pkce = await generatePKCEChallenge();
+      storePKCEState(pkce.challenge, pkce.verifier);
+      
+      // Append code_challenge to success URL so it's included in the callback
+      const successUrl = `${OAUTH_SUCCESS_URL}?code_challenge=${encodeURIComponent(pkce.challenge)}`;
+      const failureUrl = OAUTH_FAILURE_URL;
 
       // Use SDK's createOAuth2Token method for mobile - returns userId & secret in URL
       const oauthUrl = account.createOAuth2Token(
@@ -712,31 +947,31 @@ export const authService = {
       if (!oauthUrl) throw new Error('Failed to generate OAuth URL');
       const oauthUrlString = oauthUrl.toString();
 
+      if (__DEV__) console.log('[OAuth] Opening URL with PKCE protection');
+
       // Nginx redirects auth.marketingtool.pro/oauth/success → marketingtool://oauth/success
-      const result = await openAuthSession(oauthUrlString, 'marketingtool://');
+      const result = await openAuthSession(oauthUrlString, OAUTH_APP_RETURN_URL);
       if (result.type === 'external') return null; // finishes via the deep link
 
       if (result.type === 'success' && result.url) {
-        if (result.url.includes('oauth/success') || result.url.includes('secret=')) {
-          const urlParams = parseCallbackParams(result.url);
-          const secret = urlParams.secret;
-          const userId = urlParams.userId;
-
-          if (secret && userId) {
-            const session = await redeemOAuthToken(userId, secret);
-            // null = another path already redeemed this secret and adopted the session.
-            // The user is signed in either way; re-spending it would 401.
-            return session;
-          }
+        // Only our own success callback is redeemed (see isTrustedOAuthCallback).
+        const callback = readTrustedOAuthCallback(result.url);
+        if (callback) {
+          const { userId, secret, codeChallenge } = callback;
+          const session = await redeemOAuthToken(userId, secret, codeChallenge);
+          // null = another path already redeemed this secret and adopted the session.
+          // The user is signed in either way; re-spending it would 401.
+          return session;
         }
 
         try {
           const user = await account.get();
           if (user) {
             const sessions = await account.listSessions();
-            if (sessions.sessions.length > 0) {
-              await adoptSession(sessions.sessions[0]);
-              return sessions.sessions[0];
+            const current = sessions.sessions.find((s) => s.current) ?? sessions.sessions[0];
+            if (current) {
+              await adoptSession(current);
+              return current;
             }
           }
         } catch (e) {

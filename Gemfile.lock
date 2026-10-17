@@ -158,7 +158,7 @@ GEM
     minitar (0.9)
     minitest (5.27.0)
     mocha (2.0.0)
-    msgpack (1.8.2)
+    msgpack (1.8.5)
     multi_json (1.21.1)
     multipart-post (2.4.1)
     mustermann (3.0.4)
@@ -394,7 +394,7 @@ CHECKSUMS
   minitar (0.9) sha256=23c0bebead35dbfe9e24088dc436c8a233d03f51d365a686b9a11dd30dc2d588
   minitest (5.27.0) sha256=2d3b17f8a36fe7801c1adcffdbc38233b938eb0b4966e97a6739055a45fa77d5
   mocha (2.0.0) sha256=8220b911d26a50c15b2175b0988925bde24fee4e36885a09f6ef8f22f7b44adb
-  msgpack (1.8.2) sha256=e440d11c99d6dfe8b2fbc4feb74c3518c1ba024357c70bbd734d9bb1a44d0d25
+  msgpack (1.8.5) sha256=97419eaa7b35dfe3e462c0e6c1a3dfdcbfc8756605c09e46e4c6daef127517ba
   multi_json (1.21.1) sha256=e6126a31808e3b4d19f483c775ceac34df190dffa62adfb63a165ee14ba68080
   multipart-post (2.4.1) sha256=9872d03a8e552020ca096adadbf5e3cb1cd1cdd6acd3c161136b8a5737cdb4a8
   mustermann (3.0.4) sha256=85fadcb6b3c6493a8b511b42426f904b7f27b282835502233dd154daab13aa22
@@ -459,7 +459,7 @@ CHECKSUMS
   websocket (1.2.8) sha256=1d8155c1cdaab8e8e72587a60e08423c9dd84ee44e4e827358ce3d4c2ccb2138
 
 RUBY VERSION
-  ruby 3.2.6
+  ruby 3.4.11
 
 BUNDLED WITH
   4.0.18

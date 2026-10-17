@@ -14,7 +14,8 @@
 #   ASC_KEY_ID     App Store Connect API key ID   (required)
 #   ASC_ISSUER_ID  ASC issuer ID                  (required)
 #   ASC_APP_ID     Numeric app ID                 (required)
-#   ASC_KEY_PATH   Path to AuthKey_<id>.p8        (default: ../AuthKey_<id>.p8)
+#   ASC_KEY_PATH   Path to AuthKey_<id>.p8        (default: ./AuthKey_<id>.p8 next to this script;
+#                  must resolve inside the repo root or ~/.appstoreconnect/private_keys)
 #   BUILD_NUMBER   Specific build to wait for     (optional)
 #   POLL_INTERVAL  Seconds between polls          (default: 30)
 #   MAX_WAIT       Maximum wait time in seconds   (default: 1800 = 30 min)
@@ -24,6 +25,7 @@ require 'openssl'
 require 'net/http'
 require 'json'
 require 'uri'
+require_relative 'scripts/lib/asc_safe_input'
 
 def required_env(name)
   value = ENV[name]
@@ -32,10 +34,11 @@ def required_env(name)
 end
 
 def load_private_key(filename)
-  path = File.expand_path(filename, __dir__)
+  # Rejects paths outside the allowed key directories (path traversal).
+  path = AscSafeInput.key_path(filename, relative_to: __dir__)
 
-  unless File.file?(path) && File.readable?(path)
-    warn "Private key file not found or not readable: #{path}"
+  unless File.readable?(path)
+    warn "Private key file not readable: #{path}"
     exit 1
   end
 
@@ -47,11 +50,18 @@ def load_private_key(filename)
   end
 end
 
-KEY_ID   = required_env('ASC_KEY_ID')
+KEY_ID   = AscSafeInput.key_id!('ASC_KEY_ID', required_env('ASC_KEY_ID'))
 ISSUER   = required_env('ASC_ISSUER_ID')
-APP_ID   = required_env('ASC_APP_ID')
-KEY_PATH = ENV.fetch('ASC_KEY_PATH', 'AuthKey_69JDXUCPU3.p8')
+APP_ID   = AscSafeInput.numeric_id!('ASC_APP_ID', required_env('ASC_APP_ID'))
+KEY_PATH = ENV.fetch('ASC_KEY_PATH', "AuthKey_#{KEY_ID}.p8")
 KEY      = load_private_key(KEY_PATH)
+WANT_BUILD = if ENV['BUILD_NUMBER'].to_s.strip.empty?
+               nil
+             else
+               AscSafeInput.build_number!('BUILD_NUMBER', ENV['BUILD_NUMBER'])
+             end
+POLL_INTERVAL = Integer(ENV.fetch('POLL_INTERVAL', '30'), exception: false)&.clamp(5, 600) || 30
+MAX_WAIT      = Integer(ENV.fetch('MAX_WAIT', '1800'), exception: false)&.clamp(0, 86_400) || 1800
 
 @cached_token = nil
 @cached_token_exp = 0
@@ -84,8 +94,13 @@ end
 # Fetch all builds for the app, sorted newest first
 def fetch_builds(after_cursor = nil)
   path  = "/v1/builds?filter[app]=#{APP_ID}&sort=-uploadedDate&limit=25&fields[builds]=version,processingState,uploadedDate"
-  path += "&cursor=#{after_cursor}" if after_cursor
-  asc_get(path)
+  path += "&cursor=#{URI.encode_www_form_component(after_cursor)}" if after_cursor
+  code, body = get(path)
+  unless code.to_s == '200' && body.is_a?(Hash)
+    warn "Builds request failed (HTTP #{code})"
+    return nil
+  end
+  body
 end
 
 def find_target_build(builds)
@@ -117,7 +132,7 @@ loop do
   data    = fetch_builds
   target  = find_target_build(data)
 
-  if target.nil?
+  if target.nil? && data
     next_page = data.dig('links', 'next')
     if next_page
       data   = fetch_builds(URI.decode_www_form(URI(next_page).query).to_h['cursor'])

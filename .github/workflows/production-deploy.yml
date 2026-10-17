@@ -60,8 +60,10 @@ jobs:
       build-id: ${{ steps.build.outputs.build-id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: '24'
 
@@ -91,8 +93,10 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: '24'
 
@@ -105,8 +109,10 @@ jobs:
         run: npm ci --include=dev --legacy-peer-deps --no-audit --no-fund
 
       - name: Submit to Play Store
+        env:
+          # Passed via env, never interpolated into the script text.
+          BUILD_ID: ${{ needs.build-android.outputs.build-id }}
         run: |
-          BUILD_ID="${{ needs.build-android.outputs.build-id }}"
           if [ -n "$BUILD_ID" ]; then
             echo "Submitting build ID: $BUILD_ID"
             eas submit --platform android --profile production --non-interactive --id "$BUILD_ID"
@@ -127,8 +133,10 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: '24'
 
@@ -167,11 +175,15 @@ jobs:
         run: eas build --platform ios --profile production --non-interactive --wait
 
       - name: Upload binary to App Store Connect (TestFlight)
+        env:
+          # eas.json reads ascApiKeyIssuerId from $ASC_API_KEY_ISSUER_ID.
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
         run: eas submit --platform ios --profile production --non-interactive --latest
 
       - name: Submit for review WITH in-app purchases
         env:
           ASC_KEY_PATH: ./AuthKey_69JDXUCPU3.p8
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
           # Auto-submit for App Store review enabled for build 539 (owner approved
           # 2026-06-26). asc_autosubmit.rb bundles the build + all 6 subs + consumable
           # into ONE review submission (the step missing in the old 2.1b reject loop).
@@ -179,12 +191,14 @@ jobs:
           # it the step failed every run with "Missing required env var WHATS_NEW"
           # (build still uploaded to TestFlight, but review submission never fired).
           # Manual runs can override via the whats_new input; tag pushes use the default.
-          WHATS_NEW: ${{ github.event.inputs.whats_new || 'Fixes app launch stability and improves the tool result-to-desktop handoff. Thank you for using MarketingTool!' }}
+          WHATS_NEW: ${{ inputs.whats_new || 'Fixes app launch stability and improves the tool result-to-desktop handoff. Thank you for using MarketingTool!' }}
           DRY_RUN: 'false'
         run: |
-          sudo gem install jwt --no-document
+          sudo gem install jwt --version '~> 2.10' --no-document
           export ASC_KEY_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyId")"
-          export ASC_ISSUER_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyIssuerId")"
+          # The issuer id now lives in the ASC_API_KEY_ISSUER_ID secret, not in
+          # the public eas.json.
+          export ASC_ISSUER_ID="${ASC_API_KEY_ISSUER_ID:?set the ASC_API_KEY_ISSUER_ID repository secret}"
           export ASC_APP_ID="$(node -pe "require('./eas.json').submit.production.ios.ascAppId")"
           # Tell asc_autosubmit.rb which version/build to ship. Without VERSION_STRING
           # it grabbed the LIVE version (1.5.4 READY_FOR_SALE) and got "attach build

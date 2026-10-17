@@ -26,6 +26,9 @@ import { getToolIcon } from '../../constants/toolIcons';
 // Rich rendering of AI output (headings/bold/lists/tables) instead of raw
 // markdown text — owner requirement: results must look like the web app.
 import MarkdownText from '../../components/MarkdownText';
+// Shared tool-output pieces from the tool-UI blueprint (same set as the web app).
+import OutputToolbar from '../../components/tool-output/OutputToolbar';
+import EmptyState from '../../components/tool-output/EmptyState';
 
 
 // Character threshold — outputs longer than this start collapsed for readability,
@@ -255,6 +258,15 @@ const ToolResultScreen = () => {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
+        {outputs.length === 0 && (
+          <EmptyState
+            icon="file-text"
+            title="No result to show"
+            description="This run did not return any output. Try generating again."
+            actionLabel={tool && savedInputs ? 'Try again' : 'Go back'}
+            onAction={tool && savedInputs ? handleRegenerate : () => navigation.goBack()}
+          />
+        )}
         {outputs.map((output) => (
           <View
             key={output.id}
@@ -327,8 +339,8 @@ const ToolResultScreen = () => {
                     <Text style={styles.desktopActionOutlineText}>Email Full Result</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.desktopActionBtnOutline} onPress={() => handleCopy(output.content, output.id)}>
-                    <Feather name="copy" size={16} color={Colors.secondary} />
-                    <Text style={styles.desktopActionOutlineText}>Copy Full Result</Text>
+                    <Feather name={copiedId === output.id ? 'check' : 'copy'} size={16} color={Colors.secondary} />
+                    <Text style={styles.desktopActionOutlineText}>{copiedId === output.id ? 'Copied!' : 'Copy Full Result'}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -347,58 +359,16 @@ const ToolResultScreen = () => {
               </TouchableOpacity>
             )}
 
-            {/* Action Buttons */}
-            <View style={styles.outputActions}>
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => handleCopy(output.content, output.id)}
-              >
-                <Feather
-                  name={copiedId === output.id ? 'check' : 'copy'}
-                  size={20}
-                  color={copiedId === output.id ? Colors.success : Colors.textSecondary}
-                />
-                <Text style={[
-                  styles.actionText,
-                  copiedId === output.id && { color: Colors.success }
-                ]}>
-                  {copiedId === output.id ? 'Copied!' : 'Copy'}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => handleShare(output.content)}
-              >
-                <Feather name="share-2" size={20} color={Colors.textSecondary} />
-                <Text style={styles.actionText}>Share</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => handleLike(output.id)}
-              >
-                <Feather
-                  name="heart"
-                  size={20}
-                  color={output.liked ? Colors.error : Colors.textSecondary}
-                />
-                <Text style={[styles.actionText, output.liked && { color: Colors.error }]}>
-                  {output.liked ? 'Liked' : 'Like'}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.actionBtn} onPress={handleSaveToHistory}>
-                <Feather
-                  name={isSaved ? 'check' : 'bookmark'}
-                  size={20}
-                  color={isSaved ? Colors.success : Colors.textSecondary}
-                />
-                <Text style={[styles.actionText, isSaved && { color: Colors.success }]}>
-                  {isSaved ? 'Saved' : 'Save'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            {/* Action Buttons — shared OutputToolbar: Copy, Export .txt, Share, Like, Save */}
+            <OutputToolbar
+              output={output.content}
+              fileName={`${tool?.slug || toolSlug}-output`}
+              onShare={() => handleShare(output.content)}
+              onLike={() => handleLike(output.id)}
+              liked={output.liked}
+              onSave={handleSaveToHistory}
+              saved={isSaved}
+            />
           </View>
         ))}
 
@@ -656,21 +626,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: Colors.secondary,
-  },
-  outputActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingTop: Spacing.md,
-  },
-  actionBtn: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  actionText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
   },
   statsCard: {
     backgroundColor: Colors.card,
