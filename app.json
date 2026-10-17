@@ -62,6 +62,18 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "marketingtool.pro", "path": "/" },
+            { "scheme": "https", "host": "www.marketingtool.pro", "path": "/" },
+            { "scheme": "https", "host": "app.marketingtool.pro", "path": "/" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "versionCode": 1031,
       "allowBackup": false,
       "permissions": [
