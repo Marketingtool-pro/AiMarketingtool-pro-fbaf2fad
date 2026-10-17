@@ -197,7 +197,6 @@
     "access": "restricted"
   },
   "overrides": {
-    "braces@3.0.3": "https://npm.aikido.io/277f8b6cc8d1893823c31/braces@3.0.3-aikido.1",
     "qs": "^6.16.0",
     "decode-uri-component": "^0.5.0",
     "stream-json": "^3.5.0",
