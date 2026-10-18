@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -123,8 +123,10 @@ const GlassBentoCard = ({ children, color }: { children: React.ReactNode, color:
 );
 
 const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; onPress: () => void }) => {
-  const scale = useRef(new Animated.Value(1)).current;
-  const floating = useRef(new Animated.Value(0)).current;
+  // Lazy useState gives each card one stable Animated.Value without reading a
+  // ref during render (react-hooks/refs).
+  const [scale] = useState(() => new Animated.Value(1));
+  const [floating] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     // Gentle continuous float (yoyo up/down), matching the previous reanimated behavior.
