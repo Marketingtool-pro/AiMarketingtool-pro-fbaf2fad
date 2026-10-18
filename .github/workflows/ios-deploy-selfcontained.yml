@@ -56,8 +56,9 @@ jobs:
     name: Build + Submit (iOS, production)
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    # EXPO_TOKEN is given only to the steps that call EAS, not to the whole
+    # job, so `npm ci` lifecycle scripts never see it.
     env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EAS_CLI_VERSION: 18.13.1
       # A tag push or a published release ships automatically; a manual run only
       # does what its checkboxes asked for. Resolved once here so every later
@@ -68,12 +69,19 @@ jobs:
       # Shallow checkout of exactly this run's commit, using the token GitHub
       # already injects. No action required.
       - name: Checkout ${{ github.sha }}
+        env:
+          GH_FETCH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           git init -q .
-          git remote add origin \
-            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-          git -c protocol.version=2 fetch -q --depth=1 origin "${{ github.sha }}"
+          # The token is sent only as a one-off header for this fetch. It is not
+          # written into .git/config (the old remote URL embedded it), so later
+          # steps -- npm lifecycle scripts included -- cannot read it back.
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          AUTH_HEADER="$(printf 'x-access-token:%s' "$GH_FETCH_TOKEN" | base64 -w0)"
+          echo "::add-mask::${AUTH_HEADER}"
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic ${AUTH_HEADER}" \
+            -c protocol.version=2 fetch -q --depth=1 origin "${GITHUB_SHA}"
           git checkout -q --detach FETCH_HEAD
           echo "checked out $(git rev-parse --short HEAD)"
 
@@ -100,6 +108,7 @@ jobs:
             exit 1
           fi
         env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
 
       - name: Install dependencies
@@ -145,12 +154,18 @@ jobs:
           echo "ASC key restored"
 
       - name: Build production (iOS)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           set -euo pipefail
           eas build --platform ios --profile production --non-interactive --wait
 
       - name: Upload binary to App Store Connect (TestFlight)
         if: ${{ env.DO_SUBMIT == 'true' }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          # eas.json reads ascApiKeyIssuerId from $ASC_API_KEY_ISSUER_ID.
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
         run: |
           set -euo pipefail
           eas submit --platform ios --profile production --non-interactive --latest
@@ -163,6 +178,7 @@ jobs:
         if: ${{ env.DO_REVIEW == 'true' }}
         env:
           ASC_KEY_PATH: ./AuthKey_69JDXUCPU3.p8
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
           # WHATS_NEW is REQUIRED by asc_autosubmit.rb for a live submission;
           # without it the step fails with "Missing required env var WHATS_NEW".
           # Manual runs override via the input; tag pushes use the default.
@@ -170,9 +186,11 @@ jobs:
           DRY_RUN: 'false'
         run: |
           set -euo pipefail
-          sudo gem install jwt --no-document
+          sudo gem install jwt --version '~> 2.10' --no-document
           export ASC_KEY_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyId")"
-          export ASC_ISSUER_ID="$(node -pe "require('./eas.json').submit.production.ios.ascApiKeyIssuerId")"
+          # The issuer id now lives in the ASC_API_KEY_ISSUER_ID secret, not in
+          # the public eas.json.
+          export ASC_ISSUER_ID="${ASC_API_KEY_ISSUER_ID:?set the ASC_API_KEY_ISSUER_ID repository secret}"
           export ASC_APP_ID="$(node -pe "require('./eas.json').submit.production.ios.ascAppId")"
           # Without VERSION_STRING the script grabs the LIVE version and fails
           # with "attach build failed 409". Pass app.json's version so it creates

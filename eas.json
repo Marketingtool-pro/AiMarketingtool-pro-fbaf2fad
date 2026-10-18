@@ -57,16 +57,18 @@
       "ios": {
         "ascApiKeyPath": "./AuthKey_69JDXUCPU3.p8",
         "ascApiKeyId": "69JDXUCPU3",
-        "ascApiKeyIssuerId": "313ffa8d-5aed-4aad-a012-b1057717634c",
+        "ascApiKeyIssuerId": "$ASC_API_KEY_ISSUER_ID",
         "ascAppId": "6758618412"
       },
       "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "production",
         "releaseStatus": "completed"
       }
     },
     "internal": {
       "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "internal",
         "releaseStatus": "completed"
       }

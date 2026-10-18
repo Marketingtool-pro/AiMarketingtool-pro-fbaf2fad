@@ -44,8 +44,10 @@ jobs:
     steps:
       - name: Force-cancel stuck runs
         if: ${{ inputs.force_cancel_stuck }}
+        env:
+          STUCK_MINUTES: ${{ inputs.stuck_minutes }}
         run: |
-          cutoff=$(date -u -d "-${{ inputs.stuck_minutes }} minutes" +%Y-%m-%dT%H:%M:%SZ)
+          cutoff=$(date -u -d "-$STUCK_MINUTES minutes" +%Y-%m-%dT%H:%M:%SZ)
           echo "Cutoff: $cutoff"
           : > ids.txt
           for st in queued in_progress requested waiting pending action_required; do
@@ -72,12 +74,15 @@ jobs:
 
       - name: Delete old completed runs
         if: ${{ inputs.delete_old }}
+        env:
+          DELETE_DAYS: ${{ inputs.delete_days }}
+          MAX_DELETE: ${{ inputs.max_delete }}
         run: |
-          cutoff=$(date -u -d "-${{ inputs.delete_days }} days" +%Y-%m-%dT%H:%M:%SZ)
+          cutoff=$(date -u -d "-$DELETE_DAYS days" +%Y-%m-%dT%H:%M:%SZ)
           echo "Deleting completed runs created before $cutoff"
           gh api --paginate "repos/$REPO/actions/runs?status=completed&per_page=100" \
             --jq ".workflow_runs[] | select(.created_at < \"$cutoff\") | .id" \
-            | head -n "${{ inputs.max_delete }}" > del.txt || true
+            | head -n "$MAX_DELETE" > del.txt || true
           n=0
           while read -r id; do
             if [ -n "$id" ] && [ "$id" != "$SELF" ]; then

@@ -62,6 +62,18 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "pro.marketingtool.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "marketingtool.pro", "path": "/" },
+            { "scheme": "https", "host": "www.marketingtool.pro", "path": "/" },
+            { "scheme": "https", "host": "app.marketingtool.pro", "path": "/" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "versionCode": 1031,
       "allowBackup": false,
       "permissions": [
@@ -69,6 +81,15 @@
         "USE_BIOMETRIC",
         "VIBRATE",
         "com.google.android.gms.permission.AD_ID"
+      ],
+      "blockedPermissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.ACTIVITY_RECOGNITION",
+        "android.permission.READ_MEDIA_AUDIO"
       ]
     },
     "web": {

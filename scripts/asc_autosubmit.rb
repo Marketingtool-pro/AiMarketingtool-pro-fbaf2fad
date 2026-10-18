@@ -13,22 +13,26 @@
 #
 # Env:
 #   ASC_KEY_ID, ASC_ISSUER_ID, ASC_APP_ID  (required)
-#   ASC_KEY_PATH   path to the .p8 (default: ../AuthKey_<id>.p8)
+#   ASC_KEY_PATH   path to the .p8 (default: ../AuthKey_<id>.p8; must resolve
+#                  inside the repo root or ~/.appstoreconnect/private_keys)
 #   BUILD_NUMBER   specific build to ship (default: newest VALID build)
 #   DRY_RUN        "false" to go live (default "true")
 # =============================================================================
 require 'jwt'; require 'openssl'; require 'net/http'; require 'json'; require 'uri'
+require_relative 'lib/asc_safe_input'
 
-KEY_ID    = ENV.fetch('ASC_KEY_ID') { abort '❌ Missing required env var: ASC_KEY_ID' }
+# IDs are validated before they are used in file names or API paths
+# (no "../" injection into either).
+KEY_ID    = AscSafeInput.key_id!('ASC_KEY_ID', ENV.fetch('ASC_KEY_ID') { abort '❌ Missing required env var: ASC_KEY_ID' })
 ISSUER_ID = ENV.fetch('ASC_ISSUER_ID') { abort '❌ Missing required env var: ASC_ISSUER_ID' }
-APP_ID    = ENV.fetch('ASC_APP_ID') { abort '❌ Missing required env var: ASC_APP_ID' }
-KEY_PATH  = ENV.fetch('ASC_KEY_PATH', File.expand_path("../AuthKey_#{KEY_ID}.p8", __dir__))
+APP_ID    = AscSafeInput.numeric_id!('ASC_APP_ID', ENV.fetch('ASC_APP_ID') { abort '❌ Missing required env var: ASC_APP_ID' })
+# Resolved and confined to the allowed key directories (path traversal guard).
+KEY_PATH  = AscSafeInput.key_path(ENV.fetch('ASC_KEY_PATH', File.expand_path("../AuthKey_#{KEY_ID}.p8", __dir__)))
 DRY_RUN   = ENV.fetch('DRY_RUN', 'true') != 'false'
-WANT_BUILD = ENV['BUILD_NUMBER']
+WANT_BUILD = ENV['BUILD_NUMBER'].to_s.strip.empty? ? nil : AscSafeInput.build_number!('BUILD_NUMBER', ENV['BUILD_NUMBER'])
 MAX_BUILD_WAIT_ATTEMPTS = 40
 BUILD_POLL_INTERVAL_SECONDS = 30
 
-abort "❌ key not found: #{KEY_PATH}" unless File.exist?(KEY_PATH)
 pk = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
 now = Time.now.to_i
 TOKEN = JWT.encode({ iss: ISSUER_ID, iat: now, exp: now + 1100, aud: 'appstoreconnect-v1' },
