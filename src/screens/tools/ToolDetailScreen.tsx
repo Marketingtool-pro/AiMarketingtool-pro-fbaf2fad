@@ -97,7 +97,7 @@ const ToolDetailScreen = () => {
         setInputValues(initialValues);
       }, 0);
     }
-  }, [toolSlug, tools]);
+  }, [toolSlug, tools, prefillInputs]);
 
   const handleInputChange = (name: string, value: string) => {
     setInputValues(prev => ({ ...prev, [name]: value }));

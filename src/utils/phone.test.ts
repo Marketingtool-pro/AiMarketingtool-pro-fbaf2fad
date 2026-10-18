@@ -116,7 +116,7 @@ describe('other countries', () => {
   });
 
   test('a spread of countries across continents', () => {
-    const cases: Array<[string, string, string]> = [
+    const cases: [string, string, string][] = [
       ['JP', '9012345678', '+819012345678'],
       ['BR', '11987654321', '+5511987654321'],
       ['NG', '8031234567', '+2348031234567'],

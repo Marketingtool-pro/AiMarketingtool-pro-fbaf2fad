@@ -2,7 +2,7 @@ import { Client, Account, Databases, Storage, Functions, ID, Query, Models, OAut
 import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
-import { makeRedirectUri } from 'expo-auth-session';
+
 // Ensure web browser closes properly after OAuth
 WebBrowser.maybeCompleteAuthSession();
 
@@ -677,7 +677,7 @@ export const authService = {
               return current;
             }
           }
-        } catch (e) {
+        } catch {
           if (__DEV__) console.log('[OAuth] No existing session');
         }
       }
@@ -737,7 +737,7 @@ export const authService = {
               return current;
             }
           }
-        } catch (e) {
+        } catch {
           if (__DEV__) console.log('[OAuth] No Apple session');
         }
       }
@@ -793,7 +793,7 @@ export const authService = {
               return current;
             }
           }
-        } catch (e) {
+        } catch {
           if (__DEV__) console.log('[OAuth] No Facebook session');
         }
       }
@@ -812,7 +812,7 @@ export const authService = {
   async getCurrentUser(): Promise<Models.User<Models.Preferences> | null> {
     try {
       return await account.get();
-    } catch (error) {
+    } catch {
       return null;
     }
   },

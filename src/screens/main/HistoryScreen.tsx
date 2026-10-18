@@ -9,7 +9,6 @@ import {
   TextInput,
   Alert,
   Image,
-  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -22,7 +21,6 @@ import { useAuthStore } from '../../store/authStore';
 import { Colors, Gradients, Spacing, BorderRadius } from '../../constants/theme';
 
 
-const { width } = Dimensions.get('window');
 
 // History hero image
 const HistoryHeroImage = require('../../../assets/images/screens/history-hero.jpg');
@@ -84,7 +82,7 @@ const HistoryScreen = () => {
     if (user?.$id) {
       fetchGenerations(user.$id);
     }
-  }, [user?.$id]);
+  }, [user?.$id, fetchGenerations]);
 
   // Look up tool info for icon/category
   const getToolInfo = useCallback((toolId: string) => {

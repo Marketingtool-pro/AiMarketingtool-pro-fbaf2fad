@@ -156,7 +156,7 @@ const LoginScreen = () => {
       clearFirebaseVerification();
     }, 0);
     SecureStore.deleteItemAsync('pendingOTP').catch(() => {});
-  }, [phoneNumber, selectedCountry.iso2]);
+  }, [otpSent, phoneNumber, selectedCountry.iso2]);
 
   // Restore OTP modal across app foreground/background — pendingOTP is written
   // before sendPhoneOTP so a kill/relaunch mid-flow doesn't leave the user stuck
@@ -169,7 +169,8 @@ const LoginScreen = () => {
           const country = findCountry(countryIso2 ?? countryIso, countryCode);
           // Record the restored identifier BEFORE the state updates land, so
           // the clearing effect recognises this as a restore and not an edit.
-          otpIdentifierRef.current = `${country?.iso2 ?? selectedCountry.iso2}:${phone}`;
+          // On mount the picker still holds DEFAULT_COUNTRY.
+          otpIdentifierRef.current = `${country?.iso2 ?? DEFAULT_COUNTRY.iso2}:${phone}`;
           setPhoneNumber(phone);
           setOtpSent(true);
           setShowOtpModal(true);
@@ -198,7 +199,7 @@ const LoginScreen = () => {
       }
     });
     return () => sub.remove();
-  }, [showOtpModal]);
+  }, [showOtpModal, selectedCountry.iso2]);
 
   const handleLogin = async () => {
     try {
@@ -324,13 +325,10 @@ const LoginScreen = () => {
     setOtpError('');
     useAuthStore.getState().clearOtpTemp();
     await clearFirebaseVerification();
-    await SecureStore.deleteItemAsync('pendingOTP');
+    await SecureStore.deleteItemAsync('pendingOTP').catch(() => {});
   };
 
-  // NOTE: Ensure this handler is passed to the OTP Modal close hooks:
-  // - onRequestClose={handleCloseOtpModal}
-  // - onDismiss={handleCloseOtpModal} (where applicable)
-  // and any OTP close button onPress.
+  // Used by the "edit number" button next to the inline OTP field.
 
   const filteredCountries = countrySearch
     ? (() => {
@@ -415,12 +413,7 @@ const LoginScreen = () => {
               ) : (
                 <TouchableOpacity
                   style={styles.arrowBtn}
-                  onPress={() => {
-                    setOtpSent(false); setOtpCode(''); setOtpError('');
-                    useAuthStore.getState().clearOtpTemp();
-                    clearFirebaseVerification();
-                    SecureStore.deleteItemAsync('pendingOTP').catch(() => {});
-                  }}
+                  onPress={handleCloseOtpModal}
                 >
                   <LinearGradient
                     colors={['#3D2914', '#16132B']}
