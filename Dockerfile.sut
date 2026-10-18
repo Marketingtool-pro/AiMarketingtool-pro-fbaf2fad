@@ -1,0 +1,13 @@
+# Docker Cloud automated tests run the `sut` service in docker-compose.test.yml
+# and pass or fail on its exit code. This image runs the phone app's own checks.
+FROM node:24.22.0-bookworm-slim
+
+WORKDIR /app
+COPY package.json package-lock.json .npmrc ./
+RUN npm ci --ignore-scripts --no-audit --no-fund
+
+COPY . .
+RUN chown -R node:node /app
+USER node
+
+CMD ["sh", "-c", "npx tsc --noEmit && npx --yes bun@1.4.3 test src"]

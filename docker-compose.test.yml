@@ -1,6 +1,12 @@
 version: '3.8'
 
 services:
+  # Docker Cloud automated tests run this service and use its exit code.
+  sut:
+    build:
+      context: .
+      dockerfile: Dockerfile.sut
+
   # Testing environment
   appwrite-test:
     image: appwrite/appwrite:latest
