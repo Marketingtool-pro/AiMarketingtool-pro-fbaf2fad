@@ -23,7 +23,7 @@ jobs:
       # Dependabot reads. A --legacy-peer-deps flag here would override it.
       - name: Regenerate lockfiles
         run: |
-          for d in . functions plugin-rn-mcp/server AiMarketingtool-pro-fbaf2fa; do
+          for d in . functions plugin-rn-mcp/server; do
             echo "::group::relock $d"
             (cd "$d" && npm install --package-lock-only --ignore-scripts --no-audit --no-fund)
             echo "::endgroup::"
