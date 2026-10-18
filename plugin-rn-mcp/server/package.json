@@ -5,7 +5,7 @@
     "registry": "https://npm.pkg.github.com",
     "access": "restricted"
   },
-  "description": "Vendored, offline-runnable react-native-mcp-kit MCP server for the marketingtool-rn-mcp Claude Code plugin. Pinned to upstream 4.4.0; node_modules is committed so the server runs with no install step after a marketplace clone (Apple Silicon / arm64).",
+  "description": "Vendored, offline-runnable react-native-mcp-kit MCP server for the marketingtool-rn-mcp Claude Code plugin. Pinned to upstream 4.4.0; dependencies are installed from package-lock.json on first start, then the server runs offline (Apple Silicon / arm64).",
   "dependencies": {
     "react-native-mcp-kit": "5.4.1"
   }

@@ -38,19 +38,34 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Fetch this commit
+        env:
+          GH_FETCH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git init -q .
-          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git"
-          git fetch -q --depth=1 origin "${GITHUB_SHA}"
+          # Token via env and a one-off header; never stored in .git/config.
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          AUTH_HEADER="$(printf 'x-access-token:%s' "$GH_FETCH_TOKEN" | base64 -w0)"
+          echo "::add-mask::${AUTH_HEADER}"
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic ${AUTH_HEADER}" \
+            fetch -q --depth=1 origin "${GITHUB_SHA}"
           git checkout -q FETCH_HEAD
           echo "source pages:"
           ls -la docs/wiki/
 
       - name: Push docs/wiki/** to the wiki
+        env:
+          GH_PUSH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          WIKI="https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.wiki.git"
+          # Token via env (not interpolated into the script) and passed as a
+          # header for clone/push only, so it is never written to wiki/.git/config.
+          WIKI="https://github.com/${GITHUB_REPOSITORY}.wiki.git"
+          AUTH_HEADER="$(printf 'x-access-token:%s' "$GH_PUSH_TOKEN" | base64 -w0)"
+          echo "::add-mask::${AUTH_HEADER}"
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0="http.https://github.com/.extraheader"
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic ${AUTH_HEADER}"
 
           # The wiki repo exists only after the first page has been created in
           # the UI. It has been, so a clone is expected to succeed; fail loudly

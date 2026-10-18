@@ -37,19 +37,27 @@ The MCP server exposes 6 tools:
 /plugin install marketingtool-rn-mcp@marketingtool-pro
 ```
 
-The server's `node_modules` is **committed**, so it runs with **no install
-step** after clone. Verify it is connected with `/mcp`.
+The repo `.gitignore` excludes every `node_modules/`, so the server's
+dependencies are **not** committed. On first start the plugin runs
+`npm ci --omit=dev` against the committed `server/package-lock.json` (exact
+pinned versions), then starts the server; later starts run offline. The first
+start needs network access. Verify it is connected with `/mcp`.
 
 ## How it's wired
 
-`.mcp.json` launches the vendored server with a portable plugin-root path:
+`.mcp.json` installs the locked dependencies if they are missing, then launches
+the server with a portable plugin-root path. Install output goes to stderr so
+it never corrupts the MCP stdio stream:
 
 ```json
 {
   "mcpServers": {
     "rn-mcp-kit": {
-      "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/server/node_modules/react-native-mcp-kit/dist/server/cli.js"],
+      "command": "sh",
+      "args": [
+        "-c",
+        "cd \"${CLAUDE_PLUGIN_ROOT}/server\" && { [ -f node_modules/react-native-mcp-kit/dist/server/cli.js ] || npm ci --omit=dev --no-audit --no-fund >&2; } && exec node node_modules/react-native-mcp-kit/dist/server/cli.js"
+      ],
       "env": { "APP_ID": "pro.marketingtool.app", "PLATFORM": "android" }
     }
   }
@@ -65,4 +73,4 @@ rm -rf node_modules package-lock.json
 npm install --omit=dev --omit=peer
 ```
 
-Commit the regenerated `server/node_modules`.
+Commit the regenerated `server/package-lock.json` (not `node_modules`).

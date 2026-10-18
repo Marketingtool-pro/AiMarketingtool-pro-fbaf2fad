@@ -265,6 +265,43 @@ void assignUniqueIcons;
 // assignUniqueIcons(ALL_TOOLS.map(t => t.slug));
 void assignUniqueIcons;
 
+// `generations.input` is a STRING attribute on Appwrite (size 10000), but a
+// generation's inputs are a key/value object. Sending the object straight through
+// makes Appwrite reject the whole document with "Invalid document structure:
+// Attribute \"input\" has invalid type", so EVERY save to history failed. The
+// auto-save in ToolResultScreen swallows that error and the manual button only
+// reports "Could not save", so it never surfaced. That is why the collection
+// held 0 rows while tool-executor had already completed 183 real runs, and why
+// the History tab was empty for every user since launch.
+//
+// Serialise on the way out, parse on the way back in, so `Generation.input`
+// stays a plain object everywhere in the app (HistoryScreen hands it to
+// ToolResult as `inputs`, and ToolDetail prefills a re-run from it).
+function serializeGeneration(
+  generation: Omit<Generation, '$id'>
+): Record<string, unknown> {
+  return { ...generation, input: JSON.stringify(generation.input ?? {}) };
+}
+
+// Tolerates both shapes: rows written after this fix (a JSON string) and any row
+// a different client may already have stored as an object.
+function deserializeGeneration(doc: any): Generation {
+  const raw = doc?.input;
+  let input: Record<string, any> = {};
+  if (raw && typeof raw === 'object') {
+    input = raw;
+  } else if (typeof raw === 'string' && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      input = parsed && typeof parsed === 'object' ? parsed : { mainInput: raw };
+    } catch {
+      // Not JSON — keep the text so the user still sees what they typed.
+      input = { mainInput: raw };
+    }
+  }
+  return { ...(doc as Generation), input };
+}
+
 export const useToolsStore = create<ToolsState>((set, get) => ({
   tools: ALL_TOOLS,
   categories: TOOL_CATEGORIES.map(c => c.id),
@@ -303,7 +340,10 @@ export const useToolsStore = create<ToolsState>((set, get) => ({
         COLLECTIONS.GENERATIONS,
         [Query.equal('userId', userId), Query.orderDesc('createdAt'), Query.limit(50)]
       );
-      set({ generations: result.documents as Generation[], isLoading: false });
+      set({
+        generations: result.documents.map(deserializeGeneration),
+        isLoading: false,
+      });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }
@@ -313,10 +353,10 @@ export const useToolsStore = create<ToolsState>((set, get) => ({
     try {
       const newGen = await dbService.createDocument<Generation & Models.Document>(
         COLLECTIONS.GENERATIONS,
-        generation
+        serializeGeneration(generation)
       );
       set(state => ({
-        generations: [newGen as Generation, ...state.generations],
+        generations: [deserializeGeneration(newGen), ...state.generations],
       }));
     } catch (error: any) {
       set({ error: error.message });

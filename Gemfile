@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-ruby "3.2.6"
+ruby "3.4.11"
 
 gem "activesupport", ">= 5.0", "< 8.0"
 gem "addressable", "~> 2.3"
