@@ -66,6 +66,9 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: '24'
+          # Release workflow: no shared npm cache, so a poisoned cache entry
+          # cannot reach a shipped build (zizmor cache-poisoning).
+          package-manager-cache: false
 
       - uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385  # v9
         with:
@@ -99,6 +102,9 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: '24'
+          # Release workflow: no shared npm cache, so a poisoned cache entry
+          # cannot reach a shipped build (zizmor cache-poisoning).
+          package-manager-cache: false
 
       - uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385  # v9
         with:
@@ -139,6 +145,9 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: '24'
+          # Release workflow: no shared npm cache, so a poisoned cache entry
+          # cannot reach a shipped build (zizmor cache-poisoning).
+          package-manager-cache: false
 
       - uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385  # v9
         with:

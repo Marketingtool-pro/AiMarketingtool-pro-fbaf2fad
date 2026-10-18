@@ -30,20 +30,31 @@ module AscSafeInput
   # Resolve +raw+ (relative to +relative_to+) and return its real path, or abort
   # if it is not a .p8 file inside one of KEY_DIRS.
   def key_path(raw, relative_to: Dir.pwd)
+    expanded = File.expand_path(clean_key_input(raw), relative_to)
+    ensure_p8_file(expanded)
+    real = File.realpath(expanded)
+    ensure_allowed_key_dir(real, expanded)
+    real
+  end
+
+  def clean_key_input(raw)
     value = raw.to_s.strip
     abort 'ASC key path is empty.' if value.empty?
     abort 'ASC key path contains a NUL byte.' if value.include?("\0")
+    value
+  end
 
-    expanded = File.expand_path(value, relative_to)
+  def ensure_p8_file(expanded)
     abort "ASC key must be a .p8 file: #{expanded}" unless File.extname(expanded) == '.p8'
     abort "ASC key not found or not a regular file: #{expanded}" unless File.file?(expanded)
+  end
 
-    real = File.realpath(expanded)
+  # +real+ has symlinks resolved, so a link pointing outside is rejected too.
+  def ensure_allowed_key_dir(real, expanded)
     allowed = KEY_DIRS.select { |dir| File.directory?(dir) }.map { |dir| File.realpath(dir) }
-    unless allowed.any? { |base| real.start_with?(base + File::SEPARATOR) }
-      abort "Refusing to read an ASC key outside the allowed directories (#{KEY_DIRS.join(', ')}): #{expanded}"
-    end
-    real
+    return if allowed.any? { |base| real.start_with?(base + File::SEPARATOR) }
+
+    abort "Refusing to read an ASC key outside the allowed directories (#{KEY_DIRS.join(', ')}): #{expanded}"
   end
 
   # Abort unless +value+ fully matches +pattern+; return the value otherwise.
