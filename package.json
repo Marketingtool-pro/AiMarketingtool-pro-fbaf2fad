@@ -54,7 +54,7 @@
     "@apple/app-store-server-library": "^3.1.0",
     "@dev-plugins/react-navigation": "^0.4.0",
     "@expo/app-integrity": "^57.0.2",
-    "@expo/fingerprint": "~0.21.4",
+    "@expo/fingerprint": "~0.20.14",
     "@expo/metro-runtime": "~57.0.17",
     "@expo/vector-icons": "^15.1.1",
     "@floating-ui/react-native": "^0.10.10",
@@ -68,7 +68,7 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/cli": "^20.2.0",
     "@react-native-community/cli-platform-ios": "^20.2.0",
-    "@react-native-community/datetimepicker": "9.2.1",
+    "@react-native-community/datetimepicker": "9.1.0",
     "@react-native-community/netinfo": "12.0.1",
     "@react-native-firebase/analytics": "24.1.1",
     "@react-native-firebase/app": "24.1.1",
@@ -170,7 +170,7 @@
     "react-native": "0.86.3",
     "react-native-appwrite": "0.35.0",
     "react-native-edge-to-edge": "^1.8.2",
-    "react-native-gesture-handler": "~2.33.0",
+    "react-native-gesture-handler": "~2.32.0",
     "react-native-iap": "^15.6.2",
     "react-native-keyboard-controller": "1.21.9",
     "react-native-nitro-modules": "^0.36.5",
@@ -301,7 +301,8 @@
     },
     "install": {
       "exclude": [
-        "react"
+        "react",
+        "@types/react"
       ]
     }
   },
