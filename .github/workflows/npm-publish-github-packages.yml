@@ -47,6 +47,9 @@ jobs:
       # setup-node (registry-url above) already wrote an .npmrc that reads the
       # token from NODE_AUTH_TOKEN, so the token is never interpolated into the
       # script text or written to disk in plain form.
-      - run: npm publish
+      # Trusted publishing (OIDC) exists only for registry.npmjs.org; GitHub
+      # Packages accepts only GITHUB_TOKEN or a classic PAT, so zizmor's
+      # use-trusted-publishing rule cannot be satisfied for this registry.
+      - run: npm publish # zizmor: ignore[use-trusted-publishing]
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
