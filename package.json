@@ -160,7 +160,6 @@
     "mvdan-sh": "^0.10.1",
     "node-addon-api": "^8.9.2",
     "node-gyp": "^13.1.0",
-    "npx": "^10.2.2",
     "package": "^1.0.1",
     "patch-package": "^8.0.1",
     "patch-project": "^57.0.24",
