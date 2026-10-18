@@ -15,13 +15,15 @@
         "IS_TESTING": "true",
         "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1",
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
-      }
+      },
+      "channel": "development"
     },
     "development-ios-simulator": {
       "extends": "development",
       "ios": {
         "simulator": true
-      }
+      },
+      "channel": "development-ios-simulator"
     },
     "preview": {
       "distribution": "internal",
@@ -34,7 +36,8 @@
         "IS_TESTING": "true",
         "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1",
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
@@ -45,7 +48,8 @@
       "env": {
         "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1",
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {

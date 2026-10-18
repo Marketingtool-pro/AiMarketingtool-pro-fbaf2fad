@@ -20,5 +20,4 @@ The user has rejected this approach repeatedly in this project:
 **User wants ACTION, not plans.**
 
 If the user said "go ahead", "just do it", "start work", or gave a summary of what they want — skip the planning doc and implement directly.
-
 Only write plans/specs if the user EXPLICITLY asks for a plan or spec in this message.
