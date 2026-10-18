@@ -21,7 +21,7 @@
     "aimarketingtool-pro-fbaf2fad": "^2.0.1",
     "expo": "^57.0.25",
     "express": "^5.3.0",
-    "firebase-admin": "^14.4.0",
+    "firebase-admin": "^13.6.0",
     "firebase-functions": "^7.4.0",
     "genkit": "^1.42.0",
     "npm": "^12.1.0",

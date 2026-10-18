@@ -1,25 +1,25 @@
 import { test, expect } from 'bun:test';
-import { COUNTRIES, DEFAULT_COUNTRY, findCountry } from './countries';
+import { COUNTRIES, DEFAULT_COUNTRY, findCountry } from '../constants/countries';
 
-// Dialling codes are not unique. Before PRIMARY_BY_CODE existed, a code-only
-// lookup returned whichever entry sorted first -- Canada for '+1', Guernsey for
-// '+44', Kazakhstan for '+7' -- so a stored OTP session without `countryIso`
+// Dialling codes are not unique. Before PRIMARY_BY_DIAL existed, a code-only
+// lookup returned whichever entry sorted first -- American Samoa for '+1',
+// Guernsey for '+44', Kazakhstan for '+7' -- so a stored OTP session without `countryIso`
 // restored the wrong country for three of the largest markets.
 test('shared dialling codes resolve to their primary country', () => {
-  expect(findCountry(undefined, '+1')?.iso).toBe('US');
-  expect(findCountry(undefined, '+44')?.iso).toBe('GB');
-  expect(findCountry(undefined, '+7')?.iso).toBe('RU');
+  expect(findCountry(undefined, '+1')?.iso2).toBe('US');
+  expect(findCountry(undefined, '+44')?.iso2).toBe('GB');
+  expect(findCountry(undefined, '+7')?.iso2).toBe('RU');
 });
 
 test('ISO takes precedence over dialling code', () => {
-  expect(findCountry('CA', '+1')?.iso).toBe('CA');
-  expect(findCountry('JE', '+44')?.iso).toBe('JE');
+  expect(findCountry('CA', '+1')?.iso2).toBe('CA');
+  expect(findCountry('JE', '+44')?.iso2).toBe('JE');
 });
 
 test('unshared dialling codes are unaffected', () => {
-  expect(findCountry(undefined, '+91')?.iso).toBe('IN');
-  expect(findCountry(undefined, '+61')?.iso).toBe('AU');
-  expect(findCountry(undefined, '+81')?.iso).toBe('JP');
+  expect(findCountry(undefined, '+91')?.iso2).toBe('IN');
+  expect(findCountry(undefined, '+61')?.iso2).toBe('AU');
+  expect(findCountry(undefined, '+81')?.iso2).toBe('JP');
 });
 
 test('unknown input yields undefined', () => {
@@ -30,13 +30,13 @@ test('unknown input yields undefined', () => {
 
 test('every country entry is well formed', () => {
   const malformed = COUNTRIES.filter(
-    (c) => !c.code.startsWith('+') || !/^[A-Z]{2}$/.test(c.iso) || !c.flag || !c.name,
+    (c) => !c.dialCode.startsWith('+') || !/^[A-Z]{2}$/.test(c.iso2) || !c.flag || !c.name,
   );
   expect(malformed).toHaveLength(0);
 });
 
 test('ISO codes are unique', () => {
-  expect(new Set(COUNTRIES.map((c) => c.iso)).size).toBe(COUNTRIES.length);
+  expect(new Set(COUNTRIES.map((c) => c.iso2)).size).toBe(COUNTRIES.length);
 });
 
 // The picker once shipped four entries, which left users elsewhere unable to
@@ -44,11 +44,11 @@ test('ISO codes are unique', () => {
 test('coverage spans every major market', () => {
   expect(COUNTRIES.length).toBeGreaterThan(200);
   for (const iso of ['US', 'GB', 'IN', 'NG', 'BR', 'ID', 'PK', 'PH', 'EG', 'VN', 'CN', 'RU', 'JP', 'DE']) {
-    expect(findCountry(iso)?.iso).toBe(iso);
+    expect(findCountry(iso)?.iso2).toBe(iso);
   }
 });
 
 test('default country is stable', () => {
-  expect(DEFAULT_COUNTRY.iso).toBe('IN');
-  expect(DEFAULT_COUNTRY.code).toBe('+91');
+  expect(DEFAULT_COUNTRY.iso2).toBe('IN');
+  expect(DEFAULT_COUNTRY.dialCode).toBe('+91');
 });

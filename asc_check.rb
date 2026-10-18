@@ -33,20 +33,20 @@ def required_env(name)
   value
 end
 
+def fail_key_load(message)
+  warn message
+  exit 1
+end
+
 def load_private_key(filename)
   # Rejects paths outside the allowed key directories (path traversal).
   path = AscSafeInput.key_path(filename, relative_to: __dir__)
-
-  unless File.readable?(path)
-    warn "Private key file not readable: #{path}"
-    exit 1
-  end
+  fail_key_load("Private key file not readable: #{path}") unless File.readable?(path)
 
   begin
     OpenSSL::PKey::EC.new(File.read(path))
   rescue Errno::EACCES, Errno::ENOENT, OpenSSL::PKey::ECError => e
-    warn "Failed to load private key from #{path}: #{e.message}"
-    exit 1
+    fail_key_load("Failed to load private key from #{path}: #{e.message}")
   end
 end
 
@@ -120,6 +120,37 @@ puts "Target     : #{WANT_BUILD || '(latest)'}"
 puts "Max wait   : #{MAX_WAIT}s  (poll every #{POLL_INTERVAL}s)"
 puts
 
+# First page, then the second page when the target is not on the first.
+def fetch_target_build
+  data   = fetch_builds
+  target = find_target_build(data)
+  return target unless target.nil? && data
+
+  next_page = data.dig('links', 'next')
+  return nil unless next_page
+
+  find_target_build(fetch_builds(URI.decode_www_form(URI(next_page).query).to_h['cursor']))
+end
+
+# Print the build's state; exit 0 when VALID, 2 when INVALID/FAILED.
+def report_build(target, elapsed)
+  version = target.dig('attributes', 'version')
+  state   = target.dig('attributes', 'processingState')
+  date    = target.dig('attributes', 'uploadedDate')
+  puts "[#{elapsed}s] Build #{version} — state: #{state}  (uploaded: #{date})"
+  exit_on_final_state(version, state)
+end
+
+def exit_on_final_state(version, state)
+  if state == 'VALID'
+    puts "✅  Build #{version} is VALID and ready to submit."
+    exit 0
+  elsif %w[INVALID FAILED].include?(state)
+    puts "❌  Build #{version} is #{state}. Cannot submit."
+    exit 2
+  end
+end
+
 started_at = Time.now
 
 loop do
@@ -129,32 +160,11 @@ loop do
     exit 1
   end
 
-  data    = fetch_builds
-  target  = find_target_build(data)
-
-  if target.nil? && data
-    next_page = data.dig('links', 'next')
-    if next_page
-      data   = fetch_builds(URI.decode_www_form(URI(next_page).query).to_h['cursor'])
-      target = find_target_build(data)
-    end
-  end
-
+  target = fetch_target_build
   if target.nil?
     puts "[#{elapsed}s] No matching build found#{WANT_BUILD ? " for build #{WANT_BUILD}" : ''}. Retrying…"
   else
-    version = target.dig('attributes', 'version')
-    state   = target.dig('attributes', 'processingState')
-    date    = target.dig('attributes', 'uploadedDate')
-    puts "[#{elapsed}s] Build #{version} — state: #{state}  (uploaded: #{date})"
-
-    if state == 'VALID'
-      puts "✅  Build #{version} is VALID and ready to submit."
-      exit 0
-    elsif state == 'INVALID' || state == 'FAILED'
-      puts "❌  Build #{version} is #{state}. Cannot submit."
-      exit 2
-    end
+    report_build(target, elapsed)
   end
 
   sleep POLL_INTERVAL

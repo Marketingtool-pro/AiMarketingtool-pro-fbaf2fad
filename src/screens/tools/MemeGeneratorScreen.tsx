@@ -110,21 +110,24 @@ const MemeGeneratorScreen = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [activeTextInput, setActiveTextInput] = useState<'top' | 'middle' | 'bottom'>('top');
 
-  // Request Permissions
-  const requestPermissions = async () => {
-    const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
-    const { status: libraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    const { status: mediaStatus } = await MediaLibrary.requestPermissionsAsync();
+  // Ask only for what each action needs. Google Play's photo/video policy
+  // rejects READ_MEDIA_IMAGES / READ_MEDIA_VIDEO (blocked in app.json):
+  // - picking uses the system photo picker, which needs no permission;
+  // - the camera needs CAMERA only;
+  // - saving is write-only, which on Android 13+ needs no runtime permission.
+  const denyPermission = (what: string) => {
+    Alert.alert('Permission Required', `${what} access is required for this.`, [{ text: 'OK' }]);
+    return false;
+  };
 
-    if (cameraStatus !== 'granted' || libraryStatus !== 'granted' || mediaStatus !== 'granted') {
-      Alert.alert(
-        'Permissions Required',
-        'Camera, photo library and media library access are required to create memes.',
-        [{ text: 'OK' }]
-      );
-      return false;
-    }
-    return true;
+  const requestCameraPermission = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    return status === 'granted' || denyPermission('Camera');
+  };
+
+  const requestSavePermission = async () => {
+    const { status } = await MediaLibrary.requestPermissionsAsync(true);
+    return status === 'granted' || denyPermission('Photo saving');
   };
 
 
@@ -168,9 +171,6 @@ const MemeGeneratorScreen = () => {
 
   // Pick Image from Gallery
   const pickImage = async () => {
-    const hasPermission = await requestPermissions();
-    if (!hasPermission) return;
-
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -190,7 +190,7 @@ const MemeGeneratorScreen = () => {
 
   // Take Photo with Camera
   const takePhoto = async () => {
-    const hasPermission = await requestPermissions();
+    const hasPermission = await requestCameraPermission();
     if (!hasPermission) return;
 
     try {
@@ -243,7 +243,7 @@ const MemeGeneratorScreen = () => {
       return;
     }
 
-    const hasPermission = await requestPermissions();
+    const hasPermission = await requestSavePermission();
     if (!hasPermission) return;
 
     setIsLoading(true);

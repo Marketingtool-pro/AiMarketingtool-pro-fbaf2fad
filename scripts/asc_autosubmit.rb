@@ -23,13 +23,19 @@ require_relative 'lib/asc_safe_input'
 
 # IDs are validated before they are used in file names or API paths
 # (no "../" injection into either).
-KEY_ID    = AscSafeInput.key_id!('ASC_KEY_ID', ENV.fetch('ASC_KEY_ID') { abort '❌ Missing required env var: ASC_KEY_ID' })
+KEY_ID    = AscSafeInput.key_id!('ASC_KEY_ID',
+                                 ENV.fetch('ASC_KEY_ID') { abort '❌ Missing required env var: ASC_KEY_ID' })
 ISSUER_ID = ENV.fetch('ASC_ISSUER_ID') { abort '❌ Missing required env var: ASC_ISSUER_ID' }
-APP_ID    = AscSafeInput.numeric_id!('ASC_APP_ID', ENV.fetch('ASC_APP_ID') { abort '❌ Missing required env var: ASC_APP_ID' })
+APP_ID    = AscSafeInput.numeric_id!('ASC_APP_ID',
+                                     ENV.fetch('ASC_APP_ID') { abort '❌ Missing required env var: ASC_APP_ID' })
 # Resolved and confined to the allowed key directories (path traversal guard).
 KEY_PATH  = AscSafeInput.key_path(ENV.fetch('ASC_KEY_PATH', File.expand_path("../AuthKey_#{KEY_ID}.p8", __dir__)))
 DRY_RUN   = ENV.fetch('DRY_RUN', 'true') != 'false'
-WANT_BUILD = ENV['BUILD_NUMBER'].to_s.strip.empty? ? nil : AscSafeInput.build_number!('BUILD_NUMBER', ENV['BUILD_NUMBER'])
+WANT_BUILD = if ENV['BUILD_NUMBER'].to_s.strip.empty?
+               nil
+             else
+               AscSafeInput.build_number!('BUILD_NUMBER', ENV['BUILD_NUMBER'])
+             end
 MAX_BUILD_WAIT_ATTEMPTS = 40
 BUILD_POLL_INTERVAL_SECONDS = 30
 

@@ -270,16 +270,19 @@ export const COUNTRIES: Country[] = [
   { iso2: 'ZW', name: "Zimbabwe", dialCode: '+263', flag: '🇿🇼' },
 ];
 
+/** Main country for each dial code that several countries share. */
+const PRIMARY_BY_DIAL: Record<string, string> = {"+1":"US","+7":"RU","+39":"IT","+44":"GB","+47":"NO","+61":"AU","+64":"NZ","+212":"MA","+262":"RE","+358":"FI","+590":"GP","+599":"CW"};
+
 /**
  * Look up by ISO-3166 alpha-2. Always prefer this over matching on dialCode.
  *
  * `dialCode` is accepted only as a migration fallback, for a `pendingOTP` blob
- * written by a build that stored the dial code alone. It is deliberately last:
- * codes are not unique (+1 is the US, Canada and much of the Caribbean), so a
- * dialCode-only match resolves to whichever entry comes first in the table.
+ * written by a build that stored the dial code alone. Codes are not unique
+ * (+1 is the US, Canada and much of the Caribbean), so a shared code resolves
+ * to its main country via PRIMARY_BY_DIAL.
  */
 export function findCountry(
-  iso2: string | undefined | null,
+  iso2?: string | null,
   dialCode?: string | null,
 ): Country | undefined {
   if (iso2) {
@@ -289,7 +292,9 @@ export function findCountry(
   }
   if (dialCode) {
     const target = dialCode.startsWith('+') ? dialCode : `+${dialCode}`;
-    return COUNTRIES.find(c => c.dialCode === target);
+    const primary = PRIMARY_BY_DIAL[target];
+    return (primary && COUNTRIES.find(c => c.iso2 === primary))
+      || COUNTRIES.find(c => c.dialCode === target);
   }
   return undefined;
 }

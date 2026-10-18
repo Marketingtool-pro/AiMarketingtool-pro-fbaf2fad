@@ -34,13 +34,14 @@ const NotificationsScreen = () => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [pushEnabled, setPushEnabled] = useState(false);
 
-  const checkPermission = async () => {
-    const { status } = await Notifications.getPermissionsAsync();
-    setPushEnabled(status === 'granted');
-  };
-
+  // State is set in the promise callback, not in the effect body
+  // (react-hooks/set-state-in-effect); `active` drops results after unmount.
   useEffect(() => {
-    checkPermission();
+    let active = true;
+    Notifications.getPermissionsAsync().then(({ status }) => {
+      if (active) setPushEnabled(status === 'granted');
+    });
+    return () => { active = false; };
   }, []);
 
   const togglePush = async () => {
@@ -52,7 +53,7 @@ const NotificationsScreen = () => {
     }
   };
 
-  const loadNotifications = async () => {
+  const fetchNotifications = async (): Promise<NotificationItem[]> => {
     // Sweep anything still in Notification Center into the persistent history,
     // then render from history — so items survive being opened or dismissed.
     try {
@@ -60,18 +61,22 @@ const NotificationsScreen = () => {
       await Promise.all(delivered.map(recordNotification));
     } catch { /* history is best-effort */ }
     const stored = await listNotificationHistory();
-    setNotifications(stored.map((s) => ({
+    return stored.map((s) => ({
       id: s.id,
       title: s.title,
       body: s.body,
       date: new Date(s.date),
       read: s.read,
       type: 'system' as const,
-    })));
+    }));
   };
 
   useEffect(() => {
-    loadNotifications();
+    let active = true;
+    fetchNotifications().then((items) => {
+      if (active) setNotifications(items);
+    });
+    return () => { active = false; };
   }, []);
 
   const markAsRead = (id: string) => {
