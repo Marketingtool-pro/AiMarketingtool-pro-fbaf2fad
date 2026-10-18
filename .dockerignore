@@ -1,0 +1,7 @@
+# Build-context exclusions for the Dockerfiles in this repo. Dependencies are
+# installed inside the image from package-lock.json, never copied from the host.
+node_modules
+functions/node_modules
+.git
+.expo
+dist
