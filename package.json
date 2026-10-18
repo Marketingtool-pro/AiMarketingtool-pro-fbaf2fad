@@ -215,7 +215,7 @@
     "chai": "^6.3.0",
     "eas-build-cache-provider": "^20.0.0",
     "esbuild": "0.28.2",
-    "eslint": "^10.12.0",
+    "eslint": "^9.39.5",
     "eslint-config-expo": "~57.0.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jest-extended": "^3.0.1",

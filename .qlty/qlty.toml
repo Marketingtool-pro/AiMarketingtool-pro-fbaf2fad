@@ -74,7 +74,8 @@ name = "clippy"
 
 [[plugin]]
 name = "eslint"
-version = "10.11.0"
+# eslint-config-expo pulls in eslint-plugin-react, which supports ESLint <= 9.
+version = "9.39.5"
 package_file = "package.json"
 package_filters = ["eslint", "prettier", "jest"]
 prefix = ""
