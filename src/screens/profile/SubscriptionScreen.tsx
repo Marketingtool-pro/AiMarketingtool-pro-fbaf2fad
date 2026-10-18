@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore, parseAppwriteResponse } from '../../store/authStore';
 import * as Haptics from 'expo-haptics';
 import { billingService, PURCHASE_CANCELLED, TOKENS_SKU, entitlementForProduct, CREDITS_PER_TOKEN_PACK, type Entitlement } from '../../services/billingService';
+import { yearlySavingPercent, type StorePrice } from '../../services/storePrices';
 import { functions } from '../../services/appwrite';
 import { openWebPage } from '../../utils/openWebPage';
 import { ExecutionMethod } from 'react-native-appwrite';
@@ -38,6 +39,9 @@ const SubscriptionScreen = () => {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [selectedPlan, setSelectedPlan] = useState<string>('pro');
   const [isLoading, setIsLoading] = useState(false);
+  // Localized prices from Play / the App Store, keyed by sku. Empty until loaded
+  // (or when the store is unavailable), in which case the USD list below shows.
+  const [storePrices, setStorePrices] = useState<Record<string, StorePrice>>({});
   // Tracks what the in-flight purchase is, so the (async) listener can show the
   // right success message. v15 delivers the outcome via listeners, not inline.
   const pendingKindRef = useRef<'subscription' | 'consumable' | null>(null);
@@ -45,6 +49,10 @@ const SubscriptionScreen = () => {
   useEffect(() => {
     if (Platform.OS === 'web') return;
     billingService.initialize().catch(err => console.error('[Billing] Init failed:', err));
+    let active = true;
+    billingService.getStorePrices()
+      .then(prices => { if (active) setStorePrices(prices); })
+      .catch(err => console.warn('[Billing] Store prices unavailable:', err));
     billingService.startListeners({
       onSuccess: async (productId: string, entitlement?: Entitlement | null) => {
         setIsLoading(false);
@@ -85,6 +93,7 @@ const SubscriptionScreen = () => {
       },
     });
     return () => {
+      active = false;
       billingService.end().catch(() => {});
     };
   }, []);
@@ -179,6 +188,25 @@ const SubscriptionScreen = () => {
     },
     agency: null,
   };
+
+  const storePriceFor = (planId: string, period: 'monthly' | 'yearly'): StorePrice | undefined => {
+    const skuInfo = PLAN_TO_SKU[planId as PlanId];
+    return skuInfo ? storePrices[skuInfo[period]] : undefined;
+  };
+
+  // Yearly saving from the local store prices; the USD list only when the store
+  // has not answered, so the badge never states a saving the store won't honour.
+  const savingPercentFor = (plan: Plan): number | null => {
+    const fromStore = yearlySavingPercent(storePriceFor(plan.id, 'monthly'), storePriceFor(plan.id, 'yearly'));
+    if (fromStore !== null || storePriceFor(plan.id, 'yearly')) return fromStore;
+    if (plan.monthlyPrice <= 0) return null;
+    return yearlySavingPercent(
+      { display: '', amount: plan.monthlyPrice, currency: 'USD' },
+      { display: '', amount: plan.yearlyTotal, currency: 'USD' },
+    );
+  };
+  const maxSavingPercent = Math.max(0, ...plans.map(p => savingPercentFor(p) ?? 0));
+  const tokenPrice = storePrices[TOKENS_SKU]?.display ?? '$3';
 
   const handlePurchase = async (sku: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -379,7 +407,9 @@ const SubscriptionScreen = () => {
               onPress={() => { Haptics.selectionAsync(); setBillingPeriod('yearly'); }}
             >
               <Text style={[styles.billingText, billingPeriod === 'yearly' && styles.billingTextActive]}>Yearly</Text>
-              <View style={styles.saveBadge}><Text style={styles.saveBadgeText}>Save 44%</Text></View>
+              {maxSavingPercent > 0 && (
+                <View style={styles.saveBadge}><Text style={styles.saveBadgeText}>Save up to {maxSavingPercent}%</Text></View>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -390,8 +420,9 @@ const SubscriptionScreen = () => {
             const selected = selectedPlan === plan.id;
             const isAgency = plan.id === 'agency';
             const isYearly = billingPeriod === 'yearly';
-            // Savings = monthly*12 - yearly total
-            const savings = plan.monthlyPrice > 0 ? (plan.monthlyPrice * 12) - plan.yearlyTotal : 0;
+            const storeMonthly = storePriceFor(plan.id, 'monthly');
+            const storeYearly = storePriceFor(plan.id, 'yearly');
+            const savingPercent = savingPercentFor(plan);
             return (
               <TouchableOpacity
                 key={plan.id}
@@ -423,23 +454,27 @@ const SubscriptionScreen = () => {
                       // monthly equivalent is rendered clearly subordinate — smaller, dimmer,
                       // parenthesised and labelled "equivalent" so it cannot be mistaken for
                       // the amount charged.
+                      // The equivalent line needs a per-month figure; it is only
+                      // shown for the USD fallback, never derived from a local price.
                       <>
-                        <Text style={styles.planPrice}>${plan.yearlyTotal}<Text style={styles.priceUnit}>/year</Text></Text>
+                        <Text style={styles.planPrice}>{storeYearly?.display ?? `$${plan.yearlyTotal}`}<Text style={styles.priceUnit}>/year</Text></Text>
                         <Text style={styles.priceBilledNote}>billed annually</Text>
-                        <Text style={styles.priceEquiv}>(${plan.yearlyPrice}/mo equivalent)</Text>
+                        {!storeYearly && (
+                          <Text style={styles.priceEquiv}>(${plan.yearlyPrice}/mo equivalent)</Text>
+                        )}
                       </>
                     ) : (
                       <>
-                        <Text style={styles.planPrice}>${plan.monthlyPrice}<Text style={styles.priceUnit}>/mo</Text></Text>
+                        <Text style={styles.planPrice}>{storeMonthly?.display ?? `$${plan.monthlyPrice}`}<Text style={styles.priceUnit}>/mo</Text></Text>
                         <Text style={styles.priceBilledNote}>billed monthly</Text>
                       </>
                     )}
                   </View>
                 </View>
-                {isYearly && !isAgency && savings > 0 && (
+                {isYearly && !isAgency && savingPercent !== null && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6, marginLeft: 36 }}>
                     <Feather name="tag" size={11} color="#22C55E" />
-                    <Text style={{ fontSize: 12, color: '#22C55E', fontWeight: '700' }}>Save ${savings}/year</Text>
+                    <Text style={{ fontSize: 12, color: '#22C55E', fontWeight: '700' }}>Save {savingPercent}% vs monthly</Text>
                   </View>
                 )}
                 <View style={styles.featList}>
@@ -476,7 +511,7 @@ const SubscriptionScreen = () => {
               <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '700' }}>100 Generations</Text>
               <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 2 }}>Added instantly to your account</Text>
             </View>
-            <Text style={{ color: '#A78BFA', fontSize: 22, fontWeight: '900' }}>$3</Text>
+            <Text style={{ color: '#A78BFA', fontSize: 22, fontWeight: '900' }}>{tokenPrice}</Text>
           </View>
         </TouchableOpacity>
         )}

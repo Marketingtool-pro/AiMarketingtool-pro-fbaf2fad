@@ -3,6 +3,7 @@ import * as IAP from 'react-native-iap';
 import { functions } from './appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 import { parseAppwriteResponse } from '../store/authStore';
+import { extractStorePrices, type StorePrice } from './storePrices';
 
 export type PlanId = 'free' | 'starter' | 'pro' | 'growth' | 'agency';
 
@@ -275,6 +276,15 @@ export const billingService = {
       console.error('[Billing] Fetch products error:', err);
       return [];
     }
+  },
+
+  /**
+   * Localized prices the store will actually charge, keyed by the app's sku.
+   * Empty when the store is unavailable; callers fall back to their USD list.
+   */
+  async getStorePrices(): Promise<Record<string, StorePrice>> {
+    if (!(await this.initialize())) return {};
+    return extractStorePrices(await this.getProducts(), Platform.OS, ANDROID_SUB);
   },
 
   /**
