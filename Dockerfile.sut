@@ -7,7 +7,8 @@ COPY package.json package-lock.json .npmrc ./
 RUN npm ci --ignore-scripts --no-audit --no-fund
 
 COPY . .
-RUN chown -R node:node /app
-USER node
+# uid/gid 1000 is the image's `node` user (checked with `id node`).
+RUN chown -R 1000:1000 /app
+USER 1000:1000
 
 CMD ["sh", "-c", "npx tsc --noEmit && npx --yes bun@1.4.3 test src"]
