@@ -45,6 +45,25 @@ const LENGTHS = {
   IE:[7,9],   CH:[9,9],   AT:[10,13], BE:[8,9],   PT:[9,9],   GR:[10,10],
 };
 
+// Countries whose national significant number may start with 0 (Italy: +39 06…).
+const LEADING_ZERO = { IT: true };
+
+// Dial codes shared by several countries resolve to the main one when only the
+// code is known (old pendingOTP blobs). Without this, +1 restored American
+// Samoa, +44 Guernsey and +7 Kazakhstan: the first entry alphabetically.
+const PRIMARY_BY_DIAL = {
+  '1': 'US', '7': 'RU', '39': 'IT', '44': 'GB', '47': 'NO', '61': 'AU', '64': 'NZ',
+  '212': 'MA', '262': 'RE', '358': 'FI', '590': 'GP', '599': 'CW',
+};
+
+const byDial = {};
+for (const [iso2, dial] of Object.entries(DIAL)) (byDial[dial] ||= []).push(iso2);
+for (const [dial, isos] of Object.entries(byDial)) {
+  if (isos.length > 1 && !isos.includes(PRIMARY_BY_DIAL[dial])) {
+    throw new Error(`Shared dial code +${dial} (${isos.join(', ')}) needs a PRIMARY_BY_DIAL entry`);
+  }
+}
+
 const names = new Intl.DisplayNames(['en'], { type: 'region' });
 
 function flag(iso2) {
@@ -66,7 +85,8 @@ if (dupNames.length) throw new Error('Duplicate country names: ' + dupNames.join
 
 const body = rows.map(r => {
   const len = r.len ? `, minLen: ${r.len[0]}, maxLen: ${r.len[1]}` : '';
-  return `  { iso2: '${r.iso2}', name: ${JSON.stringify(r.name)}, dialCode: '${r.dialCode}', flag: '${r.flag}'${len} },`;
+  const zero = LEADING_ZERO[r.iso2] ? ', allowLeadingZero: true' : '';
+  return `  { iso2: '${r.iso2}', name: ${JSON.stringify(r.name)}, dialCode: '${r.dialCode}', flag: '${r.flag}'${len}${zero} },`;
 }).join('\n');
 
 const out = `// AUTO-GENERATED — do not edit by hand.
@@ -87,17 +107,47 @@ export interface Country {
   /** National-significant-number length bounds, where the rule is stable. */
   minLen?: number;
   maxLen?: number;
+  /**
+   * Set to true for countries where the national significant number may
+   * legitimately start with 0 (e.g. Italy: +39 06…). Defaults to false.
+   * When false, a leading 0 after trunk-prefix stripping is rejected.
+   */
+  allowLeadingZero?: boolean;
 }
 
 export const COUNTRIES: Country[] = [
 ${body}
 ];
 
-/** Look up by ISO-3166 alpha-2. Use this instead of matching on dialCode. */
-export function findCountry(iso2: string | undefined | null): Country | undefined {
-  if (!iso2) return undefined;
-  const target = iso2.toUpperCase();
-  return COUNTRIES.find(c => c.iso2 === target);
+/** Main country for each dial code that several countries share. */
+const PRIMARY_BY_DIAL: Record<string, string> = ${JSON.stringify(
+    Object.fromEntries(Object.entries(PRIMARY_BY_DIAL).map(([d, iso]) => [`+${d}`, iso])),
+  )};
+
+/**
+ * Look up by ISO-3166 alpha-2. Always prefer this over matching on dialCode.
+ *
+ * \`dialCode\` is accepted only as a migration fallback, for a \`pendingOTP\` blob
+ * written by a build that stored the dial code alone. Codes are not unique
+ * (+1 is the US, Canada and much of the Caribbean), so a shared code resolves
+ * to its main country via PRIMARY_BY_DIAL.
+ */
+export function findCountry(
+  iso2?: string | null,
+  dialCode?: string | null,
+): Country | undefined {
+  if (iso2) {
+    const target = iso2.toUpperCase();
+    const byIso = COUNTRIES.find(c => c.iso2 === target);
+    if (byIso) return byIso;
+  }
+  if (dialCode) {
+    const target = dialCode.startsWith('+') ? dialCode : \`+\${dialCode}\`;
+    const primary = PRIMARY_BY_DIAL[target];
+    return (primary && COUNTRIES.find(c => c.iso2 === primary))
+      || COUNTRIES.find(c => c.dialCode === target);
+  }
+  return undefined;
 }
 
 export const DEFAULT_COUNTRY: Country =
