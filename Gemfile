@@ -65,6 +65,5 @@ group :test do
   gem 'rspec', '~> 3.0'
   gem 'rubocop', '~> 1.91'
   gem 'simplecov'
-  gem 'travis'
   gem 'webmock'
 end
