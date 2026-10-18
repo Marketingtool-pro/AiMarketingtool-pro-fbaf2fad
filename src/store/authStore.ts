@@ -4,6 +4,8 @@ import { Models, ExecutionMethod } from 'react-native-appwrite';
 import { authService, dbService, account, functions, COLLECTIONS, Query, isAwaitingExternalOAuth } from '../services/appwrite';
 import { biometricService } from '../services/biometric';
 import { isE164 } from '../utils/phone';
+import { isReviewerLogin, parseReviewerHashes } from '../utils/reviewerAuth';
+import * as Crypto from 'expo-crypto';
 import {
   sendPhoneOTP as firebaseSendOTP,
   verifyPhoneOTP as firebaseVerifyOTP,
@@ -134,18 +136,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Appwrite is unreachable or the demo account wasn't created.
     // Normalize email (trim + lowercase) and trim the password so iOS autofill
     // whitespace or an auto-capitalized first letter can never defeat the match.
-    // Reviewer password(s) come ONLY from EXPO_PUBLIC_REVIEWER_PASSWORDS (comma-separated,
-    // set in EAS env). No hardcoded fallback: a password committed to source shipped in
-    // every build and let anyone sign in as the reviewer. If the env var is missing the
-    // bypass is simply disabled and the normal Appwrite login runs.
-    const REVIEWER_PASSWORDS = (process.env.EXPO_PUBLIC_REVIEWER_PASSWORDS || '')
-      .split(',')
-      .map((p: string) => p.trim())
-      .filter(Boolean);
-    if (
-      email.trim().toLowerCase() === 'demo@marketingtool.pro' &&
-      REVIEWER_PASSWORDS.includes(password.trim())
-    ) {
+    // The bundle holds only SHA-256 digests (EXPO_PUBLIC_REVIEWER_PASSWORD_SHA256,
+    // comma-separated, set in EAS env): every EXPO_PUBLIC_* value is readable in the
+    // shipped app, so the password itself must never be one. If the env var is
+    // missing the bypass is simply disabled and the normal Appwrite login runs.
+    const reviewerHashes = parseReviewerHashes(process.env.EXPO_PUBLIC_REVIEWER_PASSWORD_SHA256);
+    const sha256Hex = (value: string) =>
+      Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, value);
+    if (await isReviewerLogin(email, password, reviewerHashes, sha256Hex)) {
       const mockUser = {
         $id: 'reviewer_bypass',
         name: 'App Store Reviewer',
