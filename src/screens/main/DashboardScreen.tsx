@@ -28,7 +28,7 @@ import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
 import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
 import LottieView from 'lottie-react-native';
-import Glass3DLogo from '../../components/common/Glass3DLogo';
+import { Glass3DLogo } from '../../components/common/Glass3DLogo';
 
 const { width } = Dimensions.get('window');
 
@@ -148,7 +148,7 @@ const AnimatedStatCard = ({ stat, index, onPress }: { stat: any; index: number; 
     );
     loop.start();
     return () => loop.stop();
-  }, []);
+  }, [floating, index]);
 
   const translateY = floating.interpolate({ inputRange: [0, 1], outputRange: [0, -5] });
 
@@ -204,7 +204,7 @@ const DashboardScreen = () => {
     if (user?.$id) {
       fetchGenerations(user.$id);
     }
-  }, [user?.$id]);
+  }, [user?.$id, fetchTools, fetchGenerations]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -255,7 +255,7 @@ const DashboardScreen = () => {
   // tool from each major platform so links never orphan when tools.json changes.
   // Includes the Meme Generator as a special-case entry (separate screen).
   const popularTools = useMemo(() => {
-    const categoryPicks: Array<{ cat: string; color: string }> = [
+    const categoryPicks: { cat: string; color: string }[] = [
       { cat: 'google-ads', color: '#4285F4' },
       { cat: 'facebook-ads', color: '#1877F2' },
       { cat: 'instagram', color: '#E4405F' },

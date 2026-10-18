@@ -100,7 +100,7 @@ const AnimatedRipple = () => {
     ]);
     anim.start();
     return () => anim.stop();
-  }, []);
+  }, [ripple1, ripple2, ripple3]);
 
   const createRippleStyle = (anim: Animated.Value) => ({
     position: 'absolute' as const,
@@ -159,8 +159,8 @@ const ChatScreen = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [activeTab, setActiveTab] = useState<ChatTab>('chat');
   const [activeCategory, setActiveCategory] = useState('All');
-  const typingAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const [typingAnim] = useState(() => new Animated.Value(0));
+  const [pulseAnim] = useState(() => new Animated.Value(1));
 
 
   const suggestedPrompts: SuggestedPrompt[] = [
@@ -235,7 +235,7 @@ const ChatScreen = () => {
     } else {
       typingAnim.setValue(0);
     }
-  }, [isTyping]);
+  }, [isTyping, typingAnim]);
 
   // Pulse animation for input border
   useEffect(() => {
@@ -257,7 +257,7 @@ const ChatScreen = () => {
     );
     anim.start();
     return () => anim.stop();
-  }, []);
+  }, [pulseAnim]);
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -300,7 +300,7 @@ const ChatScreen = () => {
       setMessages(prev => [...prev, assistantMessage]);
       setConsecutiveErrors(0);
       lastFailedMessage.current = null;
-    } catch (error: any) {
+    } catch {
       // Absolute last resort (total backend/network outage). Soft, on-brand,
       // non-alarming — never the word "error", never a Retry button.
       const softMessage = createMessage(
@@ -374,7 +374,7 @@ Be helpful, specific, and provide actionable advice. Use formatting with bullet 
       if (retryCount === 0) {
         try {
           await account.get();
-        } catch (sessionError) {
+        } catch {
           if (__DEV__) console.log('Session validation failed - attempting chat anyway');
         }
       }

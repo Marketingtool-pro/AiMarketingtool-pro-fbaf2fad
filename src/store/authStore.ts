@@ -597,7 +597,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else {
         set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
       }
-    } catch (error: any) {
+    } catch {
       // On error or timeout, proceed as not authenticated
       set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
     }

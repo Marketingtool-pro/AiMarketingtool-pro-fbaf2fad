@@ -175,7 +175,7 @@ const SettingsScreen = () => {
       setMfaEnabled(true);
       setMfaModal(false);
       Alert.alert('Success', '2FA is now enabled on your account.');
-    } catch (e: any) {
+    } catch {
       Alert.alert('Verification Failed', 'Invalid code. Please try again.');
     } finally {
       setMfaLoading(false);
@@ -211,7 +211,7 @@ const SettingsScreen = () => {
         setBiometricEnabled(false);
         setSettings(prev => ({ ...prev, biometricLogin: false }));
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to update biometric settings');
     }
   };

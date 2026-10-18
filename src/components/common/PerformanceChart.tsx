@@ -33,7 +33,7 @@ const PerformanceChart = ({ data, title = 'Activity Trend' }: PerformanceChartPr
       x: PADDING + i * xStep,
       y: CHART_HEIGHT - PADDING - (d.value - min) * yScale,
     }));
-  }, [data, max, min]);
+  }, [data, hasData, max, min]);
 
   const linePath = useMemo(() => {
     const path = Skia.Path.Make();

@@ -77,7 +77,7 @@ const FloatingParticle = ({ delay, size, startX, startY, color }: {
     );
     anim.start();
     return () => anim.stop();
-  }, []);
+  }, [delay, jitterDuration, jitterDrift, jitterDurationX, translateY, translateX, opacity, scale]);
 
   return (
     <RNAnimated.View

@@ -13,7 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useToolsStore, Tool, TOOL_CATEGORIES, PLATFORMS } from '../../store/toolsStore';
+import { useToolsStore, TOOL_CATEGORIES } from '../../store/toolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { Colors } from '../../constants/theme';
 import { getToolIcon } from '../../constants/toolIcons';
@@ -21,6 +21,17 @@ import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48 - 16) / 3;
+
+// 7 canonical platforms from app.marketingtool.pro web sidebar
+const PLATFORM_CATEGORIES: Record<string, string[]> = {
+  'Google Ads': ['google-ads'],
+  'Meta / Facebook': ['facebook-ads', 'meta-content'],
+  'Social Media': ['social-media', 'instagram', 'tiktok', 'youtube', 'linkedin', 'twitter', 'pinterest'],
+  'Content & SEO': ['google-seo', 'google-content', 'content-creation', 'copywriting'],
+  'Analytics': ['google-analytics'],
+  'E-commerce': ['shopify-products', 'shopify-ads', 'email-marketing', 'ecommerce-seo'],
+  'AI Tools': ['ai-agents'],
+};
 
 const ToolsScreen = () => {
   const navigation = useNavigation<any>();
@@ -30,16 +41,6 @@ const ToolsScreen = () => {
   const [activePlatform, setActivePlatform] = useState('All');
   const [activeSubcategory, setActiveSubcategory] = useState('All');
 
-  // 7 canonical platforms from app.marketingtool.pro web sidebar
-  const PLATFORM_CATEGORIES: Record<string, string[]> = {
-    'Google Ads': ['google-ads'],
-    'Meta / Facebook': ['facebook-ads', 'meta-content'],
-    'Social Media': ['social-media', 'instagram', 'tiktok', 'youtube', 'linkedin', 'twitter', 'pinterest'],
-    'Content & SEO': ['google-seo', 'google-content', 'content-creation', 'copywriting'],
-    'Analytics': ['google-analytics'],
-    'E-commerce': ['shopify-products', 'shopify-ads', 'email-marketing', 'ecommerce-seo'],
-    'AI Tools': ['ai-agents'],
-  };
 
   const subcategories = useMemo(() => {
     if (activePlatform === 'All') return [];

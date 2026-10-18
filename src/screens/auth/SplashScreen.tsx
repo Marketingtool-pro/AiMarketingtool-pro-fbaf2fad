@@ -28,7 +28,7 @@ const SplashScreen = () => {
     ]).start();
 
     // Glow pulse
-    Animated.loop(
+    const glow = Animated.loop(
       Animated.sequence([
         Animated.timing(glowAnim, {
           toValue: 0.8,
@@ -41,8 +41,10 @@ const SplashScreen = () => {
           useNativeDriver: true,
         }),
       ])
-    ).start();
-  }, []);
+    );
+    glow.start();
+    return () => glow.stop();
+  }, [fadeAnim, scaleAnim, glowAnim]);
 
   return (
     <View style={styles.container}>

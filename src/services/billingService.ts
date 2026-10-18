@@ -314,8 +314,8 @@ export const billingService = {
           // `subscriptionOfferDetailsAndroid` is the field name used by react-native-iap v15+,
           // while `subscriptionOfferDetails` was used in earlier v12/v13 releases.
           // Both are checked for compatibility with different library versions.
-          subscriptionOfferDetailsAndroid?: Array<{ basePlanId: string; offerId?: string; offerToken?: string }>;
-          subscriptionOfferDetails?: Array<{ basePlanId: string; offerId?: string; offerToken?: string }>;
+          subscriptionOfferDetailsAndroid?: { basePlanId: string; offerId?: string; offerToken?: string }[];
+          subscriptionOfferDetails?: { basePlanId: string; offerId?: string; offerToken?: string }[];
         };
         const product = map && available.find((p: unknown) => getObjectProductId(p) === map.product) as AndroidProduct | undefined;
         if (!product) {

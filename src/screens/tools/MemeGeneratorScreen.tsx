@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -183,7 +183,7 @@ const MemeGeneratorScreen = () => {
         const asset = result.assets[0];
         setSelectedImage(await downscaleImage(asset.uri, asset.width, asset.height));
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to pick image');
     }
   };
@@ -204,7 +204,7 @@ const MemeGeneratorScreen = () => {
         const asset = result.assets[0];
         setSelectedImage(await downscaleImage(asset.uri, asset.width, asset.height));
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to take photo');
     }
   };

@@ -84,7 +84,7 @@ const ToolResultScreen = () => {
             isFavorite: false,
           });
           setIsSaved(true);
-        } catch (e) {
+        } catch {
           // Silent fail — user can manually save
         }
       }
@@ -170,7 +170,7 @@ const ToolResultScreen = () => {
       });
       setIsSaved(true);
       Alert.alert('Saved', 'Content saved to your history');
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'Could not save. Please try again.');
     }
   };
