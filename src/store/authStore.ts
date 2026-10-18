@@ -4,8 +4,7 @@ import { Models, ExecutionMethod } from 'react-native-appwrite';
 import { authService, dbService, account, functions, COLLECTIONS, Query, isAwaitingExternalOAuth } from '../services/appwrite';
 import { biometricService } from '../services/biometric';
 import { isE164 } from '../utils/phone';
-import { isReviewerLogin, parseReviewerHashes } from '../utils/reviewerAuth';
-import * as Crypto from 'expo-crypto';
+import { isReviewerLogin, parseReviewerKeys } from '../utils/reviewerAuth';
 import {
   sendPhoneOTP as firebaseSendOTP,
   verifyPhoneOTP as firebaseVerifyOTP,
@@ -136,14 +135,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Appwrite is unreachable or the demo account wasn't created.
     // Normalize email (trim + lowercase) and trim the password so iOS autofill
     // whitespace or an auto-capitalized first letter can never defeat the match.
-    // The bundle holds only SHA-256 digests (EXPO_PUBLIC_REVIEWER_PASSWORD_SHA256,
-    // comma-separated, set in EAS env): every EXPO_PUBLIC_* value is readable in the
-    // shipped app, so the password itself must never be one. If the env var is
-    // missing the bypass is simply disabled and the normal Appwrite login runs.
-    const reviewerHashes = parseReviewerHashes(process.env.EXPO_PUBLIC_REVIEWER_PASSWORD_SHA256);
-    const sha256Hex = (value: string) =>
-      Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, value);
-    if (await isReviewerLogin(email, password, reviewerHashes, sha256Hex)) {
+    // The bundle holds only salted PBKDF2 keys (EXPO_PUBLIC_REVIEWER_PASSWORD_PBKDF2,
+    // set in EAS env, see src/utils/reviewerAuth.ts): every EXPO_PUBLIC_* value is
+    // readable in the shipped app, so the password itself must never be one. If the
+    // env var is missing the bypass is simply disabled and normal Appwrite login runs.
+    const reviewerKeys = parseReviewerKeys(process.env.EXPO_PUBLIC_REVIEWER_PASSWORD_PBKDF2);
+    if (await isReviewerLogin(email, password, reviewerKeys)) {
       const mockUser = {
         $id: 'reviewer_bypass',
         name: 'App Store Reviewer',
