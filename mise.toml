@@ -1,26 +1,24 @@
-oci = {}
 monorepo_root = true
 
 [tools]
-go = "latest"
+go = "1.25"
 golangci-lint = "latest"
 lefthook = "latest"
 "aqua:mvdan/gofumpt" = "latest"
-"go:://github.com" = "1.5.1"
 "go:golang.org/x/vuln/cmd/govulncheck" = "latest"
 python = "3.13"
 uv = "latest"
-pdm = "latest"
+"pipx:pdm" = "latest"
 "pipx:pipenv" = "latest"
-node = "24.18.1"
+node = "24.22.0"
 npm = "latest"
 pnpm = "latest"
 bun = "latest"
 "npm:@antfu/ni" = "latest"
 "npm:prettier" = "latest"
-rust = "latest"
+rust = "nightly"
 "cargo:starship" = "latest"
-ruby = "3.2.6"
+ruby = "3.4"
 bundler = "latest"
 dotnet = "latest"
 copilot-cli = "latest"
@@ -56,7 +54,7 @@ action-validator = "latest"
 antigravity-cli = "latest"
 azure-cli = "latest"
 buildpack = "latest"
-bazel = "latest"
+bazel = "7.2.1"
 hub = "latest"
 mkcert = "latest"
 jwt = "latest"
@@ -92,7 +90,7 @@ starknet-foundry-sncast = "latest"
 bitwarden-secrets-manager = "latest"
 localstack = "latest"
 editorconfig-checker = "latest"
-mitmproxy = "latest"
+"pipx:mitmproxy" = "latest"
 "aqua:aws/aws-cli" = "latest"
 "aqua:trivy" = "latest"
 "aqua:gruntwork-io/fetch" = "latest"
@@ -102,9 +100,24 @@ mitmproxy = "latest"
 # activate_aggressive = true it also shadowed the working jq from Homebrew and
 # /usr/bin, so every `jq` call inside this repo crashed. Use the system or
 # Homebrew jq instead; add jq back through a working backend if it is needed.
-oc = { version = "latest", bin = "oc", checksum_url = "https://openshift.com{{ version }}/sha256sum.txt", platforms = "{ linux-arm64 = { url = https://openshift.com{{ version }}/openshift-client-mac-arm64-{{ version }}.tar.gz } }" }
-openshift-install = { version = "latest", bin = "openshift-install", checksum_url = "https://openshift.com{{ version }}/sha256sum.txt" }
-azure = { version = "latest", uvx_args = "--prerelease=allow" }
+oc = "latest"
+openshift-install = "latest"
+"pipx:azure-cli" = { version = "latest", uvx_args = "--prerelease=allow" }
+maven = "latest"
+java = "latest"
+poetry = "latest"
+erlang = "latest"
+elixir = "latest"
+oxfmt = "latest"
+postgres = "17.0"
+bazelisk = "latest"
+"gem:rubocop" = "latest"
+
+[env]
+# Match CI: every workflow installs with `npm ci --legacy-peer-deps` (eslint 10 vs eslint-plugin-import peer range).
+NPM_CONFIG_LEGACY_PEER_DEPS = true
+NODE_ENV = "production"
+LOG_LEVEL = "info"
 
 [tasks]
 format = { description = "Format Go files with gofumpt", run = "gofumpt -w ." }
@@ -117,23 +130,25 @@ vulncheck = { description = "Run govulncheck against all packages", run = "govul
 generate = { description = "Regenerate the GraphQL client code", run = "go generate ./cmd/generate" }
 hooks = { description = "Install the repository git hooks", run = "lefthook install" }
 ci = { description = "Run the main local CI checks", depends = "[lint, test, vulncheck]" }
+run = "eslint ."
 
 [deps]
-uv = { auto = true }
+uv = { auto = false }
 pnpm = { auto = false }
-bundler = { auto = true }
+bundler = { auto = false }
 npm = { auto = true }
-go = { auto = true }
-bun = { auto = true }
+go = { auto = false }
+bun = { auto = false }
 composer = { auto = true }
 bazel = { auto = false }
 rust = { auto = true }
 node = { auto = true }
 aube = { auto = true }
+poetry = { auto = false }
+git-submodule = { auto = false }
 
 [settings]
 experimental = true
-lockfile = true
 activate_aggressive = true
 all_compile = false
 always_keep_install = true
@@ -151,7 +166,3 @@ cargo = {}
 dotfiles = {}
 dotnet = {}
 forgejo = {}
-
-[env]
-NODE_ENV = "production"
-

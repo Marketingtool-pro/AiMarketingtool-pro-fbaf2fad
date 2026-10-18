@@ -17,8 +17,8 @@ The user has said in this project:
 **User explains the full scope upfront. Do ALL items in one pass.**
 
 Check before stopping:
-- [ ] Did the user list multiple items? Did you do them all?
-- [ ] If user said "finish all", did you actually finish all?
-- [ ] Are there items from their summary table/list still incomplete?
+- Did the user list multiple items? Did you do them all?
+- If user said "finish all", did you actually finish all?
+- Are there items from their summary table/list still incomplete?
 
 If anything from the user's list is incomplete AND they said "all" or "full" or "finish" — keep working, don't stop.

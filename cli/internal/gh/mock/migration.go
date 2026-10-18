@@ -4,9 +4,10 @@
 package ghmock
 
 import (
+	"sync"
+
 	"github.com/cli/cli/v2/internal/gh"
 	ghConfig "github.com/cli/go-gh/v2/pkg/config"
-	"sync"
 )
 
 // Ensure, that MigrationMock does implement gh.Migration.
