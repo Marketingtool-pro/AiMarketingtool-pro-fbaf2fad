@@ -360,6 +360,9 @@ export const useToolsStore = create<ToolsState>((set, get) => ({
       }));
     } catch (error: any) {
       set({ error: error.message });
+      // Re-throw: ToolResultScreen marks the result "saved" only when this
+      // resolves. Swallowing the error here made a failed save look saved.
+      throw error;
     }
   },
 

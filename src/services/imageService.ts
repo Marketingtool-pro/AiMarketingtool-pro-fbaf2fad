@@ -8,6 +8,10 @@ import { ExecutionMethod } from 'react-native-appwrite';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { functions } from './appwrite';
+import { withTimeout } from './aiResponse';
+
+// Image models are slow; 120s is the same budget the Genkit imageGenerator uses.
+const IMAGE_TIMEOUT_MS = 120_000;
 
 export interface GeneratedImage {
   /** data:image/png;base64,... */
@@ -26,12 +30,17 @@ export const imageService = {
   }): Promise<GeneratedImage> {
     // Sync execution — result arrives in this response (same pattern as the
     // text tools fix: no polling, no executions.read scope needed).
-    const execution = await functions.createExecution(
-      'image-generator',
-      JSON.stringify(params),
-      false,
-      '/',
-      ExecutionMethod.POST,
+    // Bounded wait: a hung sync execution used to leave the screen spinning forever.
+    const execution = await withTimeout(
+      functions.createExecution(
+        'image-generator',
+        JSON.stringify(params),
+        false,
+        '/',
+        ExecutionMethod.POST,
+      ),
+      IMAGE_TIMEOUT_MS,
+      'Image generation is taking too long. Please try again.',
     );
     let data: (GeneratedImage & { success: boolean; error?: string }) | null = null;
     try {

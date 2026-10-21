@@ -161,6 +161,9 @@ const ToolDetailScreen = () => {
           style: selectedTone,
           platform: /story/.test(tool.slug) ? 'instagram-story' : 'instagram-post',
         });
+        // imageService throws unless the server returned success + an image,
+        // so only a real image reaches this line and gets counted.
+        if (!img?.image) throw new Error('Image generation failed. Please try again.');
         setGeneratedImage(img);
         await incrementGenerationsUsed();
         return;
@@ -173,6 +176,13 @@ const ToolDetailScreen = () => {
         outputCount,
       });
 
+      // Count a generation only after a validated success. generateContent
+      // throws on any error or quota response (aiService runs assertToolSuccess),
+      // and this guard keeps an empty result from being counted either.
+      const outputs: unknown[] = Array.isArray(result?.outputs) ? result.outputs : [];
+      if (!outputs.some((o) => typeof o === 'string' && o.trim().length > 0)) {
+        throw new Error('The tool returned an empty result. Please try again.');
+      }
       await incrementGenerationsUsed();
 
       navigation.navigate('ToolResult', {
