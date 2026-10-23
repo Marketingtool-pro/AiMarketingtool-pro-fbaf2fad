@@ -4,12 +4,12 @@
 
 import { functions, account } from './appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
-import { isWindmillConfigured, runTool, readToolResult } from './windmillService';
+import { extractToolOutputs, withTimeout, TimeoutError } from './aiResponse';
 
 const TOOL_EXECUTOR_FUNCTION_ID = 'tool-executor';
-const MIN_PARSEABLE_RESPONSE_LENGTH = 20;
-const MIN_SPLIT_PART_LENGTH = 20;
-const MIN_VARIATION_PART_LENGTH = 50;
+// Same ceiling the web client uses for a tool run. Without it a hung sync
+// execution left the Generate button spinning forever.
+const TOOL_TIMEOUT_MS = 180_000;
 
 export interface AIGenerationRequest {
   toolSlug: string;
@@ -100,67 +100,12 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
     `IMPORTANT: Write the ENTIRE response in ${outputLanguage}. Do not use any other language under any circumstances.`,
   ].join('\n');
 
-  // PRIMARY: the same Windmill script the web app calls, with the same payload.
-  //
-  // One product, one backend. app.marketingtool.pro's tool-detail page runs a tool
-  // as runTool({ toolSlug, toolName, mainInput, additionalInputs, userId }) against
-  // f/tools/ai-generate, and the per-tool instructions live in THAT script keyed by
-  // toolSlug. Going through the Appwrite tool-executor instead meant the phone
-  // (a) paid an extra serverless cold start on every run, and (b) shipped its own
-  // device-built prompt, overriding the real server template — which is why a phone
-  // result read as generic copy while the web result was on-task.
-  //
-  // Falls through to the Appwrite path below when Windmill is not configured or the
-  // call fails, so this can never leave the phone with no way to run a tool.
-  if (isWindmillConfigured()) {
-    try {
-      if (__DEV__) console.log(`[AI] Windmill (web parity) for: ${toolSlug}`);
-
-      // Web sends the raw mainInput and everything else as additionalInputs.
-      const { mainInput, ...additionalInputs } = inputs;
-
-      const raw = await runTool({
-        toolSlug,
-        toolName,
-        toolDescription,
-        toolBadge: toolCategory,
-        mainInput: String(mainInput ?? ''),
-        additionalInputs: {
-          ...additionalInputs,
-          tone: tone || 'professional',
-          language: language || 'English',
-        },
-        userId: userId || 'anonymous',
-      });
-
-      const text = readToolResult(raw);
-      if (text && text.trim().length >= MIN_PARSEABLE_RESPONSE_LENGTH) {
-        // Web renders ONE result, so this returns one.
-        //
-        // Deliberately NOT routed through splitOutputs(): its separator list
-        // includes '---' and '###', which are markdown syntax, not variation
-        // markers. A single well-formed markdown answer (headings, horizontal
-        // rules) gets sliced at those boundaries into N fake "variations" — so
-        // one answer is presented as "3 outputs generated" across three Option
-        // tabs, each holding a fragment of the same reply.
-        //
-        // Only an explicit ---VARIATION--- marker means real variations here.
-        const parts = text
-          .split('---VARIATION---')
-          .map((p) => p.trim())
-          .filter((p) => p.length >= MIN_SPLIT_PART_LENGTH);
-        return {
-          success: true,
-          outputs: parts.length > 1 ? parts.slice(0, outputCount) : [text.trim()],
-        };
-      }
-      if (__DEV__) console.log('[AI] Windmill returned nothing usable; falling back');
-    } catch (error: any) {
-      if (__DEV__) console.log(`[AI] Windmill error, falling back: ${error.message}`);
-    }
-  }
-
-  // FALLBACK: Appwrite Function (tool-executor → Windmill)
+  // ONLY path: the Appwrite function tool-executor, authenticated with the
+  // user's Appwrite JWT. The phone used to call Windmill f/tools/ai-generate
+  // directly with a workspace token read from EXPO_PUBLIC_WINDMILL_TOKEN or
+  // Remote Config `windmill_token`. Anything shipped to the device can be
+  // extracted, and the repo rule is "no Windmill token inside the app", so that
+  // direct path is gone. tool-executor holds the token on the server.
   try {
     if (__DEV__) console.log(`[AI] Executing tool-executor for: ${toolSlug}`);
 
@@ -200,43 +145,64 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
       if (__DEV__) console.log('[AI] No Appwrite JWT available: ' + e?.message);
     }
 
-    const execution = await functions.createExecution(
-      TOOL_EXECUTOR_FUNCTION_ID,
-      JSON.stringify({
-        appwriteJwt,
-        tool_slug: toolSlug,
-        tool_name: toolName,
-        // Sent alongside the prompt so the backend can route or template on the
-        // tool's real job instead of only its slug.
-        tool_description: toolDescription || '',
-        tool_category: toolCategory || '',
-        deliverable: deliverable || '',
-        instruction: toolInstruction,
-        input: userPrompt,
-        inputs: { ...inputs, tone: tone || 'professional', language: language || 'English' },
-        output_count: outputCount,
-        user_id: userId,
-        tier: tier || 'free',
-        simulation: simulation ?? false, // mobile policy: REAL execution for all tiers (quota-limited, never demo/sample)
-        options: { tone: tone || 'professional', language: language || 'English' },
-      }),
-      false,  // sync — result arrives in this response, no polling/scope needed
-      '/',    // path
-      ExecutionMethod.POST, // method
+    const execution = await withTimeout(
+      functions.createExecution(
+        TOOL_EXECUTOR_FUNCTION_ID,
+        JSON.stringify({
+          appwriteJwt,
+          tool_slug: toolSlug,
+          tool_name: toolName,
+          // Sent alongside the prompt so the backend can route or template on the
+          // tool's real job instead of only its slug.
+          tool_description: toolDescription || '',
+          tool_category: toolCategory || '',
+          deliverable: deliverable || '',
+          instruction: toolInstruction,
+          input: userPrompt,
+          inputs: { ...inputs, tone: tone || 'professional', language: language || 'English' },
+          output_count: outputCount,
+          user_id: userId,
+          // Server follow-up (H2): this tier is computed on the device and must not
+          // be trusted. tool-executor has to read the plan from the user's own
+          // record (via appwriteJwt) and decrement quota itself. Kept for now
+          // because the server code is not in this repo and may still read it.
+          tier: tier || 'free',
+          simulation: simulation ?? false, // mobile policy: REAL execution for all tiers (quota-limited, never demo/sample)
+          options: { tone: tone || 'professional', language: language || 'English' },
+        }),
+        false,  // sync — result arrives in this response, no polling/scope needed
+        '/',    // path
+        ExecutionMethod.POST, // method
+      ),
+      TOOL_TIMEOUT_MS,
+      'The tool is taking too long. Please try again.',
     );
 
-    // Sync executions return the result directly.
-    if (execution.status === 'completed') {
-      const result = parseExecutionResponse(execution.responseBody, outputCount);
-      if (result.success && result.outputs.length > 0) {
-        if (__DEV__) console.log(`[AI] Function success (sync): ${result.outputs.length} outputs`);
-        return result;
-      }
+    if (execution.status !== 'completed') {
+      if (__DEV__) console.log(`[AI] Function failed with status ${execution.status}`);
+      return {
+        outputs: [],
+        success: false,
+        error: 'The tool could not finish. Please try again.',
+      };
     }
 
-    if (__DEV__) console.log(`[AI] Function failed with status ${execution.status}`);
+    // Validate before anything is shown or counted: an error or quota body
+    // ({ success:false, error }) or a non-JSON page is an error, never output.
+    const { outputs, tokensUsed } = extractToolOutputs(execution.responseBody, outputCount);
+    if (__DEV__) console.log(`[AI] Function success (sync): ${outputs.length} outputs`);
+    return {
+      outputs,
+      success: true,
+      tokensUsed,
+      // White-label: do not pass the backend's provider/model name through.
+      model: 'marketingtool',
+    };
   } catch (error: any) {
-    if (__DEV__) console.log(`[AI] Function error: ${error.message}`);
+    if (__DEV__) console.log(`[AI] Function error: ${error?.message}`);
+    if (error instanceof TimeoutError || error?.name === 'AIResponseError') {
+      return { outputs: [], success: false, error: error.message };
+    }
   }
 
   return {
@@ -244,96 +210,6 @@ export async function generateAIContent(request: AIGenerationRequest): Promise<A
     success: false,
     error: 'Unable to generate content. Please check your connection and try again.',
   };
-}
-
-// Parse the Appwrite Function execution response
-function parseExecutionResponse(responseBody: string, outputCount: number): AIGenerationResponse {
-  try {
-    const result = JSON.parse(responseBody);
-
-    // Handle various response formats from the function
-    if (result.error) {
-      return { outputs: [], success: false, error: result.error };
-    }
-
-    // Format 1: { outputs: [...] }
-    if (result.outputs) {
-      let outputs = result.outputs;
-      if (typeof outputs === 'string') {
-        outputs = splitOutputs(outputs, outputCount);
-      } else if (Array.isArray(outputs) && outputs.length === 1 && typeof outputs[0] === 'string') {
-        outputs = splitOutputs(outputs[0], outputCount);
-      }
-      return {
-        outputs,
-        success: true,
-        tokensUsed: result.tokensUsed || result.tokens_used,
-        // White-label: do not pass the backend's provider/model name through.
-        model: 'marketingtool',
-      };
-    }
-
-    // Format 2: { result: "..." } or { output: "..." }
-    const content = result.result || result.output || result.content || result.text;
-    if (content) {
-      return {
-        outputs: splitOutputs(String(content), outputCount),
-        success: true,
-        tokensUsed: result.tokensUsed || result.tokens_used,
-        // White-label: do not pass the backend's provider/model name through.
-        model: 'marketingtool',
-      };
-    }
-
-    // Format 3: Raw string response
-    if (typeof result === 'string' && result.length > MIN_PARSEABLE_RESPONSE_LENGTH) {
-      return {
-        outputs: splitOutputs(result, outputCount),
-        success: true,
-      };
-    }
-
-    return { outputs: [], success: false, error: 'Unexpected response format' };
-  } catch {
-    // Response might be plain text, not JSON
-    if (responseBody && responseBody.length > MIN_PARSEABLE_RESPONSE_LENGTH) {
-      return {
-        outputs: splitOutputs(responseBody, outputCount),
-        success: true,
-      };
-    }
-    return { outputs: [], success: false, error: 'Failed to parse response' };
-  }
-}
-
-// Split AI response into separate outputs
-function splitOutputs(content: string, count: number): string[] {
-  // Try custom separator first
-  if (content.includes('---VARIATION---')) {
-    const parts = content.split('---VARIATION---').filter(p => p.trim().length > MIN_SPLIT_PART_LENGTH);
-    if (parts.length >= 1) {
-      return parts.slice(0, count).map(p => p.trim());
-    }
-  }
-
-  // Try other common separators
-  const separators = ['---', '***', '###', '\n\nVariation', '\n\nOption'];
-  for (const sep of separators) {
-    const parts = content.split(sep).filter(p => p.trim().length > MIN_VARIATION_PART_LENGTH);
-    if (parts.length >= count) {
-      return parts.slice(0, count).map(p => p.trim());
-    }
-  }
-
-  // Try numbered variations
-  const numberedRegex = /(?:^|\n)(?:\d+\.|Option \d+|Variation \d+)[:\s]/i;
-  const parts = content.split(numberedRegex).filter(p => p.trim().length > MIN_VARIATION_PART_LENGTH);
-  if (parts.length >= count) {
-    return parts.slice(0, count).map(p => p.trim());
-  }
-
-  // Return as single output
-  return [content.trim()];
 }
 
 // Check if AI service is available

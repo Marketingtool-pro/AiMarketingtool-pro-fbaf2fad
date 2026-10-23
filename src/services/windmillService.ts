@@ -41,9 +41,18 @@ const AI_GENERATE_PATH = '/jobs/run_wait_result/p/f/tools/ai-generate';
 // Matches the web client's tool timeout (180s). Tool runs are genuinely slow.
 const TOOL_TIMEOUT_MS = 180_000;
 
-// The workspace token is NOT committed. It is read from the build-time env var
-// first, then Firebase Remote Config so it can be rotated without a rebuild.
-// When neither is set, callers fall back to the Appwrite tool-executor path.
+// DEPRECATED — DO NOT USE. Nothing in the app calls this module any more.
+//
+// A Windmill workspace token read on the device is a leaked token: anything in
+// EXPO_PUBLIC_* or Firebase Remote Config can be pulled out of the app by anyone,
+// and it grants the whole workspace. Repo rule (CLAUDE.md): "No Windmill token
+// inside the app: calls go through the server, which holds the token."
+// Tool runs go through the Appwrite function `tool-executor` (src/services/aiService.ts),
+// authenticated with the user's Appwrite JWT only.
+//
+// Kept (not deleted) until the owner approves removal. If Remote Config
+// `windmill_token` was ever set, that token must be rotated in Windmill.
+/** @deprecated Ships a workspace token to the device. Use the Appwrite tool-executor path. */
 function getWorkspaceToken(): string {
   const fromEnv = process.env.EXPO_PUBLIC_WINDMILL_TOKEN?.trim();
   if (fromEnv) return fromEnv;
@@ -54,6 +63,7 @@ function getWorkspaceToken(): string {
   }
 }
 
+/** @deprecated See getWorkspaceToken. Must not gate a direct Windmill call from the app. */
 export function isWindmillConfigured(): boolean {
   return getWorkspaceToken().length > 0;
 }
@@ -121,6 +131,10 @@ export interface RunToolArgs {
  *
  * Returns the raw response. The web app reads it as
  * `typeof r === 'string' ? r : r?.result`, so callers should do the same.
+ *
+ * @deprecated Sends a Windmill workspace token from the device (see
+ * getWorkspaceToken). Do not call it. Use generateAIContent in aiService.ts,
+ * which goes through the Appwrite `tool-executor` function with a JWT only.
  */
 export async function runTool({
   toolSlug,

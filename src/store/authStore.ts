@@ -14,6 +14,14 @@ import {
 // Appwrite Functions return responseBody as either an object (newer SDK)
 // OR as a JSON string (older SDK) OR as a plain text error message (4xx).
 // Always normalize to an object so consumers can read .success / .message safely.
+//
+// Not for AI replies: a non-JSON body comes back as { success:false, message: rb },
+// and chat used to show `message` as the assistant's answer (a 502 HTML page
+// became a "reply"). Chat now uses the strict extractChatReply in
+// services/aiResponse.ts, which treats empty or non-JSON bodies as errors.
+// The remaining callers (phone-session, delete-account, iap-verify, web
+// checkout) gate on `success`/`url` and show `message` only as error text,
+// so they keep this behaviour.
 export function parseAppwriteResponse(rb: any): any {
   if (!rb) return {};
   if (typeof rb === 'object') return rb;
