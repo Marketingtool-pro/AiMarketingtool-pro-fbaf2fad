@@ -293,9 +293,20 @@ async function captureSessionFromHeaders(headers: Headers): Promise<boolean> {
  * unreachable through it. These are the only two calls that need it: everything
  * afterwards goes through the SDK as usual, authenticated by the header that
  * client.setSession() adds.
+ *
+ * Only the two fixed session URLs below can be requested, so no caller-supplied
+ * string ever reaches fetch() (CodeQL js/request-forgery, alert #452).
  */
-async function postSession(path: string, body: Record<string, string>): Promise<Models.Session> {
-  const response = await fetch(`${APPWRITE_ENDPOINT}${path}`, {
+const SESSION_URLS = {
+  token: `${APPWRITE_ENDPOINT}/account/sessions/token`,
+  email: `${APPWRITE_ENDPOINT}/account/sessions/email`,
+} as const;
+
+async function postSession(kind: keyof typeof SESSION_URLS, body: Record<string, string>): Promise<Models.Session> {
+  if (!Object.prototype.hasOwnProperty.call(SESSION_URLS, kind)) {
+    throw new Error(`Unknown session request: ${String(kind)}`);
+  }
+  const response = await fetch(SESSION_URLS[kind], {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -407,7 +418,7 @@ async function redeemOAuthToken(userId: string, secret: string): Promise<Models.
   const already = consumedOAuthSecrets.get(secret);
   if (already) return already;
 
-  const session = await postSession('/account/sessions/token', { userId, secret });
+  const session = await postSession('token', { userId, secret });
   await adoptSession(session);
 
   consumedOAuthSecrets.set(secret, session);
@@ -586,7 +597,7 @@ export const authService = {
   // Login with Email
   async login(email: string, password: string): Promise<Models.Session> {
     try {
-      const session = await postSession('/account/sessions/email', { email, password });
+      const session = await postSession('email', { email, password });
       await adoptSession(session);
       return session;
     } catch (error) {
