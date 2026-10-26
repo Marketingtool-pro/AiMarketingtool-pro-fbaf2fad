@@ -47,6 +47,18 @@ const MIME = {
   '.txt': 'text/plain; charset=utf-8'
 };
 
+// Applied to every response. The CSP holds only directives that cannot break
+// the Expo bundle or its third-party SDKs (no script-src/connect-src yet).
+const SECURITY_HEADERS = {
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+  'Content-Security-Policy':
+    "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests",
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()'
+};
+
 function headersFor(file) {
   const ext = path.extname(file).toLowerCase();
   const rel = path.relative(ROOT, file).split(path.sep).join('/');
@@ -57,8 +69,7 @@ function headersFor(file) {
     'Content-Type': MIME[ext] || 'application/octet-stream',
     'Cache-Control': hashed
       ? 'public, max-age=31536000, immutable'
-      : 'public, max-age=0, must-revalidate',
-    'X-Content-Type-Options': 'nosniff'
+      : 'public, max-age=0, must-revalidate'
   };
 }
 
@@ -107,6 +118,8 @@ function safeResolve(pathname) {
 }
 
 const server = http.createServer((req, res) => {
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) res.setHeader(name, value);
+
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.writeHead(405, { Allow: 'GET, HEAD' });
     return res.end();
