@@ -108,19 +108,17 @@ interface AuthState {
  *  - Matches the FULL E.164 number. The previous implementation compared only
  *    the last 10 digits, which meant any number ending in the reviewer's last
  *    10 digits -- in any of the ~200 supported dialling codes -- could skip OTP.
- *  - Requires BOTH EXPO_PUBLIC_REVIEWER_PHONE and EXPO_PUBLIC_REVIEWER_OTP to
- *    be set. There are no hardcoded fallbacks, so the bypass is inert in any
- *    build that does not explicitly configure it.
+ *  - Inert unless EXPO_PUBLIC_REVIEWER_PHONE is set. No hardcoded fallback.
  *
- * Note this is still a client-side check, and EXPO_PUBLIC_* values are inlined
- * into the JS bundle at build time. Configure it only for the build handed to
- * store review; the durable fix is to move the reviewer session server-side
- * (the Appwrite phone-session function) so no bypass ships to users at all.
+ * The reviewer CODE is never in the app: EXPO_PUBLIC_* values are inlined into
+ * the JS bundle, and the code mints a real Appwrite session. The app only skips
+ * the SMS for this number and forwards whatever code was typed; the
+ * phone-session function checks it against its own REVIEWER_PHONE /
+ * REVIEWER_OTP and refuses anything else.
  */
 function isReviewerPhone(e164: string): boolean {
   const phone = process.env.EXPO_PUBLIC_REVIEWER_PHONE?.trim();
-  const code = process.env.EXPO_PUBLIC_REVIEWER_OTP?.trim();
-  if (!phone || !code) return false;
+  if (!phone) return false;
   return e164 === `+${phone.replace(/\D/g, '')}`;
 }
 
@@ -433,14 +431,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Reviewer bypass — full-number match, and only when explicitly
       // configured. See sendPhoneOTP for why the previous last-10-digits
-      // comparison was unsafe across ~200 dialling codes.
-      const reviewerCode = process.env.EXPO_PUBLIC_REVIEWER_OTP?.trim();
-      const isReviewer = isReviewerPhone(phone);
-
-      if (isReviewer && !!reviewerCode && code === reviewerCode) {
+      // comparison was unsafe across ~200 dialling codes. No SMS was sent for
+      // this number, so the typed code goes to phone-session, which alone
+      // decides whether it is the reviewer code.
+      if (isReviewerPhone(phone)) {
         firebaseUid = 'reviewer_bypass_' + phone.replace(/\D/g, '').slice(-10);
-        // v2 checks these against its own REVIEWER_PHONE / REVIEWER_OTP.
-        reviewerFields = { reviewerPhone: phone, reviewerCode: code };
+        reviewerFields = { reviewerPhone: phone, reviewerCode: code.trim() };
       } else {
         if (__DEV__) console.log('[Auth] Verifying OTP via Firebase for', phone);
         const verifyResult = await firebaseVerifyOTP(code);

@@ -77,7 +77,7 @@
 
 - Appwrite function responses are not uniform in this codebase: they may arrive as an object, a JSON string, or plain text. Reuse the normalization pattern in `src/store/authStore.ts` / `src/services/aiService.ts` instead of assuming one response shape.
 
-- The reviewer bypass values for phone auth are intentional. They live in `src/store/authStore.ts` (EXPO_PUBLIC_REVIEWER_PHONE / EXPO_PUBLIC_REVIEWER_OTP) for the App Store / Play Store review test phone / OTP flow.
+- The reviewer bypass values for phone auth are intentional. The app only knows the reviewer number (`EXPO_PUBLIC_REVIEWER_PHONE` in `src/store/authStore.ts`); the code is checked server-side by the phone-session function (`REVIEWER_PHONE` / `REVIEWER_OTP`) and must never be an `EXPO_PUBLIC_*` value.
 
 - Keep secrets out of source. Firebase Genkit uses Secret Manager (`defineSecret(...)` in `functions/src/index.ts`), and the Appwrite function expects env vars instead of inline credentials.
 
