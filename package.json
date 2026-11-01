@@ -247,7 +247,7 @@
     "access": "restricted"
   },
   "overrides": {
-    "qs": "^6.16.0",
+    "qs": "^6.17.1",
     "decode-uri-component": "^0.5.0",
     "stream-json": "^3.5.0",
     "mysql2": "^3.23.1",
@@ -311,7 +311,7 @@
     }
   },
   "resolutions": {
-    "qs": "^6.16.0",
+    "qs": "^6.17.1",
     "decode-uri-component": "^0.5.0",
     "stream-json": "^3.5.0",
     "mysql2": "^3.23.1",
