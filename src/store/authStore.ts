@@ -102,13 +102,13 @@ interface AuthState {
 
 // Plan, limits and credits are decided by the server (iap-verify); the app
 // must never send them.
-const SERVER_OWNED_PROFILE_FIELDS = ['subscription', 'generationsLimit', 'credits', 'userId'] as const;
+const SERVER_OWNED_PROFILE_FIELDS = new Set(['subscription', 'generationsLimit', 'credits', 'userId']);
 
 function withoutServerOwnedFields(data: Partial<UserProfile>): Partial<UserProfile> {
-  const clean: Record<string, unknown> = { ...data };
-  for (const key of SERVER_OWNED_PROFILE_FIELDS) delete clean[key];
-  for (const key of Object.keys(clean)) if (key.startsWith('$')) delete clean[key];
-  return clean as Partial<UserProfile>;
+  const allowed = Object.entries(data).filter(
+    ([key]) => !SERVER_OWNED_PROFILE_FIELDS.has(key) && !key.startsWith('$'),
+  );
+  return Object.fromEntries(allowed) as Partial<UserProfile>;
 }
 
 /**
