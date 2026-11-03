@@ -100,6 +100,17 @@ interface AuthState {
   fetchOrCreateProfile: (user: Models.User<Models.Preferences>) => Promise<UserProfile>;
 }
 
+// Plan, limits and credits are decided by the server (iap-verify); the app
+// must never send them.
+const SERVER_OWNED_PROFILE_FIELDS = new Set(['subscription', 'generationsLimit', 'credits', 'userId']);
+
+function withoutServerOwnedFields(data: Partial<UserProfile>): Partial<UserProfile> {
+  const allowed = Object.entries(data).filter(
+    ([key]) => !SERVER_OWNED_PROFILE_FIELDS.has(key) && !key.startsWith('$'),
+  );
+  return Object.fromEntries(allowed) as Partial<UserProfile>;
+}
+
 /**
  * Store-review OTP bypass check.
  *
@@ -622,7 +633,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const updated = await dbService.updateDocument<UserProfile & Models.Document>(
         COLLECTIONS.USERS,
         profile.$id,
-        data
+        withoutServerOwnedFields(data)
       );
       set({ profile: updated as UserProfile, isLoading: false });
     } catch (error: any) {
@@ -632,10 +643,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   // Unlock the entitlement the instant a StoreKit/Play purchase is confirmed.
-  // Sets local state FIRST (optimistic, never blocked by the network) so Pro
-  // tools unlock immediately, then best-effort persists to the profile document
-  // so the unlock survives refreshProfile()/app restart. A failed DB write must
-  // NOT re-lock the user — the finished transaction already proves the purchase.
+  // Local only: the SecureStore override keeps the unlock across restarts, and
+  // the profile's plan is written by iap-verify after the store confirms the
+  // purchase. The app never writes plan tier or limits to the profile.
   grantEntitlement: async (tier, generationsLimit) => {
     set({ localSubscriptionOverride: tier });
     try {
@@ -646,36 +656,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { profile } = get();
     if (!profile) return;
     set({ profile: { ...profile, subscription: tier, generationsLimit } });
-    try {
-      const updated = await dbService.updateDocument<UserProfile & Models.Document>(
-        COLLECTIONS.USERS,
-        profile.$id,
-        { subscription: tier, generationsLimit }
-      );
-      set({ profile: updated as UserProfile });
-    } catch (error: any) {
-      console.warn('[AuthStore] grantEntitlement persist failed (local unlock kept):', error);
-    }
   },
 
   // Token packs are "added instantly to your account" (pricing page). Credit
-  // locally from the finished transaction first — same philosophy as
-  // grantEntitlement: a failed server write must not eat a paid purchase.
+  // locally from the finished transaction; iap-verify adds the credits to the
+  // profile once the store confirms the purchase, and refreshProfile() reads
+  // them back. The app never writes a credit balance.
   grantCredits: async (amount: number) => {
     const { profile } = get();
     if (!profile) return;
-    const credits = (profile.credits ?? 0) + amount;
-    set({ profile: { ...profile, credits } });
-    try {
-      const updated = await dbService.updateDocument<UserProfile & Models.Document>(
-        COLLECTIONS.USERS,
-        profile.$id,
-        { credits }
-      );
-      set({ profile: updated as UserProfile });
-    } catch (error: any) {
-      console.warn('[AuthStore] grantCredits persist failed (local credit kept):', error);
-    }
+    set({ profile: { ...profile, credits: (profile.credits ?? 0) + amount } });
   },
 
   // Count a successful generation against the user's plan quota. Optimistic
