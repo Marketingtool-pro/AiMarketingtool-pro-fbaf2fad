@@ -12,7 +12,12 @@ const wrapperPath = path.join(process.cwd(), 'android', 'gradle', 'wrapper', 'gr
 //
 // AGP and Gradle have to move together, so the version lives in one place and
 // withAgp9.js reads the same constant.
-const GRADLE_VERSION = process.env.GRADLE_WRAPPER_VERSION || '8.13';
+//
+// 2026-11-04: Expo SDK 58 / RN 0.88 use AGP 9.2.1, which needs Gradle >= 9.4.1.
+// The 8.13 default here made EAS Android build 1071 (1.5.23) fail with
+// "Minimum supported Gradle version is 9.4.1. Current version is 8.13" even
+// though local builds (no EAS hooks) passed. 9.4.1 is the Expo 58 template's.
+const GRADLE_VERSION = process.env.GRADLE_WRAPPER_VERSION || '9.4.1';
 
 try {
   // Read file directly. If it does not exist, it will throw an error to the catch block
