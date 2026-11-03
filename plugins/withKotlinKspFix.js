@@ -1,146 +1,56 @@
-const { withProjectBuildGradle, withAppBuildGradle, withDangerousMod } = require('expo/config-plugins');
+const { withProjectBuildGradle, withAppBuildGradle } = require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
 const DEFAULTS = {
-  kotlinVersion: '2.1.20',
-  kspVersion: '2.1.20-1.0.32',
-  // AGP 8.7.x caps compileSdk at 35 and rejects compileSdk 36. Android 16 needs
-  // AGP >= 8.9; 8.12.0 is what RN 0.85's gradle-plugin targets, so stay aligned.
-  agpVersion: '8.12.0',
   googlePlayServicesVersion: '18.0.0',
-  gradleVersion: '8.13',
-  crashlyticsVersion: '3.0.3',
-  googleServicesVersion: '4.4.2'
+  crashlyticsVersion: '3.0.8',
+  googleServicesVersion: '4.5.0'
 };
 
 /**
- * Android build.gradle + Gradle wrapper fixes for Expo SDK 55 / RN 0.83.
- * Includes Crashlytics build ID fix and 16 KB page size alignment.
+ * Android build.gradle fixes for Expo SDK 58 / RN 0.88.
+ *
+ * Up to SDK 57 this plugin also pinned AGP 8.12.0, Gradle 8.13, Kotlin 2.1.20
+ * and KSP 2.1.20 on every module, and rewrote the Gradle wrapper. RN 0.88's
+ * gradle plugin needs AGP 9.2.1, which refuses to run below Gradle 9.4.1
+ * ("Minimum supported Gradle version is 9.4.1. Current version is 8.13"), and
+ * Kotlin 2.2 turns the old kotlinOptions DSL into an error. The Expo 58
+ * template already ships the right toolchain (Gradle 9.4.1, AGP from RN's
+ * version catalog, Kotlin/KSP from expo-build-properties in app.json), so
+ * those pins were removed on 2026-11-03. What stays: the Crashlytics and
+ * google-services classpaths and plugins, and 16 KB page-size packaging.
  */
 const withKotlinKspFix = (config, options) => {
   const opts = { ...DEFAULTS, ...(options || {}) };
-  const { 
-    kotlinVersion, kspVersion, agpVersion, 
-    googlePlayServicesVersion, gradleVersion,
-    crashlyticsVersion, googleServicesVersion
-  } = opts;
+  const { googlePlayServicesVersion, crashlyticsVersion, googleServicesVersion } = opts;
 
   // 1. Project-level build.gradle
   config = withProjectBuildGradle(config, (config) => {
     if (config.modResults.language !== 'groovy') return config;
     let buildGradle = config.modResults.contents;
 
-    // 🚨 CRITICAL FIX: Remove supportLibVersion from line 1
     buildGradle = buildGradle.replace(/^supportLibVersion\s*=\s*["'].*["']\s*/m, '');
 
-    const varsToEnsure = [
-      { name: 'kotlinVersion', value: `'${kotlinVersion}'` },
-      { name: 'kspVersion', value: `'${kspVersion}'` },
-      { name: 'googlePlayServicesVersion', value: `"${googlePlayServicesVersion}"` },
-      // Fallback only — app.json's expo-build-properties is authoritative and
-      // writes android.{compile,target}SdkVersion into android/gradle.properties.
-      // Keep these in sync with it: Google Play requires targetSdk >= 36
-      // (Android 16) for updates from Aug 31, 2026.
-      { name: 'compileSdkVersion', value: '36' },
-      { name: 'targetSdkVersion', value: '36' },
-      { name: 'buildToolsVersion', value: '"36.0.0"' },
-      { name: 'minSdkVersion', value: '24' },
-    ];
-    
-    const missing = varsToEnsure.filter(v => !new RegExp(`\\b${v.name}\\s*=`).test(buildGradle));
-
-    if (missing.length > 0) {
-      const injectedLines = missing.map(v => `        ${v.name} = ${v.value}`).join('\n');
-      if (/ext\s*\{/.test(buildGradle)) {
-        buildGradle = buildGradle.replace(/ext\s*\{/, `ext {\n${injectedLines}`);
-      } else {
-        buildGradle = buildGradle.replace(/buildscript\s*\{/, `ext {\n${injectedLines}\n}\n\nbuildscript {`);
-      }
+    // Fallback only: expo-build-properties in app.json writes the SDK levels.
+    if (!/\bgooglePlayServicesVersion\s*=/.test(buildGradle)) {
+      const line = `        googlePlayServicesVersion = "${googlePlayServicesVersion}"`;
+      buildGradle = /ext\s*\{/.test(buildGradle)
+        ? buildGradle.replace(/ext\s*\{/, `ext {\n${line}`)
+        : buildGradle.replace(/buildscript\s*\{/, `ext {\n${line}\n}\n\nbuildscript {`);
     }
 
-    // 🚨 AGP FIX
-    if (!buildGradle.includes(`com.android.tools.build:gradle:${agpVersion}`)) {
-        buildGradle = buildGradle.replace(
-            /classpath\s*(?:\(\s*)?['"]com\.android\.tools\.build:gradle(?::[^'"]*)?['"]\s*\)?/g,
-            `classpath("com.android.tools.build:gradle:${agpVersion}")`
-        );
-    }
-
-    // Rewrite Kotlin gradle-plugin classpath
-    if (!buildGradle.includes(`org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}`)) {
+    if (!buildGradle.includes('com.google.firebase:firebase-crashlytics-gradle')) {
       buildGradle = buildGradle.replace(
-        /classpath\s*(?:\(\s*)?['"]org\.jetbrains\.kotlin:kotlin-gradle-plugin(?::[^'"]*)?['"]\s*\)?/g,
-        `classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")`
+        /dependencies\s*\{/,
+        `dependencies {\n        classpath 'com.google.firebase:firebase-crashlytics-gradle:${crashlyticsVersion}'`
       );
     }
-
-    // 🚨 Crashlytics Classpath FIX
-    if (!buildGradle.includes('com.google.firebase:firebase-crashlytics-gradle')) {
-        buildGradle = buildGradle.replace(
-          /dependencies\s*\{/,
-          `dependencies {
-        classpath 'com.google.firebase:firebase-crashlytics-gradle:${crashlyticsVersion}'`
-        );
-    }
     if (!buildGradle.includes('com.google.gms:google-services')) {
-        buildGradle = buildGradle.replace(
-          /dependencies\s*\{/,
-          `dependencies {
-        classpath 'com.google.gms:google-services:${googleServicesVersion}'`
-        );
-    }
-
-    const resolutionStrategyBlock = `
-allprojects {
-    configurations.all {
-        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-            def requested = details.requested
-            if (requested.group == 'org.jetbrains.kotlin' && requested.name.startsWith('kotlin-')) {
-                details.useVersion kotlinVersion
-            }
-            if (requested.group == 'com.google.devtools.ksp') {
-                details.useVersion kspVersion
-            }
-            // expo-dev-launcher 56 calls WindowCompat.enableEdgeToEdge(), introduced in androidx.core 1.16.
-            if (requested.group == 'androidx.core' && (requested.name == 'core-ktx' || requested.name == 'core')) {
-                details.useVersion '1.17.0'
-            }
-            // These two are still held at SDK 35-era versions while core is now
-            // 1.17.0 above, so the set is deliberately mismatched. They compile
-            // under compileSdk 36, but activity 1.10.x predates Android 16's
-            // enforced edge-to-edge. If an API 36 build regresses on edge-to-edge
-            // or window insets, raise these before looking anywhere else.
-            if (requested.group == 'androidx.activity') {
-                details.useVersion '1.10.1'
-            }
-            if (requested.group == 'androidx.browser' && requested.name == 'browser') {
-                details.useVersion '1.8.0'
-            }
-        }
-    }
-}
-`;
-
-    if (!buildGradle.includes('resolutionStrategy.eachDependency')) {
-      buildGradle += resolutionStrategyBlock;
-    }
-
-    // 🚨 AdMob fix: react-native-google-mobile-ads@16.4.0 pulls play-services-ads:25.4.0,
-    // which Google compiled with Kotlin 2.3.0 metadata. Our pinned Kotlin 2.1.20 can't read
-    // newer metadata -> ':react-native-google-mobile-ads:compileReleaseKotlin' FAILED.
-    // Skip the metadata-version check globally so the 2.1.20 compiler consumes the newer
-    // AAR (lower risk than bumping the whole toolchain to bleeding-edge Kotlin 2.3.0).
-    if (!buildGradle.includes('skip-metadata-version-check')) {
-      buildGradle += `
-allprojects {
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-        kotlinOptions {
-            freeCompilerArgs += ["-Xskip-metadata-version-check"]
-        }
-    }
-}
-`;
+      buildGradle = buildGradle.replace(
+        /dependencies\s*\{/,
+        `dependencies {\n        classpath 'com.google.gms:google-services:${googleServicesVersion}'`
+      );
     }
 
     config.modResults.contents = buildGradle;
@@ -176,27 +86,6 @@ allprojects {
     config.modResults.contents = contents;
     return config;
   });
-
-  // 3. Gradle Wrapper
-  config = withDangerousMod(config, [
-    'android',
-    async (config) => {
-      const projectRoot = config.modRequest.platformProjectRoot;
-      const wrapperPath = path.join(projectRoot, 'gradle', 'wrapper', 'gradle-wrapper.properties');
-      if (fs.existsSync(wrapperPath)) {
-        let content = fs.readFileSync(wrapperPath, 'utf8');
-        const lines = content.split('\n');
-        const updatedLines = lines.map(line => {
-          if (line.startsWith('distributionUrl=')) {
-            return `distributionUrl=https\\://services.gradle.org/distributions/gradle-${gradleVersion}-bin.zip`;
-          }
-          return line;
-        });
-        fs.writeFileSync(wrapperPath, updatedLines.join('\n'));
-      }
-      return config;
-    },
-  ]);
 
   return config;
 };

@@ -203,7 +203,27 @@ function patchMatchesInstalledReactNative() {
   return PATCHED_VERSION.split('-')[0] === installed;
 }
 
+// react-native 0.88 removed every Window.setStatusBarColor /
+// getStatusBarColor / setNavigationBarColor call from ReactAndroid itself
+// (checked 2026-11-03: grep over node_modules/react-native/ReactAndroid/src
+// finds none, and StatusBarModule no longer has setColor). From 0.88 on the
+// stock react-android AAR is already clean, so no patched AAR is needed.
+function upstreamAlreadyClean() {
+  const installed = installedReactNativeVersion();
+  if (!installed) return false;
+  const [major, minor] = installed.split('.').map(Number);
+  return major > 0 || minor >= 88;
+}
+
 module.exports = function withRNEdgeToEdgeFix(config) {
+  if (upstreamAlreadyClean()) {
+    console.log(
+      `[withRNEdgeToEdgeFix] Not needed: react-native ` +
+        `${installedReactNativeVersion()} no longer calls the deprecated ` +
+        `edge-to-edge APIs, so the stock react-android AAR is used.`
+    );
+    return config;
+  }
   if (!patchMatchesInstalledReactNative()) {
     console.warn(
       `[withRNEdgeToEdgeFix] SKIPPED: patched AAR is for react-native ` +
