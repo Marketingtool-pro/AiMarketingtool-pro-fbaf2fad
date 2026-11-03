@@ -25,7 +25,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
-import * as MediaLibrary from 'expo-media-library';
+// expo-media-library 58 moved the function API to /legacy; the root
+// saveToLibraryAsync now throws at runtime (CI lint: import/namespace).
+import * as MediaLibrary from 'expo-media-library/legacy';
 import * as Sharing from 'expo-sharing';
 import ViewShot from 'react-native-view-shot';
 import { RootStackParamList } from '../../navigation/AppNavigator';
