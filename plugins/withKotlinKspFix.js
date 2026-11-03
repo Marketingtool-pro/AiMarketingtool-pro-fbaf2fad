@@ -1,4 +1,4 @@
-const { withProjectBuildGradle, withAppBuildGradle } = require('expo/config-plugins');
+const { withProjectBuildGradle, withAppBuildGradle, withGradleProperties } = require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -54,6 +54,18 @@ const withKotlinKspFix = (config, options) => {
     }
 
     config.modResults.contents = buildGradle;
+    return config;
+  });
+
+  // 1b. Gradle JVM memory. The template's -Xmx2048m -XX:MaxMetaspaceSize=512m
+  // made R8 (AGP 9 / SDK 58) die with "R8: java.lang.OutOfMemoryError:
+  // Metaspace" in :app:minifyReleaseWithR8 on 2026-11-04.
+  config = withGradleProperties(config, (config) => {
+    const key = 'org.gradle.jvmargs';
+    const value = '-Xmx4096m -XX:MaxMetaspaceSize=1536m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8';
+    const items = config.modResults.filter((i) => !(i.type === 'property' && i.key === key));
+    items.push({ type: 'property', key, value });
+    config.modResults = items;
     return config;
   });
 
