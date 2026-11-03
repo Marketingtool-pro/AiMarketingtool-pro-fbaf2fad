@@ -43,6 +43,15 @@ module.exports = function withEasPodfileFix(config) {
         bc.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
         bc.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -Xfrontend -strict-concurrency=minimal'
 
+        # Xcode 27 rejects pod targets below iOS 15 ("supported deployment
+        # target versions is 15.0 to 27.2.x"); old pods (PromisesObjC 9.0,
+        # gRPC 11.0, GoogleDataTransport 12.0, lottie 13.0) still declare them.
+        # Lift them to the app's own target, 16.4 in app.json.
+        dt = bc.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+        if dt.nil? || Gem::Version.new(dt) < Gem::Version.new('16.4')
+          bc.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.4'
+        end
+
         if target.name == 'ExpoModulesCore'
           bc.build_settings['SWIFT_VERSION'] = '6.0'
         else
@@ -62,7 +71,7 @@ module.exports = function withEasPodfileFix(config) {
 
       // Unique sentinel so this plugin's snippet is detected regardless of what
       // other inline plugins (past or future) may inject into the Podfile.
-      const PLUGIN_SENTINEL = '# --- withEasPodfileFix-v3 ---';
+      const PLUGIN_SENTINEL = '# --- withEasPodfileFix-v4 ---';
       const snippetWithSentinel = `\n    ${PLUGIN_SENTINEL}${snippet}`;
 
       // Inject into post_install

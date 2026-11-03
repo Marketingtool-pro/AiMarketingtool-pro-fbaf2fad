@@ -36,8 +36,9 @@ const PerformanceChart = ({ data, title = 'Activity Trend' }: PerformanceChartPr
   }, [data, hasData, max, min]);
 
   const linePath = useMemo(() => {
-    const path = Skia.Path.Make();
-    if (points.length === 0) return path;
+    // Skia 2.14 (Expo SDK 58): SkPath is immutable; build it with PathBuilder.
+    const path = Skia.PathBuilder.Make();
+    if (points.length === 0) return path.build();
 
     path.moveTo(points[0].x, points[0].y);
     
@@ -51,15 +52,16 @@ const PerformanceChart = ({ data, title = 'Activity Trend' }: PerformanceChartPr
       const cp2y = p1.y;
       path.cubicTo(cp1x, cp1y, cp2x, cp2y, p1.x, p1.y);
     }
-    return path;
+    return path.build();
   }, [points]);
 
   const areaPath = useMemo(() => {
-    const path = linePath.copy();
+    const path = Skia.PathBuilder.MakeFromPath(linePath);
+    if (points.length === 0) return path.build();
     path.lineTo(points[points.length - 1].x, CHART_HEIGHT);
     path.lineTo(points[0].x, CHART_HEIGHT);
     path.close();
-    return path;
+    return path.build();
   }, [linePath, points]);
 
   if (!hasData) return null;

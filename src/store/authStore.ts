@@ -70,6 +70,8 @@ interface AuthState {
   error: string | null;
   tempPhone: string | null;
   tempVerificationId: string | null;
+  /** Signed challenge from phone-session when the code went out over WhatsApp. */
+  tempWhatsAppChallenge: string | null;
   biometricPending: boolean;
   mfaPending: boolean;
 
@@ -142,6 +144,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   error: null,
   tempPhone: null,
   tempVerificationId: null,
+  tempWhatsAppChallenge: null,
   biometricPending: false,
   mfaPending: false,
 
@@ -373,7 +376,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  clearOtpTemp: () => set({ tempPhone: null, tempVerificationId: null }),
+  clearOtpTemp: () => set({ tempPhone: null, tempVerificationId: null, tempWhatsAppChallenge: null }),
 
   sendPhoneOTP: async (phoneNumber: string) => {
     // Firebase Phone Auth — Google's SMS infrastructure (Uber/Ola pattern).
@@ -406,12 +409,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return formatted;
       }
 
+      // WhatsApp first (MSG91, sent by the phone-session function, which holds
+      // the MSG91 key). Any failure -- WhatsApp not configured on the server,
+      // an older function version, number not on WhatsApp, MSG91 down -- falls
+      // through to Firebase SMS, so login never depends on WhatsApp alone.
+      try {
+        const waExec = await functions.createExecution(
+          'phone-session',
+          JSON.stringify({ action: 'whatsapp_send', phone: formatted }),
+          false, '/', ExecutionMethod.POST,
+          { 'Content-Type': 'application/json' }
+        );
+        const wa = parseAppwriteResponse(waExec.responseBody);
+        if (wa.success && typeof wa.challenge === 'string') {
+          set({ tempPhone: formatted, tempVerificationId: formatted, tempWhatsAppChallenge: wa.challenge });
+          return formatted;
+        }
+      } catch (waError: any) {
+        if (__DEV__) console.log('[Auth] WhatsApp code not sent, using SMS:', waError?.message);
+      }
+
       if (__DEV__) console.log('[Auth] Sending OTP via Firebase to', formatted);
       const result = await firebaseSendOTP(formatted);
       if (!result.success) {
         throw new Error(result.error || 'Failed to send OTP');
       }
-      set({ tempPhone: formatted, tempVerificationId: formatted });
+      set({ tempPhone: formatted, tempVerificationId: formatted, tempWhatsAppChallenge: null });
       return formatted;
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
@@ -439,6 +462,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // so both are sent and either function version works.
       let idToken: string | undefined;
       let reviewerFields: { reviewerPhone: string; reviewerCode: string } | undefined;
+      let whatsappFields: { whatsappChallenge: string; whatsappCode: string } | undefined;
+      const waChallenge = get().tempWhatsAppChallenge;
 
       // Reviewer bypass — full-number match, and only when explicitly
       // configured. See sendPhoneOTP for why the previous last-10-digits
@@ -448,6 +473,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (isReviewerPhone(phone)) {
         firebaseUid = 'reviewer_bypass_' + phone.replace(/\D/g, '').slice(-10);
         reviewerFields = { reviewerPhone: phone, reviewerCode: code.trim() };
+      } else if (waChallenge) {
+        // Code came over WhatsApp: phone-session checks it against the signed
+        // challenge and takes the phone number from the challenge, not from us.
+        firebaseUid = 'whatsapp_' + phone.replace(/\D/g, '');
+        whatsappFields = { whatsappChallenge: waChallenge, whatsappCode: code.trim() };
       } else {
         if (__DEV__) console.log('[Auth] Verifying OTP via Firebase for', phone);
         const verifyResult = await firebaseVerifyOTP(code);
@@ -463,7 +493,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // guests can't poll executions.read.
       const sessionExec = await functions.createExecution(
         'phone-session',
-        JSON.stringify({ idToken, firebaseUid, phone, displayName: '', ...reviewerFields }),
+        JSON.stringify({ idToken, firebaseUid, phone, displayName: '', ...reviewerFields, ...whatsappFields }),
         false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
@@ -497,7 +527,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // second-factor prompt into a hard OTP failure.
       const { user, mfaRequired } = await authService.getCurrentUserOrMfa();
       if (mfaRequired) {
-        set({ mfaPending: true, tempPhone: null, tempVerificationId: null });
+        set({ mfaPending: true, tempPhone: null, tempVerificationId: null, tempWhatsAppChallenge: null });
         return;
       }
       if (!user) throw new Error('Session created but could not fetch user');
@@ -509,7 +539,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // already returns a defaultProfile when it fails. So it was never a gate on
       // login — only a delay in front of the home screen, and on a slow network a
       // very long one. Land the user now and fill the profile in behind them.
-      set({ user, isAuthenticated: true, tempPhone: null, tempVerificationId: null });
+      set({ user, isAuthenticated: true, tempPhone: null, tempVerificationId: null, tempWhatsAppChallenge: null });
 
       get()
         .fetchOrCreateProfile(user)

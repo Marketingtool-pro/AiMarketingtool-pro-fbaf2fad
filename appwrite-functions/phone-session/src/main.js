@@ -1,5 +1,5 @@
 /**
- * Appwrite Function: phone-session  (v2.1.0)
+ * Appwrite Function: phone-session  (v3.0.0: adds WhatsApp OTP via MSG91)
  *
  * Creates or reuses the Appwrite user for a Firebase phone-auth user and returns
  * a one-time { userId, secret } the app exchanges for a session.
@@ -171,6 +171,125 @@ function digits(value) {
   return String(value || "").replace(/\D/g, "");
 }
 
+// ---------------------------------------------------------------------------
+// WhatsApp OTP (v3.0, via MSG91). Stateless: the server sends a 6-digit code
+// over WhatsApp and returns a signed challenge. The challenge carries the phone
+// number and expiry and is bound to the code with an HMAC, so the code itself is
+// never stored or returned. The secret key (OTP_SIGNING_SECRET) and the MSG91
+// auth key live only in the function's environment variables.
+// ---------------------------------------------------------------------------
+const WA_CODE_TTL_SECONDS = 5 * 60;
+const MAX_SENDS_PER_PHONE = 3; // per RATE_WINDOW_MS
+const MAX_CODE_TRIES_PER_CHALLENGE = 5;
+const sendsByPhone = new Map();
+const triesByChallenge = new Map();
+const usedChallenges = new Map();
+
+function whatsappConfigured() {
+  return Boolean(
+    process.env.MSG91_AUTHKEY && process.env.MSG91_WA_NUMBER && process.env.MSG91_WA_TEMPLATE &&
+      process.env.OTP_SIGNING_SECRET && String(process.env.OTP_SIGNING_SECRET).length >= 32
+  );
+}
+
+function sign(payloadB64, code) {
+  return crypto
+    .createHmac("sha256", String(process.env.OTP_SIGNING_SECRET))
+    .update(`${payloadB64}.${code}`)
+    .digest("base64url");
+}
+
+function bumpCounter(map, key, limit) {
+  const now = Date.now();
+  const entry = map.get(key);
+  const next =
+    !entry || now - entry.windowStart > RATE_WINDOW_MS
+      ? { count: 1, windowStart: now }
+      : { count: entry.count + 1, windowStart: entry.windowStart };
+  map.set(key, next);
+  if (map.size > 5000) map.delete(map.keys().next().value);
+  return next.count <= limit;
+}
+
+function postJson(url, headers, body) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(body);
+    const req = https.request(
+      url,
+      { method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data), ...headers } },
+      (resp) => {
+        let out = "";
+        resp.on("data", (c) => (out += c));
+        resp.on("end", () => resolve({ status: resp.statusCode, body: out }));
+      }
+    );
+    req.on("error", reject);
+    req.setTimeout(15000, () => req.destroy(new Error("MSG91 timeout")));
+    req.end(data);
+  });
+}
+
+async function sendWhatsAppCode(phoneDigits, code) {
+  const components = {
+    body_1: { type: "text", value: code },
+    button_1: { subtype: "url", type: "text", value: code },
+  };
+  // The marketingtoolpro template has a second body variable (support number).
+  if (process.env.WA_SUPPORT_NUMBER) {
+    components.body_2 = { type: "text", value: String(process.env.WA_SUPPORT_NUMBER) };
+  }
+  const template = {
+    name: process.env.MSG91_WA_TEMPLATE,
+    language: { code: process.env.MSG91_WA_LANG || "en", policy: "deterministic" },
+    to_and_components: [{ to: [phoneDigits], components }],
+  };
+  if (process.env.MSG91_WA_NAMESPACE) template.namespace = process.env.MSG91_WA_NAMESPACE;
+  const resp = await postJson(
+    "https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/",
+    { authkey: process.env.MSG91_AUTHKEY },
+    {
+      integrated_number: digits(process.env.MSG91_WA_NUMBER),
+      content_type: "template",
+      payload: { messaging_product: "whatsapp", type: "template", template },
+    }
+  );
+  if (resp.status < 200 || resp.status >= 300 || /"(status|type)"\s*:\s*"(error|fail)/i.test(resp.body)) {
+    throw new Error(`MSG91 HTTP ${resp.status}: ${String(resp.body).slice(0, 300)}`);
+  }
+}
+
+async function startWhatsApp(phone) {
+  const phoneDigits = digits(phone);
+  if (phoneDigits.length < 8 || phoneDigits.length > 15) return { status: 400, body: { error: "Invalid phone number" } };
+  if (!bumpCounter(sendsByPhone, phoneDigits, MAX_SENDS_PER_PHONE)) {
+    return { status: 429, body: { error: "Too many codes requested. Try again later." } };
+  }
+  const code = String(crypto.randomInt(0, 1000000)).padStart(6, "0");
+  const payload = {
+    p: phoneDigits,
+    e: Math.floor(Date.now() / 1000) + WA_CODE_TTL_SECONDS,
+    n: crypto.randomBytes(12).toString("base64url"),
+  };
+  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  await sendWhatsAppCode(phoneDigits, code);
+  return { status: 200, body: { success: true, challenge: `${payloadB64}.${sign(payloadB64, code)}`, expiresIn: WA_CODE_TTL_SECONDS } };
+}
+
+// Returns the verified phone digits, or throws.
+function verifyWhatsApp(challenge, code) {
+  if (typeof challenge !== "string" || typeof code !== "string") throw new Error("missing challenge or code");
+  const [payloadB64, mac] = challenge.split(".");
+  if (!payloadB64 || !mac) throw new Error("malformed challenge");
+  if (!bumpCounter(triesByChallenge, payloadB64, MAX_CODE_TRIES_PER_CHALLENGE)) throw new Error("too many tries");
+  if (usedChallenges.has(payloadB64)) throw new Error("challenge already used");
+  const payload = b64urlJson(payloadB64);
+  if (typeof payload.e !== "number" || payload.e < Math.floor(Date.now() / 1000)) throw new Error("code expired");
+  if (!/^\d{6}$/.test(code.trim()) || !safeEqual(sign(payloadB64, code.trim()), mac)) throw new Error("wrong code");
+  usedChallenges.set(payloadB64, payload.e);
+  if (usedChallenges.size > 5000) usedChallenges.delete(usedChallenges.keys().next().value);
+  return digits(payload.p);
+}
+
 function parseBody(raw) {
   if (raw && typeof raw === "object" && !Buffer.isBuffer(raw)) return raw;
   if (Buffer.isBuffer(raw)) return JSON.parse(raw.toString("utf8"));
@@ -199,7 +318,21 @@ module.exports = async ({ req, res, log, error }) => {
     return res.json({ error: "Invalid request body" }, 400, headers);
   }
 
-  const { idToken, displayName, reviewerPhone, reviewerCode } = body || {};
+  const { idToken, displayName, reviewerPhone, reviewerCode, action, phone, whatsappChallenge, whatsappCode } =
+    body || {};
+
+  // Step 1 of the WhatsApp login: send the code. No session is created here.
+  if (action === "whatsapp_send") {
+    if (!whatsappConfigured()) return res.json({ error: "WhatsApp login is not available" }, 503, headers);
+    try {
+      const out = await startWhatsApp(phone);
+      if (out.status !== 200) recordFailure(ip);
+      return res.json(out.body, out.status, headers);
+    } catch (e) {
+      error("phone-session: WhatsApp send failed: " + e.message);
+      return res.json({ error: "Could not send the WhatsApp code" }, 502, headers);
+    }
+  }
 
   let phoneDigits;
 
@@ -222,6 +355,16 @@ module.exports = async ({ req, res, log, error }) => {
       return res.json({ error: "Invalid reviewer credentials" }, 401, headers);
     }
     phoneDigits = serverReviewerPhone;
+  } else if (!idToken && whatsappChallenge) {
+    // Step 2 of the WhatsApp login: the typed code must match the signed challenge.
+    if (!whatsappConfigured()) return res.json({ error: "WhatsApp login is not available" }, 503, headers);
+    try {
+      phoneDigits = verifyWhatsApp(whatsappChallenge, String(whatsappCode || ""));
+    } catch (e) {
+      recordFailure(ip);
+      log("phone-session: WhatsApp code rejected: " + e.message);
+      return res.json({ error: "That code is wrong or has expired" }, 401, headers);
+    }
   } else {
     let claims;
     try {

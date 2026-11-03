@@ -13,6 +13,7 @@ import {
   Dimensions,
   Easing,
   Image,
+  type ScrollViewInstance,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -167,7 +168,7 @@ const ChatScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { profile, localSubscriptionOverride } = useAuthStore();
   const { tools, categories } = useToolsStore();
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<ScrollViewInstance>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
