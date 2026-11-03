@@ -106,3 +106,27 @@ index 43ec807..e53558e 100644
  
  @interface RNFBUtilsModule : NSObject <RCTBridgeModule>
  
+diff --git a/node_modules/@react-native-firebase/app/ios_config.sh b/node_modules/@react-native-firebase/app/ios_config.sh
+index a35f763..ab7241b 100755
+--- a/node_modules/@react-native-firebase/app/ios_config.sh
++++ b/node_modules/@react-native-firebase/app/ios_config.sh
+@@ -52,7 +52,7 @@ function setPlistValue {
+ 
+ function getFirebaseJsonKeyValue () {
+   if [[ ${_RN_ROOT_EXISTS} ]]; then
+-    ruby -Ku -e "require 'rubygems';require 'json'; output=JSON.parse('$1'); puts output[$_JSON_ROOT]['$2']"
++    RNFB_JSON="$1" ruby -Ku -e "require 'rubygems';require 'json'; output=JSON.parse(ENV['RNFB_JSON']); puts output[$_JSON_ROOT]['$2']"
+   else
+     echo ""
+   fi;
+@@ -88,7 +88,9 @@ done
+ 
+ if [[ ${_SEARCH_RESULT} ]]; then
+   _JSON_OUTPUT_RAW=$(cat "${_SEARCH_RESULT}")
+-  if ! _RN_ROOT_EXISTS=$(ruby -Ku -e "require 'json'; output=JSON.parse('$_JSON_OUTPUT_RAW'); puts output[$_JSON_ROOT]"); then
++  # Pass the JSON through the environment, not inside a single-quoted Ruby
++  # string: any ' in firebase.json (e.g. CSP "object-src 'none'") broke it.
++  if ! _RN_ROOT_EXISTS=$(RNFB_JSON="$_JSON_OUTPUT_RAW" ruby -Ku -e "require 'json'; output=JSON.parse(ENV['RNFB_JSON']); puts output[$_JSON_ROOT]"); then
+     echo "error: Failed to parse firebase.json, check for syntax errors."
+     exit 1
+   fi
