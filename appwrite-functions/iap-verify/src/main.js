@@ -1,5 +1,5 @@
 /**
- * Appwrite Function: iap-verify  (v2.0.0)
+ * Appwrite Function: iap-verify  (v2.1.0)
  *
  * Verifies App Store / Google Play purchases and updates the Appwrite user
  * profile with the matching subscription tier + generationsLimit, or adds
@@ -13,6 +13,16 @@
  *     verification config, a failed lookup, a wrong bundle/package, a wrong
  *     product, an expired/revoked subscription or an already-consumed Play
  *     token all leave the profile untouched (fail closed).
+ *
+ * v2.1: one store transaction, one grant.
+ *   - Writes to the profile the app reads (database `main`, collection
+ *     `users`, see src/services/appwrite.ts). v2 wrote to
+ *     `marketingtool`/`profiles`, so verified purchases never reached it.
+ *   - Every verified purchase is claimed in the `iap_transactions` ledger
+ *     (document id = hash of the store's transaction id). A consumable can be
+ *     claimed once; a subscription stays bound to the first account that
+ *     claimed it. A signed App Store transaction or receipt replayed for more
+ *     credits, or shared to unlock other accounts, is refused.
  *
  * Request body (POST):
  *   { productId, platform, userId?,
@@ -33,6 +43,11 @@
  *   APP_BUNDLE_ID                  (default: pro.marketingtool.app)
  *   ANDROID_PACKAGE_NAME           (default: pro.marketingtool.app)
  *   APPLE_ROOT_CA_SHA256           (default: Apple Root CA - G3 fingerprint)
+ *   APPWRITE_DATABASE_ID           (default: main)
+ *   PROFILES_COLLECTION_ID         (default: users)
+ *   IAP_LEDGER_COLLECTION_ID       (default: iap_transactions) - attributes
+ *                                  userId, productId, platform (strings);
+ *                                  no client permissions
  */
 const https = require("https");
 const crypto = require("crypto");
@@ -65,6 +80,10 @@ const APPLE_ROOT_CA_SHA256 = (
   process.env.APPLE_ROOT_CA_SHA256 ||
   "63:34:3A:BF:B8:9A:6A:03:EB:B5:7E:9B:3F:5F:A7:BE:7C:4F:5C:75:6F:30:17:B3:A8:C4:88:C3:65:3E:91:79"
 ).toUpperCase();
+
+const DATABASE_ID = process.env.APPWRITE_DATABASE_ID || "main";
+const PROFILES_COLLECTION_ID = process.env.PROFILES_COLLECTION_ID || "users";
+const LEDGER_COLLECTION_ID = process.env.IAP_LEDGER_COLLECTION_ID || "iap_transactions";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin":  "*",
@@ -113,6 +132,14 @@ function httpsJson({ hostname, path, method = "GET", headers = {}, body }) {
 }
 
 // ── Apple ───────────────────────────────────────────────────────────────────
+
+/** The store's id for this purchase; the ledger key. */
+function transactionRef(id) {
+  if ((typeof id !== "string" && typeof id !== "number") || String(id) === "") {
+    throw new VerificationError("Purchase has no transaction id");
+  }
+  return String(id);
+}
 
 function b64urlJson(part) {
   return JSON.parse(Buffer.from(part, "base64url").toString("utf8"));
@@ -172,6 +199,7 @@ function verifyAppleJws(jws, productId, isConsumable) {
   if (!isConsumable && !(typeof payload.expiresDate === "number" && payload.expiresDate > Date.now())) {
     throw new VerificationError("Subscription is not active");
   }
+  return transactionRef(isConsumable ? payload.transactionId : payload.originalTransactionId || payload.transactionId);
 }
 
 /** Legacy app receipt via verifyReceipt (needs APPLE_SHARED_SECRET). */
@@ -197,6 +225,7 @@ async function verifyAppleReceipt(receipt, productId, isConsumable) {
       (isConsumable || Number(i.expires_date_ms) > now)
   );
   if (!match) throw new VerificationError(isConsumable ? "Purchase not found in receipt" : "Subscription is not active");
+  return transactionRef(isConsumable ? match.transaction_id : match.original_transaction_id || match.transaction_id);
 }
 
 // ── Google Play ─────────────────────────────────────────────────────────────
@@ -273,6 +302,37 @@ async function verifyGooglePurchase(purchaseToken, productId, isConsumable) {
       throw new VerificationError("Purchase is for a different product");
     }
   }
+  return purchaseToken;
+}
+
+// ── Transaction ledger ──────────────────────────────────────────────────────
+
+function ledgerDocId(platform, ref) {
+  // Appwrite ids: max 36 chars of [a-zA-Z0-9._-]; hex is safe.
+  return crypto.createHash("sha256").update(`${platform}:${ref}`).digest("hex").slice(0, 36);
+}
+
+/**
+ * Claim a verified store transaction for `userId`. Returns the ledger doc id
+ * when this call created the claim, or null when this user already held it
+ * (subscription re-verify on restore/renewal). Throws when the purchase was
+ * already redeemed (consumable) or belongs to another account (subscription).
+ */
+async function claimTransaction(db, { platform, ref, userId, productId, isConsumable }) {
+  const id = ledgerDocId(platform, ref);
+  try {
+    await db.createDocument(DATABASE_ID, LEDGER_COLLECTION_ID, id, { userId, productId, platform });
+    return id;
+  } catch (e) {
+    if (e && e.code === 404) throw new VerificationError("Purchase ledger is not configured", 503);
+    if (!e || e.code !== 409) throw e;
+  }
+  if (isConsumable) throw new VerificationError("Purchase was already redeemed", 409);
+  const existing = await db.getDocument(DATABASE_ID, LEDGER_COLLECTION_ID, id);
+  if (existing.userId !== userId) {
+    throw new VerificationError("Purchase belongs to another account", 403);
+  }
+  return null;
 }
 
 // ── Handler ─────────────────────────────────────────────────────────────────
@@ -324,13 +384,14 @@ module.exports = async ({ req, res, log, error }) => {
   const isConsumable = CONSUMABLE_IDS.has(productId);
 
   // ── Store verification (required; nothing is written without it) ───────────
+  let ref;
   try {
     if (platform === "ios") {
       if (typeof appleReceipt !== "string" || !appleReceipt) throw new VerificationError("Missing App Store receipt", 400);
-      if (looksLikeJws(appleReceipt)) verifyAppleJws(appleReceipt, productId, isConsumable);
-      else await verifyAppleReceipt(appleReceipt, productId, isConsumable);
+      if (looksLikeJws(appleReceipt)) ref = verifyAppleJws(appleReceipt, productId, isConsumable);
+      else ref = await verifyAppleReceipt(appleReceipt, productId, isConsumable);
     } else {
-      await verifyGooglePurchase(googlePurchaseToken, productId, isConsumable);
+      ref = await verifyGooglePurchase(googlePurchaseToken, productId, isConsumable);
     }
     log(`iap-verify: ${platform} purchase verified for userId=${userId}`);
   } catch (e) {
@@ -344,17 +405,16 @@ module.exports = async ({ req, res, log, error }) => {
   }
 
   // ── Update Appwrite profile ─────────────────────────────────────────────────
+  let db;
+  let claimId = null;
   try {
     const client = new Client()
       .setEndpoint(process.env.APPWRITE_ENDPOINT || "https://api.marketingtool.pro/v1")
       .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
       .setKey(process.env.APPWRITE_API_KEY);
-    const db = new Databases(client);
+    db = new Databases(client);
 
-    const DATABASE_ID   = "marketingtool";
-    const COLLECTION_ID = "profiles";
-
-    const existing = await db.listDocuments(DATABASE_ID, COLLECTION_ID, [
+    const existing = await db.listDocuments(DATABASE_ID, PROFILES_COLLECTION_ID, [
       Query.equal("userId", userId),
     ]);
 
@@ -364,6 +424,15 @@ module.exports = async ({ req, res, log, error }) => {
     }
 
     const doc = existing.documents[0];
+
+    try {
+      claimId = await claimTransaction(db, { platform, ref, userId, productId, isConsumable });
+    } catch (e) {
+      if (!(e instanceof VerificationError)) throw e;
+      error(`iap-verify: claim refused for userId=${userId}: ${e.message}`);
+      return res.json({ success: false, error: e.message }, e.status, CORS_HEADERS);
+    }
+
     const updates = {};
 
     if (isConsumable) {
@@ -395,13 +464,18 @@ module.exports = async ({ req, res, log, error }) => {
     }
 
     if (Object.keys(updates).length > 0) {
-      await db.updateDocument(DATABASE_ID, COLLECTION_ID, doc.$id, updates);
+      await db.updateDocument(DATABASE_ID, PROFILES_COLLECTION_ID, doc.$id, updates);
       log(`Profile updated for userId=${userId}: ${JSON.stringify(updates)}`);
     }
 
     return res.json({ success: true }, 200, CORS_HEADERS);
   } catch (err) {
     error(`iap-verify DB update error: ${err.message}`);
+    // Release a consumable claim we just made so a retry can still credit it.
+    if (claimId && isConsumable) {
+      try { await db.deleteDocument(DATABASE_ID, LEDGER_COLLECTION_ID, claimId); }
+      catch (e) { error(`iap-verify: could not release claim ${claimId}: ${e.message}`); }
+    }
     // Purchase validation succeeded, but persistence failed.
     // Return an explicit partial failure so clients/monitoring can detect it.
     return res.json(

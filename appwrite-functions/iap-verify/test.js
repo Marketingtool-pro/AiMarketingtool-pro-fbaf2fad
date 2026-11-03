@@ -8,7 +8,14 @@ const origLoad = Module._load;
 
 let dbWrites = [];
 let routes = {}; // "host path" -> { status, json }
-const PROFILE = { $id: "doc1", userId: "user_a", subscription: "free", credits: 5 };
+let ledger = new Map(); // ledger doc id -> data
+let ledgerMissing = false;
+let failNextUpdate = false;
+const PROFILES = {
+  user_a: { $id: "doc1", userId: "user_a", subscription: "free", credits: 5 },
+  user_b: { $id: "doc2", userId: "user_b", subscription: "free", credits: 0 },
+};
+const appwriteError = (code) => Object.assign(new Error(`appwrite ${code}`), { code });
 
 Module._load = function (request, ...rest) {
   if (request === "https") {
@@ -32,8 +39,26 @@ Module._load = function (request, ...rest) {
   if (request === "node-appwrite") {
     class Client { setEndpoint() { return this; } setProject() { return this; } setKey() { return this; } }
     class Databases {
-      async listDocuments(_db, _col, q) { return { documents: q[0].includes("user_a") ? [PROFILE] : [] }; }
-      async updateDocument(_db, _col, id, updates) { dbWrites.push({ id, updates }); }
+      async listDocuments(db, col, q) {
+        if (db !== "main" || col !== "users") throw appwriteError(404);
+        const p = PROFILES[q[0].split("=")[1]];
+        return { documents: p ? [p] : [] };
+      }
+      async updateDocument(db, col, id, updates) {
+        if (db !== "main" || col !== "users") throw appwriteError(404);
+        if (failNextUpdate) { failNextUpdate = false; throw appwriteError(500); }
+        dbWrites.push({ id, updates });
+      }
+      async createDocument(db, col, id, data) {
+        if (ledgerMissing || db !== "main" || col !== "iap_transactions") throw appwriteError(404);
+        if (ledger.has(id)) throw appwriteError(409);
+        ledger.set(id, data);
+      }
+      async getDocument(_db, _col, id) {
+        if (!ledger.has(id)) throw appwriteError(404);
+        return { $id: id, ...ledger.get(id) };
+      }
+      async deleteDocument(_db, _col, id) { ledger.delete(id); }
     }
     return { Client, Databases, Query: { equal: (k, v) => `${k}=${v}` } };
   }
@@ -85,9 +110,43 @@ function check(name, cond) {
   check("iOS expired subscription -> 403", r.status === 403 && dbWrites.length === 0);
 
   routes = { "buy.itunes.apple.com /verifyReceipt": { status: 200, json: { status: 0, receipt: { bundle_id: "pro.marketingtool.app", in_app: [] },
-    latest_receipt_info: [{ product_id: sub.productId, expires_date_ms: future }] } } };
+    latest_receipt_info: [{ product_id: sub.productId, expires_date_ms: future, transaction_id: "t2", original_transaction_id: "t1" }] } } };
+  ledgerMissing = true;
+  r = await call(sub);
+  check("ledger collection missing -> 503, nothing written", r.status === 503 && dbWrites.length === 0);
+  ledgerMissing = false;
+
   r = await call(sub);
   check("iOS active subscription -> profile upgraded", r.status === 200 && dbWrites.length === 1 && dbWrites[0].updates.subscription === "growth");
+  check("profile write goes to main/users doc of the caller", dbWrites[0].id === "doc1");
+
+  dbWrites = [];
+  r = await call(sub);
+  check("same account re-verifies its subscription (restore) -> ok", r.status === 200 && dbWrites.length === 1);
+
+  dbWrites = [];
+  r = await call(sub, { "x-appwrite-user-id": "user_b" });
+  check("subscription receipt replayed on another account -> 403, nothing written", r.status === 403 && dbWrites.length === 0);
+
+  const iosTokens = { productId: "pro.marketingtool.tokens", platform: "ios", appleReceipt: "legacy-receipt" };
+  routes = { "buy.itunes.apple.com /verifyReceipt": { status: 200, json: { status: 0, receipt: { bundle_id: "pro.marketingtool.app",
+    in_app: [{ product_id: iosTokens.productId, transaction_id: "c1", original_transaction_id: "c1" }] } } } };
+  dbWrites = [];
+  failNextUpdate = true;
+  r = await call(iosTokens);
+  check("iOS consumable, profile write fails -> 500 and claim released", r.status === 500 && dbWrites.length === 0);
+  r = await call(iosTokens);
+  check("iOS consumable -> credits added once", r.status === 200 && dbWrites.length === 1 && dbWrites[0].updates.credits === 105);
+  r = await call(iosTokens);
+  check("iOS consumable receipt replayed -> 409, no more credits", r.status === 409 && dbWrites.length === 1);
+  r = await call(iosTokens, { "x-appwrite-user-id": "user_b" });
+  check("iOS consumable receipt replayed on another account -> 409", r.status === 409 && dbWrites.length === 1);
+
+  routes = { "buy.itunes.apple.com /verifyReceipt": { status: 200, json: { status: 0, receipt: { bundle_id: "pro.marketingtool.app",
+    in_app: [{ product_id: iosTokens.productId }] } } } };
+  r = await call(iosTokens);
+  check("iOS purchase without a transaction id -> 403", r.status === 403 && dbWrites.length === 1);
+  PROFILES.user_a.credits = 5;
 
   dbWrites = [];
   r = await call({ ...sub, appleReceipt: "aaa.bbb.ccc" });
@@ -120,17 +179,23 @@ function check(name, cond) {
   r = await call(android);
   check("Android active subscription -> profile upgraded", r.status === 200 && dbWrites.length === 1 && dbWrites[0].updates.subscription === "growth");
 
+  r = await call(android, { "x-appwrite-user-id": "user_b" });
+  check("Android subscription token reused on another account -> 403", r.status === 403 && dbWrites.length === 1);
+
   dbWrites = [];
-  const tokens = { productId: "tokens", platform: "android", googlePurchaseToken: "tok" };
-  routes = { ...tokenRoute, "androidpublisher.googleapis.com /androidpublisher/v3/applications/pro.marketingtool.app/purchases/products/tokens/tokens/tok":
+  const tokens = { productId: "tokens", platform: "android", googlePurchaseToken: "tok2" };
+  routes = { ...tokenRoute, "androidpublisher.googleapis.com /androidpublisher/v3/applications/pro.marketingtool.app/purchases/products/tokens/tokens/tok2":
     { status: 200, json: { purchaseState: 0, consumptionState: 1 } } };
   r = await call(tokens);
   check("Android already-consumed token -> 403, no credits", r.status === 403 && dbWrites.length === 0);
 
-  routes = { ...tokenRoute, "androidpublisher.googleapis.com /androidpublisher/v3/applications/pro.marketingtool.app/purchases/products/tokens/tokens/tok":
+  routes = { ...tokenRoute, "androidpublisher.googleapis.com /androidpublisher/v3/applications/pro.marketingtool.app/purchases/products/tokens/tokens/tok2":
     { status: 200, json: { purchaseState: 0, consumptionState: 0 } } };
   r = await call(tokens);
   check("Android unconsumed token -> credits added", r.status === 200 && dbWrites.length === 1 && dbWrites[0].updates.credits === 105);
+
+  r = await call(tokens);
+  check("Android unconsumed token replayed before the app consumes it -> 409", r.status === 409 && dbWrites.length === 1);
 
   console.log(failures ? `${failures} FAILED` : "all passed");
   process.exit(failures ? 1 : 0);
