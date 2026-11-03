@@ -52,7 +52,11 @@ module.exports = function withEasPodfileFix(config) {
           bc.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.4'
         end
 
-        if target.name == 'ExpoModulesCore'
+        # Pods that declare Swift 6 in their podspec keep it. SDK 58's
+        # expo-app-metrics (swift_version 6.0) fails under a forced Swift 5:
+        # "call to main actor-isolated static method in a synchronous
+        # nonisolated context" (local Xcode 27.2 build, 2026-11-04).
+        if target.name == 'ExpoModulesCore' || bc.build_settings['SWIFT_VERSION'].to_s.start_with?('6')
           bc.build_settings['SWIFT_VERSION'] = '6.0'
         else
           bc.build_settings['SWIFT_VERSION'] = '5'
@@ -71,7 +75,7 @@ module.exports = function withEasPodfileFix(config) {
 
       // Unique sentinel so this plugin's snippet is detected regardless of what
       // other inline plugins (past or future) may inject into the Podfile.
-      const PLUGIN_SENTINEL = '# --- withEasPodfileFix-v4 ---';
+      const PLUGIN_SENTINEL = '# --- withEasPodfileFix-v5 ---';
       const snippetWithSentinel = `\n    ${PLUGIN_SENTINEL}${snippet}`;
 
       // Inject into post_install
