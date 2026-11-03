@@ -89,8 +89,8 @@
     <h1>MarketingTool — Phone App</h1>
     <p class="lede">Expo / React Native client for AI-powered marketing workflows on mobile. Appwrite for auth, Windmill for tool execution.</p>
     <div class="stats">
-      <span class="stat"><b>314</b> tools</span>
-      <span class="stat"><b>Expo SDK 57</b></span>
+      <span class="stat"><b>Expo SDK 58</b></span>
+      <span class="stat"><b>React Native 0.88</b></span>
       <span class="stat"><b>API 36</b> target</span>
       <span class="stat">iOS &amp; Android</span>
     </div>
@@ -98,30 +98,25 @@
 </header>
 
 <section class="wrap">
-  <h2>Current release — 1.5.13</h2>
+  <h2>Current release — 1.5.23</h2>
   <div class="stack">
     <div class="row"><span class="v">
-      <p style="margin:0 0 14px">Google Play flagged three things against 1.5.12, and all three have been worked
-      through. The <b>deprecated edge-to-edge APIs</b> — <code>setStatusBarColor</code>,
-      <code>getStatusBarColor</code> and <code>setNavigationBarColor</code> — were being called from two
-      different libraries, React Native's own <code>StatusBarModule</code> and <code>WindowUtilKt</code>, and
-      <code>react-native-edge-to-edge</code>. Play scans for the <i>static bytecode reference</i>, so wrapping the
-      calls in a version check never cleared the warning; every call site now reaches them through reflection
-      instead, which keeps the behaviour identical on Android 14 and below and removes the reference entirely.
-      React Native ships as a prebuilt binary, so that half required re-publishing a patched
-      <code>react-android</code> artifact and verifying with <code>javap</code> that no reference survived and
-      that every method the original exposed is still present.</p>
+      <p style="margin:0 0 14px">1.5.23 moves the app to <b>Expo SDK 58</b> and <b>React Native 0.88.1</b>, with every
+      Expo module, Lottie 7.5 and the build tooling aligned to the SDK. Before release it was built locally with
+      Android Studio's Gradle and with Xcode 27.2, and launched on an Android emulator and in the iOS Simulator.
+      That testing caught problems the upgrade would otherwise have shipped: on iOS, Firebase was never started
+      at launch, because SDK 58 splits the start-up code differently, so every iOS user would have seen a crash.
+      The iOS build also broke on a Firebase build script that could not read the site's security headers and on
+      a module that needs Swift 6. On Android, AGP 9 needed Gradle 9.4.1 and refused an old native-library
+      setting. Saving a meme to the gallery would also have failed. All of these are fixed (PRs #715 to #718).</p>
 
-      <p style="margin:0">On <b>R8</b>, the real cause turned out not to be the setting first suspected: code
-      shrinking was already enabled, but the build was pulling in the non-optimized default ProGuard file, which
-      carries <code>-dontoptimize</code> and switches R8's optimization passes off wholesale. That file is now the
-      optimized variant, and optimized resource shrinking is enabled alongside it. The remaining sub-item —
-      Android Gradle Plugin 9.0 — is set by the Expo SDK and cannot be changed independently. The <b>bitmap</b>
-      recommendation led to a genuine bug: picked and captured photos were being handed to the preview at full
-      resolution, so a 12-megapixel photo became a ~48 MB bitmap and a 50-megapixel one roughly 200 MB. Images
-      are now capped before they are decoded, which costs nothing in output quality because the saved image is a
-      capture of the on-screen view. The app targets <b>API 36</b>. Play re-evaluates against an analysed
-      release, so these results are confirmed by the store only once 1.5.13 has been through review.</p>
+      <p style="margin:0">React Native 0.88 no longer calls the deprecated Android 15 status-bar and
+      navigation-bar colour APIs, so the patched <code>react-android</code> artifact used since 1.5.13 is no
+      longer needed; a scan of the new bundle finds zero references. Play's <b>bitmap</b> recommendation now
+      points only at library code (expo-image's animated-image decoder, Lottie, the photo cropper and Firebase),
+      most of which the app never runs, so it is advice rather than a fault in the app. The release also adds
+      the server side of a <b>WhatsApp login code</b> (via MSG91) with Firebase SMS as the fallback; it stays
+      off until its server settings are added.</p>
     </span></div>
   </div>
 </section>
