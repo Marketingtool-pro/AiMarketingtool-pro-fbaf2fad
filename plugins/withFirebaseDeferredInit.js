@@ -30,7 +30,12 @@ module.exports = function withFirebaseDeferredInit(config) {
 
     const application = getMainApplicationOrThrow(config.modResults);
     application.$ = application.$ || {};
-    application.$['android:extractNativeLibs'] = 'false';
+    // AGP 9 (Expo SDK 58) fails :app:packageRelease when the manifest sets
+    // android:extractNativeLibs explicitly ("set
+    // android.packagingOptions.jniLibs.useLegacyPackaging instead"). Native-lib
+    // packaging is decided by useLegacyPackaging (true, in app.json
+    // expo-build-properties and withKotlinKspFix), so the attribute is not set.
+    delete application.$['android:extractNativeLibs'];
 
     if (!application['meta-data']) application['meta-data'] = [];
 
