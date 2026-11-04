@@ -65,6 +65,15 @@ const withKotlinKspFix = (config, options) => {
     const value = '-Xmx4096m -XX:MaxMetaspaceSize=1536m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8';
     const items = config.modResults.filter((i) => !(i.type === 'property' && i.key === key));
     items.push({ type: 'property', key, value });
+    // EAS 'medium' Android workers have 4 vCPU / 15.6 GB. With SDK 58 the
+    // Gradle daemon (4 GB via EAS GRADLE_OPTS), a Kotlin daemon that inherits
+    // the same heap, and 4 parallel workers outgrew that: build 1080 died with
+    // "Gradle build daemon disappeared unexpectedly" mid Kotlin compile.
+    // Cap the Kotlin daemon and the worker count so the total fits.
+    for (const [k, v] of [['kotlin.daemon.jvmargs', '-Xmx2048m -XX:MaxMetaspaceSize=768m'], ['org.gradle.workers.max', '3']]) {
+      const i = items.findIndex((x) => x.type === 'property' && x.key === k);
+      if (i >= 0) items[i].value = v; else items.push({ type: 'property', key: k, value: v });
+    }
     config.modResults = items;
     return config;
   });
