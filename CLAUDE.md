@@ -45,6 +45,20 @@ git log --oneline HEAD..origin/Master   # empty = up to date. NOT empty = local 
 - No Windmill token inside the app: calls go through the server, which holds the token.
 - Never trust a `userId`, plan tier or credit count sent by the app — the server decides.
 
+## Meta (Facebook / Instagram) apps — decided by the owner, 2026-11-04
+
+Both in business portfolio `1214819780123174`. Same split as the web app; do not mix them.
+
+- **`1830149205008066` "marketingtool pro" — login only.** The Appwrite Facebook OAuth
+  provider (`src/services/appwrite.ts` → `createOAuth2Token(OAuthProvider.Facebook)`).
+  Verified 2026-11-04: Appwrite sends this app id and Facebook accepts the Appwrite callback.
+- **`2246709019441842` "marketingtool" — all ads.** Facebook + Instagram ad connect and every
+  Meta webhook (→ `wm.marketingtool.pro`). As of 2026-11-05 the phone app has **no** ad-account
+  connect flow in `src/`; when one is built it must use this app id.
+- App Review: `2246709019441842` holds only `openid`, `public_profile`, `email`; `ads_read`,
+  `ads_management` and `business_management` are not requested yet, so no ad connect can list
+  ad accounts until that review is submitted and approved.
+
 ## Owner rules for this repo
 - Never write passwords, tokens or keys into tracked files. Secrets live only in gitignored `.env`.
 - No EAS cloud build without the owner asking (paid). Local fastlane builds are free.
