@@ -297,6 +297,9 @@
     "ip-address": "^10.7.4",
     "@github/copilot-sdk": {
       "zod": "^4.6.6"
+    },
+    "expo-atlas": {
+      "expo-server": "~58.0.6"
     }
   },
   "expo": {
