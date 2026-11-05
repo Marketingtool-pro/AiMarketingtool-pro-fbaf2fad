@@ -62,7 +62,7 @@
     "@github/dependency-submission-toolkit": "^2.0.5",
     "@google/genai": "^2.32.0",
     "@libredb/libredb": "^0.2.2",
-    "@lottiefiles/dotlottie-react": "0.21.0",
+    "@lottiefiles/dotlottie-react": "0.21.1",
     "@noble/hashes": "^2.4.0",
     "@noma.to/qwik-testing-library": "^1.7.1",
     "@posthog/react-native-plugin": "^2.13.0",
