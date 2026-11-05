@@ -69,7 +69,6 @@ test('rejects missing, invalid, failed or android output when iOS is expected', 
 
 test('returns the build number of the same validated build', () => {
   assert.equal(readBuildNumber(JSON.stringify([iosBuild()]), 'IOS'), '1063');
-  assert.equal(readBuildNumber(JSON.stringify([iosBuild({ appBuildVersion: 1063 })]), 'IOS'), '1063');
   assert.equal(readBuildNumber(JSON.stringify([iosBuild({ appBuildVersion: '1.2.3' })]), 'IOS'), '1.2.3');
 });
 

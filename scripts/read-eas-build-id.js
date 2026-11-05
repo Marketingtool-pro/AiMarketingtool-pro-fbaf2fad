@@ -46,11 +46,10 @@ function readBuildId(text, platform = 'ANDROID') {
 
 function readBuildNumber(text, platform = 'ANDROID') {
   const b = readBuild(text, platform);
-  const n = typeof b.appBuildVersion === 'number' ? String(b.appBuildVersion) : b.appBuildVersion;
-  if (typeof n !== 'string' || !BUILD_NUMBER.test(n)) {
+  if (typeof b.appBuildVersion !== 'string' || !BUILD_NUMBER.test(b.appBuildVersion)) {
     throw new Error(`build ${b.id} appBuildVersion is missing or invalid: ${JSON.stringify(b.appBuildVersion)}`);
   }
-  return n;
+  return b.appBuildVersion;
 }
 
 module.exports = { readBuildId, readBuildNumber };
