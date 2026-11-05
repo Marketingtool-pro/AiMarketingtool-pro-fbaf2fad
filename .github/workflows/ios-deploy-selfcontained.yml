@@ -153,12 +153,23 @@ jobs:
           fi
           echo "ASC key restored"
 
+      # The id and the build number come from this run's --json output, never
+      # from `--latest` or app.json. Another iOS build (production-deploy.yml
+      # runs on the same tags) can be newer, and eas.json's remote
+      # autoIncrement leaves app.json's buildNumber stale.
       - name: Build production (iOS)
+        id: build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           set -euo pipefail
-          eas build --platform ios --profile production --non-interactive --wait
+          eas build --platform ios --profile production --non-interactive --wait --json \
+            | tee /tmp/eas-build.json
+          BUILD_ID="$(node scripts/read-eas-build-id.js /tmp/eas-build.json IOS)"
+          BUILD_NUMBER="$(node scripts/read-eas-build-id.js /tmp/eas-build.json IOS --build-number)"
+          echo "build-id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+          echo "build-number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "Captured EAS Build ID: $BUILD_ID (build number $BUILD_NUMBER)"
 
       - name: Upload binary to App Store Connect (TestFlight)
         if: ${{ env.DO_SUBMIT == 'true' }}
@@ -166,9 +177,10 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           # eas.json reads ascApiKeyIssuerId from $ASC_API_KEY_ISSUER_ID.
           ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+          BUILD_ID: ${{ steps.build.outputs.build-id }}
         run: |
           set -euo pipefail
-          eas submit --platform ios --profile production --non-interactive --latest
+          eas submit --platform ios --profile production --non-interactive --id "$BUILD_ID"
 
       # A plain `eas submit` creates a binary-only ("1 Item") submission that
       # cannot carry the in-app purchases, which is what caused the repeated
@@ -184,6 +196,7 @@ jobs:
           # Manual runs override via the input; tag pushes use the default.
           WHATS_NEW: ${{ inputs.whats_new || 'Fixes app launch stability and improves the tool result-to-desktop handoff. Thank you for using MarketingTool!' }}
           DRY_RUN: 'false'
+          BUILD_NUMBER: ${{ steps.build.outputs.build-number }}
         run: |
           set -euo pipefail
           sudo gem install jwt --version '~> 2.10' --no-document
@@ -194,8 +207,10 @@ jobs:
           export ASC_APP_ID="$(node -pe "require('./eas.json').submit.production.ios.ascAppId")"
           # Without VERSION_STRING the script grabs the LIVE version and fails
           # with "attach build failed 409". Pass app.json's version so it creates
-          # a fresh editable version and attaches THIS build.
+          # a fresh editable version, and BUILD_NUMBER (from this run's build) so
+          # it attaches THIS build.
           export VERSION_STRING="$(node -pe "require('./app.json').expo.version")"
-          export BUILD_NUMBER="$(node -pe "require('./app.json').expo.ios.buildNumber")"
+          # An empty BUILD_NUMBER makes asc_autosubmit.rb pick the newest build.
+          : "${BUILD_NUMBER:?no build number from the build step}"
           echo "Submitting version $VERSION_STRING build $BUILD_NUMBER"
           ruby scripts/asc_autosubmit.rb
