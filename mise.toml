@@ -131,7 +131,6 @@ LOG_LEVEL = "info"
 #
 # If a task genuinely needs a production NODE_ENV, set it for that command only
 # (`NODE_ENV=production npm run build`), never for the whole directory.
-
 [tasks]
 format = { description = "Format Go files with gofumpt", run = "gofumpt -w ." }
 build = { description = "Build a local bk binary into dist/", run = 'VERSION="$(git describe --tags --dirty --always 2>/dev/null || echo DEV)"; mkdir -p dist && go build -ldflags "-X ://github.com" -o dist/bk .' }
@@ -179,5 +178,5 @@ cargo = {}
 dotfiles = {}
 dotnet = {}
 forgejo = {}
-
-
+activate_shims = true
+system_deps = true

@@ -1,6 +1,6 @@
 {
   "name": "@marketingtool-pro/marketingtool",
-  "version": "1.5.23",
+  "version": "1.5.24",
   "private": true,
   "description": "Hybrid React Native application using **Appwrite** for core Auth/Data and **Firebase** for AI Functions, Observability, and Hosting.",
   "homepage": "https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad#readme",
@@ -46,6 +46,7 @@
     "build": "expo export --platform web",
     "lint": "expo lint",
     "test:app": "jest",
+    "test": "bun test src/ scripts/",
     "typecheck": "bun check"
   },
   "dependencies": {

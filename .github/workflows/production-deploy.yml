@@ -120,6 +120,21 @@ jobs:
       - name: Install dependencies
         run: npm ci --include=dev --legacy-peer-deps --no-audit --no-fund
 
+      - name: Restore Google Play service account key
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          if [ -n "${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON:-}" ]; then
+            printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > google-play-service-account.json
+            if ! node -e 'JSON.parse(require("fs").readFileSync("google-play-service-account.json","utf8"))' 2>/dev/null; then
+              base64 -d < google-play-service-account.json > tmp.json 2>/dev/null && mv tmp.json google-play-service-account.json
+            fi
+            echo "Google Play service account key restored"
+          else
+            echo "::warning::GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is not set, falling back to EAS stored credentials"
+          fi
+
       - name: Submit to Play Store
         env:
           # Passed via env, never interpolated into the script text.

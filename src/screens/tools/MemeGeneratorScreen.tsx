@@ -28,6 +28,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 // expo-media-library 58 moved the function API to /legacy; the root
 // saveToLibraryAsync now throws at runtime (CI lint: import/namespace).
 import * as MediaLibrary from 'expo-media-library/legacy';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import ViewShot from 'react-native-view-shot';
 import { RootStackParamList } from '../../navigation/AppNavigator';
@@ -149,14 +150,24 @@ const MemeGeneratorScreen = () => {
 
   const downscaleImage = async (uri: string, width?: number, height?: number) => {
     try {
+      let localUri = uri;
+      // If remote, download to local cache first so ImageManipulator and <Image>
+      // never trigger un-downsampled network decodes via HttpURLConnection (Play Console bitmap optimization).
+      if (uri.startsWith('http://') || uri.startsWith('https://')) {
+        const ext = uri.split('.').pop()?.split('?')[0] || 'jpg';
+        const dest = `${FileSystem.cacheDirectory}meme_${Date.now()}_${Math.floor(Math.random() * 10000)}.${ext}`;
+        const downloadRes = await FileSystem.downloadAsync(uri, dest);
+        localUri = downloadRes.uri;
+      }
+
       const longEdge = Math.max(width ?? 0, height ?? 0);
       // Already small enough: skip the extra decode/encode round trip.
       if (longEdge > 0 && longEdge <= MAX_IMAGE_EDGE) {
-        return uri;
+        return localUri;
       }
 
       const isLandscape = (width ?? 0) >= (height ?? 0);
-      const context = ImageManipulator.manipulate(uri).resize(
+      const context = ImageManipulator.manipulate(localUri).resize(
         isLandscape ? { width: MAX_IMAGE_EDGE } : { height: MAX_IMAGE_EDGE }
       );
       const image = await context.renderAsync();
@@ -230,9 +241,15 @@ const MemeGeneratorScreen = () => {
     try {
       setSelectedImage(await downscaleImage(template.url));
     } catch {
-      // downscaleImage already falls back to the original URI on failure;
-      // if even that throws, use the URL so the flow is never dead-ended.
-      setSelectedImage(template.url);
+      // Fallback: download to a local file so the canvas <Image> never fetches over network directly.
+      try {
+        const ext = template.url.split('.').pop()?.split('?')[0] || 'jpg';
+        const fallbackDest = `${FileSystem.cacheDirectory}template_${template.id}.${ext}`;
+        const downloadRes = await FileSystem.downloadAsync(template.url, fallbackDest);
+        setSelectedImage(downloadRes.uri);
+      } catch {
+        setSelectedImage(template.url);
+      }
     } finally {
       setIsLoading(false);
     }
