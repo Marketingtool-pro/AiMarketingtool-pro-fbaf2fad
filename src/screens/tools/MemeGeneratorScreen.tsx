@@ -95,6 +95,48 @@ const STROKE_COLORS = [
   { id: 'none', color: 'transparent', name: 'None' },
 ];
 
+// Cap the long edge of a picked/captured photo before it is ever decoded for
+// display. A full-resolution phone photo can consume hundreds of MB as a
+// bitmap, which is what Play Console flags as excessive memory usage.
+//
+// The saved meme is a ViewShot capture at roughly device resolution, so
+// downscaling larger sources does not reduce the final output quality.
+const MAX_IMAGE_EDGE = 2048;
+
+const downscaleImage = async (uri: string, width?: number, height?: number) => {
+  try {
+    let localUri = uri;
+    if (uri.startsWith('http://') || uri.startsWith('https://')) {
+      const ext = uri.split('.').pop()?.split('?')[0] || 'jpg';
+      // Download locally before manipulation/display to avoid unscaled network decodes.
+      const dest = `${FileSystem.cacheDirectory}meme_${Date.now()}_${Math.floor(Math.random() * 10000)}.${ext}`;
+      const downloadRes = await FileSystem.downloadAsync(uri, dest);
+      localUri = downloadRes.uri;
+    }
+
+    const longEdge = Math.max(width ?? 0, height ?? 0);
+    // Skip an extra decode/encode round trip when the source is already small.
+    if (longEdge > 0 && longEdge <= MAX_IMAGE_EDGE) {
+      return localUri;
+    }
+
+    const isLandscape = (width ?? 0) >= (height ?? 0);
+    const context = ImageManipulator.manipulate(localUri).resize(
+      isLandscape ? { width: MAX_IMAGE_EDGE } : { height: MAX_IMAGE_EDGE }
+    );
+    const image = await context.renderAsync();
+    const result = await image.saveAsync({
+      format: SaveFormat.JPEG,
+      compress: 0.85,
+    });
+    return result.uri;
+  } catch (error) {
+    // A large image is still better than a broken flow.
+    console.warn('Image downscale failed, using original:', error);
+    return uri;
+  }
+};
+
 const MemeGeneratorScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const viewShotRef = useRef<any>(null);
@@ -133,54 +175,6 @@ const MemeGeneratorScreen = () => {
     return status === 'granted' || denyPermission('Photo saving');
   };
 
-
-  // Cap the long edge of a picked/captured photo before it is ever decoded for
-  // display. A full-resolution phone photo is 12MP-108MP; as an ARGB_8888
-  // bitmap a 4000x3000 image is ~48 MB, and a 50MP one ~200 MB, which is what
-  // Play Console flags as "excessive memory usage" and what OOM-kills the
-  // screen on cheaper devices.
-  //
-  // No output quality is lost: the meme that gets saved or shared is a
-  // react-native-view-shot capture of the on-screen view (~device resolution),
-  // so anything above ~2048px was only ever costing memory.
-  //
-  // If manipulation fails for any reason, fall back to the original URI --
-  // a large image is still better than a broken flow.
-  const MAX_IMAGE_EDGE = 2048;
-
-  const downscaleImage = async (uri: string, width?: number, height?: number) => {
-    try {
-      let localUri = uri;
-      // If remote, download to local cache first so ImageManipulator and <Image>
-      // never trigger un-downsampled network decodes via HttpURLConnection (Play Console bitmap optimization).
-      if (uri.startsWith('http://') || uri.startsWith('https://')) {
-        const ext = uri.split('.').pop()?.split('?')[0] || 'jpg';
-        const dest = `${FileSystem.cacheDirectory}meme_${Date.now()}_${Math.floor(Math.random() * 10000)}.${ext}`;
-        const downloadRes = await FileSystem.downloadAsync(uri, dest);
-        localUri = downloadRes.uri;
-      }
-
-      const longEdge = Math.max(width ?? 0, height ?? 0);
-      // Already small enough: skip the extra decode/encode round trip.
-      if (longEdge > 0 && longEdge <= MAX_IMAGE_EDGE) {
-        return localUri;
-      }
-
-      const isLandscape = (width ?? 0) >= (height ?? 0);
-      const context = ImageManipulator.manipulate(localUri).resize(
-        isLandscape ? { width: MAX_IMAGE_EDGE } : { height: MAX_IMAGE_EDGE }
-      );
-      const image = await context.renderAsync();
-      const result = await image.saveAsync({
-        format: SaveFormat.JPEG,
-        compress: 0.85,
-      });
-      return result.uri;
-    } catch (error) {
-      console.warn('Image downscale failed, using original:', error);
-      return uri;
-    }
-  };
 
   // Pick Image from Gallery
   const pickImage = async () => {
