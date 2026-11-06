@@ -501,6 +501,7 @@ export async function completeOAuthFromUrl(url: string | null): Promise<boolean>
  */
 function reportAuthFailure(stage: string, error: any) {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const crashlytics = require('@react-native-firebase/crashlytics').default;
     const c = crashlytics();
     c.setAttributes({

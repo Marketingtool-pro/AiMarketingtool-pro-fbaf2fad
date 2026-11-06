@@ -10,6 +10,7 @@ let apnsRegistered = false;
 function getAuth() {
   if (!auth) {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       auth = require('@react-native-firebase/auth').default;
     } catch (e) {
       console.warn('[FirebaseAuth] Native module not available:', e);

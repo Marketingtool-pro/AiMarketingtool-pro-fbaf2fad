@@ -21,6 +21,8 @@ import { authService, functions } from '../../services/appwrite';
 import { ExecutionMethod } from 'react-native-appwrite';
 import { Colors, Spacing, BorderRadius, HEADER_TOP_PADDING } from '../../constants/theme';
 import { biometricService } from '../../services/biometric';
+import * as SecureStore from 'expo-secure-store';
+import * as Clipboard from 'expo-clipboard';
 
 const SettingsScreen = () => {
   const navigation = useNavigation();
@@ -264,7 +266,6 @@ const SettingsScreen = () => {
 
   const handleClearCache = async () => {
     try {
-      const SecureStore = require('expo-secure-store');
       await SecureStore.deleteItemAsync('appwrite_session');
       Alert.alert('Cache Cleared', 'App cache has been cleared successfully.', [{ text: 'OK' }]);
     } catch (error: any) {
@@ -584,7 +585,6 @@ const SettingsScreen = () => {
             <View style={styles.secretBox}>
               <Text style={styles.secretText} numberOfLines={1}>{mfaSecret}</Text>
               <TouchableOpacity onPress={() => {
-                const Clipboard = require('expo-clipboard');
                 Clipboard.setStringAsync(mfaSecret);
                 Alert.alert('Copied', 'Secret copied to clipboard.');
               }}>

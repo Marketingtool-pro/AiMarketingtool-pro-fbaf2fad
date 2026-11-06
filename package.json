@@ -46,7 +46,8 @@
     "build": "expo export --platform web",
     "lint": "expo lint",
     "test:app": "jest",
-    "test": "bun test src/ scripts/",
+    "test": "node --test scripts/read-eas-build-id.test.mjs",
+    "test:bun": "bun test src/ scripts/",
     "typecheck": "bun check"
   },
   "dependencies": {

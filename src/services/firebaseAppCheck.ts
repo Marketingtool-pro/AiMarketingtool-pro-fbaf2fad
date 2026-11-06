@@ -60,6 +60,7 @@ export const initializeAppCheck = async () => {
     // (auth/app-not-authorized, auth/missing-client-identifier). Best-effort: App Check
     // must never block auth, so swallow if Crashlytics isn't available.
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const crashlytics = require('@react-native-firebase/crashlytics').default;
       crashlytics().log(`[AppCheck] init failed on ${Platform.OS}: ${error?.code ?? ''} ${error?.message ?? ''}`);
       if (error instanceof Error) crashlytics().recordError(error);

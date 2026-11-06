@@ -40,12 +40,14 @@ type PopularToolItem = {
   img?: any;
 };
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const Animations = {
   aiRobot: require('../../../assets/animations/ai-robot.js'),
   pulseGlow: require('../../../assets/animations/pulse-glow.js'),
   loadingDots: require('../../../assets/animations/loading-dots.js'),
   liquidWave: require('../../../assets/animations/liquid-wave.js'),
 };
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 const DashboardImages = {
   aiRobot: require('../../../assets/images/dashboard/ai-robot.jpg'),

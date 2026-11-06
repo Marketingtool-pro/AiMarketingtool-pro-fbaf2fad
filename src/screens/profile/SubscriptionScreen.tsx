@@ -96,6 +96,7 @@ const SubscriptionScreen = () => {
       active = false;
       billingService.end().catch(() => {});
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Plans match marketingtool.pro/pricing/ exactly
