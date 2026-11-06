@@ -86,7 +86,7 @@ jobs:
         id: build
         run: |
           set -euo pipefail
-          eas build --platform android --profile production --non-interactive --json \
+          eas build --platform android --profile production --non-interactive --wait --json \
             | tee /tmp/eas-build.json
           BUILD_ID="$(node scripts/read-eas-build-id.js /tmp/eas-build.json ANDROID)"
           echo "build-id=$BUILD_ID" >> "$GITHUB_OUTPUT"
@@ -258,11 +258,3 @@ jobs:
           : "${BUILD_NUMBER:?no build number from the build step}"
           echo "Submitting version $VERSION_STRING build $BUILD_NUMBER"
           ruby scripts/asc_autosubmit.rb
-
-# Create development builds
-#
-# Builds Android and iOS development builds for devices and simulators.
-# Learn more: https://docs.expo.dev/develop/development-builds/introduction/
-#
-# Created by EAS CLI v22.0.
-  
