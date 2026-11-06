@@ -6,7 +6,7 @@ name: Production Deploy
 # instead uploads the binary, then runs scripts/asc_autosubmit.rb which creates
 # ONE App Store Connect review submission containing the BUILD + all 6
 # subscriptions + the consumable (the step that was missing all 14 times).
-# Requires repo secret ASC_API_KEY_BASE64 (base64 of AuthKey_69JDXUCPU3.p8).
+# Requires repo secret ASC_API_KEY_BASE64 (base64 of AuthKey_S5SW3FX3CM.p8).
 
 on:
   # A `v*.*.*` tag push auto-builds + submits BOTH platforms.
@@ -214,8 +214,8 @@ jobs:
         env:
           ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
         run: |
-          printf '%s' "$ASC_API_KEY_BASE64" | base64 -d > AuthKey_69JDXUCPU3.p8
-          test -s AuthKey_69JDXUCPU3.p8 && echo "ASC key restored" || (echo "ASC key empty — set ASC_API_KEY_BASE64 secret" && exit 1)
+          printf '%s' "$ASC_API_KEY_BASE64" | base64 -d > AuthKey_S5SW3FX3CM.p8
+          test -s AuthKey_S5SW3FX3CM.p8 && echo "ASC key restored" || (echo "ASC key empty — set ASC_API_KEY_BASE64 secret" && exit 1)
 
       # Same capture as the Android job: the id and the build number come from
       # this run's --json output, never from `--latest` or app.json. eas.json
@@ -244,7 +244,7 @@ jobs:
 
       - name: Submit for review WITH in-app purchases
         env:
-          ASC_KEY_PATH: ./AuthKey_69JDXUCPU3.p8
+          ASC_KEY_PATH: ./AuthKey_S5SW3FX3CM.p8
           ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
           # Auto-submit for App Store review enabled for build 539 (owner approved
           # 2026-06-26). asc_autosubmit.rb bundles the build + all 6 subs + consumable

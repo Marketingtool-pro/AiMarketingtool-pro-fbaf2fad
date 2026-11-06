@@ -58,8 +58,8 @@
   "submit": {
     "production": {
       "ios": {
-        "ascApiKeyPath": "./AuthKey_69JDXUCPU3.p8",
-        "ascApiKeyId": "69JDXUCPU3",
+        "ascApiKeyPath": "./AuthKey_S5SW3FX3CM.p8",
+        "ascApiKeyId": "S5SW3FX3CM",
         "ascApiKeyIssuerId": "$ASC_API_KEY_ISSUER_ID",
         "ascAppId": "6758618412"
       },

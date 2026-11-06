@@ -46,8 +46,8 @@ jobs:
         env:
           ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
         run: |
-          printf '%s' "$ASC_API_KEY_BASE64" | base64 -d > AuthKey_69JDXUCPU3.p8
-          test -s AuthKey_69JDXUCPU3.p8 && echo "ASC key restored" || (echo "ASC key empty — set ASC_API_KEY_BASE64 secret" && exit 1)
+          printf '%s' "$ASC_API_KEY_BASE64" | base64 -d > AuthKey_S5SW3FX3CM.p8
+          test -s AuthKey_S5SW3FX3CM.p8 && echo "ASC key restored" || (echo "ASC key empty — set ASC_API_KEY_BASE64 secret" && exit 1)
 
       - name: Submit existing build to TestFlight
         env:
