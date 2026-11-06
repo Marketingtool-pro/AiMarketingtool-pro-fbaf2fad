@@ -44,7 +44,7 @@ const path = require('path');
 const https = require('https');
 const crypto = require('crypto');
 
-const PATCHED_VERSION = '0.86.3-e2e.2';
+const PATCHED_VERSION = '0.88.1-e2e.1';
 const PATCHED_AAR_URL =
   'https://github.com/Marketingtool-pro/AiMarketingtool-pro-fbaf2fad/releases/download/' +
   `react-android-${PATCHED_VERSION}/react-android-${PATCHED_VERSION}.aar`;
@@ -64,8 +64,8 @@ const GRADLE_SENTINEL = '// withRNEdgeToEdgeFix:allprojects-block';
 // This drifted once: the 0.86.2-e2e.1 AAR was published 2026-08-25 but this
 // file still pinned 0.85.3-e2e.2, so every build after the RN 0.86.2 upgrade
 // (2026-08-20) shipped 0.85.3 native under 0.86.2 JS.
-const PATCHED_AAR_SHA256 = '9f9a0d9dbc1ad5f9c50be57d4aa4683b1f29782440278609c15d81781d58f1a9';
-const PATCHED_POM_SHA256 = 'a59623ca92269430e4dcb38ebc9190bce46d9739f6bb1273be53b14424e13156';
+const PATCHED_AAR_SHA256 = '82cc98e4fd2a0d542885095dd06a8beeaa6a38e191bf3d198d938596d6870309';
+const PATCHED_POM_SHA256 = '09032b91c7433d9cbd2a6d6bd8d02819691305c27806db81781f655aa9552b84';
 
 const LOCAL_AAR_SUBDIR = path.join(
   'local-aar', 'com', 'facebook', 'react', 'react-android', PATCHED_VERSION
@@ -174,20 +174,8 @@ function isFileValid(filePath, expectedSha256) {
 // silently pairs a mismatched native library with the JS runtime: the C++ of
 // every other native module then compiles and links against the wrong JSI.
 //
-// That is not theoretical. PATCHED_VERSION stayed at 0.85.3-e2e.2 after
-// react-native moved to 0.86.2, and every Android build failed:
-//
-//   expo-modules-core/.../NativeArrayBuffer.cpp:60:36: error: no member named
-//     'tryGetMutableBuffer' in 'facebook::jsi::ArrayBuffer'
-//   ld.lld: error: undefined symbol: facebook::jsi::JSError::JSError(...)
-//     (~16 more undefined facebook::jsi::* symbols, from react-native-skia)
-//
-// So refuse to substitute unless the patch actually matches the installed
-// react-native. Skipping only brings back the deprecated Android 15 edge-to-edge
-// calls as Play Console vitals warnings; substituting anyway breaks the build
-// outright. To re-enable, publish an AAR for the current react-native and bump
-// PATCHED_VERSION (see .github/workflows/patch-react-android.yml, whose
-// REACT_VERSION also needs bumping).
+// The patch must match react-native exactly: substituting a mismatched AAR pairs
+// the wrong native library with the JS runtime and can break JSI linking.
 function installedReactNativeVersion() {
   try {
     return require('react-native/package.json').version;
@@ -199,15 +187,13 @@ function installedReactNativeVersion() {
 function patchMatchesInstalledReactNative() {
   const installed = installedReactNativeVersion();
   if (!installed) return false;
-  // PATCHED_VERSION looks like "0.85.3-e2e.2"; compare the react-native part.
+  // PATCHED_VERSION looks like "0.88.1-e2e.1"; compare the react-native part.
   return PATCHED_VERSION.split('-')[0] === installed;
 }
 
-// react-native 0.88 removed every Window.setStatusBarColor /
-// getStatusBarColor / setNavigationBarColor call from ReactAndroid itself
-// (checked 2026-11-03: grep over node_modules/react-native/ReactAndroid/src
-// finds none, and StatusBarModule no longer has setColor). From 0.88 on the
-// stock react-android AAR is already clean, so no patched AAR is needed.
+// react-native 0.88 removed deprecated system-bar color calls, but its
+// WindowUtil still writes deprecated cutout modes. A matching patched AAR is
+// required to replace those writes.
 function upstreamAlreadyClean() {
   const installed = installedReactNativeVersion();
   if (!installed) return false;
@@ -216,15 +202,16 @@ function upstreamAlreadyClean() {
 }
 
 module.exports = function withRNEdgeToEdgeFix(config) {
-  if (upstreamAlreadyClean()) {
+  const patchMatches = patchMatchesInstalledReactNative();
+  if (upstreamAlreadyClean() && !patchMatches) {
     console.log(
-      `[withRNEdgeToEdgeFix] Not needed: react-native ` +
+      `[withRNEdgeToEdgeFix] No matching patched AAR: react-native ` +
         `${installedReactNativeVersion()} no longer calls the deprecated ` +
-        `edge-to-edge APIs, so the stock react-android AAR is used.`
+        `system-bar color APIs, but its cutout mode still needs a version-matched patch.`
     );
     return config;
   }
-  if (!patchMatchesInstalledReactNative()) {
+  if (!patchMatches) {
     console.warn(
       `[withRNEdgeToEdgeFix] SKIPPED: patched AAR is for react-native ` +
         `${PATCHED_VERSION.split('-')[0]} but react-native ` +
