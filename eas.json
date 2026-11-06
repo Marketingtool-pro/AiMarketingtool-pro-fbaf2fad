@@ -45,7 +45,7 @@
       "autoIncrement": true,
       "node": "24.18.0",
       "android": {
-        "resourceClass": "medium"
+        "resourceClass": "large"
       },
       "env": {
         "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1",

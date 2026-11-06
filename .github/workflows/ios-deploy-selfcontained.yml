@@ -60,10 +60,9 @@ jobs:
     # job, so `npm ci` lifecycle scripts never see it.
     env:
       EAS_CLI_VERSION: 18.13.1
-      # A tag push or a published release ships automatically; a manual run only
-      # does what its checkboxes asked for. Resolved once here so every later
-      # step reads the same value.
-      DO_SUBMIT: ${{ github.event_name == 'push' || github.event_name == 'release' || inputs.submit }}
+      # Review submission requires the binary to be uploaded first, so selecting
+      # review also enables the upload and its required App Store Connect secrets.
+      DO_SUBMIT: ${{ github.event_name == 'push' || github.event_name == 'release' || inputs.submit || inputs.submit_for_review }}
       DO_REVIEW: ${{ github.event_name == 'push' || github.event_name == 'release' || inputs.submit_for_review }}
     steps:
       # Shallow checkout of exactly this run's commit, using the token GitHub
@@ -107,9 +106,14 @@ jobs:
             echo "::error::ASC_API_KEY_BASE64 secret is not set, but this run needs to submit." >&2
             exit 1
           fi
+          if [ "${DO_SUBMIT}" = "true" ] && [ -z "${ASC_API_KEY_ISSUER_ID:-}" ]; then
+            echo "::error::ASC_API_KEY_ISSUER_ID secret is not set, but this run needs to submit." >&2
+            exit 1
+          fi
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
 
       - name: Install dependencies
         run: |
