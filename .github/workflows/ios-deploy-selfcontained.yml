@@ -150,8 +150,8 @@ jobs:
           ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
         run: |
           set -euo pipefail
-          printf '%s' "$ASC_API_KEY_BASE64" | base64 -d > AuthKey_69JDXUCPU3.p8
-          if [ ! -s AuthKey_69JDXUCPU3.p8 ]; then
+          printf '%s' "$ASC_API_KEY_BASE64" | base64 -d > AuthKey_S5SW3FX3CM.p8
+          if [ ! -s AuthKey_S5SW3FX3CM.p8 ]; then
             echo "::error::Decoded ASC key is empty — check the ASC_API_KEY_BASE64 secret." >&2
             exit 1
           fi
@@ -193,7 +193,7 @@ jobs:
       - name: Submit for review WITH in-app purchases
         if: ${{ env.DO_REVIEW == 'true' }}
         env:
-          ASC_KEY_PATH: ./AuthKey_69JDXUCPU3.p8
+          ASC_KEY_PATH: ./AuthKey_S5SW3FX3CM.p8
           ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
           # WHATS_NEW is REQUIRED by asc_autosubmit.rb for a live submission;
           # without it the step fails with "Missing required env var WHATS_NEW".
