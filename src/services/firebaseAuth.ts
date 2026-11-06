@@ -52,6 +52,8 @@ async function ensureAPNsRegistered() {
 // contain no credential -- the phone number is deliberately NOT recorded.
 export function reportOTPFailure(stage: string, error: any) {
   try {
+    // Keep optional diagnostics lazy so missing Crashlytics never blocks phone sign-in.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const crashlytics = require('@react-native-firebase/crashlytics').default;
     const c = crashlytics();
     c.setAttributes({

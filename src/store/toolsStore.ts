@@ -126,9 +126,8 @@ export const TOOL_CATEGORIES = [
 ];
 
 
-// Load ALL 314 tools from tools.js (was tools.json — renamed to bypass *.json archive filter)
-// Intentionally kept as require(): this file is stored as .js to avoid archive filtering.
-// Explicit typing prevents implicit `any` and keeps downstream processing type-checked.
+// This CommonJS .js catalog intentionally bypasses the archive filter for .json assets.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const allToolsRaw = require('../data/tools.js') as RawTool[];
 
 // Pro lock derivation — basic single-shot content tools stay free so users
@@ -232,7 +231,7 @@ function deriveDeliverable(slug: string, name: string): string | undefined {
   return undefined;
 }
 
-const ALL_TOOLS: Tool[] = (allToolsRaw as RawTool[]).map((t, i) => ({
+const ALL_TOOLS: Tool[] = allToolsRaw.map((t, i) => ({
   $id: `t${i}`,
   name: t.name || 'Tool',
   slug: t.slug || `tool-${i}`,

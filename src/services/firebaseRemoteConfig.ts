@@ -33,6 +33,8 @@ let initPromise: Promise<void> | null = null;
 
 function getRC(): any | null {
   try {
+    // Keep this native-only dependency lazy so platforms without the native module can use defaults.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('@react-native-firebase/remote-config').default;
   } catch (e) {
     if (__DEV__) console.warn('[RemoteConfig] native module unavailable:', e);
