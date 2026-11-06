@@ -3,7 +3,7 @@
     "name": "MarketingTool",
     "slug": "marketingtool",
     "owner": "marketingtoolprophoneapp",
-    "version": "1.5.25",
+    "version": "1.5.27",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
