@@ -52,7 +52,8 @@
       },
       "associatedDomains": [
         "applinks:marketingtool.pro",
-        "applinks:app.marketingtool.pro"
+        "applinks:app.marketingtool.pro",
+        "applinks:auth.marketingtool.pro"
       ]
     },
     "android": {
@@ -69,7 +70,8 @@
           "data": [
             { "scheme": "https", "host": "marketingtool.pro", "path": "/" },
             { "scheme": "https", "host": "www.marketingtool.pro", "path": "/" },
-            { "scheme": "https", "host": "app.marketingtool.pro", "path": "/" }
+            { "scheme": "https", "host": "app.marketingtool.pro", "path": "/" },
+            { "scheme": "https", "host": "auth.marketingtool.pro", "path": "/" }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
         }
