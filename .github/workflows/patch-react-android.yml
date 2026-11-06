@@ -13,14 +13,10 @@ env:
   # Single source of truth for the patch revision. MUST stay in sync with
   # PATCHED_VERSION in plugins/withRNEdgeToEdgeFix.js (consumed at prebuild)
   # and the default patchRevision in android-patches/build.gradle.
-  PATCH_REVISION: '2'
-  # Must track the react-native version in package.json. It sat at 0.85.3 after
-  # react-native moved to 0.86.2, so the AAR this workflow publishes no longer
-  # matched the installed runtime — and withRNEdgeToEdgeFix substitutes it for
-  # EVERY com.facebook.react:react-android request, which broke every Android
-  # build on a JSI mismatch. The plugin now refuses to substitute a mismatched
-  # AAR, so publishing 0.86.2-e2e.1 from here is what re-enables the fix.
-  REACT_VERSION: '0.86.3'
+  PATCH_REVISION: '1'
+  # Must track react-native in package.json. RN 0.88 removed deprecated system
+  # bar color calls, but its WindowUtil still writes deprecated cutout modes.
+  REACT_VERSION: '0.88.1'
 
 jobs:
   build-patched-aar:
@@ -79,10 +75,12 @@ jobs:
         run: |
           set -euo pipefail
           V="${REACT_VERSION}-e2e.${PATCH_REVISION}"
-          GLOBS=(
-            'com/facebook/react/views/view/WindowUtil*'
-            'com/facebook/react/modules/statusbar/StatusBarModule*'
-          )
+          GLOBS=('com/facebook/react/views/view/WindowUtil*')
+          REACT_MINOR="${REACT_VERSION#*.}"
+          REACT_MINOR="${REACT_MINOR%%.*}"
+          if (( REACT_MINOR < 88 )); then
+            GLOBS+=('com/facebook/react/modules/statusbar/StatusBarModule*')
+          fi
 
           # Extract the classes we replaced, from both the patched AAR and the
           # pristine upstream one downloaded by the build.
@@ -107,7 +105,27 @@ jobs:
           done < <(find verify/new -name '*.class')
           [ "$fail" = 0 ] && echo "OK: no deprecated edge-to-edge API references"
 
-          # (B) Signature parity. These class files REPLACE the upstream ones
+          # (B) Every cutout mode write must use ALWAYS (value 3). Kotlin
+          # inlines these Android constants, so inspect the integer immediately
+          # preceding each bytecode write rather than grepping field names.
+          WINDOW_UTIL="verify/new/com/facebook/react/views/view/WindowUtilKt.class"
+          if [ -f "$WINDOW_UTIL" ]; then
+            if ! javap -p -c "$WINDOW_UTIL" | awk '
+              /: iconst_[0-5]/ { last_int = $0 }
+              /putfield .*layoutInDisplayCutoutMode/ {
+                writes++
+                if (last_int !~ /iconst_3/) bad = 1
+              }
+              END { exit (writes == 0 || bad) }
+            '; then
+              echo "::error::WindowUtil must write only LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS"
+              fail=1
+            else
+              echo "OK: every cutout-mode write uses ALWAYS"
+            fi
+          fi
+
+          # (C) Signature parity. These class files REPLACE the upstream ones
           #     inside the AAR, so any member that upstream exposed and the
           #     patch drops becomes a NoSuchMethodError at runtime, everywhere
           #     in react-android that calls it.
@@ -129,7 +147,7 @@ jobs:
               fail=1
             fi
           done < <(find verify/orig -name '*.class')
-          [ "$fail" = 0 ] && echo "OK: every upstream member retained"
+          [ "$fail" = 0 ] && echo "OK: every patched upstream member retained"
 
           exit "$fail"
 
@@ -153,7 +171,7 @@ jobs:
             "android-patches/build/patched/react-android-${V}.pom" \
             --repo "$GITHUB_REPOSITORY" \
             --title "react-android ${V} (patched AAR)" \
-            --notes "Patched react-android ${REACT_VERSION}: removes deprecated Android 15 edge-to-edge APIs. Downloaded by plugins/withRNEdgeToEdgeFix.js during expo prebuild." \
+            --notes "Patched react-android ${REACT_VERSION}: removes deprecated Android 15 edge-to-edge cutout modes. Downloaded by plugins/withRNEdgeToEdgeFix.js during expo prebuild." \
             --latest=false --target "$GITHUB_SHA"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2

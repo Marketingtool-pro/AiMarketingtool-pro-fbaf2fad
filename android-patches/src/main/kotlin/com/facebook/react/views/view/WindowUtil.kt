@@ -4,8 +4,8 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * ── PATCHED (react-android 0.86.2-e2e.*) ─────────────────────────────────────
- * Forked verbatim from the installed react-native 0.86.2 source at
+ * ── PATCHED (react-android 0.88.1-e2e.1) ─────────────────────────────────────
+ * Forked from react-native 0.88.1 WindowUtil.kt at
  *   node_modules/react-native/ReactAndroid/src/main/java/
  *     com/facebook/react/views/view/WindowUtil.kt
  * with exactly two classes of change:

@@ -12,6 +12,12 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'maven-publish'
 
+// Which react-native release this patch is forked from. MUST equal the
+// react-native version in package.json.
+def reactVersion = findProperty('reactVersion') ?: '0.88.1'
+def reactNativeMinor = reactVersion.split('\\.')[1].toInteger()
+def patchesStatusBarModule = reactNativeMinor < 88
+
 android {
     namespace 'com.facebook.react.patch'
     compileSdk 36
@@ -21,11 +27,20 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    // Only include our 2 patched files, not a full Android library
+    // Include only the replacement source files, not a full Android library.
     sourceSets {
         main {
-            kotlin.srcDirs = ['src/main/kotlin']
             manifest.srcFile 'src/main/AndroidManifest.xml'
+        }
+    }
+}
+
+kotlin {
+    sourceSets {
+        main {
+            kotlin.setSrcDirs(patchesStatusBarModule
+                ? ['src/main/kotlin']
+                : ['src/main/kotlin/com/facebook/react/views/view'])
         }
     }
 }
@@ -39,23 +54,13 @@ repositories {
     mavenCentral()
 }
 
-// Which react-native release this patch is forked from. MUST equal the
-// react-native version in package.json: the patched AAR replaces EVERY
-// com.facebook.react:react-android request, so a mismatch pairs the wrong
-// native library with the JS runtime and the Android link fails on missing
-// facebook::jsi symbols. That is exactly what happened when this sat at
-// 0.85.3 after react-native moved to 0.86.2.
-//
-// The workflow passes -PreactVersion=${REACT_VERSION} so the two cannot drift
-// apart again; the literal below is only the local-build fallback.
-def reactVersion = findProperty('reactVersion') ?: '0.86.2'
 // Pinned revision — MUST stay in sync with PATCHED_VERSION in plugins/withRNEdgeToEdgeFix.js
 // and the release tag react-android-<version> published by .github/workflows/patch-react-android.yml.
 // Override with -PpatchRevision=N when cutting a new patch revision.
-def patchedVersion = "${reactVersion}-e2e.${findProperty('patchRevision') ?: '2'}"
+def patchedVersion = "${reactVersion}-e2e.${findProperty('patchRevision') ?: '1'}"
 
 dependencies {
-    // All imports needed by our 2 patched files. compileOnly: these classes
+    // All imports needed by the patch sources. compileOnly: these classes
     // already exist in the AAR we are re-packing, we only need them to resolve.
     compileOnly "com.facebook.react:react-android:${reactVersion}"
     compileOnly "androidx.core:core:1.15.0"
@@ -73,8 +78,12 @@ task downloadOriginalAAR {
     doLast {
         aarOut.parentFile.mkdirs()
         def base = "https://repo1.maven.org/maven2/com/facebook/react/react-android/${reactVersion}"
-        new URL("${base}/react-android-${reactVersion}-release.aar").withInputStream { i -> aarOut << i }
-        new URL("${base}/react-android-${reactVersion}.pom").withInputStream { i -> pomOut << i }
+        new URL("${base}/react-android-${reactVersion}-release.aar").withInputStream { i ->
+            aarOut.withOutputStream { it << i }
+        }
+        new URL("${base}/react-android-${reactVersion}.pom").withInputStream { i ->
+            pomOut.withOutputStream { it << i }
+        }
         println "✅ Downloaded react-android-${reactVersion}.aar (${aarOut.length()} bytes)"
     }
 }
@@ -94,7 +103,7 @@ task extractOriginalAAR(dependsOn: downloadOriginalAAR) {
     }
 }
 
-// Step 3: Remove the old StatusBarModule + WindowUtil class files from extracted classes
+// Step 3: Remove only the class files replaced for this React Native version.
 task deleteDeprecatedClasses(dependsOn: extractOriginalAAR) {
     def classesDir = file("${buildDir}/orig-classes")
     inputs.dir(classesDir)
@@ -102,8 +111,10 @@ task deleteDeprecatedClasses(dependsOn: extractOriginalAAR) {
     doLast {
         def deleted = []
         fileTree(classesDir) {
-            include 'com/facebook/react/modules/statusbar/StatusBarModule.class'
-            include 'com/facebook/react/modules/statusbar/StatusBarModule$*.class'
+            if (patchesStatusBarModule) {
+                include 'com/facebook/react/modules/statusbar/StatusBarModule.class'
+                include 'com/facebook/react/modules/statusbar/StatusBarModule$*.class'
+            }
             include 'com/facebook/react/views/view/WindowUtilKt.class'
             include 'com/facebook/react/views/view/WindowUtil*.class'
         }.each { f ->
@@ -123,13 +134,15 @@ task injectPatchedClasses(dependsOn: ['deleteDeprecatedClasses', 'compileRelease
     doLast {
         copy {
             from(compiledDir) {
-                include 'com/facebook/react/modules/statusbar/**'
+                if (patchesStatusBarModule) {
+                    include 'com/facebook/react/modules/statusbar/**'
+                }
                 include 'com/facebook/react/views/view/WindowUtilKt.class'
                 include 'com/facebook/react/views/view/WindowUtil*.class'
             }
             into classesDir
         }
-        println "✅ Injected patched StatusBarModule + WindowUtil classes"
+        println "✅ Injected patched React Native classes"
     }
 }
 
