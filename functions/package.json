@@ -16,8 +16,8 @@
     "node": "24"
   },
   "dependencies": {
-    "@genkit-ai/firebase": "^1.43.0",
-    "@genkit-ai/google-genai": "^1.43.0",
+    "@genkit-ai/firebase": "^1.44.0",
+    "@genkit-ai/google-genai": "^1.44.0",
     "aimarketingtool-pro-fbaf2fad": "^2.0.1",
     "expo": "^57.0.31",
     "express": "^5.3.0",
