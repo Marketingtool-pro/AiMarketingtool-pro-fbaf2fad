@@ -138,7 +138,7 @@ class AscReviewConcurrencyTest < Minitest::Test
 
   def review_jobs
     Dir[File.join(ROOT, '.github', 'workflows', '*.yml')].flat_map do |path|
-      jobs = YAML.safe_load_file(path, aliases: true).fetch('jobs', {})
+      jobs = YAML.safe_load_file(path).fetch('jobs', {})
       jobs.select { |_, job| (job['steps'] || []).any? { |s| s['run'].to_s.include?('asc_autosubmit.rb') } }
           .map { |id, job| ["#{File.basename(path)}:#{id}", job] }
     end
