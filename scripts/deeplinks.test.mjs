@@ -87,11 +87,30 @@ test('every path app.json claims resolves to a screen', () => {
   }
 });
 
+/**
+ * Every path the navigator routes, as the static prefix Android matches on.
+ * Walks nested navigators too -- Tools sits under Main, and missing that is
+ * exactly the kind of gap this file exists to catch. Param segments are
+ * dropped: "tools/:category?" is "/tools" as far as pathPrefix is concerned.
+ */
+const routedPrefixes = (screens = linking.config.screens) =>
+  Object.values(screens).flatMap((value) => {
+    if (typeof value === 'string') {
+      if (value === '') return []; // the root, declared as path "/" not a prefix
+      const stat = value.split('/').filter((seg) => !seg.startsWith(':'));
+      return [`/${stat.join('/')}`];
+    }
+    return value?.screens ? routedPrefixes(value.screens) : [];
+  });
+
 test('every route the navigator claims is declared in app.json', () => {
   const declared = declaredPrefixes();
-  const routed = Object.entries(linking.config.screens)
-    .filter(([, path]) => typeof path === 'string' && path !== '')
-    .map(([, path]) => `/${path}`);
+  const routed = routedPrefixes();
+
+  // Guard the guard: if this ever comes back empty the assertions below pass
+  // vacuously and this file stops testing anything.
+  assert.ok(routed.length >= 5, `expected the navigator to route paths, got ${routed.length}`);
+  assert.ok(routed.includes('/tools'), 'nested Tools route must be collected');
 
   for (const path of routed) {
     assert.ok(
