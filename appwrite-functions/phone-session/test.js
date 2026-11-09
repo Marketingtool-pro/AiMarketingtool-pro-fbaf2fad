@@ -11,6 +11,7 @@ let appwriteReached = false;
 const guardDocs = new Map();
 let guardCollectionMissing = false;
 let lastWhatsAppCode = null;
+let lastWhatsAppTemplate = null;
 
 function appwriteError(code, type) {
   return Object.assign(new Error(type), { code, type });
@@ -48,6 +49,7 @@ Module._load = function (request, ...rest) {
             chunks.push(String(data || ""));
             const sent = JSON.parse(chunks.join(""));
             lastWhatsAppCode = sent.payload.template.to_and_components[0].components.body_1.value;
+            lastWhatsAppTemplate = sent.payload.template;
             const resp = new EventEmitter();
             resp.statusCode = 200;
             process.nextTick(() => {
@@ -233,6 +235,26 @@ async function run(name, body, env = {}, ip = `10.0.0.${++ipCounter}`) {
     ipLast = await run("wa ip cap", { action: "whatsapp_send", phone: `+1555900${String(i).padStart(4, "0")}` }, waEnv, "198.51.100.9");
   }
   expect("wa 11th send from one IP", ipLast, 429);
+
+  // Template language. The approved MSG91 template "marketingtoolpro" is
+  // registered as en_US; sending "en" makes Meta reject the message, which
+  // looks like "WhatsApp just never arrives" with nothing failing loudly.
+  freshInstance();
+  await send("wa lang default", "+15551112222");
+  results.push({
+    name: "wa template language defaults to en_US",
+    lang: lastWhatsAppTemplate?.language?.code,
+    ok: lastWhatsAppTemplate?.language?.code === "en_US",
+  });
+
+  freshInstance();
+  await run("wa lang override", { action: "whatsapp_send", phone: "+15551113333" },
+    { ...waEnv, MSG91_WA_LANG: "en_GB" });
+  results.push({
+    name: "wa template language honours MSG91_WA_LANG",
+    lang: lastWhatsAppTemplate?.language?.code,
+    ok: lastWhatsAppTemplate?.language?.code === "en_GB",
+  });
 
   for (const r of results) console.log(JSON.stringify({ ...r, challenge: undefined }));
   const failed = results.filter((r) => r.ok === false);
