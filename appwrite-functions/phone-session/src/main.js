@@ -331,7 +331,9 @@ async function sendWhatsAppCode(phoneDigits, code) {
   }
   const template = {
     name: process.env.MSG91_WA_TEMPLATE,
-    language: { code: process.env.MSG91_WA_LANG || "en", policy: "deterministic" },
+    // The approved MSG91 template "marketingtoolpro" is registered as en_US;
+    // "en" does not match it and Meta rejects the send.
+    language: { code: process.env.MSG91_WA_LANG || "en_US", policy: "deterministic" },
     to_and_components: [{ to: [phoneDigits], components }],
   };
   if (process.env.MSG91_WA_NAMESPACE) template.namespace = process.env.MSG91_WA_NAMESPACE;

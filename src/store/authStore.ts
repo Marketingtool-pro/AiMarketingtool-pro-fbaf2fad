@@ -414,12 +414,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // an older function version, number not on WhatsApp, MSG91 down -- falls
       // through to Firebase SMS, so login never depends on WhatsApp alone.
       try {
-        const waExec = await functions.createExecution(
-          'phone-session',
-          JSON.stringify({ action: 'whatsapp_send', phone: formatted }),
-          false, '/', ExecutionMethod.POST,
-          { 'Content-Type': 'application/json' }
-        );
+        // Bounded: a slow or hung server must not leave the user staring at a
+        // spinner for 45s+ before the SMS fallback runs.
+        const waExec: any = await Promise.race([
+          functions.createExecution(
+            'phone-session',
+            JSON.stringify({ action: 'whatsapp_send', phone: formatted }),
+            false, '/', ExecutionMethod.POST,
+            { 'Content-Type': 'application/json' }
+          ),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('WhatsApp send timed out')), 15000)),
+        ]);
         const wa = parseAppwriteResponse(waExec.responseBody);
         if (wa.success && typeof wa.challenge === 'string') {
           set({ tempPhone: formatted, tempVerificationId: formatted, tempWhatsAppChallenge: wa.challenge });
