@@ -63,7 +63,8 @@ jobs:
       # Review submission requires the binary to be uploaded first, so selecting
       # review also enables the upload and its required App Store Connect secrets.
       DO_SUBMIT: ${{ github.event_name == 'push' || github.event_name == 'release' || inputs.submit || inputs.submit_for_review }}
-      DO_REVIEW: ${{ github.event_name == 'push' || github.event_name == 'release' || inputs.submit_for_review }}
+    outputs:
+      build-number: ${{ steps.build.outputs.build-number }}
     steps:
       # Shallow checkout of exactly this run's commit, using the token GitHub
       # already injects. No action required.
@@ -186,12 +187,60 @@ jobs:
           set -euo pipefail
           eas submit --platform ios --profile production --non-interactive --id "$BUILD_ID"
 
+  review:
+    name: Submit for review (iOS, with IAPs)
+    needs: ios
+    if: ${{ github.event_name == 'push' || github.event_name == 'release' || inputs.submit_for_review }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # Every job that runs asc_autosubmit.rb uses this one group, in every
+    # workflow and for every ref. The script attaches a build to the shared
+    # editable App Store version and later submits the VERSION, so two
+    # overlapping runs can submit each other's build. GitHub keeps one queued
+    # job per group: a newer queued review replaces an older queued one, and
+    # the replaced run's build stays in TestFlight only.
+    concurrency:
+      group: app-store-review-ios
+      cancel-in-progress: false
+    steps:
+      # Shallow checkout of exactly this run's commit, using the token GitHub
+      # already injects. No action required.
+      - name: Checkout ${{ github.sha }}
+        env:
+          GH_FETCH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git init -q .
+          # The token is sent only as a one-off header for this fetch. It is not
+          # written into .git/config (the old remote URL embedded it), so later
+          # steps -- npm lifecycle scripts included -- cannot read it back.
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          AUTH_HEADER="$(printf 'x-access-token:%s' "$GH_FETCH_TOKEN" | base64 -w0)"
+          echo "::add-mask::${AUTH_HEADER}"
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic ${AUTH_HEADER}" \
+            -c protocol.version=2 fetch -q --depth=1 origin "${GITHUB_SHA}"
+          git checkout -q --detach FETCH_HEAD
+          echo "checked out $(git rev-parse --short HEAD)"
+
+      # asc_autosubmit.rb reads the .p8 from ASC_KEY_PATH; it only exists as
+      # the ASC_API_KEY_BASE64 secret (never committed).
+      - name: Restore App Store Connect API key
+        env:
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$ASC_API_KEY_BASE64" | base64 -d > AuthKey_S5SW3FX3CM.p8
+          if [ ! -s AuthKey_S5SW3FX3CM.p8 ]; then
+            echo "::error::Decoded ASC key is empty — check the ASC_API_KEY_BASE64 secret." >&2
+            exit 1
+          fi
+          echo "ASC key restored"
+
       # A plain `eas submit` creates a binary-only ("1 Item") submission that
       # cannot carry the in-app purchases, which is what caused the repeated
       # 2.1(b) auto-rejections. asc_autosubmit.rb instead bundles the BUILD plus
       # all 6 subscriptions and the consumable into ONE review submission.
       - name: Submit for review WITH in-app purchases
-        if: ${{ env.DO_REVIEW == 'true' }}
         env:
           ASC_KEY_PATH: ./AuthKey_S5SW3FX3CM.p8
           ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
@@ -200,7 +249,7 @@ jobs:
           # Manual runs override via the input; tag pushes use the default.
           WHATS_NEW: ${{ inputs.whats_new || 'Fixes app launch stability and improves the tool result-to-desktop handoff. Thank you for using MarketingTool!' }}
           DRY_RUN: 'false'
-          BUILD_NUMBER: ${{ steps.build.outputs.build-number }}
+          BUILD_NUMBER: ${{ needs.ios.outputs.build-number }}
         run: |
           set -euo pipefail
           sudo gem install jwt --version '~> 2.10' --no-document

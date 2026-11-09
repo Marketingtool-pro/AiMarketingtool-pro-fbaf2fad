@@ -28,6 +28,15 @@ jobs:
     name: Submit to App Review
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Every job that runs asc_autosubmit.rb uses this one group, in every
+    # workflow and for every ref. The script attaches a build to the shared
+    # editable App Store version and later submits the VERSION, so two
+    # overlapping runs can submit each other's build. GitHub keeps one queued
+    # job per group: a newer queued review replaces an older queued one, and
+    # the replaced run's build stays in TestFlight only.
+    concurrency:
+      group: app-store-review-ios
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:

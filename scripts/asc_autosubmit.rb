@@ -79,6 +79,17 @@ ensure
 end
 def get(p) = req(:get, p)
 
+# A review submission takes the VERSION, not a fixed build. Another release run
+# that shares this editable version can attach its own build between our attach
+# and our submit, so check which build the version holds at each write step.
+def ensure_build_attached!(ver, build, stage)
+  code, rel = get("/v1/appStoreVersions/#{ver['id']}/relationships/build")
+  attached = code == 200 ? rel.dig('data', 'id') : nil
+  return if attached == build['id']
+  abort "❌ #{stage}: version #{ver['attributes']['versionString']} holds build #{attached || "unknown (#{code})"}, " \
+        "not this run's build #{build['attributes']['version']} (#{build['id']}). Another release run changed it."
+end
+
 puts "=== MODE: #{DRY_RUN ? 'DRY RUN (read-only, no submit)' : 'LIVE (will attach + submit to Apple)'} ==="
 
 # 1) pick the build. If BUILD_NUMBER is given, WAIT (poll) until THAT build is
@@ -189,6 +200,8 @@ cc, _ = req(:patch, "/v1/builds/#{build['id']}",
   { data: { type: 'builds', id: build['id'], attributes: { usesNonExemptEncryption: false } } })
 puts "  #{[200, 204].include?(cc) ? '✔' : "· (#{cc})"} export compliance set (usesNonExemptEncryption=false)"
 
+ensure_build_attached!(ver, build, 'before review submission')
+
 # 4) create review submission
 code, rs = req(:post, '/v1/reviewSubmissions',
   { data: { type: 'reviewSubmissions',
@@ -234,7 +247,9 @@ unless failures.empty?
        "Attach the IAPs + build in the App Store Connect web UI and submit there instead."
   exit 1
 end
+ensure_build_attached!(ver, build, "NOT submitted (review submission #{rs_id} left as a draft)")
 code, _ = req(:patch, "/v1/reviewSubmissions/#{rs_id}",
   { data: { type: 'reviewSubmissions', id: rs_id, attributes: { submitted: true } } })
 abort "❌ submit failed #{code}" unless [200, 204].include?(code)
+ensure_build_attached!(ver, build, "SUBMITTED WITH THE WRONG BUILD — remove review submission #{rs_id} from review in App Store Connect")
 puts "\n🚀 SUBMITTED to App Review with build + #{items.size - 1} IAPs."
