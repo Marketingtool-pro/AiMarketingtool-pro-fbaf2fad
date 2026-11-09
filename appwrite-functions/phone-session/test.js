@@ -6,6 +6,15 @@ const crypto = require("crypto");
 const { EventEmitter } = require("events");
 const origLoad = Module._load;
 let appwriteReached = false;
+// In-memory stand-in for the otp_guard collection; survives handler reloads,
+// which play the role of a fresh Appwrite instance.
+const guardDocs = new Map();
+let guardCollectionMissing = false;
+let lastWhatsAppCode = null;
+
+function appwriteError(code, type) {
+  return Object.assign(new Error(type), { code, type });
+}
 
 // A key pair that plays the role of Google's signing key. The handler fetches
 // "Google's certs" through the stubbed https module below and receives this
@@ -29,6 +38,26 @@ Module._load = function (request, ...rest) {
         });
         return { on() { return this; } };
       },
+      // MSG91 send: remember the code the server put in the template.
+      request(_url, _opts, cb) {
+        const chunks = [];
+        return {
+          on() { return this; },
+          setTimeout() { return this; },
+          end(data) {
+            chunks.push(String(data || ""));
+            const sent = JSON.parse(chunks.join(""));
+            lastWhatsAppCode = sent.payload.template.to_and_components[0].components.body_1.value;
+            const resp = new EventEmitter();
+            resp.statusCode = 200;
+            process.nextTick(() => {
+              cb(resp);
+              resp.emit("data", JSON.stringify({ status: "success" }));
+              resp.emit("end");
+            });
+          },
+        };
+      },
     };
   }
   if (request === "node-appwrite") {
@@ -39,12 +68,33 @@ Module._load = function (request, ...rest) {
         async create() { appwriteReached = true; }
         async createToken(id) { appwriteReached = true; return { userId: id, secret: "stub-secret" }; }
       },
+      Databases: class {
+        check() { if (guardCollectionMissing) throw appwriteError(404, "collection_not_found"); }
+        async getDocument(_db, _col, id) {
+          this.check();
+          if (!guardDocs.has(id)) throw appwriteError(404, "document_not_found");
+          return { $id: id, ...guardDocs.get(id) };
+        }
+        async createDocument(_db, _col, id, data) {
+          this.check();
+          if (guardDocs.has(id)) throw appwriteError(409, "document_already_exists");
+          guardDocs.set(id, { ...data });
+        }
+        async updateDocument(_db, _col, id, data) {
+          this.check();
+          guardDocs.set(id, { ...guardDocs.get(id), ...data });
+        }
+      },
     };
   }
   return origLoad.call(this, request, ...rest);
 };
 
-const handler = require("./src/main.js");
+let handler = require("./src/main.js");
+function freshInstance() {
+  delete require.cache[require.resolve("./src/main.js")];
+  handler = require("./src/main.js");
+}
 
 function b64url(obj) { return Buffer.from(JSON.stringify(obj)).toString("base64url"); }
 
@@ -63,7 +113,10 @@ async function run(name, body, env = {}, ip = `10.0.0.${++ipCounter}`) {
     error: () => {},
   });
   for (const k of Object.keys(env)) { if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k]; }
-  return { name, status: out.status, appwriteReached, error: out.body.error, success: out.body.success };
+  return {
+    name, status: out.status, appwriteReached, error: out.body.error, success: out.body.success,
+    challenge: out.body.challenge,
+  };
 }
 
 (async () => {
@@ -122,5 +175,69 @@ async function run(name, body, env = {}, ip = `10.0.0.${++ipCounter}`) {
   results.push(await run("correct code while throttled (expect 429)",
     { reviewerPhone: "+919999999999", reviewerCode: "123456" }, env, "203.0.113.7"));
 
-  for (const r of results) console.log(JSON.stringify(r));
+  // ── WhatsApp OTP ──────────────────────────────────────────────────────────
+  const waEnv = {
+    MSG91_AUTHKEY: "test", MSG91_WA_NUMBER: "+15550000000", MSG91_WA_TEMPLATE: "otp",
+    OTP_SIGNING_SECRET: "x".repeat(32),
+  };
+  const victim = "+15557654321";
+  const wrongCode = () => (lastWhatsAppCode === "000000" ? "000001" : "000000");
+  const expect = (name, r, status) => results.push({ ...r, name: `${name} (expect ${status})`, ok: r.status === status });
+  const send = (name, phone = victim) => run(name, { action: "whatsapp_send", phone }, waEnv);
+  const verify = (name, whatsappChallenge, whatsappCode) =>
+    run(name, { whatsappChallenge, whatsappCode, phone: victim }, waEnv);
+
+  let s = await send("wa send");
+  expect("wa send", s, 200);
+  const goodChallenge = s.challenge;
+  const goodCode = lastWhatsAppCode;
+  expect("wa wrong code", await verify("wa wrong code", goodChallenge, wrongCode()), 401);
+  expect("wa correct code", await verify("wa correct code", goodChallenge, goodCode), 200);
+  freshInstance();
+  expect("wa replay of a used challenge on a fresh instance",
+    await verify("wa replay", goodChallenge, goodCode), 401);
+
+  // Brute force spread over fresh instances and fresh codes: the per-phone
+  // failure count is durable, so the number locks after the daily limit.
+  let wrong = 0;
+  let lockedChallenge, lockedCode;
+  while (wrong < 10) {
+    freshInstance();
+    s = await send("wa brute-force send");
+    if (s.status !== 200) break;
+    lockedChallenge = s.challenge;
+    lockedCode = lastWhatsAppCode;
+    for (let i = 0; i < 5 && wrong < 10; i++, wrong++) await verify("wa guess", lockedChallenge, wrongCode());
+  }
+  results.push({ name: "wa wrong guesses before lock (expect 10)", ok: wrong === 10, wrong });
+  freshInstance();
+  expect("wa send after 10 wrong codes", await send("wa send locked"), 429);
+  expect("wa correct code after 10 wrong codes", await verify("wa locked", lockedChallenge, lockedCode), 401);
+
+  freshInstance();
+  for (let i = 0; i < 10; i++) {
+    freshInstance();
+    await send("wa send cap", "+15551112222");
+  }
+  freshInstance();
+  expect("wa 11th send to one phone in a day", await send("wa send cap", "+15551112222"), 429);
+
+  freshInstance();
+  guardCollectionMissing = true;
+  expect("wa send without otp_guard collection", await send("wa no guard", "+15553334444"), 502);
+  guardCollectionMissing = false;
+
+  freshInstance();
+  let ipLast;
+  for (let i = 0; i < 11; i++) {
+    ipLast = await run("wa ip cap", { action: "whatsapp_send", phone: `+1555900${String(i).padStart(4, "0")}` }, waEnv, "198.51.100.9");
+  }
+  expect("wa 11th send from one IP", ipLast, 429);
+
+  for (const r of results) console.log(JSON.stringify({ ...r, challenge: undefined }));
+  const failed = results.filter((r) => r.ok === false);
+  if (failed.length) {
+    console.error(`${failed.length} WhatsApp check(s) failed`);
+    process.exitCode = 1;
+  }
 })();

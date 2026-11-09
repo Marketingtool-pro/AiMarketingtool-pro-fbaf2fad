@@ -1,5 +1,5 @@
 /**
- * Appwrite Function: phone-session  (v3.0.0: adds WhatsApp OTP via MSG91)
+ * Appwrite Function: phone-session  (v3.1.0)
  *
  * Creates or reuses the Appwrite user for a Firebase phone-auth user and returns
  * a one-time { userId, secret } the app exchanges for a session.
@@ -24,10 +24,28 @@
  *   - no longer tolerates already-expired tokens (only a small clock skew);
  *   - throttles failed attempts per client IP and globally for the reviewer
  *     path, so the static reviewer code cannot be brute-forced.
+ *
+ * v3.0 adds WhatsApp OTP via MSG91 (see below).
+ *
+ * v3.1: WhatsApp OTP limits survive instance restarts and new codes.
+ *   - Codes sent and wrong codes are counted per phone number in the
+ *     `otp_guard` collection, not only in this instance's memory, and a new
+ *     code no longer resets the number of guesses. After MAX_WA_FAILURES_PER_PHONE
+ *     wrong codes in a day the number gets no more WhatsApp codes (the app
+ *     falls back to Firebase SMS) and pending challenges stop working.
+ *   - A challenge can be exchanged for a session once, across all instances.
+ *   - Codes sent per client IP are capped.
+ *   - WhatsApp login is refused (503, app uses SMS) when the collection is
+ *     missing.
+ *
+ * Environment for the WhatsApp guard:
+ *   APPWRITE_DATABASE_ID       (default: main)
+ *   OTP_GUARD_COLLECTION_ID    (default: otp_guard) - integer attributes
+ *                              windowStart, sends, failures; no client permissions
  */
 const https = require("https");
 const crypto = require("crypto");
-const { Client, Users } = require("node-appwrite");
+const { Client, Users, Databases } = require("node-appwrite");
 
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "marketing-tool-484720";
 const CERTS_URL =
@@ -180,10 +198,83 @@ function digits(value) {
 // ---------------------------------------------------------------------------
 const WA_CODE_TTL_SECONDS = 5 * 60;
 const MAX_SENDS_PER_PHONE = 3; // per RATE_WINDOW_MS
+const MAX_SENDS_PER_IP = 10; // per RATE_WINDOW_MS
 const MAX_CODE_TRIES_PER_CHALLENGE = 5;
 const sendsByPhone = new Map();
+const sendsByIp = new Map();
 const triesByChallenge = new Map();
 const usedChallenges = new Map();
+
+// Durable limits (otp_guard collection), shared by every instance.
+const GUARD_WINDOW_MS = 24 * 60 * 60 * 1000;
+const MAX_WA_SENDS_PER_PHONE = 10; // per GUARD_WINDOW_MS
+const MAX_WA_FAILURES_PER_PHONE = 10; // per GUARD_WINDOW_MS
+const DATABASE_ID = process.env.APPWRITE_DATABASE_ID || "main";
+const OTP_GUARD_COLLECTION_ID = process.env.OTP_GUARD_COLLECTION_ID || "otp_guard";
+
+class OtpRejected extends Error {}
+
+function appwriteClient() {
+  return new Client()
+    .setEndpoint(process.env.APPWRITE_ENDPOINT || "https://api.marketingtool.pro/v1")
+    .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
+    .setKey(process.env.APPWRITE_API_KEY);
+}
+
+function guardId(prefix, value) {
+  // Appwrite ids: max 36 chars of [a-zA-Z0-9._-]; hex is safe.
+  return prefix + crypto.createHash("sha256").update(String(value)).digest("hex").slice(0, 35);
+}
+
+/** Current per-phone counters; a lapsed window starts again from zero. */
+async function loadPhoneGuard(db, phoneDigits) {
+  const id = guardId("p", "wa:" + phoneDigits);
+  let doc = null;
+  try {
+    doc = await db.getDocument(DATABASE_ID, OTP_GUARD_COLLECTION_ID, id);
+  } catch (e) {
+    if (!e || e.type !== "document_not_found") throw e;
+  }
+  const now = Date.now();
+  const fresh = !doc || typeof doc.windowStart !== "number" || now - doc.windowStart > GUARD_WINDOW_MS;
+  return {
+    id,
+    exists: Boolean(doc),
+    windowStart: fresh ? now : doc.windowStart,
+    sends: fresh ? 0 : Number(doc.sends) || 0,
+    failures: fresh ? 0 : Number(doc.failures) || 0,
+  };
+}
+
+async function savePhoneGuard(db, guard) {
+  const data = { windowStart: guard.windowStart, sends: guard.sends, failures: guard.failures };
+  if (guard.exists) {
+    await db.updateDocument(DATABASE_ID, OTP_GUARD_COLLECTION_ID, guard.id, data);
+    return;
+  }
+  try {
+    await db.createDocument(DATABASE_ID, OTP_GUARD_COLLECTION_ID, guard.id, data);
+  } catch (e) {
+    if (!e || e.code !== 409) throw e;
+    await db.updateDocument(DATABASE_ID, OTP_GUARD_COLLECTION_ID, guard.id, data);
+  }
+  guard.exists = true;
+}
+
+/** Marks a challenge as exchanged; false when another call already did. */
+async function claimChallenge(db, payloadB64, expiresAt) {
+  try {
+    await db.createDocument(DATABASE_ID, OTP_GUARD_COLLECTION_ID, guardId("c", payloadB64), {
+      windowStart: expiresAt * 1000,
+      sends: 0,
+      failures: 0,
+    });
+    return true;
+  } catch (e) {
+    if (e && e.code === 409) return false;
+    throw e;
+  }
+}
 
 function whatsappConfigured() {
   return Boolean(
@@ -258,12 +349,16 @@ async function sendWhatsAppCode(phoneDigits, code) {
   }
 }
 
-async function startWhatsApp(phone) {
+async function startWhatsApp(db, phone, ip) {
   const phoneDigits = digits(phone);
   if (phoneDigits.length < 8 || phoneDigits.length > 15) return { status: 400, body: { error: "Invalid phone number" } };
-  if (!bumpCounter(sendsByPhone, phoneDigits, MAX_SENDS_PER_PHONE)) {
-    return { status: 429, body: { error: "Too many codes requested. Try again later." } };
-  }
+  const tooMany = { status: 429, body: { error: "Too many codes requested. Try again later." } };
+  if (!bumpCounter(sendsByIp, ip, MAX_SENDS_PER_IP)) return tooMany;
+  if (!bumpCounter(sendsByPhone, phoneDigits, MAX_SENDS_PER_PHONE)) return tooMany;
+  const guard = await loadPhoneGuard(db, phoneDigits);
+  if (guard.sends >= MAX_WA_SENDS_PER_PHONE || guard.failures >= MAX_WA_FAILURES_PER_PHONE) return tooMany;
+  guard.sends += 1;
+  await savePhoneGuard(db, guard);
   const code = String(crypto.randomInt(0, 1000000)).padStart(6, "0");
   const payload = {
     p: phoneDigits,
@@ -275,19 +370,41 @@ async function startWhatsApp(phone) {
   return { status: 200, body: { success: true, challenge: `${payloadB64}.${sign(payloadB64, code)}`, expiresIn: WA_CODE_TTL_SECONDS } };
 }
 
-// Returns the verified phone digits, or throws.
-function verifyWhatsApp(challenge, code) {
-  if (typeof challenge !== "string" || typeof code !== "string") throw new Error("missing challenge or code");
+// Returns the verified phone digits. Throws OtpRejected for a bad challenge or
+// code; any other error means the guard collection could not be used.
+async function verifyWhatsApp(db, challenge, code) {
+  if (typeof challenge !== "string" || typeof code !== "string") throw new OtpRejected("missing challenge or code");
   const [payloadB64, mac] = challenge.split(".");
-  if (!payloadB64 || !mac) throw new Error("malformed challenge");
-  if (!bumpCounter(triesByChallenge, payloadB64, MAX_CODE_TRIES_PER_CHALLENGE)) throw new Error("too many tries");
-  if (usedChallenges.has(payloadB64)) throw new Error("challenge already used");
-  const payload = b64urlJson(payloadB64);
-  if (typeof payload.e !== "number" || payload.e < Math.floor(Date.now() / 1000)) throw new Error("code expired");
-  if (!/^\d{6}$/.test(code.trim()) || !safeEqual(sign(payloadB64, code.trim()), mac)) throw new Error("wrong code");
+  if (!payloadB64 || !mac) throw new OtpRejected("malformed challenge");
+  if (!bumpCounter(triesByChallenge, payloadB64, MAX_CODE_TRIES_PER_CHALLENGE)) throw new OtpRejected("too many tries");
+  if (usedChallenges.has(payloadB64)) throw new OtpRejected("challenge already used");
+  let payload;
+  try {
+    payload = b64urlJson(payloadB64);
+  } catch {
+    throw new OtpRejected("malformed challenge");
+  }
+  if (!payload || typeof payload.e !== "number" || payload.e < Math.floor(Date.now() / 1000)) {
+    throw new OtpRejected("code expired");
+  }
+  const phoneDigits = digits(payload.p);
+  if (!phoneDigits) throw new OtpRejected("malformed challenge");
+
+  const guard = await loadPhoneGuard(db, phoneDigits);
+  if (guard.failures >= MAX_WA_FAILURES_PER_PHONE) throw new OtpRejected("too many wrong codes for this phone");
+  if (!/^\d{6}$/.test(code.trim()) || !safeEqual(sign(payloadB64, code.trim()), mac)) {
+    guard.failures += 1;
+    await savePhoneGuard(db, guard);
+    throw new OtpRejected("wrong code");
+  }
+  if (!(await claimChallenge(db, payloadB64, payload.e))) throw new OtpRejected("challenge already used");
   usedChallenges.set(payloadB64, payload.e);
   if (usedChallenges.size > 5000) usedChallenges.delete(usedChallenges.keys().next().value);
-  return digits(payload.p);
+  if (guard.failures > 0) {
+    guard.failures = 0;
+    await savePhoneGuard(db, guard);
+  }
+  return phoneDigits;
 }
 
 function parseBody(raw) {
@@ -325,7 +442,7 @@ module.exports = async ({ req, res, log, error }) => {
   if (action === "whatsapp_send") {
     if (!whatsappConfigured()) return res.json({ error: "WhatsApp login is not available" }, 503, headers);
     try {
-      const out = await startWhatsApp(phone);
+      const out = await startWhatsApp(new Databases(appwriteClient()), phone, ip);
       if (out.status !== 200) recordFailure(ip);
       return res.json(out.body, out.status, headers);
     } catch (e) {
@@ -359,8 +476,12 @@ module.exports = async ({ req, res, log, error }) => {
     // Step 2 of the WhatsApp login: the typed code must match the signed challenge.
     if (!whatsappConfigured()) return res.json({ error: "WhatsApp login is not available" }, 503, headers);
     try {
-      phoneDigits = verifyWhatsApp(whatsappChallenge, String(whatsappCode || ""));
+      phoneDigits = await verifyWhatsApp(new Databases(appwriteClient()), whatsappChallenge, String(whatsappCode || ""));
     } catch (e) {
+      if (!(e instanceof OtpRejected)) {
+        error("phone-session: WhatsApp guard unavailable: " + e.message);
+        return res.json({ error: "WhatsApp login is not available" }, 503, headers);
+      }
       recordFailure(ip);
       log("phone-session: WhatsApp code rejected: " + e.message);
       return res.json({ error: "That code is wrong or has expired" }, 401, headers);
@@ -382,11 +503,7 @@ module.exports = async ({ req, res, log, error }) => {
   }
 
   try {
-    const client = new Client()
-      .setEndpoint(process.env.APPWRITE_ENDPOINT || "https://api.marketingtool.pro/v1")
-      .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
-      .setKey(process.env.APPWRITE_API_KEY);
-    const users = new Users(client);
+    const users = new Users(appwriteClient());
 
     const userId = "phone_" + phoneDigits;
     const email = phoneDigits + "@phone.marketingtool.pro";
