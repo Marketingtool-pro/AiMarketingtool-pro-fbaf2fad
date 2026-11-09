@@ -46,7 +46,7 @@
     "build": "expo export --platform web",
     "lint": "expo lint",
     "test:app": "jest",
-    "test": "node --test scripts/read-eas-build-id.test.mjs",
+    "test": "node --test scripts/read-eas-build-id.test.mjs scripts/deeplinks.test.mjs",
     "test:asc": "ruby scripts/asc_autosubmit.test.rb",
     "test:bun": "bun test src/ scripts/",
     "typecheck": "bun check"

@@ -70,7 +70,25 @@
           "data": [
             { "scheme": "https", "host": "marketingtool.pro", "path": "/" },
             { "scheme": "https", "host": "www.marketingtool.pro", "path": "/" },
-            { "scheme": "https", "host": "app.marketingtool.pro", "path": "/" },
+            { "scheme": "https", "pathPrefix": "/pricing" },
+            { "scheme": "https", "pathPrefix": "/privacy-policy" },
+            { "scheme": "https", "pathPrefix": "/terms-policy" },
+            { "scheme": "https", "pathPrefix": "/contact" },
+            { "scheme": "https", "pathPrefix": "/tools" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "app.marketingtool.pro", "path": "/" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        },
+        {
+          "action": "VIEW",
+          "data": [
             { "scheme": "https", "host": "auth.marketingtool.pro", "path": "/" }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
