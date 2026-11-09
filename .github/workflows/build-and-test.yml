@@ -57,6 +57,9 @@ jobs:
       - name: Run tests
         run: npm test --if-present
 
+      - name: Run App Store submit tests
+        run: npm run test:asc
+
   eas-build-preview:
     # Was `self-hosted`, but this org has no self-hosted runners registered
     # (org and repo runner lists are both empty), so the job could never be
