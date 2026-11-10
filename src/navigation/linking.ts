@@ -1,12 +1,18 @@
 import type { LinkingOptions } from '@react-navigation/native';
 import type { RootStackParamList } from './AppNavigator';
 
+// Site sections with no native screen. They open WebPageScreen, which shows
+// the same marketingtool.pro page inside the app -- never an unrelated screen.
+export const WEB_SECTIONS = [
+  'about',
+  'blog',
+  'resources',
+  'solutions',
+  'release-notes',
+  'audit-report',
+] as const;
+
 // Which marketingtool.pro URLs open a screen in this app.
-//
-// Everything not listed here (blog, resources, solutions, about, audit-report,
-// release-notes) has no in-app equivalent and is deliberately left in the
-// browser -- a URL that opens the app on an unrelated screen is worse than one
-// that stays on the web.
 //
 // This list and android.intentFilters in app.json must stay in step: a path
 // declared there but missing here opens the app on its default screen instead
@@ -38,6 +44,9 @@ export const linking: LinkingOptions<RootStackParamList> = {
       Privacy: 'privacy-policy',
       Terms: 'terms-policy',
       Contact: 'contact',
+      // Static routes above outrank this param route, so it only catches
+      // paths nothing else claims; WebPageScreen loads WEB_SECTIONS only.
+      WebPage: ':section/:slug?',
     },
   },
 };
