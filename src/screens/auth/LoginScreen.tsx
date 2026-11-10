@@ -430,7 +430,7 @@ const LoginScreen = () => {
             {otpSent && (
               <View style={styles.otpSection}>
                 <Text style={styles.otpSentText}>
-                  Enter the 6-digit code sent via SMS to {selectedCountry.dialCode} {phoneNumber}
+                  Enter the 6-digit code sent on WhatsApp to {selectedCountry.dialCode} {phoneNumber}
                 </Text>
 
                 {!!otpError && (
