@@ -363,10 +363,10 @@ async function sendWhatsAppCode(phoneDigits, code) {
     body_1: { type: "text", value: code },
     button_1: { subtype: "url", type: "text", value: code },
   };
-  // The marketingtoolpro template has a second body variable (support number).
-  if (process.env.WA_SUPPORT_NUMBER) {
-    components.body_2 = { type: "text", value: String(process.env.WA_SUPPORT_NUMBER) };
-  }
+  // The approved marketingtoolpro template has TWO body variables; Meta rejects
+  // a send with only one ("number of localizable_params (1) does not match the
+  // expected number of params (2)"). The second is the support number.
+  components.body_2 = { type: "text", value: String(process.env.WA_SUPPORT_NUMBER || "+1-855-574-2506") };
   const template = {
     name: WA_TEMPLATE(),
     // The approved MSG91 template "marketingtoolpro" is registered as en_US;
@@ -387,6 +387,7 @@ async function sendWhatsAppCode(phoneDigits, code) {
   if (resp.status < 200 || resp.status >= 300 || /"(status|type)"\s*:\s*"(error|fail)/i.test(resp.body)) {
     throw new Error(`MSG91 HTTP ${resp.status}: ${String(resp.body).slice(0, 300)}`);
   }
+  return resp;
 }
 
 async function startWhatsApp(db, phone, ip) {
@@ -406,8 +407,9 @@ async function startWhatsApp(db, phone, ip) {
     n: crypto.randomBytes(12).toString("base64url"),
   };
   const payloadB64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  await sendWhatsAppCode(phoneDigits, code);
-  return { status: 200, body: { success: true, challenge: `${payloadB64}.${sign(payloadB64, code)}`, expiresIn: WA_CODE_TTL_SECONDS } };
+  const waResp = await sendWhatsAppCode(phoneDigits, code);
+  return {
+    msg91: `HTTP ${waResp.status}: ${String(waResp.body).slice(0, 400)}`, status: 200, body: { success: true, challenge: `${payloadB64}.${sign(payloadB64, code)}`, expiresIn: WA_CODE_TTL_SECONDS } };
 }
 
 // Returns the verified phone digits. Throws OtpRejected for a bad challenge or
@@ -484,6 +486,7 @@ module.exports = async ({ req, res, log, error }) => {
     if (!whatsappConfigured()) return res.json({ error: "WhatsApp login is not available" }, 503, headers);
     try {
       const out = await startWhatsApp(new Databases(appwriteClient()), phone, ip);
+      if (out.msg91) log("phone-session: MSG91 replied " + out.msg91);
       if (out.status !== 200) recordFailure(ip);
       return res.json(out.body, out.status, headers);
     } catch (e) {
