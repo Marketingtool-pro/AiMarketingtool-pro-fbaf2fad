@@ -1,6 +1,6 @@
 {
   "name": "phone-session",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "Mints an Appwrite session for a Firebase phone-auth user after verifying the Firebase ID token",
   "main": "src/main.js",
   "dependencies": {
