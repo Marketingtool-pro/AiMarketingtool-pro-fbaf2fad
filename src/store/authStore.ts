@@ -5,11 +5,7 @@ import { authService, dbService, account, functions, COLLECTIONS, Query, isAwait
 import { biometricService } from '../services/biometric';
 import { isE164 } from '../utils/phone';
 import { isReviewerLogin, parseReviewerKeys } from '../utils/reviewerAuth';
-import {
-  sendPhoneOTP as firebaseSendOTP,
-  verifyPhoneOTP as firebaseVerifyOTP,
-  signOutFirebase,
-} from '../services/firebaseAuth';
+import { signOutFirebase } from '../services/firebaseAuth';
 
 // Appwrite Functions return responseBody as either an object (newer SDK)
 // OR as a JSON string (older SDK) OR as a plain text error message (4xx).
@@ -409,37 +405,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return formatted;
       }
 
-      // WhatsApp first (MSG91, sent by the phone-session function, which holds
-      // the MSG91 key). Any failure -- WhatsApp not configured on the server,
-      // an older function version, number not on WhatsApp, MSG91 down -- falls
-      // through to Firebase SMS, so login never depends on WhatsApp alone.
-      try {
-        // Bounded: a slow or hung server must not leave the user staring at a
-        // spinner for 45s+ before the SMS fallback runs.
-        const waExec: any = await Promise.race([
-          functions.createExecution(
-            'phone-session',
-            JSON.stringify({ action: 'whatsapp_send', phone: formatted }),
-            false, '/', ExecutionMethod.POST,
-            { 'Content-Type': 'application/json' }
-          ),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('WhatsApp send timed out')), 15000)),
-        ]);
-        const wa = parseAppwriteResponse(waExec.responseBody);
-        if (wa.success && typeof wa.challenge === 'string') {
-          set({ tempPhone: formatted, tempVerificationId: formatted, tempWhatsAppChallenge: wa.challenge });
-          return formatted;
-        }
-      } catch (waError: any) {
-        if (__DEV__) console.log('[Auth] WhatsApp code not sent, using SMS:', waError?.message);
+      // WhatsApp OTP only (MSG91, sent by the phone-session function, which
+      // holds the MSG91 key). Firebase SMS is no longer used: on Android it
+      // failed after every new build (Play Integrity / app verification), and
+      // the user saw "Phone sign-in is not available on this device".
+      // Bounded: a slow server must not leave the user on a spinner forever.
+      const waExec: any = await Promise.race([
+        functions.createExecution(
+          'phone-session',
+          JSON.stringify({ action: 'whatsapp_send', phone: formatted }),
+          false, '/', ExecutionMethod.POST,
+          { 'Content-Type': 'application/json' }
+        ),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Could not send the WhatsApp code. Please try again.')), 20000)
+        ),
+      ]);
+      const wa = parseAppwriteResponse(waExec.responseBody);
+      if (!wa.success || typeof wa.challenge !== 'string') {
+        throw new Error(wa.error || 'Could not send the WhatsApp code. Please try again.');
       }
-
-      if (__DEV__) console.log('[Auth] Sending OTP via Firebase to', formatted);
-      const result = await firebaseSendOTP(formatted);
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to send OTP');
-      }
-      set({ tempPhone: formatted, tempVerificationId: formatted, tempWhatsAppChallenge: null });
+      set({ tempPhone: formatted, tempVerificationId: formatted, tempWhatsAppChallenge: wa.challenge });
       return formatted;
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
@@ -465,7 +451,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // phone-session v2 derives the account from this token alone; v1 (live
       // until every installed app sends it) still reads firebaseUid + phone,
       // so both are sent and either function version works.
-      let idToken: string | undefined;
       let reviewerFields: { reviewerPhone: string; reviewerCode: string } | undefined;
       let whatsappFields: { whatsappChallenge: string; whatsappCode: string } | undefined;
       const waChallenge = get().tempWhatsAppChallenge;
@@ -484,13 +469,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         firebaseUid = 'whatsapp_' + phone.replace(/\D/g, '');
         whatsappFields = { whatsappChallenge: waChallenge, whatsappCode: code.trim() };
       } else {
-        if (__DEV__) console.log('[Auth] Verifying OTP via Firebase for', phone);
-        const verifyResult = await firebaseVerifyOTP(code);
-        if (!verifyResult.success || !verifyResult.user) {
-          throw new Error(verifyResult.error || 'Invalid OTP. Please try again.');
-        }
-        firebaseUid = verifyResult.user.uid;
-        idToken = await verifyResult.user.getIdToken();
+        throw new Error('Verification session expired. Please request a new code.');
       }
 
       // Mint Appwrite session via phone-session function. It returns a
@@ -498,7 +477,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // guests can't poll executions.read.
       const sessionExec = await functions.createExecution(
         'phone-session',
-        JSON.stringify({ idToken, firebaseUid, phone, displayName: '', ...reviewerFields, ...whatsappFields }),
+        JSON.stringify({ firebaseUid, phone, displayName: '', ...reviewerFields, ...whatsappFields }),
         false, '/', ExecutionMethod.POST,
         { 'Content-Type': 'application/json' }
       );
