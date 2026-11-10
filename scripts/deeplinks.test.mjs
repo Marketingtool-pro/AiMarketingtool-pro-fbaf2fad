@@ -30,7 +30,7 @@ const linkingSource = stripTypeScriptTypes(
   readFileSync(join(root, 'src/navigation/linking.ts'), 'utf8'),
   { mode: 'strip' }
 );
-const { linking } = await import(
+const { linking, WEB_SECTIONS } = await import(
   `data:text/javascript;base64,${Buffer.from(linkingSource).toString('base64')}`
 );
 
@@ -97,6 +97,9 @@ const routedPrefixes = (screens = linking.config.screens) =>
   Object.values(screens).flatMap((value) => {
     if (typeof value === 'string') {
       if (value === '') return []; // the root, declared as path "/" not a prefix
+      // ":section/:slug?" (WebPage) has no static part; its real prefixes are
+      // WEB_SECTIONS, added below.
+      if (value.startsWith(':')) return [];
       const stat = value.split('/').filter((seg) => !seg.startsWith(':'));
       return [`/${stat.join('/')}`];
     }
@@ -105,7 +108,7 @@ const routedPrefixes = (screens = linking.config.screens) =>
 
 test('every route the navigator claims is declared in app.json', () => {
   const declared = declaredPrefixes();
-  const routed = routedPrefixes();
+  const routed = [...routedPrefixes(), ...WEB_SECTIONS.map((s) => `/${s}`)];
 
   // Guard the guard: if this ever comes back empty the assertions below pass
   // vacuously and this file stops testing anything.
@@ -154,27 +157,30 @@ test('tool category pages open the tool list, never a hanging ToolDetail', () =>
   assert.equal(screenFor('https://marketingtool.pro/tools/'), 'Main > Tools');
 });
 
-test('pages with no in-app equivalent stay in the browser', () => {
-  const webOnly = [
-    'https://marketingtool.pro/about/',
-    'https://marketingtool.pro/blog/',
-    'https://marketingtool.pro/blog/seo-title-tags-that-rank-and-click-the-ai-approach-to-search-optimization/',
-    'https://marketingtool.pro/resources/ppc-audit/',
-    'https://marketingtool.pro/resources/analytics/',
-    'https://marketingtool.pro/solutions/email-campaign/',
-    'https://marketingtool.pro/solutions/summary-generator/',
-    'https://marketingtool.pro/audit-report/',
-    'https://marketingtool.pro/release-notes/',
-  ];
-  for (const url of webOnly) {
-    assert.equal(screenFor(url), null, `${url} has no app screen and must stay on the web`);
+test('site pages with no native screen open that page in WebPage', () => {
+  const pages = {
+    'https://marketingtool.pro/about/': 'about',
+    'https://marketingtool.pro/blog/': 'blog',
+    'https://marketingtool.pro/blog/seo-title-tags-that-rank-and-click-the-ai-approach-to-search-optimization/': 'blog',
+    'https://marketingtool.pro/resources/ppc-audit/': 'resources',
+    'https://marketingtool.pro/resources/analytics/': 'resources',
+    'https://marketingtool.pro/solutions/email-campaign/': 'solutions',
+    'https://marketingtool.pro/solutions/summary-generator/': 'solutions',
+    'https://marketingtool.pro/audit-report/': 'audit-report',
+    'https://marketingtool.pro/release-notes/': 'release-notes',
+  };
+  for (const [url, section] of Object.entries(pages)) {
+    assert.equal(screenFor(url), 'WebPage', `${url} must open WebPage`);
+    const prefix = linking.prefixes.find((p) => url.startsWith(p));
+    const state = getStateFromPath(url.slice(prefix.length), linking.config);
+    assert.equal(state.routes.at(-1).params.section, section, `${url} must keep its section`);
   }
 });
 
 test('auth.marketingtool.pro is not in the verified App Links set', () => {
-  // It serves an Appwrite error page where assetlinks.json must be, so it can
-  // never verify; leaving autoVerify on it fails the domain check for the app.
-  // OAuth there arrives on the marketingtool:// scheme instead.
+  // It serves assetlinks.json (Nginx Proxy Manager host #2) but only carries
+  // OAuth redirects, which arrive on the marketingtool:// scheme; keep it out
+  // of the verified set so a proxy change there cannot fail app verification.
   for (const filter of app.android.intentFilters) {
     const hosts = filter.data.map((d) => d.host).filter(Boolean);
     if (hosts.includes('auth.marketingtool.pro')) {

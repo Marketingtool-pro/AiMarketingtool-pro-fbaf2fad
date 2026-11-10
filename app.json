@@ -74,7 +74,13 @@
             { "scheme": "https", "pathPrefix": "/privacy-policy" },
             { "scheme": "https", "pathPrefix": "/terms-policy" },
             { "scheme": "https", "pathPrefix": "/contact" },
-            { "scheme": "https", "pathPrefix": "/tools" }
+            { "scheme": "https", "pathPrefix": "/tools" },
+            { "scheme": "https", "pathPrefix": "/about" },
+            { "scheme": "https", "pathPrefix": "/blog" },
+            { "scheme": "https", "pathPrefix": "/resources" },
+            { "scheme": "https", "pathPrefix": "/solutions" },
+            { "scheme": "https", "pathPrefix": "/release-notes" },
+            { "scheme": "https", "pathPrefix": "/audit-report" }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
         },
