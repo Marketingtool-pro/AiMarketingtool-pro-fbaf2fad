@@ -27,6 +27,10 @@
  *
  * v3.0 adds WhatsApp OTP via MSG91 (see below).
  *
+ * v3.2: works with no WhatsApp env vars: MSG91 auth key read from the
+ *   Appwrite MSG91 provider, number/template/namespace defaulted to the live
+ *   setup, challenge signing key derived from APPWRITE_API_KEY.
+ *
  * v3.1: WhatsApp OTP limits survive instance restarts and new codes.
  *   - Codes sent and wrong codes are counted per phone number in the
  *     `otp_guard` collection, not only in this instance's memory, and a new
@@ -45,7 +49,7 @@
  */
 const https = require("https");
 const crypto = require("crypto");
-const { Client, Users, Databases } = require("node-appwrite");
+const { Client, Users, Databases, Messaging } = require("node-appwrite");
 
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "marketing-tool-484720";
 const CERTS_URL =
@@ -214,11 +218,14 @@ const OTP_GUARD_COLLECTION_ID = process.env.OTP_GUARD_COLLECTION_ID || "otp_guar
 
 class OtpRejected extends Error {}
 
+// Key for server calls: the function's APPWRITE_API_KEY, else the dynamic key
+// Appwrite passes to every execution (scopes set in the function settings).
+let requestKey = "";
 function appwriteClient() {
   return new Client()
     .setEndpoint(process.env.APPWRITE_ENDPOINT || "https://api.marketingtool.pro/v1")
     .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
-    .setKey(process.env.APPWRITE_API_KEY);
+    .setKey(process.env.APPWRITE_API_KEY || requestKey);
 }
 
 function guardId(prefix, value) {
@@ -276,16 +283,47 @@ async function claimChallenge(db, payloadB64, expiresAt) {
   }
 }
 
+// WhatsApp settings. Defaults are the live MSG91 setup (number, approved
+// AUTHENTICATION template "marketingtoolpro", its namespace), so the function
+// works without extra environment variables; any env var still overrides.
+const WA_NUMBER = () => process.env.MSG91_WA_NUMBER || "15553788514";
+const WA_TEMPLATE = () => process.env.MSG91_WA_TEMPLATE || "marketingtoolpro";
+const WA_NAMESPACE = () => process.env.MSG91_WA_NAMESPACE || "5363e8a3_bbc7_4985_b4cd_2ca64bb12448";
+// The MSG91 auth key is the one already saved in Appwrite Messaging (MSG91
+// provider), so no copy of it has to live in this function's settings.
+const MSG91_PROVIDER_ID = process.env.MSG91_PROVIDER_ID || "6aea3d10003b04064be1";
+let msg91KeyCache = { key: "", at: 0 };
+
+async function msg91AuthKey() {
+  if (process.env.MSG91_AUTHKEY) return process.env.MSG91_AUTHKEY;
+  if (msg91KeyCache.key && Date.now() - msg91KeyCache.at < 10 * 60 * 1000) return msg91KeyCache.key;
+  const provider = await new Messaging(appwriteClient()).getProvider(MSG91_PROVIDER_ID);
+  const creds = (provider && provider.credentials) || {};
+  const key = creds.authKey || creds.authkey || "";
+  if (!key) throw new Error("MSG91 provider has no auth key");
+  msg91KeyCache = { key, at: Date.now() };
+  return key;
+}
+
+// HMAC key for WhatsApp challenges. Must be the same on every instance:
+// OTP_SIGNING_SECRET if set, else derived from the function's static API key.
+function signingSecret() {
+  if (process.env.OTP_SIGNING_SECRET && String(process.env.OTP_SIGNING_SECRET).length >= 32) {
+    return String(process.env.OTP_SIGNING_SECRET);
+  }
+  if (process.env.APPWRITE_API_KEY) {
+    return crypto.createHmac("sha256", String(process.env.APPWRITE_API_KEY)).update("phone-session-wa-otp-v1").digest("hex");
+  }
+  return "";
+}
+
 function whatsappConfigured() {
-  return Boolean(
-    process.env.MSG91_AUTHKEY && process.env.MSG91_WA_NUMBER && process.env.MSG91_WA_TEMPLATE &&
-      process.env.OTP_SIGNING_SECRET && String(process.env.OTP_SIGNING_SECRET).length >= 32
-  );
+  return Boolean(signingSecret());
 }
 
 function sign(payloadB64, code) {
   return crypto
-    .createHmac("sha256", String(process.env.OTP_SIGNING_SECRET))
+    .createHmac("sha256", signingSecret())
     .update(`${payloadB64}.${code}`)
     .digest("base64url");
 }
@@ -330,18 +368,18 @@ async function sendWhatsAppCode(phoneDigits, code) {
     components.body_2 = { type: "text", value: String(process.env.WA_SUPPORT_NUMBER) };
   }
   const template = {
-    name: process.env.MSG91_WA_TEMPLATE,
+    name: WA_TEMPLATE(),
     // The approved MSG91 template "marketingtoolpro" is registered as en_US;
     // "en" does not match it and Meta rejects the send.
     language: { code: process.env.MSG91_WA_LANG || "en_US", policy: "deterministic" },
     to_and_components: [{ to: [phoneDigits], components }],
   };
-  if (process.env.MSG91_WA_NAMESPACE) template.namespace = process.env.MSG91_WA_NAMESPACE;
+  if (WA_NAMESPACE()) template.namespace = WA_NAMESPACE();
   const resp = await postJson(
     "https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/",
-    { authkey: process.env.MSG91_AUTHKEY },
+    { authkey: await msg91AuthKey() },
     {
-      integrated_number: digits(process.env.MSG91_WA_NUMBER),
+      integrated_number: digits(WA_NUMBER()),
       content_type: "template",
       payload: { messaging_product: "whatsapp", type: "template", template },
     }
@@ -423,6 +461,7 @@ module.exports = async ({ req, res, log, error }) => {
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
   };
   if (req.method === "OPTIONS") return res.json({ status: "ok" }, 200, headers);
+  requestKey = String((req.headers && (req.headers["x-appwrite-key"] || req.headers["X-Appwrite-Key"])) || "");
   if (req.method && req.method !== "POST") return res.json({ error: "Method not allowed" }, 405, headers);
 
   const ip = clientIp(req);
