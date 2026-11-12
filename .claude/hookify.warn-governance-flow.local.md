@@ -2,7 +2,10 @@
 name: warn-governance-flow
 enabled: true
 event: stop
-pattern: .*
+conditions:
+  - field: transcript
+    operator: regex_match
+    pattern: .*
 action: warn
 ---
 

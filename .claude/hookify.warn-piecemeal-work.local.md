@@ -3,7 +3,10 @@ name: warn-piecemeal-work
 # Folded into block-unverified-fix-claims so only ONE hook fires per turn.
 enabled: false
 event: stop
-pattern: .*
+conditions:
+  - field: transcript
+    operator: regex_match
+    pattern: .*
 action: warn
 ---
 
