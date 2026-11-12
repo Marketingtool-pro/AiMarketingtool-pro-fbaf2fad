@@ -2,7 +2,10 @@
 name: warn-piecemeal-work
 enabled: true
 event: stop
-pattern: .*
+conditions:
+  - field: transcript
+    operator: regex_match
+    pattern: .*
 action: warn
 ---
 
