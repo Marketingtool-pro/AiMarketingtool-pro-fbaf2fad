@@ -5,7 +5,7 @@ source 'https://rubygems.org'
 ruby '3.4.11'
 
 gem 'activesupport', '>= 5.0', '< 8.0'
-gem 'addressable', '~> 2.3'
+gem 'addressable', '~> 2.9'
 gem 'atomic', '>= 1.1.101'
 gem 'bigdecimal', '>= 4.1.3'
 gem 'cocoapods', '>= 1.15.2'
