@@ -109,6 +109,34 @@ function withoutServerOwnedFields(data: Partial<UserProfile>): Partial<UserProfi
   return Object.fromEntries(allowed) as Partial<UserProfile>;
 }
 
+// The WhatsApp challenge must survive the app being closed. The user has to
+// leave the app to read the code in WhatsApp, and Android often kills a
+// backgrounded app; LoginScreen then restores the code box from 'pendingOTP',
+// but the in-memory challenge was gone, so the correct code failed with
+// "Verification session expired". The challenge holds no code (only an HMAC
+// bound to it) and expires on the server after 5 minutes.
+const WA_PENDING_KEY = 'pendingWhatsAppChallenge';
+
+async function savePendingWhatsApp(phone: string, challenge: string): Promise<void> {
+  try {
+    await SecureStore.setItemAsync(WA_PENDING_KEY, JSON.stringify({ phone, challenge }));
+  } catch {}
+}
+
+async function loadPendingWhatsApp(): Promise<{ phone: string; challenge: string } | null> {
+  try {
+    const raw = await SecureStore.getItemAsync(WA_PENDING_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.phone === 'string' && typeof parsed?.challenge === 'string') return parsed;
+  } catch {}
+  return null;
+}
+
+function clearPendingWhatsApp(): void {
+  SecureStore.deleteItemAsync(WA_PENDING_KEY).catch(() => {});
+}
+
 /**
  * Store-review OTP bypass check.
  *
@@ -372,7 +400,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  clearOtpTemp: () => set({ tempPhone: null, tempVerificationId: null, tempWhatsAppChallenge: null }),
+  clearOtpTemp: () => {
+    clearPendingWhatsApp();
+    set({ tempPhone: null, tempVerificationId: null, tempWhatsAppChallenge: null });
+  },
 
   sendPhoneOTP: async (phoneNumber: string) => {
     // Firebase Phone Auth — Google's SMS infrastructure (Uber/Ola pattern).
@@ -426,6 +457,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error(wa.error || 'Could not send the WhatsApp code. Please try again.');
       }
       set({ tempPhone: formatted, tempVerificationId: formatted, tempWhatsAppChallenge: wa.challenge });
+      await savePendingWhatsApp(formatted, wa.challenge);
       return formatted;
     } catch (error: any) {
       if (__DEV__) console.log('[Auth] Send OTP error:', error.message);
@@ -437,6 +469,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   verifyPhoneOTP: async (_userId: string, code: string) => {
     set({ error: null });
     try {
+      // App was closed while the user read the code in WhatsApp: restore the
+      // number and challenge saved by sendPhoneOTP.
+      if (!get().tempWhatsAppChallenge) {
+        const pending = await loadPendingWhatsApp();
+        if (pending && (!get().tempPhone || get().tempPhone === pending.phone)) {
+          set({ tempPhone: pending.phone, tempVerificationId: pending.phone, tempWhatsAppChallenge: pending.challenge });
+        }
+      }
       const rawPhone = get().tempPhone || _userId;
       if (!rawPhone) {
         throw new Error('Verification session expired. Please request a new code.');
@@ -511,6 +551,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // second-factor prompt into a hard OTP failure.
       const { user, mfaRequired } = await authService.getCurrentUserOrMfa();
       if (mfaRequired) {
+        clearPendingWhatsApp();
         set({ mfaPending: true, tempPhone: null, tempVerificationId: null, tempWhatsAppChallenge: null });
         return;
       }
@@ -523,6 +564,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // already returns a defaultProfile when it fails. So it was never a gate on
       // login — only a delay in front of the home screen, and on a slow network a
       // very long one. Land the user now and fill the profile in behind them.
+      clearPendingWhatsApp();
       set({ user, isAuthenticated: true, tempPhone: null, tempVerificationId: null, tempWhatsAppChallenge: null });
 
       get()
