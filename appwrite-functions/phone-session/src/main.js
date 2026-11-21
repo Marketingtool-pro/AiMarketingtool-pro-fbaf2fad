@@ -390,6 +390,24 @@ async function sendWhatsAppCode(phoneDigits, code) {
   return resp;
 }
 
+// SMS copy of the same code (MSG91 SMS template "Marketingtool", approved:
+// "Your OTP Verification Code is ##OTP##"). Sent next to WhatsApp because Meta
+// rejects the WhatsApp template while the display name is not approved, and a
+// login must not depend on that. Set MSG91_SMS_TEMPLATE_ID="off" to disable.
+const SMS_TEMPLATE_ID = () => process.env.MSG91_SMS_TEMPLATE_ID || "6996a72f3e3b38abfb088673";
+
+async function sendSmsCode(phoneDigits, code) {
+  const resp = await postJson(
+    "https://control.msg91.com/api/v5/flow",
+    { authkey: await msg91AuthKey(), accept: "application/json" },
+    { template_id: SMS_TEMPLATE_ID(), recipients: [{ mobiles: phoneDigits, OTP: code }] }
+  );
+  if (resp.status < 200 || resp.status >= 300 || !/"type"\s*:\s*"success"/i.test(resp.body)) {
+    throw new Error(`MSG91 SMS HTTP ${resp.status}: ${String(resp.body).slice(0, 300)}`);
+  }
+  return resp;
+}
+
 async function startWhatsApp(db, phone, ip) {
   const phoneDigits = digits(phone);
   if (phoneDigits.length < 8 || phoneDigits.length > 15) return { status: 400, body: { error: "Invalid phone number" } };
@@ -407,9 +425,19 @@ async function startWhatsApp(db, phone, ip) {
     n: crypto.randomBytes(12).toString("base64url"),
   };
   const payloadB64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const waResp = await sendWhatsAppCode(phoneDigits, code);
+  // Same code over WhatsApp and SMS; the login works if either channel took it.
+  const smsOn = SMS_TEMPLATE_ID() !== "off";
+  const [wa, sms] = await Promise.allSettled([
+    sendWhatsAppCode(phoneDigits, code),
+    smsOn ? sendSmsCode(phoneDigits, code) : Promise.reject(new Error("SMS disabled")),
+  ]);
+  if (wa.status === "rejected" && sms.status === "rejected") {
+    throw new Error(`WhatsApp: ${wa.reason && wa.reason.message}; SMS: ${sms.reason && sms.reason.message}`);
+  }
+  const show = (r) =>
+    r.status === "fulfilled" ? `HTTP ${r.value.status}: ${String(r.value.body).slice(0, 300)}` : `failed: ${r.reason && r.reason.message}`;
   return {
-    msg91: `HTTP ${waResp.status}: ${String(waResp.body).slice(0, 400)}`, status: 200, body: { success: true, challenge: `${payloadB64}.${sign(payloadB64, code)}`, expiresIn: WA_CODE_TTL_SECONDS } };
+    msg91: `WhatsApp ${show(wa)} | SMS ${show(sms)}`, status: 200, body: { success: true, challenge: `${payloadB64}.${sign(payloadB64, code)}`, expiresIn: WA_CODE_TTL_SECONDS } };
 }
 
 // Returns the verified phone digits. Throws OtpRejected for a bad challenge or

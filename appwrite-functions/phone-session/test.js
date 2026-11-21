@@ -12,6 +12,9 @@ const guardDocs = new Map();
 let guardCollectionMissing = false;
 let lastWhatsAppCode = null;
 let lastWhatsAppTemplate = null;
+let lastSmsCode = null;
+let lastSmsTemplateId = null;
+let whatsAppDown = false; // simulate Meta/MSG91 refusing the WhatsApp send
 
 function appwriteError(code, type) {
   return Object.assign(new Error(type), { code, type });
@@ -48,13 +51,19 @@ Module._load = function (request, ...rest) {
           end(data) {
             chunks.push(String(data || ""));
             const sent = JSON.parse(chunks.join(""));
-            lastWhatsAppCode = sent.payload.template.to_and_components[0].components.body_1.value;
-            lastWhatsAppTemplate = sent.payload.template;
+            const isSms = Array.isArray(sent.recipients);
+            if (isSms) {
+              lastSmsCode = sent.recipients[0].OTP;
+              lastSmsTemplateId = sent.template_id;
+            } else {
+              lastWhatsAppCode = sent.payload.template.to_and_components[0].components.body_1.value;
+              lastWhatsAppTemplate = sent.payload.template;
+            }
             const resp = new EventEmitter();
-            resp.statusCode = 200;
+            resp.statusCode = !isSms && whatsAppDown ? 400 : 200;
             process.nextTick(() => {
               cb(resp);
-              resp.emit("data", JSON.stringify({ status: "success" }));
+              resp.emit("data", JSON.stringify(isSms ? { type: "success", message: "id" } : { status: whatsAppDown ? "fail" : "success" }));
               resp.emit("end");
             });
           },
@@ -194,7 +203,16 @@ async function run(name, body, env = {}, ip = `10.0.0.${++ipCounter}`) {
   const goodChallenge = s.challenge;
   const goodCode = lastWhatsAppCode;
   expect("wa wrong code", await verify("wa wrong code", goodChallenge, wrongCode()), 401);
+  results.push({ name: "sms carries the same code", ok: lastSmsCode === goodCode && lastSmsTemplateId === "6996a72f3e3b38abfb088673", sms: lastSmsCode });
   expect("wa correct code", await verify("wa correct code", goodChallenge, goodCode), 200);
+  // WhatsApp refused (as Meta does now): the SMS code alone must still log in.
+  freshInstance();
+  whatsAppDown = true;
+  lastSmsCode = null;
+  const s2 = await send("send with WhatsApp down", "+15557654322");
+  expect("send with WhatsApp down, SMS ok", s2, 200);
+  expect("login with the SMS code", await run("sms login", { whatsappChallenge: s2.challenge, whatsappCode: lastSmsCode, phone: "+15557654322" }, waEnv), 200);
+  whatsAppDown = false;
   freshInstance();
   expect("wa replay of a used challenge on a fresh instance",
     await verify("wa replay", goodChallenge, goodCode), 401);
