@@ -459,7 +459,12 @@ const LoginScreen = () => {
                       }
                     }}
                     keyboardType="number-pad"
-                    maxLength={6}
+                    // No maxLength here. WhatsApp's "Copy code" button copies
+                    // "otp" + the code (template button URL ends code=otp{{1}}),
+                    // and maxLength={6} let the OS cut a paste of "otp483920"
+                    // to "otp483" before onChangeText ran, leaving 3 digits and
+                    // a login that could never finish. onChangeText already
+                    // keeps only digits and caps them at 6.
                     autoFocus
                     textContentType="oneTimeCode"
                     autoComplete="sms-otp"
